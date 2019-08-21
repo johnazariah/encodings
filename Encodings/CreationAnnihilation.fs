@@ -23,7 +23,7 @@ module CreationAnnihilation =
                 else
                     [|Complex(0.5, 0.); (Complex(0., -0.5))|]
                     |> Array.zip (jw_components j)
-                    |> Array.map (PauliOperatorRegister.FromString)
+                    |> Array.map (PauliRegister)
                     |> PauliOperatorRegisterSequence.Apply
             | An j ->
                 if (j >= n) then
@@ -31,6 +31,6 @@ module CreationAnnihilation =
                 else
                     [|Complex(0.5, 0.); (Complex(0., 0.5))|]
                     |> Array.zip (jw_components j)
-                    |> Array.map (PauliOperatorRegister.FromString)
+                    |> Array.map (PauliRegister)
                     |> PauliOperatorRegisterSequence.Apply
 

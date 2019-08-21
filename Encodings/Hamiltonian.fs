@@ -53,8 +53,8 @@ module Hamiltonian =
         member private this.ToJordanWignerTerms n coeff termCoefficient =
             let criTerms = (Cr this.i).ToJordanWignerTerms n
             let crjTerms = (Cr this.j).ToJordanWignerTerms n
-            let ankTerms = (An this.j).ToJordanWignerTerms n
-            let anlTerms = (An this.j).ToJordanWignerTerms n
+            let ankTerms = (An this.k).ToJordanWignerTerms n
+            let anlTerms = (An this.l).ToJordanWignerTerms n
             let result = (criTerms * crjTerms * ankTerms * anlTerms)
             { result with
                 Coefficient = result.Coefficient * coeff * termCoefficient

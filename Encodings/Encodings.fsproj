@@ -6,8 +6,7 @@
 
   <ItemGroup>
     <Compile Include="Complex.fs" />
-    <Compile Include="Pauli.fs" />
-    <Compile Include="PauliOperatorRegister.fs" />
+    <Compile Include="PauliRegister.fs" />
     <Compile Include="PauliOperatorRegisterSequence.fs" />
     <Compile Include="CreationAnnihilation.fs" />
     <Compile Include="Hamiltonian.fs" />

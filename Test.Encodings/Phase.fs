@@ -51,7 +51,7 @@ module Phase =
 
     [<Property>]
     let ``Phase : can fold into coefficient`` (p : Phase, c : Complex) =
-        let f = c * p
+        let f = p.FoldIntoGlobalPhase c
         match (p.IsPositive, p.IsComplex) with
         | true, false ->
             Assert.Equal(f, c)

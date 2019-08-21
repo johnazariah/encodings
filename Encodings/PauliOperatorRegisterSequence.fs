@@ -8,7 +8,7 @@ module PauliOperatorRegisterSequence =
     type PauliOperatorRegisterSequence =
         {
             Coefficient : Complex
-            Terms       : PauliOperatorRegister []
+            Terms       : PauliRegister []
         }
         with
             static member Apply terms = {
@@ -17,7 +17,7 @@ module PauliOperatorRegisterSequence =
             }
 
             override this.ToString() =
-                let buildString result (term : PauliOperatorRegister) =
+                let buildString result (term : PauliRegister) =
                     let termStr =
                         term.Operators
                         |> Array.map (sprintf "%A")
@@ -45,6 +45,6 @@ module PauliOperatorRegisterSequence =
                             yield (result.ToString(), result.GlobalPhase)
                 |]
                 |> Array.fold PauliOperatorRegisterSequence.BuildMap (new Dictionary<string, Complex> ())
-                |> Seq.map (fun kvp -> PauliOperatorRegister.FromString(kvp.Key, kvp.Value))
+                |> Seq.map (fun kvp -> PauliRegister(kvp.Key, kvp.Value))
                 |> Seq.toArray
                 |> PauliOperatorRegisterSequence.Apply
