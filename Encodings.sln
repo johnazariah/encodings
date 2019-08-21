@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.28917.181
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Encodings", "Encodings\Encodings.fsproj", "{FE7CC87C-1B35-433E-9343-A419316E8417}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Test.Encodings", "Test.Encodings\Test.Encodings.fsproj", "{99E3FCE7-AC53-4547-9C3D-0D56E0DE612A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FE7CC87C-1B35-433E-9343-A419316E8417}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FE7CC87C-1B35-433E-9343-A419316E8417}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FE7CC87C-1B35-433E-9343-A419316E8417}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FE7CC87C-1B35-433E-9343-A419316E8417}.Release|Any CPU.Build.0 = Release|Any CPU
+		{99E3FCE7-AC53-4547-9C3D-0D56E0DE612A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{99E3FCE7-AC53-4547-9C3D-0D56E0DE612A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{99E3FCE7-AC53-4547-9C3D-0D56E0DE612A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{99E3FCE7-AC53-4547-9C3D-0D56E0DE612A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {85DFFA9F-7F46-4B90-ACBB-3162EEC2D41D}
+	EndGlobalSection
+EndGlobal
