@@ -12,6 +12,7 @@
     <Compile Include="Pauli.fs" />
     <Compile Include="PauliOperatorRegister.fs" />
     <Compile Include="CreationAnnihilationOperator.fs" />
+    <Compile Include="Hamiltonian.fs" />
     <Compile Include="Tests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>

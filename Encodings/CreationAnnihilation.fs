@@ -3,7 +3,6 @@
 [<AutoOpen>]
 module CreationAnnihilation =
     open System.Numerics
-    open Pauli
 
     type CreationAnnihilationOperator =
     | Cr of uint32
@@ -35,6 +34,3 @@ module CreationAnnihilation =
                     |> Array.map (PauliOperatorRegister.FromString)
                     |> PauliOperatorRegisterSequence.Apply
 
-    and OperatorRegister private (operators : CreationAnnihilationOperator[], isLittleEndian, globalPhase) =
-        class
-        end
