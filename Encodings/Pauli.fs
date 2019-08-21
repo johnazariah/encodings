@@ -110,15 +110,13 @@ module Pauli =
                 let operators = Array.create<Pauli> (int n) Pauli.Identity
                 new PauliOperatorRegister (operators, false, coefficient |> Option.defaultValue Complex.One)
 
-            static member internal FromList (coefficient, ops : Pauli list) =
-                new PauliOperatorRegister (ops |> List.rev |> List.toArray, false, coefficient)
-
             static member FromString (ops : string, coefficient) =
                 ops
                 |> Seq.choose (Pauli.FromChar)
                 |> Seq.toArray
                 |> (fun rg -> new PauliOperatorRegister (rg, false, coefficient))
 
+            member internal __.Operators = operators
             member __.GlobalPhase = globalPhase
             member __.Size = operators.Length
             member __.IsLittleEndian = isLittleEndian
@@ -133,31 +131,42 @@ module Pauli =
                 operators
                 |> Array.map (sprintf "%A")
                 |> (fun rgstr -> System.String.Join("", rgstr))
-                |> sprintf "%A%s" globalPhase
+                |> sprintf "%s%s" (globalPhase.PhasePrefix)
 
             static member (*) (l : PauliOperatorRegister, r : PauliOperatorRegister) =
                 let n = Math.Max (l.Size, r.Size)
-                let result = Array.create<PauliOperator> (int n) PauliOperator.Unity
-                for i in 0..(n-1) do
-                    result.[i] <-
-                        match (l.[i], r.[i]) with
-                        | None, None -> PauliOperator.Unity
-                        | Some x, None
-                        | None, Some x -> { PauliOperator.Unity with Op = x }
-                        | Some x, Some y -> { PauliOperator.Unity with Op = x } * { PauliOperator.Unity with Op = y }
-                result
-                |> Array.map (fun p -> (p.Ph, p.Op))
-                |> Array.fold (fun (coeff, operators) (item_coeff, item_op) -> (coeff * item_coeff, item_op :: operators)) (l.GlobalPhase * r.GlobalPhase, [])
-                |> PauliOperatorRegister.FromList
+                [|
+                    for i in 0..(n-1) do
+                        let p =
+                            match (l.[i], r.[i]) with
+                            | None, None -> PauliOperator.Unity
+                            | Some x, None
+                            | None, Some x -> { PauliOperator.Unity with Op = x }
+                            | Some x, Some y -> { PauliOperator.Unity with Op = x } * { PauliOperator.Unity with Op = y }
+                        yield (p.Ph, p.Op)
+                |]
+                |> Array.fold (fun (coeff, operators) (item_coeff, item_op) -> (coeff * item_coeff, operators @ [item_op])) (l.GlobalPhase * r.GlobalPhase, [])
+                |> (fun (coefficient, ops) ->
+                    PauliOperatorRegister (ops |> List.toArray, false, coefficient))
         end
-    and PauliOperatorRegisterSequence =
+
+    type PauliOperatorRegisterSequence =
         { Terms : PauliOperatorRegister []}
         with
             static member Apply terms = { Terms = terms }
             override this.ToString() =
+                let buildString result (term : PauliOperatorRegister) =
+                    let termStr =
+                        term.Operators
+                        |> Array.map (sprintf "%A")
+                        |> (fun rg -> System.String.Join ("", rg))
+
+                    if String.IsNullOrWhiteSpace result then
+                        sprintf "%s%s" (term.GlobalPhase.PhasePrefix) termStr
+                    else
+                        sprintf "%s%s%s" result (term.GlobalPhase.ConjoiningSignAndPhase) termStr
                 this.Terms
-                |> Array.map (sprintf "%A")
-                |> (fun rg -> String.Join (" + ", rg))
+                |> Array.fold buildString ""
 
             static member (*) (l : PauliOperatorRegisterSequence, r : PauliOperatorRegisterSequence) =
                 let buildMap (dict : Dictionary<string, Complex>) (key, curr) =
