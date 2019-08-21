@@ -2,7 +2,7 @@ namespace Tests
 
 module Phase =
     open Encodings
-    open System
+    open System.Numerics
     open Xunit
     open FsCheck.Xunit
 
