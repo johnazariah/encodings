@@ -3,6 +3,7 @@
 module Pauli =
     open System
     open System.Numerics
+    open System.Collections.Generic
 
     type Pauli =
     | I
@@ -157,3 +158,22 @@ module Pauli =
                 this.Terms
                 |> Array.map (sprintf "%A")
                 |> (fun rg -> String.Join (" + ", rg))
+
+            static member (*) (l : PauliOperatorRegisterSequence, r : PauliOperatorRegisterSequence) =
+                let buildMap (dict : Dictionary<string, Complex>) (key, curr) =
+                    if (dict.ContainsKey key) then
+                        dict.[key] <- (dict.[key] + curr)
+                    else
+                        dict.[key] <- curr
+                    dict
+
+                [|
+                    for lt in l.Terms do
+                        for rt in r.Terms do
+                            let result = (lt * rt)
+                            yield (result.ToString(), result.GlobalPhase)
+                |]
+                |> Array.fold buildMap (new Dictionary<string, Complex> ())
+                |> Seq.map (fun kvp -> PauliOperatorRegister.FromString(kvp.Key, kvp.Value))
+                |> Seq.toArray
+                |> PauliOperatorRegisterSequence.Apply
