@@ -7,16 +7,16 @@ module Pauli =
     open FsCheck.Xunit
 
     [<Property>]
-    let ``Pauli : Operator I leaves pauli unchanged`` (v : Operator) =
-        Assert.Equal (v, Operator.Unity * v)
-        Assert.Equal (v, v * Operator.Unity)
+    let ``Pauli : Operator I leaves pauli unchanged`` (v : PauliOperator) =
+        Assert.Equal (v, PauliOperator.Unity * v)
+        Assert.Equal (v, v * PauliOperator.Unity)
 
     [<Property>]
-    let ``Pauli : Operators are their own inverse`` (x : Operator) =
+    let ``Pauli : Operators are their own inverse`` (x : PauliOperator) =
         Assert.Equal (I, (x * x).Op)
 
     [<Property>]
-    let ``Pauli : Operators commute with I and themselves, and anti-commute with others`` (l : Operator, r : Operator) =
+    let ``Pauli : Operators commute with I and themselves, and anti-commute with others`` (l : PauliOperator, r : PauliOperator) =
         match (l.Op, r.Op) with
         | (I, _)
         | (_, I)
@@ -31,21 +31,21 @@ module Pauli =
 
     [<Fact>]
     let ``Pauli : X * Y -> iZ`` () =
-        let expected = { Operator.Unity with Op = Z; Ph = Pi}
-        let actual   = { Operator.Unity with Op = X } * { Operator.Unity with Op = Y }
+        let expected = { PauliOperator.Unity with Op = Z; Ph = Pi}
+        let actual   = { PauliOperator.Unity with Op = X } * { PauliOperator.Unity with Op = Y }
         Assert.Equal (expected, actual)
         Assert.Equal (actual, expected)
 
     [<Fact>]
     let ``Pauli : Y * Z -> iX`` () =
-        let expected = { Operator.Unity with Op = X; Ph = Pi}
-        let actual   = { Operator.Unity with Op = Y } * { Operator.Unity with Op = Z }
+        let expected = { PauliOperator.Unity with Op = X; Ph = Pi}
+        let actual   = { PauliOperator.Unity with Op = Y } * { PauliOperator.Unity with Op = Z }
         Assert.Equal (expected, actual)
         Assert.Equal (actual, expected)
 
     [<Fact>]
     let ``Pauli : Z * X -> iY`` () =
-        let expected = { Operator.Unity with Op = Y; Ph = Pi}
-        let actual   = { Operator.Unity with Op = Z } * { Operator.Unity with Op = X }
+        let expected = { PauliOperator.Unity with Op = Y; Ph = Pi}
+        let actual   = { PauliOperator.Unity with Op = Z } * { PauliOperator.Unity with Op = X }
         Assert.Equal (expected, actual)
         Assert.Equal (actual, expected)

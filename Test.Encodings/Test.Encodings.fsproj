@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.1</TargetFramework>
@@ -10,7 +10,8 @@
     <Compile Include="Complex.fs" />
     <Compile Include="Phase.fs" />
     <Compile Include="Pauli.fs" />
-    <Compile Include="OperatorRegister.fs" />
+    <Compile Include="PauliOperatorRegister.fs" />
+    <Compile Include="CreationAnnihilationOperator.fs" />
     <Compile Include="Tests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>

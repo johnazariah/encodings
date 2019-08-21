@@ -1,29 +1,30 @@
 namespace Tests
 
-module OperatorRegister =
+module PauliOperatorRegister =
     open Encodings
     open Xunit
+    open System.Numerics
 
     [<Fact>]
     let ``OperatorRegister : default register is all identities``() =
-        let reg = OperatorRegister.LittleEndianRegister (4u)
-        Assert.Equal("IIII", reg.ToString())
-        let reg = OperatorRegister.BigEndianRegister (4u)
-        Assert.Equal("IIII", reg.ToString())
+        let reg = PauliOperatorRegister.LittleEndianRegister (4u)
+        Assert.Equal("(1, 0)IIII", reg.ToString())
+        let reg = PauliOperatorRegister.BigEndianRegister (4u)
+        Assert.Equal("(1, 0)IIII", reg.ToString())
 
     [<Fact>]
     let ``OperatorRegister : LittleEndian register can be accessed correctly``() =
-        let reg = OperatorRegister.LittleEndianRegister (4u)
+        let reg = PauliOperatorRegister.LittleEndianRegister (4u)
         do reg.[0] <- X
         Assert.Equal(Some X, reg.[0])
-        Assert.Equal("IIIX", reg.ToString())
+        Assert.Equal("(1, 0)IIIX", reg.ToString())
 
     [<Fact>]
     let ``OperatorRegister : BigEndian register can be accessed correctly``() =
-        let reg = OperatorRegister.BigEndianRegister (4u)
+        let reg = PauliOperatorRegister.BigEndianRegister (4u)
         do reg.[0] <- X
         Assert.Equal(Some X, reg.[0])
-        Assert.Equal("XIII", reg.ToString())
+        Assert.Equal("(1, 0)XIII", reg.ToString())
 
     [<Theory>]
     [<InlineData("IIIIII")>]
@@ -35,8 +36,9 @@ module OperatorRegister =
     [<InlineData("IXII")>]
     [<InlineData("XIII")>]
     let ``OperatorRegister : FromString creates a round-trippable register``(s : string) =
-        let reg = OperatorRegister.FromString s
-        Assert.Equal(s, reg.ToString())
+        let reg = PauliOperatorRegister.FromString (s, Complex.One)
+        let expectedPhase = Complex.One.ToString ()
+        Assert.Equal(sprintf "%s%s" expectedPhase s, reg.ToString())
 
     [<Theory>]
     [<InlineData("IIIX", 3)>]
@@ -44,7 +46,7 @@ module OperatorRegister =
     [<InlineData("IXII", 1)>]
     [<InlineData("XIII", 0)>]
     let ``OperatorRegister : FromString creates a BigEndian register``(s : string, index) =
-        let reg = OperatorRegister.FromString s
+        let reg = PauliOperatorRegister.FromString (s, Complex.One)
         Assert.Equal(Some X, reg.[index])
 
     [<Theory>]
@@ -58,8 +60,8 @@ module OperatorRegister =
     [<InlineData("XXYI", "YYZI", "(0, -1)", "ZZXI")>]
     [<InlineData("XXYZ", "YYZX", "(1, 0)",  "ZZXY")>]
     let ``OperatorRegister : Basic multiply two registers`` (l, r, expectedPhase, expectedRegister) =
-        let l_reg = OperatorRegister.FromString l
-        let r_reg = OperatorRegister.FromString r
+        let l_reg = PauliOperatorRegister.FromString (l, Complex.One)
+        let r_reg = PauliOperatorRegister.FromString (r, Complex.One)
         let result = l_reg * r_reg
         Assert.Equal(expectedPhase, result.GlobalPhase.ToString())
-        Assert.Equal(expectedRegister, result.ToString())
+        Assert.Equal(sprintf "%s%s" expectedPhase expectedRegister, result.ToString())
