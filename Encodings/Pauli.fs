@@ -146,7 +146,7 @@ module Pauli =
                         | Some x, Some y -> { PauliOperator.Unity with Op = x } * { PauliOperator.Unity with Op = y }
                 result
                 |> Array.map (fun p -> (p.Ph, p.Op))
-                |> Array.fold (fun (coeff, operators) (item_coeff, item_op) -> (coeff * item_coeff, item_op :: operators)) (Complex.One, [])
+                |> Array.fold (fun (coeff, operators) (item_coeff, item_op) -> (coeff * item_coeff, item_op :: operators)) (l.GlobalPhase * r.GlobalPhase, [])
                 |> PauliOperatorRegister.FromList
         end
     and PauliOperatorRegisterSequence =
