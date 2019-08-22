@@ -7,8 +7,7 @@
   <ItemGroup>
     <Compile Include="Complex.fs" />
     <Compile Include="PauliRegister.fs" />
-    <Compile Include="PauliOperatorRegisterSequence.fs" />
-    <Compile Include="CreationAnnihilation.fs" />
+    <Compile Include="FermionicOperator.fs" />
     <Compile Include="Hamiltonian.fs" />
   </ItemGroup>
 

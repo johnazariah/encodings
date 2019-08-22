@@ -1,6 +1,6 @@
 ﻿namespace Tests
 
-module CreationAnnihilationOperator =
+module FermionicOperator_JordanWigner =
     open Encodings
     open Xunit
 

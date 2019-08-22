@@ -4,7 +4,7 @@
 module CreationAnnihilation =
     open System.Numerics
 
-    type CreationAnnihilationOperator =
+    type FermionicOperatorUnit =
     | Cr of uint32
     | An of uint32
     with
@@ -19,18 +19,25 @@ module CreationAnnihilation =
             match this with
             | Cr j ->
                 if (j >= n) then
-                    PauliOperatorRegisterSequence.Apply [||]
+                    PauliRegisterSequence ()
                 else
                     [|Complex(0.5, 0.); (Complex(0., -0.5))|]
                     |> Array.zip (jw_components j)
                     |> Array.map (PauliRegister)
-                    |> PauliOperatorRegisterSequence.Apply
+                    |> PauliRegisterSequence
             | An j ->
                 if (j >= n) then
-                    PauliOperatorRegisterSequence.Apply [||]
+                    PauliRegisterSequence ()
                 else
                     [|Complex(0.5, 0.); (Complex(0., 0.5))|]
                     |> Array.zip (jw_components j)
                     |> Array.map (PauliRegister)
-                    |> PauliOperatorRegisterSequence.Apply
+                    |> PauliRegisterSequence
 
+    type FermionicOperator private (operatorUnits : FermionicOperatorUnit [], coefficient : Complex) =
+        class
+        end
+
+    type FermionicOperatorSequence private (operators : FermionicOperator [], coefficient : Complex) =
+        class
+        end

@@ -4,25 +4,7 @@
 module Hamiltonian =
     open System.Numerics
 
-    type Hamiltonian = {
-        Terms : PauliOperatorRegisterSequence []
-    }
-    with
-        static member Apply terms = { Hamiltonian.Terms = terms }
-
-        static member ComputeHamiltonian coefficientFactory n =
-            [|
-                yield! OverlapTerm.ComputeTerms  coefficientFactory n
-                yield! ExchangeTerm.ComputeTerms coefficientFactory n
-            |]
-            |> Hamiltonian.Apply
-
-        override this.ToString() =
-            this.Terms
-            |> Array.map (fun t -> t.ToString())
-            |> (fun rg -> System.String.Join (" + ", rg))
-
-    and HamiltonianTerm =
+    type HamiltonianTerm =
     | Overlap  of OverlapTerm
     | Exchange of ExchangeTerm
 
@@ -32,9 +14,8 @@ module Hamiltonian =
             let crTerms = (Cr this.i).ToJordanWignerTerms n
             let anTerms = (An this.j).ToJordanWignerTerms n
             let result = (crTerms * anTerms)
-            { result with
-                Coefficient = result.Coefficient * coeff
-            }
+            result.Coefficient <- result.Coefficient * coeff
+            result
 
         static member internal ComputeTerms coefficientFactory n =
             [|
@@ -47,6 +28,7 @@ module Hamiltonian =
                             yield term.ToJordanWignerTerms n hij
                         | _ -> ()
             |]
+            |> PauliRegisterSequence
 
     and ExchangeTerm = {i : uint32; j : uint32; k : uint32; l : uint32}
     with
@@ -56,9 +38,8 @@ module Hamiltonian =
             let ankTerms = (An this.k).ToJordanWignerTerms n
             let anlTerms = (An this.l).ToJordanWignerTerms n
             let result = (criTerms * crjTerms * ankTerms * anlTerms)
-            { result with
-                Coefficient = result.Coefficient * coeff * termCoefficient
-            }
+            result.Coefficient <- result.Coefficient * coeff
+            result
 
         static member internal ComputeTerms coefficientFactory n =
             let termCoefficient = Complex (0.5, 0.)
@@ -80,4 +61,12 @@ module Hamiltonian =
                                     yield term.ToJordanWignerTerms n hijkl termCoefficient
                                 | _ -> ()
             |]
+            |> PauliRegisterSequence
 
+
+    let computeHamiltonian coefficientFactory n =
+        [|
+            yield OverlapTerm.ComputeTerms  coefficientFactory n
+            yield ExchangeTerm.ComputeTerms coefficientFactory n
+        |]
+        |> PauliRegisterSequence
