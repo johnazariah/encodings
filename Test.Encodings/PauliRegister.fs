@@ -1,6 +1,6 @@
 namespace Tests
 
-module PauliOperatorRegister =
+module PauliRegister =
     open Encodings
     open Xunit
     open System.Numerics

@@ -14,7 +14,7 @@ module FermionicOperator_JordanWigner =
     [<InlineData(8, 6, "0.5 ZZZZZZXI - (0.5 i) ZZZZZZYI")>]
     [<InlineData(8, 7, "0.5 ZZZZZZZX - (0.5 i) ZZZZZZZY")>]
     let ``CreationOperator generates correct JW string``(n : uint32, j : uint32, expected) =
-        let actual = (Cr j).ToJordanWignerTerms(n).ToString()
+        let actual = (Raise j).ToJordanWignerTerms(n).ToString()
         Assert.Equal(expected, actual)
 
     [<Theory>]
@@ -27,7 +27,7 @@ module FermionicOperator_JordanWigner =
     [<InlineData(8, 6, "0.5 ZZZZZZXI + (0.5 i) ZZZZZZYI")>]
     [<InlineData(8, 7, "0.5 ZZZZZZZX + (0.5 i) ZZZZZZZY")>]
     let ``AnnihilationOperator generates correct JW string``(n : uint32, j : uint32, expected) =
-        let actual = (An j).ToJordanWignerTerms(n).ToString()
+        let actual = (Lower j).ToJordanWignerTerms(n).ToString()
         Assert.Equal(expected, actual)
 
     [<Theory>]
@@ -40,8 +40,8 @@ module FermionicOperator_JordanWigner =
     [<InlineData(8, 6, "0.5 IIIIIIII - 0.5 IIIIIIZI")>]
     [<InlineData(8, 7, "0.5 IIIIIIII - 0.5 IIIIIIIZ")>]
     let ``NumberOperator generates correct JW string``(n : uint32, j : uint32, expected) =
-        let cre = (Cr j).ToJordanWignerTerms(n)
-        let anh = (An j).ToJordanWignerTerms(n)
+        let cre = (Raise j).ToJordanWignerTerms(n)
+        let anh = (Lower j).ToJordanWignerTerms(n)
         let num = cre * anh
         let actual = num.ToString()
         Assert.Equal(expected, actual)

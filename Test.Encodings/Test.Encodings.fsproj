@@ -11,7 +11,9 @@
     <Compile Include="Phase.fs" />
     <Compile Include="Pauli.fs" />
     <Compile Include="PauliRegister.fs" />
-    <Compile Include="FermionicOperator.fs" />
+    <Compile Include="LadderOperatorUnit.fs" />
+    <Compile Include="LadderOperator.fs" />
+    <Compile Include="FermionicOperator_JordanWigner.fs" />
     <Compile Include="Hamiltonian.fs" />
     <Compile Include="Tests.fs" />
   </ItemGroup>

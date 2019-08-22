@@ -7,7 +7,8 @@
   <ItemGroup>
     <Compile Include="Complex.fs" />
     <Compile Include="PauliRegister.fs" />
-    <Compile Include="FermionicOperator.fs" />
+    <Compile Include="LadderOperator.fs" />
+    <Compile Include="JordanWigner.fs" />
     <Compile Include="Hamiltonian.fs" />
   </ItemGroup>
 

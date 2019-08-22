@@ -7,16 +7,16 @@ module Pauli =
     open FsCheck.Xunit
 
     [<Property>]
-    let ``Pauli : Operator I leaves pauli unchanged`` (v : Pauli) =
+    let ``Operator I leaves pauli unchanged`` (v : Pauli) =
         Assert.Equal ((v, P1) , I * v)
         Assert.Equal ((v, P1) , v * I)
 
     [<Property>]
-    let ``Pauli : Operators are their own inverse`` (x : Pauli) =
+    let ``Operators are their own inverse`` (x : Pauli) =
         Assert.Equal (I, (x * x) |> fst)
 
     [<Property>]
-    let ``Pauli : Operators commute with I and themselves, and anti-commute with others`` (l : Pauli, r : Pauli) =
+    let ``Operators commute with I and themselves, and anti-commute with others`` (l : Pauli, r : Pauli) =
         match (l, r) with
         | (I, _)
         | (_, I)
@@ -30,21 +30,21 @@ module Pauli =
             Assert.Equal (expected, r * l)
 
     [<Fact>]
-    let ``Pauli : X * Y -> iZ`` () =
+    let ``X * Y -> iZ`` () =
         let expected = (Z, Pi)
         let actual   = (X * Y)
         Assert.Equal (expected, actual)
         Assert.Equal (actual, expected)
 
     [<Fact>]
-    let ``Pauli : Y * Z -> iX`` () =
+    let ``Y * Z -> iX`` () =
         let expected = (X, Pi)
         let actual   = Y * Z
         Assert.Equal (expected, actual)
         Assert.Equal (actual, expected)
 
     [<Fact>]
-    let ``Pauli : Z * X -> iY`` () =
+    let ``Z * X -> iY`` () =
         let expected = (Y, Pi)
         let actual   = Z * X
         Assert.Equal (expected, actual)

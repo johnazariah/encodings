@@ -11,8 +11,8 @@ module Hamiltonian =
     and OverlapTerm  = {i : uint32; j : uint32}
     with
         member private this.ToJordanWignerTerms n coeff =
-            let crTerms = (Cr this.i).ToJordanWignerTerms n
-            let anTerms = (An this.j).ToJordanWignerTerms n
+            let crTerms = (Raise this.i).ToJordanWignerTerms n
+            let anTerms = (Lower this.j).ToJordanWignerTerms n
             let result = (crTerms * anTerms)
             result.Coefficient <- result.Coefficient * coeff
             result
@@ -33,10 +33,10 @@ module Hamiltonian =
     and ExchangeTerm = {i : uint32; j : uint32; k : uint32; l : uint32}
     with
         member private this.ToJordanWignerTerms n coeff termCoefficient =
-            let criTerms = (Cr this.i).ToJordanWignerTerms n
-            let crjTerms = (Cr this.j).ToJordanWignerTerms n
-            let ankTerms = (An this.k).ToJordanWignerTerms n
-            let anlTerms = (An this.l).ToJordanWignerTerms n
+            let criTerms = (Raise this.i).ToJordanWignerTerms n
+            let crjTerms = (Raise this.j).ToJordanWignerTerms n
+            let ankTerms = (Lower this.k).ToJordanWignerTerms n
+            let anlTerms = (Lower this.l).ToJordanWignerTerms n
             let result = (criTerms * crjTerms * ankTerms * anlTerms)
             result.Coefficient <- result.Coefficient * coeff
             result

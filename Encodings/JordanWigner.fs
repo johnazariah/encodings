@@ -1,12 +1,10 @@
 ﻿namespace Encodings
 
 [<AutoOpen>]
-module CreationAnnihilation =
+module JordanWigner =
     open System.Numerics
 
-    type FermionicOperatorUnit =
-    | Cr of uint32
-    | An of uint32
+    type LadderOperatorUnit
     with
         member this.ToJordanWignerTerms (n : uint32) =
             let jw_components j =
@@ -17,7 +15,7 @@ module CreationAnnihilation =
                 [|jw_x; jw_y|]
 
             match this with
-            | Cr j ->
+            | Raise j ->
                 if (j >= n) then
                     PauliRegisterSequence ()
                 else
@@ -25,7 +23,7 @@ module CreationAnnihilation =
                     |> Array.zip (jw_components j)
                     |> Array.map (PauliRegister)
                     |> PauliRegisterSequence
-            | An j ->
+            | Lower j ->
                 if (j >= n) then
                     PauliRegisterSequence ()
                 else
@@ -33,11 +31,3 @@ module CreationAnnihilation =
                     |> Array.zip (jw_components j)
                     |> Array.map (PauliRegister)
                     |> PauliRegisterSequence
-
-    type FermionicOperator private (operatorUnits : FermionicOperatorUnit [], coefficient : Complex) =
-        class
-        end
-
-    type FermionicOperatorSequence private (operators : FermionicOperator [], coefficient : Complex) =
-        class
-        end
