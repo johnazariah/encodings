@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <Compile Include="Complex.fs" />
+    <Compile Include="SwapTrackingSort.fs" />
     <Compile Include="PauliRegister.fs" />
     <Compile Include="IndexedOperator.fs" />
     <Compile Include="IndexedPauli.fs" />

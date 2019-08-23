@@ -16,7 +16,7 @@ module IndexedOperator =
             override __.ToString() =
                 operatorUnits
                 |> Array.map (sprintf "%O")
-                |> (fun rg -> System.String.Join ("; ", rg))
+                |> (fun rg -> System.String.Join (" | ", rg))
                 |> sprintf "[%s]"
 
             member val OperatorUnits = operatorUnits
@@ -70,10 +70,29 @@ module IndexedOperator =
         (unitFactory : string -> uint32 -> 'a option) (s : System.String) =
         let f = TryCreateIndexedOperatorUnit<'a> unitFactory
         try
-            s.Trim().TrimStart('[').TrimEnd(']').Split(';')
+            s.Trim().TrimStart('[').TrimEnd(']').Split('|')
             |> Array.choose (f)
             |> (fun ops -> IndexedOperator<'a> (ops, Complex.One))
             |> Some
         with
         | _ -> None
+
+    let TryCreateIndexedOperatorSequence<'a when 'a :> IIndexedOperatorUnit>
+        (unitFactory : string -> uint32 -> 'a option) (s : System.String) =
+        let f = TryCreateIndexedOperator<'a> unitFactory
+        try
+            s.Trim().TrimStart('{').TrimEnd('}').Split(';')
+            |> Array.choose (f)
+            |> (fun ops -> IndexedOperatorSequence<'a> (ops, Complex.One))
+            |> Some
+        with
+        | _ -> None
+
+[<AutoOpen>]
+module IndexedOperatorExtensions =
+    let inline (.>=.) (l : IIndexedOperatorUnit) (r : IIndexedOperatorUnit) =
+        l.Index >= r.Index
+
+    let inline (.<=.) (l : IIndexedOperatorUnit) (r : IIndexedOperatorUnit) =
+        l.Index <= r.Index
 

@@ -3,6 +3,7 @@
 [<AutoOpen>]
 module LadderOperator =
     open System.Numerics
+    open System
 
     type LadderOperatorUnit =
         | Raise of uint32
@@ -22,6 +23,9 @@ module LadderOperator =
                     match this with
                     | Raise n -> sprintf "(u, %u)" n
                     | Lower n -> sprintf "(d, %u)" n
+
+        static member WithMinIndex = Raise (System.UInt32.MinValue)
+        static member WithMaxIndex = Raise (System.UInt32.MaxValue)
 
         override this.ToString() =
             (this :> IIndexedOperatorUnit).AsString.Value

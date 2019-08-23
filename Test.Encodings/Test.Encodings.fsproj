@@ -7,7 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="TestUtils.fs" />
     <Compile Include="Complex.fs" />
+    <Compile Include="SwapTrackingSort.fs" />
     <Compile Include="Phase.fs" />
     <Compile Include="Pauli.fs" />
     <Compile Include="PauliRegister.fs" />

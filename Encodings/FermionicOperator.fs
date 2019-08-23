@@ -4,6 +4,24 @@
 module FermionicOperator =
     open System.Numerics
 
+    type FermionicCreationOperatorIndexSort() =
+        class
+            inherit SwapTrackingSort<LadderOperatorUnit, Complex>
+                ((.<=.), LadderOperatorUnit.WithMaxIndex, Complex.SwapSignMultiple)
+
+            member this.SortCreationOperators rg =
+                rg |> Array.where (function | Raise _ -> true | _ -> false) |> this.Sort Complex.One
+        end
+
+    type FermionicAnnihilationOperatorIndexSort() =
+        class
+            inherit SwapTrackingSort<LadderOperatorUnit, Complex>
+                ((.>=.), LadderOperatorUnit.WithMinIndex, Complex.SwapSignMultiple)
+
+            member this.SortAnnihilationOperators rg =
+                rg |> Array.where (function | Lower _ -> true | _ -> false) |> this.Sort Complex.One
+        end
+
     type FermionicOperator internal (operatorUnits : LadderOperatorUnit [], coefficient : Complex) =
         class
             inherit IndexedOperator<LadderOperatorUnit> (operatorUnits, coefficient)
@@ -95,7 +113,18 @@ module FermionicOperator =
             static member Construct (candidate : FermionicOperator) =
                 let ensureIndexOrder (c : FermionicOperator) : (Complex * FermionicOperator[]) =
                     if c.IsInIndexOrder then
-                        (Complex.One, [|candidate|])
+                        (Complex.One, [| candidate |])
+                    else if c.IsInNormalOrder then
+                        let (sortedCreationOps, createdPhase) =
+                            candidate.OperatorUnits
+                            |> (new FermionicCreationOperatorIndexSort()).SortCreationOperators
+                        let (sortedAnnihilationOps, annihilatedPhase) =
+                            candidate.OperatorUnits
+                            |> (new FermionicAnnihilationOperatorIndexSort()).SortAnnihilationOperators
+                        let ops   = Array.concat [|sortedCreationOps; sortedAnnihilationOps|]
+                        let phase = createdPhase * annihilatedPhase
+                        let sortedFermionicOperator = FermionicOperator(ops, phase)
+                        (Complex.One, [| sortedFermionicOperator |])
                     else
                         failwith "Not Yet Implemented"
 
