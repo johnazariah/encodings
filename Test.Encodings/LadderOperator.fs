@@ -1,6 +1,6 @@
 namespace Tests
 
-module LadderOperator =
+module FermionicOperator =
     open Encodings
     open Xunit
     open FsCheck.Xunit
@@ -17,19 +17,13 @@ module LadderOperator =
     [<InlineData("",             "[]")>]
     [<InlineData("[(u, 1); (u, 2); (d, 3); (d, 2)]", "[(u, 1); (u, 2); (d, 3); (d, 2)]")>]
     let ``FromString creates a round-trippable ladder operator``(input : string, expected : string) =
-        match LadderOperator.FromString input with
+        match FermionicOperator.FromString input with
         | Some l -> Assert.Equal(expected, l.ToString())
         | None   -> Assert.Equal(expected, "")
 
     [<Property>]
     let ``Synthesized ladder operators have the right readable representation`` (units : (bool * uint32) []) =
-        let actual =
-            units
-            |> Array.map (fun (isRaisingOperator, index) ->
-                match isRaisingOperator with
-                | true  -> Raise index
-                | false -> Lower index)
-            |> LadderOperator
+        let actual = FermionicOperator.FromUnits units
 
         let expected =
             units
@@ -48,14 +42,14 @@ module LadderOperator =
         let raiseOperatorWithRandomIndices =
             randomIndices
             |> Array.map (fun index -> Raise index)
-            |> LadderOperator
+            |> FermionicOperator
         Assert.Equal (isSortedAlready, raiseOperatorWithRandomIndices.IsInIndexOrder)
 
         let raiseOperatorWithSortedIndices =
             randomIndices
             |> Array.sort
             |> Array.map (fun index -> Raise index)
-            |> LadderOperator
+            |> FermionicOperator
         Assert.Equal (true, raiseOperatorWithSortedIndices.IsInIndexOrder)
 
     [<Property>]
@@ -66,12 +60,21 @@ module LadderOperator =
         let lowerOperatorWithRandomIndices =
             randomIndices
             |> Array.map (fun index -> Lower index)
-            |> LadderOperator
+            |> FermionicOperator
         Assert.Equal (isSortedAlready, lowerOperatorWithRandomIndices.IsInIndexOrder)
 
         let lowerOperatorWithSortedIndices =
             randomIndices
             |> Array.sortDescending
             |> Array.map (fun index -> Lower index)
-            |> LadderOperator
+            |> FermionicOperator
         Assert.Equal (true, lowerOperatorWithSortedIndices.IsInIndexOrder)
+
+    [<Property>]
+    let ``Multiplying two ladder operators results in a single ladder operator built by concatenation`` (l : (bool * uint32)[], r : (bool * uint32)[]) =
+        let lo = FermionicOperator.FromUnits l
+        let ro = FermionicOperator.FromUnits r
+
+        let actual = lo * ro
+        let expected = FermionicOperator.FromUnits <| Array.concat [|l ; r|]
+        Assert.Equal (expected.ToString(), actual.ToString())

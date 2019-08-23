@@ -202,16 +202,16 @@ module PauliRegister =
 
                 let d =
                     registerSets
-                    |> Array.map (fun rs -> rs.NormalizeCoefficient)
+                    |> Array.map (fun rs -> rs.DistributeCoefficient)
                     |> Array.fold addRegisterSetToDictionary (new Dictionary<string, PauliRegister>())
                 PauliRegisterSequence (d, Complex.One)
 
-            member this.NormalizeCoefficient =
+            member this.DistributeCoefficient =
                 this.SummandTerms
                 |> Array.map (fun r -> r.ResetPhase (r.Coefficient * this.Coefficient))
                 |> PauliRegisterSequence
 
-            member private __.AsString =
+            member val AsString =
                 let buildString result (term : PauliRegister) =
                     let termStr = term.Signature
 
@@ -221,13 +221,13 @@ module PauliRegister =
                     else
                         let conjoiningPhase = term.PhaseConjunction
                         sprintf "%s%s%s" result conjoiningPhase termStr
+                lazy
+                    bag
+                    |> Seq.sortBy (fun kvp -> kvp.Key)
+                    |> Seq.map (fun kvp -> kvp.Value)
+                    |> Seq.fold buildString ""
 
-                bag
-                |> Seq.sortBy (fun kvp -> kvp.Key)
-                |> Seq.map (fun kvp -> kvp.Value)
-                |> Seq.fold buildString ""
-
-            override this.ToString() = this.AsString
+            override this.ToString() = this.AsString.Value
 
             member __.SummandTerms = bag.Values |> Seq.toArray
 
@@ -241,9 +241,10 @@ module PauliRegister =
                     PauliRegisterSequence.AddToDictionary bag newValue |> ignore
 
             static member (*) (l : PauliRegisterSequence, r : PauliRegisterSequence) =
+                let (l_normal, r_normal) = (l.DistributeCoefficient, r.DistributeCoefficient)
                 [|
-                    for lt in l.SummandTerms do
-                        for rt in r.SummandTerms do
+                    for lt in l_normal.SummandTerms do
+                        for rt in r_normal.SummandTerms do
                             yield (lt * rt)
                 |]
                 |> PauliRegisterSequence
