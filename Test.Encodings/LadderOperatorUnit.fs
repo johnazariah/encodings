@@ -23,8 +23,8 @@ module LadderOperatorUnit =
     let ``Synthesized ladder operator units have the right readable representation`` (isRaisingOperator : bool, index : uint32) =
         let actual =
             match isRaisingOperator with
-            | true  -> Raise index
-            | false -> Lower index
+            | true  -> Raise
+            | false -> Lower
 
         let expected = sprintf "(%s, %u)" (if isRaisingOperator then "u" else "d") index
         Assert.Equal (expected, actual.ToString())

@@ -5,15 +5,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Complex.fs" />
+    <Compile Include="TypeExtensions.fs" />
+    <Compile Include="Terms.fs" />
     <Compile Include="SwapTrackingSort.fs" />
-    <Compile Include="PauliRegister.fs" />
-    <Compile Include="IndexedOperator.fs" />
     <Compile Include="IndexedPauli.fs" />
-    <Compile Include="LadderOperatorUnit.fs" />
+    <Compile Include="IndexedLadderOperator.fs" />
     <Compile Include="FermionicOperator.fs" />
-    <Compile Include="JordanWigner.fs" />
-    <Compile Include="Hamiltonian.fs" />
   </ItemGroup>
 
 </Project>
