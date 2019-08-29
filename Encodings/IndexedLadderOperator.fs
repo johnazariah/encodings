@@ -18,9 +18,9 @@ module IndexedLadderOperator =
 
         override this.ToString() = this.AsString
 
-        static member FromString =
-            Ix<_>.TryCreateFromString LadderOperatorUnit.Apply
+        static member TryCreateFromString =
+            IndexedOperator<LadderOperatorUnit>.TryCreateFromString LadderOperatorUnit.Apply
 
-        //static member FromTuple : (bool * uint32 -> C<I<LadderOperatorUnit>>) = function
-        //    | true,  index -> Raise index
-        //    | false, index -> Lower index
+        static member FromTuple : (bool * uint32 -> IndexedOperator<LadderOperatorUnit>) = function
+            | true,  index -> IndexedOperator<LadderOperatorUnit>.Apply Raise index
+            | false, index -> IndexedOperator<LadderOperatorUnit>.Apply Lower index

@@ -15,7 +15,7 @@
     <Compile Include="Terms_S.fs" />
     <Compile Include="SwapTrackingSort.fs" />
     <Compile Include="LadderOperatorUnit.fs" />
-    <Compile Include="LadderOperator.fs" />
+    <Compile Include="FermionicOperator.fs" />
     <Compile Include="Tests.fs" />
   </ItemGroup>
 

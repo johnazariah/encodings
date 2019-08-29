@@ -1,147 +1,98 @@
 ﻿namespace Encodings
 
 [<AutoOpen>]
-module IndexedOperatorOrderingExtensions =
-    let isOrdered (comparer : 'a -> 'a -> bool) (xs : 'a seq) =
-        let compareWithPrev (isOrdered, (prev : 'a option)) (curr : 'a) =
-            let currAndPrevAreOrdered =
-                prev
-                |> Option.map (fun p -> comparer p curr)
-                |> Option.defaultValue true
-            ((isOrdered && currAndPrevAreOrdered), Some curr)
-        xs
-        |> Seq.fold compareWithPrev (true, None)
-        |> fst
+module FermionicOperator =
+    open System.Numerics
 
-    let indicesInOrder ascending (ops : Ix<_> seq) =
-        let comparer = if ascending then (.>=.) else (.<=.)
-        ops |> isOrdered comparer
+    type FermionicRaiseOperatorIndexSort() =
+        class
+            inherit SwapTrackingSort<Ix<LadderOperatorUnit>, Complex>
+                (uncurry Ix<_>.(.<=.), Ix<_>.WithMaxIndex, Complex.SwapSignMultiple)
 
+            member this.SortRaiseOperators rg =
+                let isRaise (io : Ix<LadderOperatorUnit>) = io.Op = Raise
+                rg |> Array.where isRaise |> this.Sort Complex.One
+        end
 
+    type FermionicLowerOperatorIndexSort() =
+        class
+            inherit SwapTrackingSort<Ix<LadderOperatorUnit>, Complex>
+                (uncurry Ix<_>.(.>=.), Ix<_>.WithMinIndex, Complex.SwapSignMultiple)
 
-//[<AutoOpen>]
-//module FermionicOperator =
-    //type FermionicOperatorProductTerm =
-    //    | FermionicOperatorProductTerm of P<I<LadderOperatorUnit>>
-    //    with
-    //    member this.IsInNormalOrder =
-    //        let comparer p c =
-    //            match (p, c) with
-    //            | Lower, Raise -> false
-    //            | _, _         -> true
-    //        let (FermionicOperator term) = this
-    //        term.Units
-    //        |> Seq.map (fun ciu -> ciu.Item.Op)
-    //        |> isOrdered comparer
+            member this.SortLowerOperators rg =
+                let isLower (io : Ix<LadderOperatorUnit>) = io.Op = Lower
+                rg |> Array.where isLower |> this.Sort Complex.One
+        end
 
-    //    member this.IsInIndexOrder =
-    //        let comparer p c =
-    //            match (p, c) with
-    //            | Lower, Raise -> false
-    //            | _, _         -> true
-    //        let (FermionicOperator term) = this
-    //        term.Units
-    //        |> Seq.map (fun ciu -> ciu.Item.Op)
-    //        |> isOrdered comparer
+    type FermionicOperatorUnit =
+    | Op of IndexedOperator<LadderOperatorUnit>
+    with
+        member this.Unapply =
+            let (Op indexedOperator) = this
+            indexedOperator
+        static member TryCreateFromString =
+            IndexedOperator<LadderOperatorUnit>.TryCreateFromString LadderOperatorUnit.Apply
 
-    //type FermionicOperatorSumOfProductsTerm =
-    //    | FermionicOperatorSequence of
-    //    member __.AllTermsNormalOrdered =
-    //        isIndexOrdered
-    //        |> Option.defaultValue (
-    //            isNormalOrdered
-    //            |> Option.defaultValue false)
+    type FermionicOperatorProductTerm =
+    | ProductTerm of ProductOfIndexedOperators<LadderOperatorUnit>
+        member internal this.Unapply =
+            let (ProductTerm productTerm) = this
+            productTerm.Unapply
 
-    //    member __.AllTermsIndexOrdered  =
-    //        isIndexOrdered
-    //        |> Option.defaultValue false
+        static member internal Apply =
+            ProductOfIndexedOperators.ProductTerm
+            >> FermionicOperatorProductTerm.ProductTerm
 
-//    type FermionicCreationOperatorIndexSort() =
-//        class
-//            inherit SwapTrackingSort<LadderOperatorUnit, Complex>
-//                ((.<=.), LadderOperatorUnit.WithMaxIndex, Complex.SwapSignMultiple)
+        static member TryCreateFromString =
+            ProductOfIndexedOperators<LadderOperatorUnit>.TryCreateFromString LadderOperatorUnit.Apply
 
-//            member this.SortCreationOperators rg =
-//                rg |> Array.where (function | Raise _ -> true | _ -> false) |> this.Sort Complex.One
-//        end
+        member this.IsInNormalOrder =
+            let comparer p c =
+                match (p, c) with
+                | Lower, Raise -> false
+                | _, _         -> true
 
-//    type FermionicAnnihilationOperatorIndexSort() =
-//        class
-//            inherit SwapTrackingSort<LadderOperatorUnit, Complex>
-//                ((.>=.), LadderOperatorUnit.WithMinIndex, Complex.SwapSignMultiple)
+            this.Unapply.Units
+            |> Seq.map (fun ciu -> ciu.Item.Unapply.Op.Item)
+            |> isOrdered comparer
 
-//            member this.SortAnnihilationOperators rg =
-//                rg |> Array.where (function | Lower _ -> true | _ -> false) |> this.Sort Complex.One
-//        end
+        member this.IsInIndexOrder =
+            let operators =
+                this.Unapply.Units
+                |> Seq.map (fun ciu -> ciu.Item.Unapply)
 
-//    type FermionicOperator internal (operatorUnits : LadderOperatorUnit [], coefficient : Complex) =
-//        class
-//            inherit IndexedOperator<LadderOperatorUnit> (operatorUnits, coefficient)
+            let raisingOperatorsAreAscending =
+                operators
+                |> Seq.where (fun ico -> ico.Op.Item = Raise)
+                |> Ix<_>.IndicesInOrder true
 
-//            let isOrdered (comparer : 'a -> 'a -> bool) (xs : 'a seq) =
-//                let compareWithPrev (isOrdered, (prev : 'a option)) (curr : 'a) =
-//                    let currAndPrevAreOrdered = prev |> Option.map (fun p -> comparer p curr) |> Option.defaultValue true
-//                    ((isOrdered && currAndPrevAreOrdered), Some curr)
-//                xs |> Seq.fold compareWithPrev (true, None) |> fst
+            let loweringOperatorsAreDescending =
+                operators
+                |> Seq.where (fun ico -> ico.Op.Item = Raise)
+                |> Ix<_>.IndicesInOrder false
 
-//            let indicesInOrder ascending ops =
-//                let comparer (prev : IIndexedOperatorUnit) (curr : IIndexedOperatorUnit) =
-//                    if ascending then
-//                        curr.Index >= prev.Index
-//                    else
-//                        curr.Index <= prev.Index
-//                ops |> isOrdered comparer
+            raisingOperatorsAreAscending && loweringOperatorsAreDescending
 
-//            let isInNormalOrder =
-//                lazy
-//                    let comparer p c =
-//                        match (p, c) with
-//                        | Lower _, Raise _ -> false
-//                        | _, _             -> true
-//                    operatorUnits |> isOrdered comparer
+    type FermionicOperatorSumExpression =
+    | SumTerm of SumOfProductsOfIndexedOperators<LadderOperatorUnit>
+        member this.Unapply =
+            let (SumTerm sumTerm) = this
+            sumTerm.Unapply
 
-//            let indicesAreAscending  = indicesInOrder true
-//            let indicesAreDescending = indicesInOrder false
+        static member TryCreateFromString =
+            SumOfProductsOfIndexedOperators<LadderOperatorUnit>.TryCreateFromString LadderOperatorUnit.Apply
 
-//            let raisingIndicesAreAscending =
-//                Seq.filter (function | Raise _ -> true | _ -> false) >> indicesAreAscending
+        member this.ProductTerms =
+            this.Unapply.Terms.Values
+            |> Seq.map FermionicOperatorProductTerm.Apply
 
-//            let loweringIndicesAreDescending =
-//                Seq.filter (function | Lower _ -> true | _ -> false) >> indicesAreDescending
+        member this.AllTermsNormalOrdered =
+            this.ProductTerms
+            |> Seq.fold (fun result curr -> result && curr.IsInNormalOrder) true
 
-//            let isInIndexOrder =
-//                lazy
-//                    isInNormalOrder.Value &&
-//                    raisingIndicesAreAscending   operatorUnits &&
-//                    loweringIndicesAreDescending operatorUnits
-
-//            new (operatorUnits : LadderOperatorUnit []) =
-//                FermionicOperator (operatorUnits, Complex.One)
-
-//            static member FromUnits =
-//                Array.map (LadderOperatorUnit.FromTuple) >> FermionicOperator
-
-//            static member FromString =
-//                TryCreateIndexedOperator LadderOperatorUnit.FromStringAndIndex
-
-//            member this.IsInNormalOrder = isInNormalOrder.Value
-//            member this.IsInIndexOrder  = isInIndexOrder.Value
-//        end
-
-//    and FermionicOperatorSequence internal (operators : FermionicOperator[], coefficient, ?isNormalOrdered, ?isIndexOrdered) =
-//        class
-//            inherit IndexedOperatorSequence<LadderOperatorUnit>(operators |> Array.map (fun u -> upcast u), coefficient)
-
-//            member __.AllTermsNormalOrdered =
-//                isIndexOrdered
-//                |> Option.defaultValue (
-//                    isNormalOrdered
-//                    |> Option.defaultValue false)
-
-//            member __.AllTermsIndexOrdered  =
-//                isIndexOrdered
-//                |> Option.defaultValue false
-//        end
+        member this.AllTermsIndexOrdered  =
+            this.ProductTerms
+            |> Seq.fold (fun result curr -> result && curr.IsInIndexOrder) true
 
 //    and NormalOrderedFermionicOperator private (operator : FermionicOperator) =
 //        class

@@ -1,8 +1,11 @@
 ﻿namespace Encodings
 [<AutoOpen>]
-module Complex =
+module TypeExtensions =
     open System
     open System.Numerics
+
+    let uncurry (f : ('x * 'y) -> 'r) =
+        (fun x y -> f (x, y))
 
     type System.Double
     with

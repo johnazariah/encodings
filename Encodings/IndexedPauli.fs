@@ -7,12 +7,14 @@ module IndexedPauli =
         | X
         | Y
         | Z
+    with
         static member Apply = function
             | "I" -> I |> Some
             | "X" -> X |> Some
             | "Y" -> Y |> Some
             | "Z" -> Z |> Some
             | _ -> None
+
         member this.AsString =
             match this with
             | I -> sprintf "I"
@@ -22,8 +24,5 @@ module IndexedPauli =
 
         override this.ToString() = this.AsString
 
-    type IndexedPauliOperatorUnit =
-    | IndexedPauliOperatorUnit of Ix<Pauli>
-    with
-        static member FromString (s : string) : IndexedPauliOperatorUnit =
-            failwith "Not Yet Implemented"
+        static member FromString =
+            IndexedOperator<Pauli>.TryCreateFromString Pauli.Apply

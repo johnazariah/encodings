@@ -7,6 +7,7 @@
   <ItemGroup>
     <Compile Include="TypeExtensions.fs" />
     <Compile Include="Terms.fs" />
+    <Compile Include="IndexedTerms.fs" />
     <Compile Include="SwapTrackingSort.fs" />
     <Compile Include="IndexedPauli.fs" />
     <Compile Include="IndexedLadderOperator.fs" />

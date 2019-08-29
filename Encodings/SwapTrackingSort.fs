@@ -1,15 +1,11 @@
 ﻿namespace Encodings
 [<AutoOpen>]
 module SwapTrackingSort =
-    open System
-    open System.Numerics
-    open System.Collections.Generic
-
-    type SwapTrackingSort<'a, 'phase when 'a : equality>
+    type SwapTrackingSort<'a, 'coeff when 'a : equality>
         (
             compareFunction : 'a -> 'a -> bool,
             zero : 'a,
-            trackingFunction : int -> 'phase -> 'phase
+            trackingFunction : int -> 'coeff -> 'coeff
         ) =
         class
             member __.Sort initialPhase inputArray =
@@ -52,9 +48,7 @@ module SwapTrackingSort =
                 else
                     candidate
                     |> Array.fold
-                        (fun (result, prev) curr ->
-                            let f = (compareFunction prev curr)
-                            (result && compareFunction prev curr, curr))
+                        (fun (result, prev) curr -> (result && compareFunction prev curr, curr))
                         (true, candidate.[0])
                     |> fst
         end

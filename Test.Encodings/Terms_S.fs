@@ -8,40 +8,40 @@ module Terms_S =
 
     [<Property>]
     let ``S <- 'unit``(i : int) =
-        let actual = Sum<int>.Apply (i)
+        let actual = S<int>.Apply (i)
         Assert.True actual.VerifyIsValid
 
     [<Property>]
     let ``S <- 'coeff * 'unit``(c : Complex, i : int) =
-        let actual = Sum<int>.Apply (c, i)
+        let actual = S<int>.Apply (c, i)
         Assert.True actual.VerifyIsValid
 
     [<Property>]
-    let ``S <- C``(unit : Cf<int>) =
-        let actual = Sum<int>.Apply (unit)
+    let ``S <- C``(unit : C<int>) =
+        let actual = S<int>.Apply (unit)
         Assert.True actual.VerifyIsValid
 
     [<Property>]
-    let ``S <- C[]``(units : Cf<int>[]) =
-        let actual = Sum<int>.Apply (units)
+    let ``S <- C[]``(units : C<int>[]) =
+        let actual = S<int>.Apply (units)
         Assert.True actual.VerifyIsValid
 
     [<Property>]
-    let ``S <- 'coeff * C``(c : Complex, unit : Cf<int>) =
-        let actual = Sum<int>.Apply (c, unit)
+    let ``S <- 'coeff * C``(c : Complex, unit : C<int>) =
+        let actual = S<int>.Apply (c, unit)
         Assert.True actual.VerifyIsValid
 
     [<Property>]
-    let ``S <- 'coeff * C[]``(c : Complex, units : Cf<int>[]) =
-        let actual = Sum<int>.Apply (c, units)
+    let ``S <- 'coeff * C[]``(c : Complex, units : C<int>[]) =
+        let actual = S<int>.Apply (c, units)
         Assert.True actual.VerifyIsValid
 
     [<Property>]
-    let ``S <- 'coeff * P``(c : Complex, unit : Pr<int>) =
-        let actual = Sum<int>.Apply (c, unit)
+    let ``S <- 'coeff * P``(c : Complex, unit : P<int>) =
+        let actual = S<int>.Apply (c, unit)
         Assert.True actual.VerifyIsValid
 
     [<Property>]
-    let ``S <- 'coeff * P[]``(c : Complex, units : Pr<int>[]) =
-        let actual = Sum<int>.Apply (c, units)
+    let ``S <- 'coeff * P[]``(c : Complex, units : P<int>[]) =
+        let actual = S<int>.Apply (c, units)
         Assert.True actual.VerifyIsValid

@@ -4,7 +4,6 @@ module LadderOperatorUnit =
     open Encodings
     open Xunit
     open FsCheck.Xunit
-    open System.Numerics
 
     [<Theory>]
     [<InlineData("(u, 1)",     true)>]
@@ -14,7 +13,7 @@ module LadderOperatorUnit =
     [<InlineData("(u, -1)",    false)>]
     [<InlineData("(u, -1.)",   false)>]
     let ``FromString creates a round-trippable ladder operator``(expected : string, shouldSucceed) =
-        match (shouldSucceed, LadderOperatorUnit.FromString expected) with
+        match (shouldSucceed, LadderOperatorUnit.TryCreateFromString expected) with
         | true,  Some l -> Assert.Equal(expected, l.ToString())
         | false, None   -> Assert.True (true)
         | _             -> Assert.True (false)
