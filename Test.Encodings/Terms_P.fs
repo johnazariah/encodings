@@ -13,7 +13,7 @@ module Terms_P =
         let expectedCount = if (l.Item = r.Item) then 1 else 2
         let expectedCoeff = if (l.Item = r.Item) then (l.Coeff + r.Coeff) else Complex.One
         Assert.Equal(expectedCount, actual.Units.Length)
-        Assert.Equal(expectedCoeff, actual.Coeff)
+        Assert.Equal(expectedCoeff.Reduce, actual.Coeff)
 
     [<Property>]
     let ``P <- C * C``(l : C<int>, r : C<int>) =
@@ -21,37 +21,52 @@ module Terms_P =
         let expectedCount = 2
         let expectedCoeff = l.Coeff * r.Coeff
         Assert.Equal(expectedCount, actual.Units.Length)
-        Assert.Equal(expectedCoeff, actual.Coeff)
-        Assert.Equal<IEnumerable>([|l ; r|], actual.Units)
+        Assert.Equal(expectedCoeff.Reduce, actual.Coeff.Reduce)
+        Assert.Equal<IEnumerable>([| l.Item; r.Item |], actual.Units |> Array.map (fun t -> t.Item))
+        if actual.Coeff.IsZero then
+            Assert.Equal<IEnumerable>([| l.Coeff.Reduce; r.Coeff.Reduce |], actual.Units |> Array.map (fun t -> t.Coeff.Reduce))
+        else
+            Assert.Equal<IEnumerable>([| Complex.One; Complex.One |], actual.Units |> Array.map (fun t -> t.Coeff.Reduce))
 
     [<Property>]
     let ``P <- 'unit``(i : int) =
         let actual = P<_>.Apply (i)
-        Assert.True actual.VerifyIsValid
+        Assert.True actual.Reduce.Value.VerifyReduced
 
     [<Property>]
     let ``P <- 'coeff * 'unit``(c : Complex, i : int) =
         let unit = C<_>.Apply (c, i)
         let actual = P<int>.Apply unit
-        Assert.True actual.VerifyIsValid
+        Assert.Equal (Complex.One, actual.Coeff.Reduce)
+        Assert.Equal (unit.Coeff.Reduce, actual.Reduce.Value.Coeff.Reduce)
+        Assert.Equal (1, actual.Units.Length)
 
     [<Property>]
     let ``P <- C``(unit : C<int>) =
         let actual = P<int>.Apply (unit)
-        Assert.True actual.VerifyIsValid
+        Assert.Equal (Complex.One, actual.Coeff.Reduce)
+        Assert.Equal (unit.Coeff.Reduce, actual.Reduce.Value.Coeff.Reduce)
+        Assert.Equal (1, actual.Units.Length)
 
     [<Property>]
     let ``P <- 'coeff * C``(c : Complex, unit : C<int>) =
         let actual = P<int>.Apply (c, unit)
-        Assert.True actual.VerifyIsValid
+        Assert.Equal (c.Reduce, actual.Coeff.Reduce)
+        Assert.Equal ((c * unit.Coeff).Reduce, actual.Reduce.Value.Coeff.Reduce)
+        Assert.Equal (1, actual.Units.Length)
 
     [<Property>]
     let ``P <- C[]``(units : C<int>[]) =
         let actual = P<int>.Apply (units)
-        let expected = units |> Array.fold (fun c curr -> c * curr.Coeff) Complex.One
-        Assert.True actual.VerifyIsValid
+        Assert.Equal (Complex.One, actual.Coeff.Reduce)
+        Assert.Equal (units.Length, actual.Units.Length)
+        Assert.True  (units.Length >= actual.Reduce.Value.Units.Length)
+        Assert.True actual.Reduce.Value.VerifyReduced
 
     [<Property>]
     let ``P <- 'coeff * C[]``(c : Complex, units : C<int>[]) =
         let actual = P<int>.Apply (c, units)
-        Assert.True actual.VerifyIsValid
+        Assert.Equal (c.Reduce, actual.Coeff.Reduce)
+        Assert.Equal (units.Length, actual.Units.Length)
+        Assert.True  (units.Length >= actual.Reduce.Value.Units.Length)
+        Assert.True actual.Reduce.Value.VerifyReduced

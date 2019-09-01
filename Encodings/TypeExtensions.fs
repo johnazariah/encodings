@@ -4,7 +4,10 @@ module TypeExtensions =
     open System
     open System.Numerics
 
-    let uncurry (f : ('x * 'y) -> 'r) =
+    let uncurry (f : 'x -> 'y -> 'r) =
+        (fun (x, y) -> f x y)
+
+    let curry (f : ('x * 'y) -> 'r) =
         (fun x y -> f (x, y))
 
     type System.Double
@@ -24,6 +27,15 @@ module TypeExtensions =
 
         member this.IsNonZero =
             this.IsFinite && (this <> Complex.Zero)
+
+        member this.IsZero =
+            not this.IsNonZero
+
+        member this.Reduce =
+            if this.IsFinite then
+                this
+            else
+                Complex.Zero
 
         member this.TimesI = new Complex (-this.Imaginary, this.Real)
 

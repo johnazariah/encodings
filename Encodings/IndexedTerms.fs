@@ -13,7 +13,9 @@ module IndexedTerms =
         |> Seq.fold compareWithPrev (true, None)
         |> fst
 
-    type Ix<'op when 'op : equality> =
+
+    type IndexOrder = Ascending | Descending
+    and Ix<'op when 'op : equality> =
         { Index : uint32; Op : 'op }
     with
         static member Apply (index, value) = { Index = index; Op = value }
@@ -21,8 +23,11 @@ module IndexedTerms =
         static member (.<=.) (l : Ix<'op>, r : Ix<'op>) = l.Index <= r.Index
         static member WithMinIndex = { Ix.Index = (System.UInt32.MinValue); Op = Unchecked.defaultof<'op> }
         static member WithMaxIndex = { Ix.Index = (System.UInt32.MaxValue); Op = Unchecked.defaultof<'op> }
-        static member IndicesInOrder ascending (ops : Ix<'op> seq) =
-            let comparer = if ascending then (.>=.) else (.<=.)
+        static member IndicesInOrder indexOrder (ops : Ix<'op> seq) =
+            let comparer =
+                match indexOrder with
+                | Ascending  -> (.<=.)
+                | Descending -> (.>=.)
             ops |> isOrdered comparer
 
     and IndexedOperator<'op when 'op : equality> =
@@ -48,30 +53,27 @@ module IndexedTerms =
             with
             | _ -> None
 
+        override this.ToString() =
+            sprintf "(%O, %O)" this.Unapply.Op this.Unapply.Index
+
     and ProductOfIndexedOperators<'op when 'op : equality> =
         | ProductTerm of P<IndexedOperator<'op>>
     with
-        member this.Unapply =
-            let (ProductTerm term) = this
-            term
-        static member TryCreateFromString
-            (unitFactory : string -> 'op option)
-            (s : System.String) : ProductOfIndexedOperators<'op> option =
-            let f = IndexedOperator<'op>.TryCreateFromString unitFactory
-            try
-                s.Trim().TrimStart('[').TrimEnd(']').Split('|')
-                |> Array.choose (f)
-                |> P<IndexedOperator<'op>>.Apply
-                |> ProductTerm
-                |> Some
-            with
-            | _ -> None
+        member this.Unapply = match this with ProductTerm term -> term
+
+        static member TryCreateFromString (unitFactory : string -> 'op option) =
+            P<IndexedOperator<'op>>.TryCreateFromString (IndexedOperator<'op>.TryCreateFromString unitFactory)
+            >> Option.map ProductTerm
+
         member this.IsInIndexOrder ascending =
             this.Unapply.Units
             |> Seq.map (fun u -> u.Item.Unapply)
             |> Ix<_>.IndicesInOrder ascending
-        member this.IsInIndexOrderAscending  = this.IsInIndexOrder true
-        member this.IsInIndexOrderDescending = this.IsInIndexOrder false
+
+        member this.IsInIndexOrderAscending  = this.IsInIndexOrder Ascending
+        member this.IsInIndexOrderDescending = this.IsInIndexOrder Descending
+
+        override this.ToString() = this.Unapply.ToString()
 
     and SumOfProductsOfIndexedOperators<'op when 'op : equality> =
         | SumTerm of S<IndexedOperator<'op>>
@@ -91,4 +93,3 @@ module IndexedTerms =
                 |> Some
             with
             | _ -> None
-

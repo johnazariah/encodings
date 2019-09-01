@@ -1,10 +1,9 @@
 namespace Tests
 
-module FermionicOperator =
+module FermionicOperatorProductTerm =
     open Encodings
     open Xunit
     open FsCheck.Xunit
-    open System.Numerics
 
     [<Theory>]
     [<InlineData("[(u, 1)]",     "[(u, 1)]")>]
@@ -41,15 +40,15 @@ module FermionicOperator =
 
         let raiseOperatorWithRandomIndices =
             randomIndices
-            |> Array.map (fun index -> Raise index)
-            |> FermionicOperator
+            |> Array.map (fun index -> (Raise, index))
+            |> FermionicOperatorProductTerm.FromTuples
         Assert.Equal (isSortedAlready, raiseOperatorWithRandomIndices.IsInIndexOrder)
 
         let raiseOperatorWithSortedIndices =
             randomIndices
             |> Array.sort
-            |> Array.map (fun index -> Raise index)
-            |> FermionicOperator
+            |> Array.map (fun index -> (Raise, index))
+            |> FermionicOperatorProductTerm.FromTuples
         Assert.Equal (true, raiseOperatorWithSortedIndices.IsInIndexOrder)
 
     [<Property>]
@@ -59,22 +58,22 @@ module FermionicOperator =
 
         let lowerOperatorWithRandomIndices =
             randomIndices
-            |> Array.map (fun index -> Lower index)
-            |> FermionicOperator
+            |> Array.map (fun index -> (Lower, index))
+            |> FermionicOperatorProductTerm.FromTuples
         Assert.Equal (isSortedAlready, lowerOperatorWithRandomIndices.IsInIndexOrder)
 
         let lowerOperatorWithSortedIndices =
             randomIndices
             |> Array.sortDescending
-            |> Array.map (fun index -> Lower index)
-            |> FermionicOperator
+            |> Array.map (fun index -> (Lower, index))
+            |> FermionicOperatorProductTerm.FromTuples
         Assert.Equal (true, lowerOperatorWithSortedIndices.IsInIndexOrder)
 
     [<Property>]
     let ``Multiplying two ladder operators results in a single ladder operator built by concatenation`` (l : (bool * uint32)[], r : (bool * uint32)[]) =
-        let lo = FermionicOperator.FromUnits l
-        let ro = FermionicOperator.FromUnits r
+        let lo = FermionicOperatorProductTerm.FromUnits l
+        let ro = FermionicOperatorProductTerm.FromUnits r
 
         let actual = lo * ro
-        let expected = FermionicOperator.FromUnits <| Array.concat [|l ; r|]
+        let expected = FermionicOperatorProductTerm.FromUnits <| Array.concat [|l ; r|]
         Assert.Equal (expected.ToString(), actual.ToString())

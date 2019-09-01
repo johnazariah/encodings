@@ -7,7 +7,7 @@ module FermionicOperator =
     type FermionicRaiseOperatorIndexSort() =
         class
             inherit SwapTrackingSort<Ix<LadderOperatorUnit>, Complex>
-                (uncurry Ix<_>.(.<=.), Ix<_>.WithMaxIndex, Complex.SwapSignMultiple)
+                (curry Ix<_>.(.<=.), Ix<_>.WithMaxIndex, Complex.SwapSignMultiple)
 
             member this.SortRaiseOperators rg =
                 let isRaise (io : Ix<LadderOperatorUnit>) = io.Op = Raise
@@ -17,7 +17,7 @@ module FermionicOperator =
     type FermionicLowerOperatorIndexSort() =
         class
             inherit SwapTrackingSort<Ix<LadderOperatorUnit>, Complex>
-                (uncurry Ix<_>.(.>=.), Ix<_>.WithMinIndex, Complex.SwapSignMultiple)
+                (curry Ix<_>.(.>=.), Ix<_>.WithMinIndex, Complex.SwapSignMultiple)
 
             member this.SortLowerOperators rg =
                 let isLower (io : Ix<LadderOperatorUnit>) = io.Op = Lower
@@ -43,8 +43,22 @@ module FermionicOperator =
             ProductOfIndexedOperators.ProductTerm
             >> FermionicOperatorProductTerm.ProductTerm
 
-        static member TryCreateFromString =
-            ProductOfIndexedOperators<LadderOperatorUnit>.TryCreateFromString LadderOperatorUnit.Apply
+        static member TryCreateFromString s =
+            ProductOfIndexedOperators<LadderOperatorUnit>.TryCreateFromString LadderOperatorUnit.Apply s
+            |> Option.map ProductTerm
+
+        static member FromUnits =
+            Array.map LadderOperatorUnit.FromUnit
+            >> P<IndexedOperator<LadderOperatorUnit>>.Apply
+            >> FermionicOperatorProductTerm.Apply
+
+        static member FromTuples =
+            Array.map LadderOperatorUnit.FromTuple
+            >> P<IndexedOperator<LadderOperatorUnit>>.Apply
+            >> FermionicOperatorProductTerm.Apply
+
+        static member (*) (ProductTerm l, ProductTerm r) =
+            l.Unapply * r.Unapply
 
         member this.IsInNormalOrder =
             let comparer p c =
@@ -64,14 +78,17 @@ module FermionicOperator =
             let raisingOperatorsAreAscending =
                 operators
                 |> Seq.where (fun ico -> ico.Op.Item = Raise)
-                |> Ix<_>.IndicesInOrder true
+                |> Ix<_>.IndicesInOrder Ascending
 
             let loweringOperatorsAreDescending =
                 operators
-                |> Seq.where (fun ico -> ico.Op.Item = Raise)
-                |> Ix<_>.IndicesInOrder false
+                |> Seq.where (fun ico -> ico.Op.Item = Lower)
+                |> Ix<_>.IndicesInOrder Descending
 
             raisingOperatorsAreAscending && loweringOperatorsAreDescending
+
+        override this.ToString() =
+            this.Unapply.ToString()
 
     type FermionicOperatorSumExpression =
     | SumTerm of SumOfProductsOfIndexedOperators<LadderOperatorUnit>
