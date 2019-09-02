@@ -57,6 +57,7 @@ module SwapTrackingSort =
                 yield [| [|1|]; [|1|] |]
                 yield [| [|1;2|]; [|1;2|] |]
                 yield [| [|2;1|]; [|1;2|] |]
+                yield [| [|5;4;2;2;1|]; [|1;2;2;4;5|] |]
             })
 
     [<Theory; ClassData(typeof<SortInput>)>]
@@ -74,6 +75,8 @@ module SwapTrackingSort =
                 yield [| [||];      [|0|] |]
                 yield [| [|1|];     [|0|] |]
                 yield [| [|1;2|];   [|0|] |]
+                yield [| [|2;2|];   [|0|] |]
+                yield [| [|2;2;1|]; [|2|] |]
                 yield [| [|2;1|];   [|1|] |]
                 yield [| [|3;2;1|]; [|3|] |]
             })

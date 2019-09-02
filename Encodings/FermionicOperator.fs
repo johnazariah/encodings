@@ -6,21 +6,21 @@ module FermionicOperator =
 
     type FermionicRaiseOperatorIndexSort() =
         class
-            inherit SwapTrackingSort<Ix<LadderOperatorUnit>, Complex>
-                (curry Ix<_>.(.<=.), Ix<_>.WithMaxIndex, Complex.SwapSignMultiple)
+            inherit SwapTrackingSort<IndexedOperator<LadderOperatorUnit>, Complex>
+                (curry IndexedOperator<_>.(.<=.), IndexedOperator<_>.WithMaxIndex, Complex.SwapSignMultiple)
 
             member this.SortRaiseOperators rg =
-                let isRaise (io : Ix<LadderOperatorUnit>) = io.Op = Raise
+                let isRaise io = io.Op.Item = Raise
                 rg |> Array.where isRaise |> this.Sort Complex.One
         end
 
     type FermionicLowerOperatorIndexSort() =
         class
-            inherit SwapTrackingSort<Ix<LadderOperatorUnit>, Complex>
-                (curry Ix<_>.(.>=.), Ix<_>.WithMinIndex, Complex.SwapSignMultiple)
+            inherit SwapTrackingSort<IndexedOperator<LadderOperatorUnit>, Complex>
+                (curry IndexedOperator<_>.(.>=.), IndexedOperator<_>.WithMinIndex, Complex.SwapSignMultiple)
 
             member this.SortLowerOperators rg =
-                let isLower (io : Ix<LadderOperatorUnit>) = io.Op = Lower
+                let isLower io = io.Op.Item = Lower
                 rg |> Array.where isLower |> this.Sort Complex.One
         end
 
@@ -35,9 +35,11 @@ module FermionicOperator =
 
     type FermionicOperatorProductTerm =
     | ProductTerm of ProductOfIndexedOperators<LadderOperatorUnit>
-        member internal this.Unapply =
-            let (ProductTerm productTerm) = this
-            productTerm.Unapply
+        member this.Unapply = match this with ProductTerm term -> term.Unapply
+        static member private RaiseOperatorIndexSort = new FermionicRaiseOperatorIndexSort()
+        static member private LowerOperatorIndexSort = new FermionicLowerOperatorIndexSort()
+
+        member this.Coeff = this.Unapply.Coeff
 
         static member internal Apply =
             ProductOfIndexedOperators.ProductTerm
@@ -67,37 +69,58 @@ module FermionicOperator =
                 | _, _         -> true
 
             this.Unapply.Units
-            |> Seq.map (fun ciu -> ciu.Item.Unapply.Op.Item)
+            |> Seq.map (fun ciu -> ciu.Item.Op.Item)
             |> isOrdered comparer
 
         member this.IsInIndexOrder =
             let operators =
                 this.Unapply.Units
-                |> Seq.map (fun ciu -> ciu.Item.Unapply)
+                |> Seq.map (fun ciu -> ciu.Item)
 
             let raisingOperatorsAreAscending =
                 operators
                 |> Seq.where (fun ico -> ico.Op.Item = Raise)
-                |> Ix<_>.IndicesInOrder Ascending
+                |> IndexedOperator<_>.IndicesInOrder Ascending
 
             let loweringOperatorsAreDescending =
                 operators
                 |> Seq.where (fun ico -> ico.Op.Item = Lower)
-                |> Ix<_>.IndicesInOrder Descending
+                |> IndexedOperator<_>.IndicesInOrder Descending
 
             raisingOperatorsAreAscending && loweringOperatorsAreDescending
+
+        member this.ToIndexOrder =
+            let (sortedCreationOps, createdPhase) =
+                this.Unapply.Units
+                |> Array.map (fun u -> u.Item)
+                |> FermionicOperatorProductTerm.RaiseOperatorIndexSort.SortRaiseOperators
+
+            let (sortedAnnihilationOps, annihilatedPhase) =
+                this.Unapply.Units
+                |> Array.map (fun u -> u.Item)
+                |> FermionicOperatorProductTerm.LowerOperatorIndexSort.SortLowerOperators
+
+            let phase = this.Coeff * createdPhase * annihilatedPhase
+            let ops   = Array.concat [| sortedCreationOps; sortedAnnihilationOps |]
+
+            (phase, ops)
+            |> (P<IndexedOperator<LadderOperatorUnit>>.Apply >> FermionicOperatorProductTerm.Apply)
 
         override this.ToString() =
             this.Unapply.ToString()
 
-    type FermionicOperatorSumExpression =
+    and FermionicOperatorSumExpression =
     | SumTerm of SumOfProductsOfIndexedOperators<LadderOperatorUnit>
-        member this.Unapply =
-            let (SumTerm sumTerm) = this
-            sumTerm.Unapply
+        member this.Unapply = match this with SumTerm term -> term.Unapply
+
+        static member internal Apply =
+            SumOfProductsOfIndexedOperators.SumTerm
+            >> FermionicOperatorSumExpression.SumTerm
 
         static member TryCreateFromString =
             SumOfProductsOfIndexedOperators<LadderOperatorUnit>.TryCreateFromString LadderOperatorUnit.Apply
+
+        member this.Coeff = this.Unapply.Coeff
 
         member this.ProductTerms =
             this.Unapply.Terms.Values
@@ -111,43 +134,43 @@ module FermionicOperator =
             this.ProductTerms
             |> Seq.fold (fun result curr -> result && curr.IsInIndexOrder) true
 
-//    and NormalOrderedFermionicOperator private (operator : FermionicOperator) =
-//        class
-//            inherit FermionicOperator (operator.OperatorUnits, operator.Coefficient)
+        override this.ToString() =
+            this.Unapply.ToString()
 
-//            static member Construct (candidate : FermionicOperator) : FermionicOperatorSequence =
-//                let ensureNormalOrder (c : FermionicOperator) : (Complex * FermionicOperator[]) =
-//                    if c.IsInNormalOrder then
-//                        (Complex.One, [|candidate|])
-//                    else
-//                        failwith "Not Yet Implemented"
+    and NormalOrderedFermionicOperatorSequence private (sumTerm : FermionicOperatorSumExpression) =
+        class
+            member __.Unapply = sumTerm
 
-//                let (coeff, ops) = ensureNormalOrder candidate
-//                FermionicOperatorSequence (ops, coeff, isNormalOrdered = true)
-//        end
+            static member Construct (candidate : FermionicOperatorSumExpression) : NormalOrderedFermionicOperatorSequence option =
+                if candidate.AllTermsNormalOrdered then
+                    NormalOrderedFermionicOperatorSequence candidate
+                    |> Some
+                else
+                    failwith "Not Yet Implemented"
+        end
 
-//    type IndexOrderedFermionicOperator private (operator : FermionicOperator) =
-//        class
-//            inherit FermionicOperator (operator.OperatorUnits, operator.Coefficient)
+    and IndexOrderedFermionicOperatorSequence private (sumTerm : FermionicOperatorSumExpression) =
+        class
+            member __.Unapply = sumTerm
 
-//            static member Construct (candidate : FermionicOperator) =
-//                let ensureIndexOrder (c : FermionicOperator) : (Complex * FermionicOperator[]) =
-//                    if c.IsInIndexOrder then
-//                        (Complex.One, [| candidate |])
-//                    else if c.IsInNormalOrder then
-//                        let (sortedCreationOps, createdPhase) =
-//                            candidate.OperatorUnits
-//                            |> (new FermionicCreationOperatorIndexSort()).SortCreationOperators
-//                        let (sortedAnnihilationOps, annihilatedPhase) =
-//                            candidate.OperatorUnits
-//                            |> (new FermionicAnnihilationOperatorIndexSort()).SortAnnihilationOperators
-//                        let ops   = Array.concat [|sortedCreationOps; sortedAnnihilationOps|]
-//                        let phase = createdPhase * annihilatedPhase
-//                        let sortedFermionicOperator = FermionicOperator(ops, phase)
-//                        (Complex.One, [| sortedFermionicOperator |])
-//                    else
-//                        failwith "Not Yet Implemented"
-
-//                let (coeff, ops) = ensureIndexOrder candidate
-//                FermionicOperatorSequence (ops, coeff, isIndexOrdered = true)
-//        end
+            static member Construct (candidate : FermionicOperatorSumExpression) : IndexOrderedFermionicOperatorSequence option =
+                if candidate.AllTermsIndexOrdered then
+                    candidate
+                    |> (IndexOrderedFermionicOperatorSequence >> Some)
+                else if candidate.AllTermsNormalOrdered then
+                    [|
+                        for productTerm in candidate.ProductTerms do
+                            yield productTerm.ToIndexOrder.Unapply
+                    |]
+                    |> (fun terms -> (candidate.Coeff, terms))
+                    |> (S<IndexedOperator<LadderOperatorUnit>>.Apply >> FermionicOperatorSumExpression.Apply)
+                    |> (IndexOrderedFermionicOperatorSequence >> Some)
+                else
+                    candidate
+                    |> NormalOrderedFermionicOperatorSequence.Construct
+                    |> Option.bind (fun c ->
+#if DEBUG
+                        System.Diagnostics.Debug.Assert c.Unapply.AllTermsNormalOrdered
+#endif
+                        IndexOrderedFermionicOperatorSequence.Construct c.Unapply)
+    end

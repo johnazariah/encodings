@@ -7,12 +7,12 @@ module Terms_I =
 
     [<Property>]
     let ``I (.<=.) I`` (i1 : uint32, i2 : uint32, randomString : string) =
-        let min = Ix<_>.Apply (System.Math.Min (i1, i2), randomString)
-        let max = Ix<_>.Apply (System.Math.Max (i1, i2), randomString)
+        let min = IndexedOperator<_>.Apply (System.Math.Min (i1, i2), randomString)
+        let max = IndexedOperator<_>.Apply (System.Math.Max (i1, i2), randomString)
         Assert.True (min .<=. max)
 
     [<Property>]
     let ``I (.>=.) I`` (i1 : uint32, i2 : uint32, randomString : string) =
-        let min = Ix<_>.Apply (System.Math.Min (i1, i2), randomString)
-        let max = Ix<_>.Apply (System.Math.Max (i1, i2), randomString)
+        let min = IndexedOperator<_>.Apply (System.Math.Min (i1, i2), randomString)
+        let max = IndexedOperator<_>.Apply (System.Math.Max (i1, i2), randomString)
         Assert.True (max .>=. max)

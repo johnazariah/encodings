@@ -10,20 +10,13 @@ module TypeExtensions =
     let curry (f : ('x * 'y) -> 'r) =
         (fun x y -> f (x, y))
 
-    type System.Double
-    with
-        member this.IsFinite =
-            if Double.IsInfinity this then false
-            else if Double.IsNaN this then false
-            else true
-
     type Complex
     with
         static member SwapSignMultiple n (c : Complex) =
             [0..(n - 1)] |> Seq.fold (fun c' _ -> -c') c
 
         member this.IsFinite =
-            this.Real.IsFinite && this.Imaginary.IsFinite
+            (System.Double.IsFinite this.Real) && (System.Double.IsFinite this.Imaginary)
 
         member this.IsNonZero =
             this.IsFinite && (this <> Complex.Zero)

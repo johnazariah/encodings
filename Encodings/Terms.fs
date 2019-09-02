@@ -126,12 +126,10 @@ module Terms =
             | _ -> None
 
         override this.ToString() =
-            let prettyPrintedUnitString =
-                this.Units
-                |> Array.map (sprintf "%O")
-                |> (fun rg -> System.String.Join (" | ", rg))
-
-            sprintf "[%s]" prettyPrintedUnitString
+            this.Units
+            |> Array.map (sprintf "%O")
+            |> (fun rg -> System.String.Join (" | ", rg))
+            |> sprintf "[%s]"
 
     and S<'unit when 'unit : equality> =
         { Coeff : Complex; Terms : Map<string, P<'unit>> }
@@ -193,3 +191,8 @@ module Terms =
             termCoefficientIsZeroWhenThereAreNoProductTerms ||
             termCoefficientIsUnity
 
+        override this.ToString() =
+            this.Terms.Values
+            |> Array.map (sprintf "%O")
+            |> (fun rg -> System.String.Join ("; ", rg))
+            |> sprintf "{%s}"

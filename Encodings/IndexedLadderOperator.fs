@@ -22,8 +22,8 @@ module IndexedLadderOperator =
             IndexedOperator<LadderOperatorUnit>.TryCreateFromString LadderOperatorUnit.Apply
 
         static member FromUnit : (bool * uint32 -> IndexedOperator<LadderOperatorUnit>) = function
-            | true,  index -> IndexedOperator<LadderOperatorUnit>.Apply Raise index
-            | false, index -> IndexedOperator<LadderOperatorUnit>.Apply Lower index
+            | (true,  index) -> IndexedOperator<LadderOperatorUnit>.Apply(index, Raise)
+            | (false, index) -> IndexedOperator<LadderOperatorUnit>.Apply(index, Lower)
 
-        static member FromTuple : (LadderOperatorUnit * uint32 -> IndexedOperator<LadderOperatorUnit>) =
-            uncurry IndexedOperator<LadderOperatorUnit>.Apply
+        static member FromTuple (ladderOperatorUnit, index) =
+            IndexedOperator<LadderOperatorUnit>.Apply (index, ladderOperatorUnit)

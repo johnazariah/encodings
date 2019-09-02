@@ -77,3 +77,18 @@ module FermionicOperatorProductTerm =
         let actual = lo * ro
         let expected = FermionicOperatorProductTerm.FromUnits <| Array.concat [|l ; r|]
         Assert.Equal (expected.ToString(), actual.ToString())
+
+    //[<Theory>]
+    //[<InlineData("[(u, 1)]",     "[(u, 1)]")>]
+    //[<InlineData("[(d, 0)]",     "[(d, 0)]")>]
+    //[<InlineData("[(u, 1.0)]",   "[]")>]
+    //[<InlineData("[(w, 0)",      "[]")>]
+    //[<InlineData("[(u, -1)",     "[]")>]
+    //[<InlineData("[(u, -1.)",    "[]")>]
+    //[<InlineData("{}",           "[]")>]
+    //[<InlineData("",             "[]")>]
+    //[<InlineData("[(u, 1) | (u, 2) | (d, 3) | (d, 2)]", "[(u, 1) | (u, 2) | (d, 3) | (d, 2)]")>]
+    //let ``FromString creates a round-trippable ladder operator``(input : string, expected : string) =
+    //    match FermionicOperatorProductTerm.TryCreateFromString input with
+    //    | Some l -> Assert.Equal(expected, l.ToString())
+    //    | None   -> Assert.Equal(expected, "")
