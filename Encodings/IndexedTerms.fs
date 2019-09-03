@@ -13,8 +13,10 @@ module IndexedTerms =
         |> Seq.fold compareWithPrev (true, None)
         |> fst
 
+    type IndexOrder =
+        | Ascending
+        | Descending
 
-    type IndexOrder = Ascending | Descending
     and IndexedOperator<'op when 'op : equality> =
         { Index : uint32; Op : C<'op> }
     with
@@ -64,6 +66,7 @@ module IndexedTerms =
         member this.IsInIndexOrderDescending = this.IsInIndexOrder Descending
 
         override this.ToString() = this.Unapply.ToString()
+
 
     and SumOfProductsOfIndexedOperators<'op when 'op : equality> =
         | SumTerm of S<IndexedOperator<'op>>

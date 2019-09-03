@@ -1,6 +1,6 @@
 namespace Tests
 
-module FermionicOperatorProductTerm =
+module LadderOperatorProductTerm =
     open Encodings
     open Xunit
     open FsCheck.Xunit
@@ -16,13 +16,13 @@ module FermionicOperatorProductTerm =
     [<InlineData("",             "[]")>]
     [<InlineData("[(u, 1) | (u, 2) | (d, 3) | (d, 2)]", "[(u, 1) | (u, 2) | (d, 3) | (d, 2)]")>]
     let ``FromString creates a round-trippable ladder operator``(input : string, expected : string) =
-        match FermionicOperatorProductTerm.TryCreateFromString input with
+        match LadderOperatorProductTerm.TryCreateFromString input with
         | Some l -> Assert.Equal(expected, l.ToString())
         | None   -> Assert.Equal(expected, "")
 
     [<Property>]
     let ``Synthesized ladder operators have the right readable representation`` (units : (bool * uint32) []) =
-        let actual = FermionicOperatorProductTerm.FromUnits units
+        let actual = LadderOperatorProductTerm.FromUnits units
 
         let expected =
             units
@@ -41,14 +41,14 @@ module FermionicOperatorProductTerm =
         let raiseOperatorWithRandomIndices =
             randomIndices
             |> Array.map (fun index -> (Raise, index))
-            |> FermionicOperatorProductTerm.FromTuples
+            |> LadderOperatorProductTerm.FromTuples
         Assert.Equal (isSortedAlready, raiseOperatorWithRandomIndices.IsInIndexOrder)
 
         let raiseOperatorWithSortedIndices =
             randomIndices
             |> Array.sort
             |> Array.map (fun index -> (Raise, index))
-            |> FermionicOperatorProductTerm.FromTuples
+            |> LadderOperatorProductTerm.FromTuples
         Assert.Equal (true, raiseOperatorWithSortedIndices.IsInIndexOrder)
 
     [<Property>]
@@ -59,23 +59,23 @@ module FermionicOperatorProductTerm =
         let lowerOperatorWithRandomIndices =
             randomIndices
             |> Array.map (fun index -> (Lower, index))
-            |> FermionicOperatorProductTerm.FromTuples
+            |> LadderOperatorProductTerm.FromTuples
         Assert.Equal (isSortedAlready, lowerOperatorWithRandomIndices.IsInIndexOrder)
 
         let lowerOperatorWithSortedIndices =
             randomIndices
             |> Array.sortDescending
             |> Array.map (fun index -> (Lower, index))
-            |> FermionicOperatorProductTerm.FromTuples
+            |> LadderOperatorProductTerm.FromTuples
         Assert.Equal (true, lowerOperatorWithSortedIndices.IsInIndexOrder)
 
     [<Property>]
     let ``Multiplying two ladder operators results in a single ladder operator built by concatenation`` (l : (bool * uint32)[], r : (bool * uint32)[]) =
-        let lo = FermionicOperatorProductTerm.FromUnits l
-        let ro = FermionicOperatorProductTerm.FromUnits r
+        let lo = LadderOperatorProductTerm.FromUnits l
+        let ro = LadderOperatorProductTerm.FromUnits r
 
         let actual = lo * ro
-        let expected = FermionicOperatorProductTerm.FromUnits <| Array.concat [|l ; r|]
+        let expected = LadderOperatorProductTerm.FromUnits <| Array.concat [|l ; r|]
         Assert.Equal (expected.ToString(), actual.ToString())
 
     //[<Theory>]
@@ -89,6 +89,6 @@ module FermionicOperatorProductTerm =
     //[<InlineData("",             "[]")>]
     //[<InlineData("[(u, 1) | (u, 2) | (d, 3) | (d, 2)]", "[(u, 1) | (u, 2) | (d, 3) | (d, 2)]")>]
     //let ``FromString creates a round-trippable ladder operator``(input : string, expected : string) =
-    //    match FermionicOperatorProductTerm.TryCreateFromString input with
+    //    match LadderOperatorProductTerm.TryCreateFromString input with
     //    | Some l -> Assert.Equal(expected, l.ToString())
     //    | None   -> Assert.Equal(expected, "")

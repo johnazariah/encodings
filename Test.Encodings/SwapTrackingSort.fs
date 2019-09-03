@@ -6,7 +6,6 @@ module SwapTrackingSort =
     open Encodings
     open Xunit
     open FsCheck.Xunit
-    open System.Numerics
 
     let (gte, min) = ((>=), System.Int32.MinValue)
     let (lte, max) = ((<=), System.Int32.MaxValue)

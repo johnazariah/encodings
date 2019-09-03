@@ -173,6 +173,32 @@ module Terms =
                 |]
             |> S<'unit>.Apply
 
+        member this.Reduce =
+            lazy
+                if this.Coeff.IsZero then
+                    [||]
+                else
+                    [|
+                        for pt in this.Terms.Values do
+                            let pt' = pt.Reduce.Value
+                            if pt'.Units <> [||] then
+                                yield pt'
+                    |]
+                |> S<'unit>.Apply
+
+        member this.AppendToTerms (u : 'unit) =
+            let this' = this.Reduce.Value
+            if this'.Coeff.IsZero then
+                [||]
+            else if this'.Terms.Count = 0 then
+                [| P<_>.Apply u |]
+            else
+                [|
+                    for pt in this'.Terms.Values do
+                        yield { pt with Units = Array.concat [| pt.Units; [|C<_>.Apply u|]|]}
+                |]
+            |> S<_>.ApplyInternal this'.Coeff
+
         member this.IsZero =
             let nonZeroTermCount =
                 this.Terms.Values

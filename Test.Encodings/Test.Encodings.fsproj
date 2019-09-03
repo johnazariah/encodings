@@ -9,14 +9,14 @@
   <ItemGroup>
     <Compile Include="TestUtils.fs" />
     <Compile Include="Complex.fs" />
-    <Compile Include="Terms_I.fs" />
     <Compile Include="Terms_C.fs" />
     <Compile Include="Terms_P.fs" />
     <Compile Include="Terms_S.fs" />
+    <Compile Include="IndexedOperator.fs" />
     <Compile Include="SwapTrackingSort.fs" />
     <Compile Include="LadderOperatorUnit.fs" />
-    <Compile Include="FermionicOperatorProductTerm.fs" />
-    <Compile Include="FermionicOperatorSumExpression.fs" />
+    <Compile Include="LadderOperatorProductTerm.fs" />
+    <Compile Include="LadderOperatorSumExpression.fs" />
     <Compile Include="Tests.fs" />
   </ItemGroup>
 

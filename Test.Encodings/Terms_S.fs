@@ -45,3 +45,10 @@ module Terms_S =
     let ``S <- 'coeff * P[]``(c : Complex, units : P<int>[]) =
         let actual = S<int>.Apply (c, units)
         Assert.True actual.VerifyIsValid
+
+    [<Property>]
+    let ``S : AppendToTerms``(expr : S<int>, u : int) =
+        let actual = expr.AppendToTerms u
+        for terms in actual.Terms.Values do
+            let lastUnit = terms.Units.[terms.Units.Length - 1].Item
+            Assert.Equal (u, lastUnit)

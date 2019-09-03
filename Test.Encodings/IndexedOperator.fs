@@ -1,6 +1,6 @@
 ﻿namespace Tests
 
-module Terms_I =
+module IndexedOperator =
     open Encodings
     open Xunit
     open FsCheck.Xunit
