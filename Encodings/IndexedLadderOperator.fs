@@ -16,52 +16,54 @@ module IndexedLadderOperator =
             | _ -> None
 
         member this.AsString =
-            match this with
-            | Identity -> "I"
-            | Raise    -> "u"
-            | Lower    -> "d"
+            lazy
+                match this with
+                | Identity -> "I"
+                | Raise    -> "u"
+                | Lower    -> "d"
 
-        override this.ToString() = this.AsString
+        override this.ToString() = this.AsString.Value
 
         static member TryCreateFromString =
-            IndexedOperator<LadderOperatorUnit>.TryCreateFromString LadderOperatorUnit.Apply
+            IxOp<_>.TryCreateFromString LadderOperatorUnit.Apply
 
-        static member FromUnit : (bool * uint32 -> IndexedOperator<LadderOperatorUnit>) = function
-            | (true,  index) -> IndexedOperator<LadderOperatorUnit>.Apply(index, Raise)
-            | (false, index) -> IndexedOperator<LadderOperatorUnit>.Apply(index, Lower)
+        static member FromUnit : (bool * uint32 -> IxOp<LadderOperatorUnit>) = function
+            | (true,  index) -> IxOp<_>.Apply(index, Raise)
+            | (false, index) -> IxOp<_>.Apply(index, Lower)
 
         static member FromTuple (ladderOperatorUnit, index) =
-            IndexedOperator<LadderOperatorUnit>.Apply (index, ladderOperatorUnit)
+            IxOp<_>.Apply (index, ladderOperatorUnit)
 
-    and RaiseOperatorIndexSort() =
-        class
-            inherit SwapTrackingSort<IndexedOperator<LadderOperatorUnit>, Complex>
-                (curry IndexedOperator<_>.(.<=.), IndexedOperator<_>.WithMaxIndex, Complex.SwapSignMultiple)
+    //and RaiseOperatorIndexSort() =
+    //    class
+    //        inherit SwapTrackingSort<IxOp<LadderOperatorUnit>, Complex>
+    //            (curry IxOp<_>.(.<=.), IxOp<_>.WithMaxIndex, Complex.SwapSignMultiple)
 
-            member this.SortRaiseOperators rg =
-                let isRaise io = io.Op.Item = Raise
-                rg |> Array.where isRaise |> this.Sort Complex.One
-        end
+    //        member this.SortRaiseOperators rg =
+    //            let isRaise io = io.Op = Raise
+    //            rg |> Array.where isRaise |> this.Sort Complex.One
+    //    end
 
-    and LowerOperatorIndexSort() =
-        class
-            inherit SwapTrackingSort<IndexedOperator<LadderOperatorUnit>, Complex>
-                (curry IndexedOperator<_>.(.>=.), IndexedOperator<_>.WithMinIndex, Complex.SwapSignMultiple)
+    //and LowerOperatorIndexSort() =
+    //    class
+    //        inherit SwapTrackingSort<IxOp<LadderOperatorUnit>, Complex>
+    //            (curry IxOp<_>.(.>=.), IxOp<_>.WithMinIndex, Complex.SwapSignMultiple)
 
-            member this.SortLowerOperators rg =
-                let isLower io = io.Op.Item = Lower
-                rg |> Array.where isLower |> this.Sort Complex.One
-        end
+    //        member this.SortLowerOperators rg =
+    //            let isLower io = io.Op = Lower
+    //            rg |> Array.where isLower |> this.Sort Complex.One
+    //    end
 
     and LadderOperatorProductTerm =
-        | ProductTerm of ProductOfIndexedOperators<LadderOperatorUnit>
+        | ProductTerm of PIxOp<LadderOperatorUnit>
     with
-        static member private RaiseOperatorIndexSort = new RaiseOperatorIndexSort()
-        static member private LowerOperatorIndexSort = new LowerOperatorIndexSort()
+        //static member private RaiseOperatorIndexSort = new RaiseOperatorIndexSort()
+        //static member private LowerOperatorIndexSort = new LowerOperatorIndexSort()
 
-        static member internal Apply =
-            ProductOfIndexedOperators.ProductTerm
-            >> LadderOperatorProductTerm.ProductTerm
+        static member internal Apply (units : C<IxOp<LadderOperatorUnit>>[]) =
+            units
+            |> P<IxOp<LadderOperatorUnit>>.Apply
+            |> (PIxOp.ProductTerm >> LadderOperatorProductTerm.ProductTerm)
 
         member this.Unapply = match this with ProductTerm term -> term.Unapply
         member this.Coeff  = this.Unapply.Coeff
@@ -69,48 +71,24 @@ module IndexedLadderOperator =
         member this.Reduce = this.Unapply.Reduce
 
         static member TryCreateFromString s =
-            ProductOfIndexedOperators<LadderOperatorUnit>.TryCreateFromString LadderOperatorUnit.Apply s
+            PIxOp<_>.TryCreateFromString LadderOperatorUnit.Apply s
             |> Option.map ProductTerm
 
         static member FromUnits =
             Array.map LadderOperatorUnit.FromUnit
-            >> P<IndexedOperator<LadderOperatorUnit>>.Apply
-            >> LadderOperatorProductTerm.Apply
+            >> P<IxOp<LadderOperatorUnit>>.Apply
+            >> PIxOp.ProductTerm
+            >> LadderOperatorProductTerm.ProductTerm
 
         static member FromTuples =
             Array.map LadderOperatorUnit.FromTuple
-            >> P<IndexedOperator<LadderOperatorUnit>>.Apply
-            >> LadderOperatorProductTerm.Apply
+            >> P<IxOp<LadderOperatorUnit>>.Apply
+            >> PIxOp.ProductTerm
+            >> LadderOperatorProductTerm.ProductTerm
 
         static member (*) (ProductTerm l, ProductTerm r) =
-            l.Unapply * r.Unapply |> LadderOperatorProductTerm.Apply
-
-        member this.IsInNormalOrder =
-            let comparer p c =
-                match (p, c) with
-                | Lower, Raise -> false
-                | _, _         -> true
-
-            this.Unapply.Units
-            |> Seq.map (fun ciu -> ciu.Item.Op.Item)
-            |> isOrdered comparer
-
-        member this.IsInIndexOrder =
-            let operators =
-                this.Unapply.Units
-                |> Seq.map (fun ciu -> ciu.Item)
-
-            let raisingOperatorsAreAscending =
-                operators
-                |> Seq.where (fun ico -> ico.Op.Item = Raise)
-                |> IndexedOperator<_>.IndicesInOrder Ascending
-
-            let loweringOperatorsAreDescending =
-                operators
-                |> Seq.where (fun ico -> ico.Op.Item = Lower)
-                |> IndexedOperator<_>.IndicesInOrder Descending
-
-            raisingOperatorsAreAscending && loweringOperatorsAreDescending
+            l.Unapply * r.Unapply
+            |> (PIxOp.ProductTerm >> LadderOperatorProductTerm.ProductTerm)
 
         member this.ToIndexOrder =
             let (sortedCreationOps, createdPhase) =
@@ -127,35 +105,44 @@ module IndexedLadderOperator =
             let ops   = Array.concat [| sortedCreationOps; sortedAnnihilationOps |]
 
             (phase, ops)
-            |> (P<IndexedOperator<LadderOperatorUnit>>.Apply >> LadderOperatorProductTerm.Apply)
+            |> P<IxOp<LadderOperatorUnit>>.Apply
+            |> (PIxOp.ProductTerm >> LadderOperatorProductTerm.ProductTerm)
 
         override this.ToString() =
             this.Unapply.ToString()
 
     and LadderOperatorSumExpression =
-        | SumTerm of SumOfProductsOfIndexedOperators<LadderOperatorUnit>
+        | SumTerm of SIxOp<LadderOperatorUnit>
     with
         member this.Unapply = match this with SumTerm term -> term.Unapply
 
-        static member internal Apply (expr : S<IndexedOperator<LadderOperatorUnit>>) =
+        static member internal Apply (expr : S<IxOp<LadderOperatorUnit>>) =
             expr
-            |> SumOfProductsOfIndexedOperators.SumTerm
+            |> SIxOp.SumTerm
             |> LadderOperatorSumExpression.SumTerm
 
-        static member internal Apply (terms : P<IndexedOperator<LadderOperatorUnit>>[]) =
+        static member internal Apply (terms : LadderOperatorProductTerm[]) =
             terms
-            |> S<IndexedOperator<LadderOperatorUnit>>.Apply
+            |> Array.map (fun pt -> pt.Unapply)
+            |> LadderOperatorSumExpression.Apply
+
+        static member internal Apply (terms : P<IxOp<LadderOperatorUnit>>[]) =
+            terms
+            |> S<IxOp<LadderOperatorUnit>>.Apply
             |> LadderOperatorSumExpression.Apply
 
         static member TryCreateFromString =
-            SumOfProductsOfIndexedOperators<LadderOperatorUnit>.TryCreateFromString LadderOperatorUnit.Apply
+            SIxOp<_>.TryCreateFromString LadderOperatorUnit.Apply
             >> Option.map SumTerm
 
         member this.Coeff = this.Unapply.Coeff
+        member this.Reduce =
+            lazy
+                this.Unapply.Reduce.Value |> LadderOperatorSumExpression.Apply
 
         member this.ProductTerms =
-            this.Unapply.Terms.Values
-            |> Seq.map LadderOperatorProductTerm.Apply
+            this.Unapply.ProductTerms.Value
+            |> Array.map (PIxOp.ProductTerm >> LadderOperatorProductTerm.ProductTerm)
 
         member this.AllTermsNormalOrdered =
             this.ProductTerms

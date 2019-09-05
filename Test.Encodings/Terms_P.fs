@@ -7,6 +7,27 @@ module Terms_P =
     open FsCheck.Xunit
     open System.Numerics
 
+    let verifyReduced (this : P<_>) =
+        let coefficientIsZeroOnlyWhenNoProductTerms =
+            if this.Units = [||] then
+                this.Coeff = Complex.Zero
+            else
+                this.Coeff <> Complex.Zero
+
+        let everyUnitInProductTermHasUnitCoefficient =
+            this.Units
+            |> Seq.exists (fun u -> u.Coeff <> Complex.One)
+            |> not
+
+        let result =
+            coefficientIsZeroOnlyWhenNoProductTerms &&
+            everyUnitInProductTermHasUnitCoefficient
+    #if DEBUG
+        if not result then
+            System.Diagnostics.Debugger.Break ()
+    #endif
+        result
+
     [<Property>]
     let ``P <- C + C``(l : C<int>, r : C<int>) =
         let actual = l + r
@@ -23,15 +44,19 @@ module Terms_P =
         Assert.Equal(expectedCount, actual.Units.Length)
         Assert.Equal(expectedCoeff.Reduce, actual.Coeff.Reduce)
         Assert.Equal<IEnumerable>([| l.Item; r.Item |], actual.Units |> Array.map (fun t -> t.Item))
-        if actual.Coeff.IsZero then
-            Assert.Equal<IEnumerable>([| l.Coeff.Reduce; r.Coeff.Reduce |], actual.Units |> Array.map (fun t -> t.Coeff.Reduce))
-        else
-            Assert.Equal<IEnumerable>([| Complex.One; Complex.One |], actual.Units |> Array.map (fun t -> t.Coeff.Reduce))
+
+        let expectedUnitCoefficients =
+            if actual.Coeff.IsZero then
+                [| l.Coeff.Reduce; r.Coeff.Reduce |]
+            else
+                [| Complex.One;    Complex.One    |]
+        let actualUnitCoefficients = actual.Units |> Array.map (fun t -> t.Coeff.Reduce)
+        Assert.Equal<IEnumerable>(expectedUnitCoefficients, actualUnitCoefficients)
 
     [<Property>]
     let ``P <- 'unit``(i : int) =
         let actual = P<_>.Apply (i)
-        Assert.True actual.Reduce.Value.VerifyReduced
+        verifyReduced actual.Reduce.Value |> Assert.True
 
     [<Property>]
     let ``P <- 'coeff * 'unit``(c : Complex, i : int) =
@@ -61,7 +86,7 @@ module Terms_P =
         Assert.Equal (Complex.One, actual.Coeff.Reduce)
         Assert.Equal (units.Length, actual.Units.Length)
         Assert.True  (units.Length >= actual.Reduce.Value.Units.Length)
-        Assert.True actual.Reduce.Value.VerifyReduced
+        verifyReduced actual.Reduce.Value |> Assert.True
 
     [<Property>]
     let ``P <- 'coeff * C[]``(c : Complex, units : C<int>[]) =
@@ -69,4 +94,4 @@ module Terms_P =
         Assert.Equal (c.Reduce, actual.Coeff.Reduce)
         Assert.Equal (units.Length, actual.Units.Length)
         Assert.True  (units.Length >= actual.Reduce.Value.Units.Length)
-        Assert.True actual.Reduce.Value.VerifyReduced
+        verifyReduced actual.Reduce.Value |> Assert.True

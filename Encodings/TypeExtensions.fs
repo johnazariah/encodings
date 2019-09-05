@@ -1,8 +1,10 @@
 ﻿namespace Encodings
+
+open System.Numerics
+
 [<AutoOpen>]
 module TypeExtensions =
     open System
-    open System.Numerics
 
     let uncurry (f : 'x -> 'y -> 'r) =
         (fun (x, y) -> f x y)
@@ -14,6 +16,8 @@ module TypeExtensions =
     with
         static member SwapSignMultiple n (c : Complex) =
             [0..(n - 1)] |> Seq.fold (fun c' _ -> -c') c
+
+        static member MinusOne = Complex.One |> Complex.Negate
 
         member this.IsFinite =
             (System.Double.IsFinite this.Real) && (System.Double.IsFinite this.Imaginary)

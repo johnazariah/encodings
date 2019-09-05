@@ -11,6 +11,7 @@
     <Compile Include="SwapTrackingSort.fs" />
     <Compile Include="IndexedPauli.fs" />
     <Compile Include="IndexedLadderOperator.fs" />
+    <Compile Include="CombiningAlgebra.fs" />
     <Compile Include="LadderOperatorSequence.fs" />
   </ItemGroup>
 

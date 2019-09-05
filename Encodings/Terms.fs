@@ -12,6 +12,7 @@ module Terms =
         static member Apply (coeff : Complex, unit : 'unit) =
             { Coeff = coeff.Reduce; Item = unit }
 
+        // TENSOR operator
         static member (*) (l : C<'unit>, r : C<'unit>) =
             let coeff = (l.Coeff * r.Coeff).Reduce
             if (coeff.IsZero) then
@@ -19,11 +20,11 @@ module Terms =
             else
                 P<'unit>.Apply (coeff, [| {l with Coeff = Complex.One}; {r with Coeff = Complex.One} |])
 
-        static member (+) (l : C<'unit>, r : C<'unit>) =
-            if (l.Item <> r.Item) then
-                P<'unit>.Apply (Complex.One, [| l; r|])
-            else
-                P<'unit>.Apply ((l.Coeff + r.Coeff).Reduce, [| { l with C.Coeff = Complex.One } |])
+        //static member (+) (l : C<'unit>, r : C<'unit>) =
+        //    if (l.Item <> r.Item) then
+        //        P<'unit>.Apply (Complex.One, [| l; r|])
+        //    else
+        //        P<'unit>.Apply ((l.Coeff + r.Coeff).Reduce, [| { l with C.Coeff = Complex.One } |])
 
         member this.IsZero = this.Coeff.IsZero
 
@@ -84,6 +85,7 @@ module Terms =
         static member Apply (coeff, unit  : C<'unit>)   : P<'unit> = P<'unit>.Apply(coeff,       [| unit |])
         static member Apply (       units : C<'unit>[]) : P<'unit> = P<'unit>.Apply(Complex.One, units)
 
+        // TENSOR
         static member (*) (l : P<'unit>, r : P<'unit>) =
             P<'unit>.Apply ((l.Coeff * r.Coeff).Reduce, Array.concat [| l.Units; r.Units |])
 
@@ -92,27 +94,6 @@ module Terms =
 
         member this.ScaleCoefficient scale =
             { P.Coeff = this.Coeff * scale; Units = this.Units }
-
-        member this.VerifyReduced =
-            let coefficientIsZeroOnlyWhenNoProductTerms =
-                if this.Units = [||] then
-                    this.Coeff = Complex.Zero
-                else
-                    this.Coeff <> Complex.Zero
-
-            let everyUnitInProductTermHasUnitCoefficient =
-                this.Units
-                |> Seq.exists (fun u -> u.Coeff <> Complex.One)
-                |> not
-
-            let result =
-                coefficientIsZeroOnlyWhenNoProductTerms &&
-                everyUnitInProductTermHasUnitCoefficient
-#if DEBUG
-            if not result then
-                System.Diagnostics.Debugger.Break ()
-#endif
-            result
 
         static member TryCreateFromString
             (unitFactory : string -> 'unit option)
@@ -131,9 +112,14 @@ module Terms =
             |> (fun rg -> System.String.Join (" | ", rg))
             |> sprintf "[%s]"
 
+        member this.AppendToTerm (u : 'unit) =
+            { this with Units = Array.concat [| this.Units; [|C<_>.Apply u|]|]}
+
     and S<'unit when 'unit : equality> =
         { Coeff : Complex; Terms : Map<string, P<'unit>> }
     with
+        member this.ProductTerms = lazy this.ProductTerms.Value
+        static member Unity : S<'unit> = { Coeff = Complex.One; Terms = Map.empty}
         static member private ApplyInternal coeff terms =
             terms
             |> Seq.map (fun (t : P<'unit>) ->
@@ -144,7 +130,7 @@ module Terms =
             |> (fun terms' -> { S.Coeff = Complex.One; S.Terms = terms' })
 
         member this.NormalizeTermCoefficient =
-            S<'unit>.ApplyInternal this.Coeff this.Terms.Values
+            S<'unit>.ApplyInternal this.Coeff this.ProductTerms.Value
 
         static member Apply (item         : 'unit)       = S<'unit>.ApplyInternal Complex.One  [| item  |> P<'unit>.Apply |]
         static member Apply (unit         : C<'unit>)    = S<'unit>.ApplyInternal Complex.One  [| unit  |> P<'unit>.Apply |]
@@ -159,8 +145,8 @@ module Terms =
 
         static member (*) (l : S<'unit>, r : S<'unit>) =
             [|
-                for lt in l.NormalizeTermCoefficient.Terms.Values do
-                    for gt in r.NormalizeTermCoefficient.Terms.Values do
+                for lt in l.NormalizeTermCoefficient.ProductTerms.Value do
+                    for gt in r.NormalizeTermCoefficient.ProductTerms.Value do
                         yield lt * gt
             |]
             |> S<'unit>.Apply
@@ -168,8 +154,8 @@ module Terms =
         static member (+) (l : 'unit S, r : 'unit S) =
             Array.concat
                 [|
-                    l.NormalizeTermCoefficient.Terms.Values
-                    r.NormalizeTermCoefficient.Terms.Values
+                    l.NormalizeTermCoefficient.ProductTerms.Value
+                    r.NormalizeTermCoefficient.ProductTerms.Value
                 |]
             |> S<'unit>.Apply
 
@@ -179,46 +165,34 @@ module Terms =
                     [||]
                 else
                     [|
-                        for pt in this.Terms.Values do
+                        for pt in this.ProductTerms.Value do
                             let pt' = pt.Reduce.Value
                             if pt'.Units <> [||] then
                                 yield pt'
                     |]
                 |> S<'unit>.Apply
 
-        member this.AppendToTerms (u : 'unit) =
-            let this' = this.Reduce.Value
-            if this'.Coeff.IsZero then
-                [||]
-            else if this'.Terms.Count = 0 then
-                [| P<_>.Apply u |]
-            else
-                [|
-                    for pt in this'.Terms.Values do
-                        yield { pt with Units = Array.concat [| pt.Units; [|C<_>.Apply u|]|]}
-                |]
-            |> S<_>.ApplyInternal this'.Coeff
-
         member this.IsZero =
             let nonZeroTermCount =
-                this.Terms.Values
+                this.ProductTerms.Value
                 |> Seq.filter (fun c -> not c.IsZero)
                 |> Seq.length
             (not this.Coeff.IsNonZero) || (nonZeroTermCount = 0)
 
-        member this.VerifyIsValid =
-            let termCoefficientIsUnity =
-                this.Coeff = Complex.One
-
-            let termCoefficientIsZeroWhenThereAreNoProductTerms =
-                (this.Terms.Values = [||]) &&
-                (this.Coeff = Complex.Zero)
-
-            termCoefficientIsZeroWhenThereAreNoProductTerms ||
-            termCoefficientIsUnity
+        static member TryCreateFromString
+            (unitFactory : string -> 'unit option)
+            (s : System.String) : S<'unit> option =
+            let f = P<'unit>.TryCreateFromString unitFactory
+            try
+                s.Trim().TrimStart('{').TrimEnd('}').Split(';')
+                |> Array.choose (f)
+                |> S<'unit>.Apply
+                |> Some
+            with
+            | _ -> None
 
         override this.ToString() =
-            this.Terms.Values
+            this.ProductTerms.Value
             |> Array.map (sprintf "%O")
             |> (fun rg -> System.String.Join ("; ", rg))
             |> sprintf "{%s}"

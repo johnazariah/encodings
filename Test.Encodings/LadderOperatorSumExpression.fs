@@ -29,3 +29,18 @@ module LadderOperatorSumExpression =
         let actual = lo * ro
         let expected = LadderOperatorProductTerm.FromUnits <| Array.concat [|l ; r|]
         Assert.Equal (expected.ToString(), actual.ToString())
+
+    [<Theory>]
+    [<InlineData("{[(u, 1)]}", "{[(u, 1)]}")>]
+    [<InlineData("{[(d, 0)]}", "{[(d, 0)]}")>]
+    [<InlineData("{[(u, 1) | (u, 0)]}", "{[(u, 1) | (u, 0)]}")>]
+    [<InlineData("{[(u, 1) | (d, 0)]}", "{[(u, 1) | (d, 0)]}")>]
+    [<InlineData("{[(d, 1) | (u, 0)]}", "{[(I, 0) | (u, 0) | (d, 1)]}")>]
+    [<InlineData("{[(d, 1) | (u, 1)]}", "{[(I, 0) | (u, 1) | (d, 1)]; [(I, 0)]}")>]
+    let ``Can successfully sort fermionic sum-expression to normal order``
+        (input : string, expected : string) =
+        match LadderOperatorSumExpression.TryCreateFromString input with
+        | Some l ->
+            NormalOrderedLadderOperatorSumExprNormalOrderedLadderOperatorSumExpr.Construct l
+            |> Option.iter (fun nols -> Assert.Equal (expected, nols.ToString()))
+            | None -> Assert.Equal(expected, "")

@@ -16,13 +16,14 @@ module IndexedPauli =
             | _ -> None
 
         member this.AsString =
-            match this with
-            | I -> sprintf "I"
-            | X -> sprintf "X"
-            | Y -> sprintf "Y"
-            | Z -> sprintf "Z"
+            lazy
+                match this with
+                | I -> sprintf "I"
+                | X -> sprintf "X"
+                | Y -> sprintf "Y"
+                | Z -> sprintf "Z"
 
-        override this.ToString() = this.AsString
+        override this.ToString() = this.AsString.Value
 
         static member FromString =
-            IndexedOperator<Pauli>.TryCreateFromString Pauli.Apply
+            IxOp<_>.TryCreateFromString Pauli.Apply
