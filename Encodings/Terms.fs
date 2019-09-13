@@ -34,7 +34,7 @@ module Terms =
         static member (~-) (v : C<'unit>) =
             ({ v with Coeff = - v.Coeff }).Reduce.Value
 
-    and CI<'idx, 'op when 'idx : comparison and 'op : equality> =
+    type CI<'idx, 'op when 'idx : comparison and 'op : equality> =
         | Indexed of C<I<'idx, 'op>>
     with
         member this.Unapply = match this with Indexed c -> c
@@ -55,31 +55,32 @@ module Terms =
         static member (~-) (v : CI<_,_>) =
             CI<'idx, 'op>.Indexed <| - (v.Unapply)
 
-    and P<'unit when 'unit : equality> =
-        | ProductTerm of C<C<'unit>[]>
+    type R< ^unit when ^unit : (static member Identity : ^unit) and ^unit : (static member Combine : ^unit * ^unit -> C< ^unit >) and ^unit : equality> =
+        | Register of C<C<'unit>[]>
     with
-        member this.Unapply = match this with ProductTerm pt -> pt
-        member this.Coeff = this.Unapply.Coeff
-        member this.Units = this.Unapply.Item
+        member inline this.Unapply = match this with Register pt -> pt
+        member inline this.Coeff = this.Unapply.Coeff
+        member inline this.Units = this.Unapply.Item
 
-        static member internal ApplyInternal (coeff : Complex) (units : C<_>[]) =
+        static member inline Apply (coeff : Complex, units : C< ^unit>[]) =
             C<_>.Apply(coeff.Reduce, units |> Array.map (fun u -> u.Reduce.Value))
-            |> ProductTerm
+            |> (fun t -> t.Reduce.Value)
+            |> Register
 
-        static member Unit =
-            P<'unit>.ApplyInternal (Complex.One) ([||])
+        static member inline Unit =
+            R< ^unit >.Apply (Complex.One, [||])
 
-        static member Zero =
-            P<'unit>.ApplyInternal (Complex.Zero) ([||])
+        static member inline Zero =
+            R< ^unit >.Apply (Complex.Zero, [||])
 
-        member this.Reduce =
-            let normalize (coeff : Complex, units) (curr : C<_>) =
+        member inline this.Reduce =
+            let normalize (coeff : Complex, units) (curr : C< ^unit >) =
                 if (coeff.IsZero || curr.IsZero) then
                     (Complex.Zero, [||])
                 else
-                    (coeff * curr.Coeff, [| yield! units; yield curr.Normalize |])
+                    ((coeff * curr.Coeff).Reduce, [| yield! units; yield curr.Normalize.Reduce.Value |])
 
-            let checkForZero (coeff : Complex, units) =
+            let checkForZero (coeff : Complex, units : C< ^unit >[]) =
                 if ((coeff.IsZero) || (units = [||])) then
                     (Complex.Zero, [||])
                 else
@@ -88,28 +89,46 @@ module Terms =
                 this.Units
                 |> Array.fold normalize (this.Coeff, [||])
                 |> checkForZero
-                |> uncurry P<'unit>.ApplyInternal
+                |> C<_>.Apply
+                |> Register
 
-        static member Apply =
-            uncurry P<_>.ApplyInternal >> (fun t -> t.Reduce.Value)
-
-        member this.IsZero =
+        member inline this.IsZero =
             this.Coeff.IsZero || (this.Units |> Seq.exists (fun item -> item.IsZero))
 
-        static member (*) (l : P<_>, r : P<_>) =
-            P<'unit>.Apply ((l.Coeff * r.Coeff), Array.concat [| l.Units; r.Units |])
+        member inline this.ScaleCoefficient scale =
+            R< ^unit >.Apply (this.Coeff * scale, this.Units)
 
-        member this.ScaleCoefficient scale =
-            P<'unit>.Apply (this.Coeff * scale, this.Units)
-        member this.AddCoefficient coeff =
-            P<'unit>.Apply (this.Coeff + coeff, this.Units)
+        member inline this.AddCoefficient coeff =
+            R< ^unit >.Apply (this.Coeff + coeff, this.Units)
 
-    and  PI<'idx, 'op when 'idx : comparison and 'op : equality> =
-        | ProductTerm of P<CI<'idx,'op>>
+        static member inline (*) (l : R< ^unit >, r : R< ^unit >) =
+            let identity = C<_>.Apply (^unit : (static member Identity : ^unit) ())
+
+            let pairwiseCombine (unitCombine : ^unit * ^unit -> C< ^unit >) rgls rgrs =
+                let c (ca, cb) =
+                    let cc = unitCombine (ca.Item, cb.Item)
+                    C< ^unit >.Apply (ca.Coeff * cb.Coeff * cc.Coeff, cc.Item)
+                let rec pairwiseCombine' ls rs =
+                    match (ls, rs) with
+                    | []      , []       -> []
+                    | l :: ls', []       -> c (l, identity) :: (pairwiseCombine' ls' [])
+                    | []      , r :: rs' -> c (identity, r) :: (pairwiseCombine' [] rs')
+                    | l :: ls', r :: rs' -> c (l, r)        :: (pairwiseCombine' ls' rs')
+                in
+                pairwiseCombine' (rgls |> List.ofArray) (rgrs |> List.ofArray)
+                |> Array.ofList
+
+            let coeff' = l.Coeff * r.Coeff
+            let combiner = (fun (a : ^unit, b : ^unit) -> (^unit: (static member Combine : ^unit * ^unit -> C< ^unit >)(a, b)))
+            let units' = pairwiseCombine combiner l.Units r.Units
+            R< ^unit >.Apply (coeff', units')
+
+    type  PI<'idx, 'op when 'idx : comparison and 'op : equality> =
+        | ProductTerm of C<CI<'idx,'op>[]>
     with
         member this.Unapply = match this with ProductTerm pt -> pt
         member this.Coeff = this.Unapply.Coeff
-        member this.Units = this.Unapply.Unapply.Item
+        member this.Units = this.Unapply.Item
 
         static member internal ApplyInternal (coeff : Complex) (units : C<_>[]) =
             PI<_,_>.ProductTerm <| P<_>.ApplyInternal coeff units
@@ -126,14 +145,14 @@ module Terms =
         member this.IsZero = this.Unapply.IsZero
 
         static member (*) (l : PI<_,_>, r : PI<_,_>) =
-            PI<_,_>.ProductTerm <| l.Unapply * r.Unapply
+            PI<_,_>.ApplyInternal (l.Coeff * r.Coeff) (Array.concat [| l.Units; r.Units |])
 
         member this.ScaleCoefficient scale =
             PI<_,_>.ProductTerm <| this.Unapply.ScaleCoefficient scale
         member this.AddCoefficient   coeff =
             PI<_,_>.ProductTerm <| this.Unapply.AddCoefficient   coeff
 
-    and S<'unit when 'unit : equality> =
+    type S<'unit when 'unit : equality> =
         | SumTerm of C<Map<string, P<'unit>>>
     with
         member this.Unapply = match this with SumTerm st -> st
@@ -206,7 +225,7 @@ module Terms =
         static member Apply =
             uncurry S<'unit>.ApplyInternal >> (fun t -> t.Reduce.Value)
 
-    and SI<'idx, 'op when 'idx : comparison and 'op : equality> =
+    type SI<'idx, 'op when 'idx : comparison and 'op : equality> =
         | SumTerm of S<CI<'idx, 'op>>
     with
         member this.Unapply = match this with SumTerm st -> st
