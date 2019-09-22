@@ -10,6 +10,7 @@
     <Compile Include="TestUtils.fs" />
     <Compile Include="Complex.fs" />
     <Compile Include="Terms_C.fs" />
+    <Compile Include="Terms_S.fs" />
   </ItemGroup>
 
   <ItemGroup>

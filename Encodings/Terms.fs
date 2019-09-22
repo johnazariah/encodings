@@ -37,7 +37,7 @@ module Terms =
         member inline __.Coeff = Complex.One
         member inline this.Terms = this.Unapply.Values
 
-        static member inline ApplyInternal (coeff : Complex) =
+        static member inline internal ApplyInternal (coeff : Complex) =
             let toTuple (t : C<_>) =
                 let scaled = t.ScaleCoefficient coeff
                 (scaled.ToString(), scaled)
