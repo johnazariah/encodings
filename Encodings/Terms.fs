@@ -40,7 +40,7 @@ module Terms =
         static member inline internal ApplyInternal (coeff : Complex) =
             let toTuple (t : C<_>) =
                 let scaled = t.ScaleCoefficient coeff
-                (scaled.ToString(), scaled)
+                (t.Item.ToString(), scaled)
 
             let createMap =
                 let addOrUpdate (m : Dictionary<'key, C<_>>) (key : 'key, value : C<_>) =

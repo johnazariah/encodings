@@ -73,6 +73,16 @@ module Terms_SC =
         Assert.Empty (zc.Reduce.Value.Terms)
         Assert.Equal (Complex.One, zc.Coeff)
 
+    [<Property (Arbitrary = [|typeof<ComplexGenerator>|]) >]
+    let ``Sum term constructor coalesces coefficients for like terms``(coeffs : Complex[]) =
+        if coeffs <> [||] then
+            let terms = coeffs |> Array.map (fun coeff -> C<_>.Apply(coeff, 'a'))
+            let sc = SC<_>.Apply(Complex.One, terms)
+            let found = Assert.Single(sc.Terms)
+            let expected = coeffs |> Array.fold (+) Complex.Zero
+            let actual   = found.Coeff
+            Assert.Equal(expected, actual)
+
 (*
     [<Property>]
     let ``S <- C[]``(units : C<int>[]) =
