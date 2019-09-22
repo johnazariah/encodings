@@ -1,10 +1,9 @@
 ﻿namespace Encodings
 
-open System.Numerics
-
 [<AutoOpen>]
 module TypeExtensions =
     open System
+    open System.Numerics
 
     let uncurry (f : 'x -> 'y -> 'r) =
         (fun (x, y) -> f x y)
@@ -19,17 +18,14 @@ module TypeExtensions =
 
         static member MinusOne = Complex.One |> Complex.Negate
 
-        member this.IsFinite =
-            (System.Double.IsFinite this.Real) && (System.Double.IsFinite this.Imaginary)
-
         member this.IsNonZero =
-            this.IsFinite && (this <> Complex.Zero)
+            Complex.IsFinite this && (this <> Complex.Zero)
 
         member this.IsZero =
             not this.IsNonZero
 
         member this.Reduce =
-            if this.IsFinite then
+            if Complex.IsFinite this then
                 this
             else
                 Complex.Zero

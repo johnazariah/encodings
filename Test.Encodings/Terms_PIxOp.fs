@@ -1,13 +1,13 @@
 ﻿namespace Tests
 
-module Terms_P =
+module Terms_PIxOp =
     open System.Collections
     open Encodings
     open Xunit
     open FsCheck.Xunit
     open System.Numerics
 
-    let verifyReduced (this : P<_>) =
+    let verifyReduced (this : PIxOp<_,_>) =
         let coefficientIsZeroOnlyWhenNoProductTerms =
             if this.Units = [||] then
                 this.Coeff = Complex.Zero
@@ -16,7 +16,7 @@ module Terms_P =
 
         let everyUnitInProductTermHasUnitCoefficient =
             this.Units
-            |> Seq.exists (fun u -> u.Coeff <> Complex.One)
+            |> Seq.exists (fun u -> u.Unapply.Coeff <> Complex.One)
             |> not
 
         let result =

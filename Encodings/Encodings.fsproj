@@ -1,18 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.2</TargetFramework>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="TypeExtensions.fs" />
     <Compile Include="Terms.fs" />
-    <Compile Include="IndexedTerms.fs" />
-    <Compile Include="SwapTrackingSort.fs" />
     <Compile Include="IndexedPauli.fs" />
-    <Compile Include="IndexedLadderOperator.fs" />
-    <Compile Include="CombiningAlgebra.fs" />
-    <Compile Include="LadderOperatorSequence.fs" />
   </ItemGroup>
 
 </Project>

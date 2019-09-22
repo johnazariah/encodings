@@ -45,13 +45,13 @@ module LadderOperatorSequence =
 
 
     type LadderOperatorSumExpr<'algebra when 'algebra :> ICombiningAlgebra<LadderOperatorUnit> and 'algebra : (new : unit -> 'algebra)>
-        private (sumTerm : S<IxOp<uint32, LadderOperatorUnit>>) =
+        private (sumTerm : SC<IxOp<uint32, LadderOperatorUnit>>) =
         class
             private new (productTerms : P<IxOp<LadderOperatorUnit>>[]) =
-                LadderOperatorSumExpr (S<IxOp<LadderOperatorUnit>>.Apply productTerms)
+                LadderOperatorSumExpr (SC<IxOp<LadderOperatorUnit>>.Apply productTerms)
 
             static member TryCreateFromString =
-                (IxOp<_>.TryCreateFromString LadderOperatorUnit.Apply) |> S<IxOp<LadderOperatorUnit>>.TryCreateFromString
+                (IxOp<_>.TryCreateFromString LadderOperatorUnit.Apply) |> SC<IxOp<LadderOperatorUnit>>.TryCreateFromString
                 >> Option.map (LadderOperatorSumExpr<'algebra>)
 
             member internal __.Unapply = sumTerm
@@ -92,23 +92,23 @@ module LadderOperatorSequence =
                             else
                                 let appendUnitToProductTerm nu pt =
                                     LadderOperatorSumExpr<_>.CombiningAlgebra.Combine pt nu
-                                    |> S<IxOp<LadderOperatorUnit>>.Apply
+                                    |> SC<IxOp<LadderOperatorUnit>>.Apply
                                     |> LadderOperatorSumExpr<'algebra>.ConstructNormalOrdered
                                     |> Option.map (fun nols -> nols.ProductTerms.Value) |> Option.defaultValue [||]
                                 result |> Array.collect (appendUnitToProductTerm nextUnit)
                         sortInternal result' remainingUnits'
                 sortInternal [||] productTerm.Reduce.Value.Units
 
-            static member ConstructNormalOrdered (candidate : S<IxOp<LadderOperatorUnit>>) : LadderOperatorSumExpr<'algebra> option =
+            static member ConstructNormalOrdered (candidate : SC<IxOp<LadderOperatorUnit>>) : LadderOperatorSumExpr<'algebra> option =
                 let sumExpr = LadderOperatorSumExpr<'algebra>(candidate.Reduce.Value)
                 if sumExpr.AllTermsNormalOrdered then
                     Some sumExpr
                 else
                     sumExpr.ProductTerms.Value
                     |> Array.collect LadderOperatorSumExpr<'algebra>.SortSingleProductTerm
-                    |> (S<IxOp<LadderOperatorUnit>>.Apply >> LadderOperatorSumExpr<'algebra> >> Some)
+                    |> (SC<IxOp<LadderOperatorUnit>>.Apply >> LadderOperatorSumExpr<'algebra> >> Some)
 
-            static member ConstructIndexOrdered (candidate : S<IxOp<LadderOperatorUnit>>) : LadderOperatorSumExpr<'algebra> option =
+            static member ConstructIndexOrdered (candidate : SC<IxOp<LadderOperatorUnit>>) : LadderOperatorSumExpr<'algebra> option =
                 let sumExpr = LadderOperatorSumExpr<'algebra>(candidate.Reduce.Value)
                 if sumExpr.AllTermsIndexOrdered then
                     Some sumExpr
@@ -116,7 +116,7 @@ module LadderOperatorSequence =
                     sumExpr.ProductTerms.Value
                     |> Array.map (toIndexOrder<'algebra>)
                     |> (fun terms -> (sumExpr.Coeff, terms))
-                    |> (S<IxOp<LadderOperatorUnit>>.Apply >> LadderOperatorSumExpr<'algebra> >> Some)
+                    |> (SC<IxOp<LadderOperatorUnit>>.Apply >> LadderOperatorSumExpr<'algebra> >> Some)
                 else
                     sumExpr.Unapply
                     |> LadderOperatorSumExpr<'algebra>.ConstructNormalOrdered

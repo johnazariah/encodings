@@ -116,7 +116,7 @@ module IndexedLadderOperator =
     with
         member this.Unapply = match this with SumTerm term -> term.Unapply
 
-        static member internal Apply (expr : S<IxOp<LadderOperatorUnit>>) =
+        static member internal Apply (expr : SC<IxOp<LadderOperatorUnit>>) =
             expr
             |> SIxOp.SumTerm
             |> LadderOperatorSumExpression.SumTerm
@@ -128,7 +128,7 @@ module IndexedLadderOperator =
 
         static member internal Apply (terms : P<IxOp<LadderOperatorUnit>>[]) =
             terms
-            |> S<IxOp<LadderOperatorUnit>>.Apply
+            |> SC<IxOp<LadderOperatorUnit>>.Apply
             |> LadderOperatorSumExpression.Apply
 
         static member TryCreateFromString =

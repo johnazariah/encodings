@@ -26,4 +26,4 @@ module IndexedPauli =
         override this.ToString() = this.AsString.Value
 
         static member FromString =
-            IxOp<_>.TryCreateFromString Pauli.Apply
+            IndexedOpFromString Pauli.Apply

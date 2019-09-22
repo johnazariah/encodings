@@ -3,7 +3,7 @@ open System.Numerics
 open System.Collections.Generic
 
 [<AutoOpen>]
-module Coeff =
+module Terms =
     type C<'unit when 'unit : equality> =
         { Coeff : Complex; Item : 'unit }
     with
@@ -30,14 +30,14 @@ module Coeff =
         member inline this.AddCoefficient coeff =
             { this with Coeff = this.Coeff + coeff }
 
-    type S< ^term when ^term : equality and ^term : (static member Combine : C< ^term > * C< ^term > -> C< ^term >)> =
-        | SumTerm of C<Map<string, C< ^term >>>
+    type SC< ^term when ^term : equality> =
+        | SumTerm of Map<string, C< ^term >>
     with
         member inline this.Unapply = match this with SumTerm st -> st
-        member inline this.Coeff = this.Unapply.Coeff
-        member inline this.Terms = this.Unapply.Item.Values
+        member inline __.Coeff = Complex.One
+        member inline this.Terms = this.Unapply.Values
 
-        static member inline internal ApplyInternal (coeff : Complex) =
+        static member inline ApplyInternal (coeff : Complex) =
             let toTuple (t : C<_>) =
                 let scaled = t.ScaleCoefficient coeff
                 (scaled.ToString(), scaled)
@@ -58,14 +58,13 @@ module Coeff =
 
             Array.map toTuple
             >> createMap
-            >> (curry C<_>.Apply) Complex.One
             >> SumTerm
 
         static member inline Unit =
-            S<'term>.ApplyInternal (Complex.One) ([||])
+            SC<_>.ApplyInternal (Complex.One) ([||])
 
         static member inline Zero =
-            S<'term>.ApplyInternal (Complex.Zero) ([||])
+            SC<_>.ApplyInternal (Complex.Zero) ([||])
 
         member inline this.Reduce =
             lazy
@@ -76,40 +75,38 @@ module Coeff =
                         for pt in this.Terms do
                             if (not pt.IsZero) then yield pt
                     |]
-                |> S<_>.ApplyInternal Complex.One
+                |> SC<_>.ApplyInternal Complex.One
 
-        member inline this.Normalize =
-            S<_>.ApplyInternal this.Coeff this.Terms
-
-        static member inline (*) (l : S<_>, r : S<_>) =
-            let combiner = (fun (a, b) -> (^term: (static member Combine : C< ^term > * C< ^term > -> C< ^term >)(a, b)))
-
+        static member inline
+            Multiply
+                (multiplier : C< ^term > * C< ^term > -> SC< ^term >)
+                (l : SC< ^term >, r : SC< ^term >) =
             [|
-                for lt in l.Normalize.Terms do
-                    for gt in r.Normalize.Terms do
-                        yield combiner (lt, gt)
+                for lt in l.Terms do
+                    for rt in r.Terms do
+                        let ct = multiplier (lt, rt)
+                        yield! ct.Terms
             |]
-            |> S<_>.ApplyInternal Complex.One
+            |> SC<_>.ApplyInternal Complex.One
 
-        static member inline (+) (l : S<_>, r : S<_>) =
+        static member inline (+) (l : SC<_>, r : SC<_>) =
             [|
-                yield! l.Normalize.Terms
-                yield! r.Normalize.Terms
+                yield! l.Terms
+                yield! r.Terms
             |]
-            |> S<_>.ApplyInternal Complex.One
+            |> SC<_>.ApplyInternal Complex.One
 
-        member inline this.IsZero =
-            let anyNonZeroTerms = this.Terms |> (Seq.exists (fun t -> not t.IsZero))
-            let allZeroTerms = not anyNonZeroTerms
+        member inline this.IsZero : bool =
+            let allZeroTerms = this.Terms |> (Seq.exists (fun t -> not t.IsZero)) |> not
             this.Coeff.IsZero || allZeroTerms
 
-        static member inline Apply =
-            uncurry S<'term>.ApplyInternal >> (fun t -> t.Reduce.Value)
-
+        static member inline Apply (coeff : Complex, terms : C< ^term > []) : SC< ^term > =
+            SC<_>.ApplyInternal coeff terms
+            |> (fun t -> t.Reduce.Value)
 
 [<AutoOpen>]
 module DenseRepresentation =
-    type R< ^unit when ^unit : (static member Identity : ^unit) and ^unit : (static member Combine : ^unit * ^unit -> C< ^unit >) and ^unit : equality> =
+    type R< ^unit when ^unit : (static member Identity : ^unit) and ^unit : (static member Combine : C< ^unit > * C< ^unit > -> C< ^unit >) and ^unit : equality> =
         | Register of C<C<'unit>[]>
     with
         member inline this.Unapply = match this with Register pt -> pt
@@ -150,13 +147,15 @@ module DenseRepresentation =
             this.Coeff.IsZero || (this.Units |> Seq.exists (fun item -> item.IsZero))
 
         static member inline (*) (l : R< ^unit >, r : R< ^unit >) =
-            let uid = (^unit : (static member Identity : ^unit) ())
-            let identity = C<_>.Apply (Complex.One, uid)
+            let identity =
+                (^unit : (static member Identity : ^unit) ())
+                |> (curry C<_>.Apply Complex.One)
 
-            let pairwiseCombine (unitCombine : ^unit * ^unit -> C< ^unit >) rgls rgrs =
+            let pairwiseCombine (combine : C< ^unit > * C< ^unit > -> C< ^unit >) rgls rgrs =
                 let c (ca, cb) =
-                    let cc = unitCombine (ca.Item, cb.Item)
+                    let cc = combine (ca, cb)
                     C< ^unit >.Apply (ca.Coeff * cb.Coeff * cc.Coeff, cc.Item)
+
                 let rec pairwiseCombine' ls rs =
                     match (ls, rs) with
                     | []      , []       -> []
@@ -168,98 +167,115 @@ module DenseRepresentation =
                 |> Array.ofList
 
             let coeff' = l.Coeff * r.Coeff
-            let combiner = (fun (a : ^unit, b : ^unit) -> (^unit: (static member Combine : ^unit * ^unit -> C< ^unit >)(a, b)))
+            let combiner = (fun (a, b) -> (^unit: (static member Combine : C< ^unit > * C< ^unit > -> C< ^unit >)(a, b)))
             let units' = pairwiseCombine combiner l.Units r.Units
             R< ^unit >.Apply (coeff', units')
 
 [<AutoOpen>]
 module SparseRepresentation =
-    type I<'idx, 'op when 'idx : comparison and 'op : equality> =
-        { Index : 'idx; Op : 'op }
+    type IEnumerable<'a>
     with
-        static member Apply (index : 'idx, op : 'op) =
-            { Index = index; Op = op }
+        member xs.IsOrdered (comparer : 'a -> 'a -> bool) =
+            let compareWithPrev (isOrdered, (prev : 'a option)) (curr : 'a) =
+                let currAndPrevAreOrdered =
+                    prev
+                    |> Option.map (fun p -> comparer p curr)
+                    |> Option.defaultValue true
+                ((isOrdered && currAndPrevAreOrdered), Some curr)
+            xs
+            |> Seq.fold compareWithPrev (true, None)
+            |> fst
 
-    type CIxOp<'idx, 'op when 'idx : comparison and 'op : equality> =
-        | Indexed of C<I<'idx, 'op>>
+    type IndexOrder =
+        | Ascending
+        | Descending
+
+    and IxOp< ^idx, ^op when ^idx : comparison and ^op : equality> =
+        { Index : ^idx; Op : ^op }
     with
-        member this.Unapply = match this with Indexed c -> c
-        member this.IsZero = this.Unapply.IsZero
-        static member Unit =
-            CIxOp<'idx, 'op>.Indexed <| C<_>.Unit
-        static member Apply (coeff, unit) =
-            CIxOp<'idx, 'op>.Indexed <| C<_>.Apply (coeff, unit)
-        static member Apply (unit) =
-            CIxOp<'idx, 'op>.Indexed <| C<_>.Apply (unit)
+        static member inline Apply (index : ^idx, op : ^op) = { Index = index; Op = op }
+        static member inline (.>=.) (l : IxOp< ^idx, ^op >, r : IxOp< ^idx, ^op >) = l.Index >= r.Index
+        static member inline (.<=.) (l : IxOp< ^idx, ^op >, r : IxOp< ^idx, ^op >) = l.Index <= r.Index
+        static member inline IndicesInOrder (indexOrder : IndexOrder) (ops : IxOp< ^idx, ^op> seq) : bool =
+            let comparer =
+                match indexOrder with
+                | Ascending  -> (.<=.)
+                | Descending -> (.>=.)
+            ops.IsOrdered comparer
 
-    type PIxOp<'idx, 'op when 'idx : comparison and 'op : equality> =
-        | ProductTerm of C<CIxOp<'idx,'op>[]>
+    and CIxOp< ^idx, ^op when ^idx : comparison and ^op : equality> =
+        | Indexed of C<IxOp< ^idx, ^op>>
     with
-        member this.Unapply = match this with ProductTerm pt -> pt
-        member this.Coeff = this.Unapply.Coeff
-        member this.Units = this.Unapply.Item
+        member inline this.Unapply = match this with Indexed c -> c
+        member inline this.IsZero = this.Unapply.IsZero
+        static member inline Unit =
+            CIxOp< ^idx, ^op>.Indexed <| C<_>.Unit
+        static member inline Apply (coeff, unit) =
+            CIxOp< ^idx, ^op>.Indexed <| C<_>.Apply (coeff, unit)
+        static member inline Apply (unit) =
+            CIxOp< ^idx, ^op>.Indexed <| C<_>.Apply (unit)
 
-        static member Apply = C<CIxOp<'idx, 'op>>.Apply >> PIxOp<'idx, 'op>.ProductTerm
+    and PIxOp< ^idx, ^op when ^idx : comparison and ^op : equality> =
+        | ProductTerm of C<CIxOp< ^idx, ^op>[]>
+    with
+        member inline this.Unapply = match this with ProductTerm pt -> pt
+        member inline this.Coeff = this.Unapply.Coeff
+        member inline this.Units = this.Unapply.Item
+
+        static member inline Apply = C<CIxOp< ^idx, ^op>>.Apply >> PIxOp< ^idx, ^op>.ProductTerm
 
         static member inline Unit = PIxOp<_,_>.Apply (Complex.One,  [||])
         static member inline Zero = PIxOp<_,_>.Apply (Complex.Zero, [||])
 
-        member this.Reduce =
+        member inline this.Reduce =
             lazy PIxOp<_,_>.ProductTerm this.Unapply.Reduce.Value
 
-        member this.IsZero = this.Unapply.IsZero
+        member inline this.IsZero = this.Unapply.IsZero
 
-        static member (*) (l : PIxOp<_,_>, r : PIxOp<_,_>) =
+        static member inline (*) (l : PIxOp<_,_>, r : PIxOp<_,_>) =
             PIxOp<_,_>.Apply (l.Coeff * r.Coeff, Array.concat [| l.Units; r.Units |])
 
-        member this.ScaleCoefficient scale =
+        member inline this.ScaleCoefficient scale =
             PIxOp<_,_>.ProductTerm <| this.Unapply.ScaleCoefficient scale
 
-        member this.AddCoefficient   coeff =
-            PIxOp<_,_>.ProductTerm <| this.Unapply.AddCoefficient   coeff
+        member inline this.AddCoefficient   coeff =
+            PIxOp<_,_>.ProductTerm <| this.Unapply.AddCoefficient coeff
 
-    type SIxOp<'idx, 'op when 'idx : comparison and 'op : equality> =
-        | SumTerm of S<PIxOp<'idx, 'op>>
+        member inline this.IsInIndexOrder indexOrder =
+            lazy
+                this.Units
+                |> Seq.map (fun u -> u.Unapply.Item)
+                |> IxOp<_,_>.IndicesInOrder indexOrder
+
+    and SIxOp< ^idx, ^op when ^idx : comparison and ^op : equality> =
+        | SumTerm of SC<CIxOp< ^idx, ^op>[]>
     with
-        member this.Unapply = match this with SumTerm st -> st
-        member this.Coeff = this.Unapply.Coeff
-        member this.Terms = this.Unapply.Unapply.Item.Values
+        member inline this.Unapply = match this with SumTerm st -> st
+        member inline __.Coeff = Complex.One
+        member inline this.Terms = this.Unapply.Terms |> Array.map PIxOp< ^idx, ^op>.ProductTerm
 
-        static member internal ApplyInternal (coeff : Complex) =
-            SI<_,_>.SumTerm << S<_>.ApplyInternal coeff
-
-        static member Unit = SI<'idx, 'op>.SumTerm <| S<_>.Unit
-        static member Zero = SI<'idx, 'op>.SumTerm <| S<_>.Zero
-
-        member this.Reduce =
-            lazy SI<'idx, 'op>.SumTerm this.Unapply.Reduce.Value
-
-        member this.Normalize =
-            SI<'idx, 'op>.SumTerm <| this.Unapply.Normalize
-
-        static member (*) (l : SI<_,_>, r : SI<_,_>) =
-            SI<'idx, 'op>.SumTerm <| l.Unapply * r.Unapply
-
-        static member (+) (l : SI<_,_>, r : SI<_,_>) =
-            SI<'idx, 'op>.SumTerm <| l.Unapply + r.Unapply
-
-        member this.IsZero = this.Unapply.IsZero
-
-        static member Apply (coeff : Complex, terms : P<CI<'idx, 'op>>[]) =
+        static member inline Apply (coeff : Complex, terms : PIxOp< ^idx, ^op>[]) =
             terms
-            |> S<_>.ApplyInternal coeff
-            |> SI<_,_>.SumTerm
+            |> Array.map (fun pi -> pi.Unapply)
+            |> (curry SC<_>.Apply coeff)
+            |> SIxOp< ^idx, ^op>.SumTerm
 
-        static member Apply (coeff : Complex, terms : PI<'idx, 'op>[]) =
-            terms
-            |> Array.map (fun t -> t.Unapply)
-            |> S<_>.ApplyInternal coeff
-            |> SI<_,_>.SumTerm
+        static member inline (+) (l : SIxOp< ^idx, ^op>, r : SIxOp< ^idx, ^op>) =
+            l.Unapply + r.Unapply
+            |> SIxOp<_, _>.SumTerm
+
+        member inline this.IsZero = this.Unapply.IsZero
+
+        member inline this.AllTermsIndexOrdered indexOrder =
+            let isIndexOrdered result (curr : PIxOp<_,_>) =
+                let currIsIndexOrdered = curr.IsInIndexOrder indexOrder
+                result && currIsIndexOrdered.Value
+            lazy
+                this.Terms
+                |> Seq.fold isIndexOrdered true
 
 [<AutoOpen>]
 module PrettyPrint =
-    open System.Numerics
-
     let prettyPrintC (this : C<'unit>) =
         let itemString = sprintf "%O" this.Item
         if this.Coeff = Complex.Zero then
@@ -279,26 +295,30 @@ module PrettyPrint =
         else if this.Coeff.Imaginary = -1. then
             sprintf "(-%Oi %s)" this.Coeff.Real itemString
         else
-            sprintf "{Coeff = %O;\n Item = %A;}" this.Coeff this.Item
+            sprintf "%O" this
 
-    let prettyPrintP (this : P<_>) =
+    let prettyPrintI (this : IxOp<_,_>) =
+        sprintf "(%s, %i)" this.Op this.Index
+
+    let prettyPrintCIxOp (this : CIxOp<_,_>) =
+        prettyPrintI this.Unapply.Item
+
+    let prettyPrintPIxOp (this : PIxOp<_,_>) =
         this.Units
-        |> Array.map prettyPrintC
+        |> Array.map prettyPrintCIxOp
         |> (fun rg -> System.String.Join (" | ", rg))
         |> sprintf "[%s]"
 
-    let prettyPrintS (this : S<_>) =
+    let prettyPrintSIxOp (this : SIxOp<_,_>) =
         this.Terms
-        |> Array.map prettyPrintP
+        |> Array.map prettyPrintPIxOp
         |> (fun rg -> System.String.Join ("; ", rg))
         |> sprintf "{%s}"
 
 [<AutoOpen>]
 module StringInterop =
-    open System.Numerics
-
-    let IndexedOpFromString
-        (unitFactory : string -> 'op option)
+    let inline IndexedOpFromString< ^op when ^op : equality>
+        (unitFactory : string ->  ^op  option)
         (s : System.String) =
         try
             s.Trim().TrimStart('(').TrimEnd(')').Split(',')
@@ -307,31 +327,29 @@ module StringInterop =
                 unitFactory (rg.[0])
                 |> Option.map (fun op ->
                     (System.UInt32.Parse rg.[1], op)
-                    |> I.Apply
-                    |> (curry CI<_,_>.Apply) Complex.One))
+                    |> IxOp<uint32, ^op >.Apply
+                    |> (curry CIxOp<_,_>.Apply) Complex.One))
         with
         | _ -> None
 
-    let ProductTermFromString
-        (unitFactory : string -> 'unit option)
-        (s : System.String) : PI<_,_> option =
-        let toC = ((curry C<_>.Apply) Complex.One)
+    let inline ProductTermFromString< ^op when ^op : equality>
+        (unitFactory : string ->  ^op  option)
+        (s : System.String) : PIxOp<uint32, ^op > option =
         try
             s.Trim().TrimStart('[').TrimEnd(']').Split('|')
             |> Array.choose (IndexedOpFromString unitFactory)
-            |> Array.map toC
-            |> (curry PI<_,_>.Apply) Complex.One
+            |> (curry PIxOp<_,_>.Apply) Complex.One
             |> Some
         with
         | _ -> None
 
-    let SumTermFromString
-        (unitFactory : string -> 'unit option)
-        (s : System.String) : SI<_,_> option =
+    let inline SumTermFromString< ^op when ^op : equality>
+        (unitFactory : string ->  ^op  option)
+        (s : System.String) : SIxOp<uint32, ^op > option =
         try
             s.Trim().TrimStart('{').TrimEnd('}').Split(';')
             |> Array.choose (ProductTermFromString unitFactory)
-            |> (fun ts -> SI<_,_>.Apply (Complex.One, ts))
+            |> (curry SIxOp<_,_>.Apply) Complex.One
             |> Some
         with
         | _ -> None
