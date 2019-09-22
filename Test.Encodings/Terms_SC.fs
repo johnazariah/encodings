@@ -1,5 +1,7 @@
 ﻿namespace Tests
 
+open System.Collections
+
 module Terms_SC =
     open Encodings
     open Xunit
@@ -40,6 +42,37 @@ module Terms_SC =
             Assert.True (candidate.IsZero)
         else
             Assert.False (candidate.IsZero)
+
+    [<Property (Arbitrary = [|typeof<ComplexGenerator>|]) >]
+    let ``Reduce removes all terms if coeff is zero`` (candidate : SC<char>) =
+        if (candidate.Coeff = Complex.Zero) then
+            Assert.False (true, "Zero coefficient?")
+        else if (candidate.Terms = [||]) then
+            Assert.Empty (candidate.Terms)
+            Assert.Empty (candidate.Reduce.Value.Terms)
+            Assert.Equal (Complex.One, candidate.Coeff)
+            Assert.Equal (Complex.One, candidate.Reduce.Value.Coeff)
+        else
+            let zc = candidate.ScaleCoefficient Complex.Zero
+            Assert.NotEmpty (candidate.Terms)
+            Assert.True     (zc.IsZero)
+            Assert.NotEmpty (zc.Terms)
+            Assert.Empty    (zc.Reduce.Value.Terms)
+            Assert.Equal    (Complex.One, candidate.Coeff)
+            Assert.Equal    (Complex.One, zc.Reduce.Value.Coeff)
+
+    [<Fact>]
+    let ``Reduce works on empty array``() =
+        let sc = SC<_>.Apply(Complex.One, [||])
+        Assert.True(sc.IsZero)
+        Assert.Empty(sc.Terms)
+
+        let zc = sc.ScaleCoefficient Complex.Zero
+        Assert.True  (zc.IsZero)
+        Assert.Empty (zc.Terms)
+        Assert.Empty (zc.Reduce.Value.Terms)
+        Assert.Equal (Complex.One, zc.Coeff)
+
 (*
     [<Property>]
     let ``S <- C[]``(units : C<int>[]) =

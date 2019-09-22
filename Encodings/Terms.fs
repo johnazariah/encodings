@@ -70,12 +70,13 @@ module Terms =
             lazy
                 if this.Coeff.IsZero then
                     [||]
+                    |> SC<_>.ApplyInternal Complex.Zero
                 else
                     [|
                         for pt in this.Terms do
                             if (not pt.IsZero) then yield pt
                     |]
-                |> SC<_>.ApplyInternal Complex.One
+                    |> SC<_>.ApplyInternal Complex.One
 
         static member inline
             Multiply
@@ -103,6 +104,13 @@ module Terms =
         static member inline Apply (coeff : Complex, terms : C< ^term > []) : SC< ^term > =
             SC<_>.ApplyInternal coeff terms
             |> (fun t -> t.Reduce.Value)
+
+        member inline this.ScaleCoefficient scale =
+            SC<_>.ApplyInternal scale this.Terms
+
+        member inline this.AddCoefficient coeff =
+            let terms = this.Terms |> Array.map (fun t -> t.AddCoefficient coeff)
+            SC<_>.ApplyInternal Complex.One terms
 
 [<AutoOpen>]
 module DenseRepresentation =
