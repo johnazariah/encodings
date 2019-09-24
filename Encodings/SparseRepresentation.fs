@@ -60,7 +60,7 @@ module SparseRepresentation =
         static member inline Zero = PIxOp<_,_>.Apply (Complex.Zero, [||])
 
         member inline this.Reduce =
-            lazy PIxOp<_,_>.ProductTerm this.Unapply.Reduce.Value
+            lazy PIxOp<_,_>.ProductTerm this.Unapply.Reduce
 
         member inline this.IsZero = this.Unapply.IsZero
 

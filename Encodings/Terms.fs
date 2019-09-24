@@ -4,6 +4,7 @@ open System.Collections.Generic
 
 [<AutoOpen>]
 module Terms =
+    [<CustomEquality; NoComparison>]
     type C<'unit when 'unit : equality> =
         { Coeff : Complex; Item : 'unit }
     with
@@ -13,22 +14,29 @@ module Terms =
             { Coeff = Complex.One; Item = Unchecked.defaultof<'unit> }
 
         static member Apply (coeff : Complex, unit) =
-            { Coeff = coeff.Reduce; Item = unit }
+            { Coeff = coeff; Item = unit }
 
         member this.Reduce =
-            lazy { this with Coeff = this.Coeff.Reduce }
+            { this with Coeff = this.Coeff.Reduce }
 
         member this.Normalize =
             { this with Coeff = Complex.One }
 
         static member (~-) (v : C<'unit>) =
-            ({ v with Coeff = - v.Coeff }).Reduce.Value
+            ({ v with Coeff = - v.Coeff })
 
         member inline this.ScaleCoefficient scale =
             { this with Coeff = this.Coeff * scale }
 
         member inline this.AddCoefficient coeff =
             { this with Coeff = this.Coeff + coeff }
+
+        override x.Equals objY =
+            match objY with
+            | :? C<'unit> as y -> (x.Reduce.Coeff = y.Reduce.Coeff) && (x.Item = y.Item)
+            | _ -> false
+
+        override x.GetHashCode() = hash x.Reduce.Coeff ^^^ hash x.Item
 
     type SC< ^term when ^term : equality> =
         | SumTerm of Map<string, C< ^term >>
@@ -103,7 +111,6 @@ module Terms =
 
         static member inline Apply (coeff : Complex, terms : C< ^term > []) : SC< ^term > =
             SC<_>.ApplyInternal coeff terms
-            |> (fun t -> t.Reduce.Value)
 
         member inline this.ScaleCoefficient scale =
             SC<_>.ApplyInternal scale this.Terms

@@ -96,14 +96,14 @@ module Terms_SC =
 
         let sc = ls + rs
         if (sc.IsZero) then
-            Assert.Empty (sc.Terms)
+            Assert.Empty (sc.Reduce.Value.Terms)
         else
             let found = Assert.Single(sc.Terms)
             let lsum = lcoeffs |> Array.fold (+) Complex.Zero
             let rsum = rcoeffs |> Array.fold (+) Complex.Zero
             let expected = lsum + rsum
-            let actual   = found.Coeff
-            Assert.Equal(expected, actual)
+            let actual   = found.Reduce.Coeff
+            Assert.Equal(expected.Reduce, actual)
 
     [<Property (Arbitrary = [|typeof<ComplexGenerator>|]) >]
     let ``Addition operator coalesces terms from both arguments``(lterms : char[], rterms: char[]) =
@@ -125,8 +125,8 @@ module Terms_SC =
     [<Property (Arbitrary = [|typeof<ComplexGenerator>|]) >]
     let ``Constructor coeff scales coefficient of all terms``(globalCoeff : Complex, terms : C<char>[]) =
         let termWithUnitCoeff = SC<_>.Apply(Complex.One, terms)
-        let expected = termWithUnitCoeff.ScaleCoefficient globalCoeff
-        let actual   = SC<_>.Apply(globalCoeff, terms)
+        let expected = termWithUnitCoeff.ScaleCoefficient globalCoeff |> (fun t -> t.Reduce.Value)
+        let actual   = SC<_>.Apply(globalCoeff, terms) |> (fun t -> t.Reduce.Value)
 
         Assert.Equal(expected.Terms.Length, actual.Terms.Length)
         Assert.Equal(expected.Coeff, actual.Coeff)
@@ -150,9 +150,9 @@ module Terms_SC =
             |> Array.map ((curry SC<_>.Apply) Complex.One)
             |> (fun rg -> rg.[0])
 
-        Assert.All(ls.Terms, (fun t -> Assert.Equal(initialCoeff, t.Coeff)))
+        Assert.All(ls.Terms, (fun t -> Assert.Equal(initialCoeff.Reduce, t.Reduce.Coeff)))
         let result = ls.ScaleCoefficient(factor)
-        Assert.All(result.Terms, (fun t -> Assert.Equal(initialCoeff * factor, t.Coeff)))
+        Assert.All(result.Terms, (fun t -> Assert.Equal((initialCoeff * factor).Reduce, t.Reduce.Coeff)))
 
     [<Property (Arbitrary = [|typeof<ComplexGenerator>|]) >]
     let ``AddCoefficient adds coefficient to all terms``(terms : char[], initialCoeff : Complex, diff : Complex) =
@@ -163,8 +163,8 @@ module Terms_SC =
             |> Array.map ((curry SC<_>.Apply) Complex.One)
             |> (fun rg -> rg.[0])
 
-        Assert.All(ls.Terms, (fun t -> Assert.Equal(initialCoeff, t.Coeff)))
+        Assert.All(ls.Terms, (fun t -> Assert.Equal(initialCoeff.Reduce, t.Reduce.Coeff)))
         let result = ls.AddCoefficient(diff)
-        Assert.All(result.Terms, (fun t -> Assert.Equal(initialCoeff + diff, t.Coeff)))
+        Assert.All(result.Terms, (fun t -> Assert.Equal((initialCoeff + diff).Reduce, t.Reduce.Coeff)))
 
     // TODO: Multiply

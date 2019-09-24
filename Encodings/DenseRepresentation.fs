@@ -12,8 +12,8 @@ module DenseRepresentation =
         member inline this.Units = this.Unapply.Item
 
         static member inline Apply (coeff : Complex, units : C< ^unit>[]) =
-            C<_>.Apply(coeff.Reduce, units |> Array.map (fun u -> u.Reduce.Value))
-            |> (fun t -> t.Reduce.Value)
+            C<_>.Apply(coeff.Reduce, units |> Array.map (fun u -> u.Reduce))
+            |> (fun t -> t.Reduce)
             |> Register
 
         static member inline Unit =
@@ -27,7 +27,7 @@ module DenseRepresentation =
                 if (coeff.IsZero || curr.IsZero) then
                     (Complex.Zero, [||])
                 else
-                    ((coeff * curr.Coeff).Reduce, [| yield! units; yield curr.Normalize.Reduce.Value |])
+                    ((coeff * curr.Coeff).Reduce, [| yield! units; yield curr.Normalize.Reduce |])
 
             let checkForZero (coeff : Complex, units : C< ^unit >[]) =
                 if ((coeff.IsZero) || (units = [||])) then

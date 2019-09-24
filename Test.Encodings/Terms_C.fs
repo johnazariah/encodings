@@ -9,7 +9,7 @@ module Terms_C =
     [<Property (Arbitrary = [|typeof<ComplexGenerator>|]) >]
     let ``IsZero true only when coeff is zero`` (c : Complex) (i : int) =
         let u = C<_>.Apply (c, i)
-        Assert.Equal(c, u.Coeff)
+        Assert.Equal(c.Reduce, u.Coeff.Reduce)
 
         if (c = Complex.Zero) then
             Assert.True(u.IsZero)
@@ -31,7 +31,7 @@ module Terms_C =
 
     [<Property (Arbitrary = [|typeof<ComplexGenerator>|]) >]
     let ``Negate negates coeff`` (c : C<int>) =
-        Assert.Equal(-(c.Coeff), (-c).Coeff)
+        Assert.Equal(-(c.Coeff.Reduce), (-c).Reduce.Coeff)
 
     [<Property (Arbitrary = [|typeof<ComplexGenerator>|]) >]
     let ``ScaleCoefficient multiplies coefficient`` (s : Complex) (c : C<int>) =

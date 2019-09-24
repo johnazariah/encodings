@@ -11,6 +11,7 @@
     <Compile Include="Complex.fs" />
     <Compile Include="Terms_C.fs" />
     <Compile Include="Terms_SC.fs" />
+    <Compile Include="Terms_IxOp.fs" />
   </ItemGroup>
 
   <ItemGroup>

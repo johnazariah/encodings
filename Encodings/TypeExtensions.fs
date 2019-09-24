@@ -11,6 +11,17 @@ module TypeExtensions =
     let curry (f : ('x * 'y) -> 'r) =
         (fun x y -> f (x, y))
 
+    let equalsOn f x (objY : obj) =
+        match objY with
+        | :? 'T as y -> (f x = f y)
+        | _ -> false
+
+    let hashOn f x =  hash (f x)
+    let compareOn f x (objY: obj) =
+        match objY with
+        | :? 'T as y -> compare (f x) (f y)
+        | _ -> invalidArg "yobj" "cannot compare values of different types"
+
     type Complex
     with
         static member SwapSignMultiple n (c : Complex) =
@@ -25,8 +36,10 @@ module TypeExtensions =
             not this.IsNonZero
 
         member this.Reduce =
+            let round (d : Double) = Math.Round(d, 12, MidpointRounding.AwayFromZero)
+
             if Complex.IsFinite this then
-                this
+                Complex(round this.Real, round this.Imaginary)
             else
                 Complex.Zero
 

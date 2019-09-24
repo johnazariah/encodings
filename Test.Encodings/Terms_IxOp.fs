@@ -16,3 +16,22 @@ module Terms_IxOp =
         let min = IxOp<_,_>.Apply (System.Math.Min (i1, i2), randomString)
         let max = IxOp<_,_>.Apply (System.Math.Max (i1, i2), randomString)
         Assert.True (max .>=. min)
+
+    [<Property>]
+    let ``IndicesInOrder Ascending works`` (indices : uint32[]) =
+        let items = indices |> Array.map (fun index -> IxOp<_,_>.Apply(index, 'X'))
+        if (IxOp<_,_>.IndicesInOrder IndexOrder.Ascending items) then
+            Assert.True(true)
+        else
+            let sorted = items |> Seq.sortBy (fun item -> item.Index)
+            Assert.True (IxOp<_,_>.IndicesInOrder IndexOrder.Ascending sorted)
+
+    [<Property>]
+    let ``IndicesInOrder Descending works`` (indices : uint32[]) =
+        let items = indices |> Array.map (fun index -> IxOp<_,_>.Apply(index, 'X'))
+        if (IxOp<_,_>.IndicesInOrder IndexOrder.Descending items) then
+            Assert.True(true)
+        else
+            let sorted = items |> Seq.sortByDescending (fun item -> item.Index)
+            Assert.True (IxOp<_,_>.IndicesInOrder IndexOrder.Descending sorted)
+
