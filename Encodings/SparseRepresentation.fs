@@ -34,69 +34,104 @@ module SparseRepresentation =
                 | Ascending  -> (.<=.)
                 | Descending -> (.>=.)
             ops.IsOrdered comparer
+        member inline this.AsString =
+            sprintf "%O%O" this.Op this.Index
+
+        // override this.ToString() = this.AsString
 
     and CIxOp< ^idx, ^op when ^idx : comparison and ^op : equality> =
         | Indexed of C<IxOp< ^idx, ^op>>
     with
         member inline this.Unapply = match this with Indexed c -> c
         member inline this.IsZero = this.Unapply.IsZero
+        member inline this.Coeff  = this.Unapply.Coeff
+        member inline this.IndexedOp = this.Unapply.Item
+        member inline this.Normalize = this.Unapply.Normalize
+
         static member inline Unit =
             CIxOp< ^idx, ^op>.Indexed <| C<_>.Unit
+
         static member inline Apply (coeff, unit) =
             CIxOp< ^idx, ^op>.Indexed <| C<_>.Apply (coeff, unit)
-        static member inline Apply (unit) =
-            CIxOp< ^idx, ^op>.Indexed <| C<_>.Apply (unit)
 
     and PIxOp< ^idx, ^op when ^idx : comparison and ^op : equality> =
-        | ProductTerm of C<CIxOp< ^idx, ^op>[]>
+        | ProductTerm of C<IxOp< ^idx, ^op>[]>
     with
         member inline this.Unapply = match this with ProductTerm pt -> pt
         member inline this.Coeff = this.Unapply.Coeff
-        member inline this.Units = this.Unapply.Item
+        member inline this.IndexedOps = this.Unapply.Item
 
-        static member inline Apply = C<CIxOp< ^idx, ^op>>.Apply >> PIxOp< ^idx, ^op>.ProductTerm
+        static member inline internal ApplyInternal =
+            C<_>.Apply >> PIxOp< ^idx, ^op >.ProductTerm
 
-        static member inline Unit = PIxOp<_,_>.Apply (Complex.One,  [||])
-        static member inline Zero = PIxOp<_,_>.Apply (Complex.Zero, [||])
-
-        member inline this.Reduce =
-            lazy PIxOp<_,_>.ProductTerm this.Unapply.Reduce
-
-        member inline this.IsZero = this.Unapply.IsZero
+        static member inline Unit = PIxOp<_,_>.ApplyInternal (Complex.One,  [||])
+        static member inline Zero = PIxOp<_,_>.ApplyInternal (Complex.Zero, [||])
 
         static member inline (*) (l : PIxOp<_,_>, r : PIxOp<_,_>) =
-            PIxOp<_,_>.Apply (l.Coeff * r.Coeff, Array.concat [| l.Units; r.Units |])
+            let indexedOps = Array.concat [| l.IndexedOps; r.IndexedOps |]
+            let coeff = l.Coeff * r.Coeff
+            PIxOp<_,_>.ApplyInternal (coeff, indexedOps)
 
         member inline this.ScaleCoefficient scale =
-            PIxOp<_,_>.ProductTerm <| this.Unapply.ScaleCoefficient scale
+            this.Unapply.ScaleCoefficient scale
+            |> PIxOp<_,_>.ProductTerm
 
-        member inline this.AddCoefficient   coeff =
-            PIxOp<_,_>.ProductTerm <| this.Unapply.AddCoefficient coeff
+        member inline this.AddCoefficient coeff =
+            this.Unapply.AddCoefficient coeff
+            |> PIxOp<_,_>.ProductTerm
+
+        member inline this.IsZero =
+            this.Coeff.IsZero || this.IndexedOps = [||]
+
+        member inline this.Reduce =
+            if this.IsZero then
+                PIxOp< ^idx, ^op >.Zero
+            else
+                this
+
+        member inline this.Signature =
+            this.Reduce.IndexedOps
+            |> Array.fold (sprintf "%s%O") ""
 
         member inline this.IsInIndexOrder indexOrder =
             lazy
-                this.Units
-                |> Seq.map (fun u -> u.Unapply.Item)
+                this.IndexedOps
                 |> IxOp<_,_>.IndicesInOrder indexOrder
 
+        static member inline Apply (coeff : Complex, units : CIxOp< ^idx, ^op >[]) =
+            let extractedCoeff =
+                units
+                |> Array.fold (fun coeff curr -> coeff * curr.Coeff) Complex.One
+
+            let indexedOps =
+                units
+                |> Array.map (fun curr -> curr.IndexedOp)
+
+            PIxOp<_,_>.ApplyInternal (coeff * extractedCoeff, indexedOps)
+    //and Foo() = class
+    //    member __.Signature = "hello"
+    //end
     and SIxOp< ^idx, ^op when ^idx : comparison and ^op : equality> =
-        | SumTerm of SC<CIxOp< ^idx, ^op>[]>
+        | SumTerm of SC<PIxOp< ^idx, ^op >>
     with
         member inline this.Unapply = match this with SumTerm st -> st
         member inline __.Coeff = Complex.One
-        member inline this.Terms = this.Unapply.Terms |> Array.map PIxOp< ^idx, ^op>.ProductTerm
 
-        static member inline Apply (coeff : Complex, terms : PIxOp< ^idx, ^op>[]) =
+        member inline this.Terms =
+            this.Unapply.Terms
+
+        static member inline Apply (coeff : Complex, terms : PIxOp< ^idx, ^op>[]) : SIxOp< ^idx, ^op> =
             terms
-            |> Array.map (fun pi -> pi.Unapply)
-            |> (curry SC<_>.Apply coeff)
+            |> Array.map (curry C<_>.Apply Complex.One)
+            |> (curry SC<PIxOp< ^idx, ^op>>.Apply coeff)
             |> SIxOp< ^idx, ^op>.SumTerm
 
         static member inline (+) (l : SIxOp< ^idx, ^op>, r : SIxOp< ^idx, ^op>) =
             l.Unapply + r.Unapply
             |> SIxOp<_, _>.SumTerm
 
-        member inline this.IsZero = this.Unapply.IsZero
+        member inline this.IsZero =
+            this.Unapply.IsZero
 
         member inline this.AllTermsIndexOrdered indexOrder =
             let isIndexOrdered result (curr : PIxOp<_,_>) =
@@ -104,5 +139,9 @@ module SparseRepresentation =
                 result && currIsIndexOrdered.Value
             lazy
                 this.Terms
+                |> Seq.map (fun t -> t.Item)
                 |> Seq.fold isIndexOrdered true
 
+    and PIxOp< ^idx, ^op when ^idx : comparison and ^op : equality> with
+        static member inline (+) (l : PIxOp<_,_>, r : PIxOp<_,_>) : SIxOp< ^idx, ^op >=
+            SIxOp< ^idx, ^op >.Apply(Complex.One, [| l; r |])

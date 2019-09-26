@@ -7,91 +7,44 @@ module Terms_PIxOp =
     open FsCheck.Xunit
     open System.Numerics
 
-    let verifyReduced (this : PIxOp<_,_>) =
-        let coefficientIsZeroOnlyWhenNoProductTerms =
-            if this.Units = [||] then
-                this.Coeff = Complex.Zero
-            else
-                this.Coeff <> Complex.Zero
+    [<Property (Arbitrary = [|typeof<ComplexGenerator>|]) >]
+    let ``P constructor properly extracts coefficients from arguments``(args : (uint32 * char * Complex)[]) =
+        let cixops = args |> Array.map (fun (index, op, coeff) -> CIxOp<uint32,char>.Apply(coeff, IxOp<uint32, char>.Apply(index, op)))
+        let pixop = PIxOp<uint32,char>.Apply(Complex.One, cixops)
+        let expectedCoeff = args |> Array.fold (fun result (_, _, coeff) -> result * coeff) Complex.One
+        let actualCoeff = pixop.Coeff
+        Assert.Equal(expectedCoeff, actualCoeff)
 
-        let everyUnitInProductTermHasUnitCoefficient =
-            this.Units
-            |> Seq.exists (fun u -> u.Unapply.Coeff <> Complex.One)
-            |> not
+    [<Property (Arbitrary = [|typeof<ComplexGenerator>|]) >]
+    let ``Coefficient of the product of two P's is the product of the coefficients`` (left : PIxOp<uint32, char>, right : PIxOp<uint32, char>) =
+        let product = left * right
+        Assert.Equal (left.Coeff * right.Coeff, product.Coeff)
 
-        let result =
-            coefficientIsZeroOnlyWhenNoProductTerms &&
-            everyUnitInProductTermHasUnitCoefficient
-    #if DEBUG
-        if not result then
-            System.Diagnostics.Debugger.Break ()
-    #endif
-        result
+    [<Property (Arbitrary = [|typeof<ComplexGenerator>|]) >]
+    let ``Terms of the product of two P's is the concatenation of the terms`` (left : PIxOp<uint32, char>, right : PIxOp<uint32, char>) =
+        let product = left * right
+        Assert.Equal<IEnumerable>([| yield! left.IndexedOps; yield! right.IndexedOps|], product.IndexedOps)
 
-    [<Property>]
-    let ``P <- C + C``(l : C<int>, r : C<int>) =
-        let actual = l + r
-        let expectedCount = if (l.Item = r.Item) then 1 else 2
-        let expectedCoeff = if (l.Item = r.Item) then (l.Coeff + r.Coeff) else Complex.One
-        Assert.Equal(expectedCount, actual.Units.Length)
-        Assert.Equal(expectedCoeff.Reduce, actual.Coeff)
+    [<Property (Arbitrary = [|typeof<ComplexGenerator>|]) >]
+    let ``P constructor preserves terms even when coefficient is Zero``(cixops) =
+        let p = PIxOp<uint32, char>.Apply(Complex.Zero, cixops)
+        Assert.Equal(Complex.Zero, p.Coeff)
+        Assert.Equal(cixops.Length, p.IndexedOps.Length)
 
-    [<Property>]
-    let ``P <- C * C``(l : C<int>, r : C<int>) =
-        let actual = l * r
-        let expectedCount = 2
-        let expectedCoeff = l.Coeff * r.Coeff
-        Assert.Equal(expectedCount, actual.Units.Length)
-        Assert.Equal(expectedCoeff.Reduce, actual.Coeff.Reduce)
-        Assert.Equal<IEnumerable>([| l.Item; r.Item |], actual.Units |> Array.map (fun t -> t.Item))
+    [<Property (Arbitrary = [|typeof<ComplexGenerator>|]) >]
+    let ``Reduce returns Zero when Coeff is Zero``(cixops) =
+        let p = PIxOp<uint32, char>.Apply(Complex.Zero, cixops)
+        Assert.Equal(PIxOp<_,_>.Zero, p.Reduce)
+        Assert.Equal(Complex.Zero, p.Reduce.Coeff)
+        Assert.Empty(p.Reduce.IndexedOps)
 
-        let expectedUnitCoefficients =
-            if actual.Coeff.IsZero then
-                [| l.Coeff.Reduce; r.Coeff.Reduce |]
-            else
-                [| Complex.One;    Complex.One    |]
-        let actualUnitCoefficients = actual.Units |> Array.map (fun t -> t.Coeff.Reduce)
-        Assert.Equal<IEnumerable>(expectedUnitCoefficients, actualUnitCoefficients)
-
-    [<Property>]
-    let ``P <- 'unit``(i : int) =
-        let actual = P<_>.Apply (i)
-        verifyReduced actual.Reduce.Value |> Assert.True
-
-    [<Property>]
-    let ``P <- 'coeff * 'unit``(c : Complex, i : int) =
-        let unit = C<_>.Apply (c, i)
-        let actual = P<int>.Apply unit
-        Assert.Equal (Complex.One, actual.Coeff.Reduce)
-        Assert.Equal (unit.Coeff.Reduce, actual.Reduce.Value.Coeff.Reduce)
-        Assert.Equal (1, actual.Units.Length)
-
-    [<Property>]
-    let ``P <- C``(unit : C<int>) =
-        let actual = P<int>.Apply (unit)
-        Assert.Equal (Complex.One, actual.Coeff.Reduce)
-        Assert.Equal (unit.Coeff.Reduce, actual.Reduce.Value.Coeff.Reduce)
-        Assert.Equal (1, actual.Units.Length)
-
-    [<Property>]
-    let ``P <- 'coeff * C``(c : Complex, unit : C<int>) =
-        let actual = P<int>.Apply (c, unit)
-        Assert.Equal (c.Reduce, actual.Coeff.Reduce)
-        Assert.Equal ((c * unit.Coeff).Reduce, actual.Reduce.Value.Coeff.Reduce)
-        Assert.Equal (1, actual.Units.Length)
-
-    [<Property>]
-    let ``P <- C[]``(units : C<int>[]) =
-        let actual = P<int>.Apply (units)
-        Assert.Equal (Complex.One, actual.Coeff.Reduce)
-        Assert.Equal (units.Length, actual.Units.Length)
-        Assert.True  (units.Length >= actual.Reduce.Value.Units.Length)
-        verifyReduced actual.Reduce.Value |> Assert.True
-
-    [<Property>]
-    let ``P <- 'coeff * C[]``(c : Complex, units : C<int>[]) =
-        let actual = P<int>.Apply (c, units)
-        Assert.Equal (c.Reduce, actual.Coeff.Reduce)
-        Assert.Equal (units.Length, actual.Units.Length)
-        Assert.True  (units.Length >= actual.Reduce.Value.Units.Length)
-        verifyReduced actual.Reduce.Value |> Assert.True
+    [<Property (Arbitrary = [|typeof<ComplexGenerator>|]) >]
+    let ``Sum of two P's is an S with those terms`` (left : PIxOp<uint32, char>, right : PIxOp<uint32, char>) =
+        let sum = left + right
+        if (left.IndexedOps.ToString() <> right.IndexedOps.ToString()) then
+            Assert.Equal(2, sum.Terms.Length)
+        else
+            Assert.Equal(1, sum.Terms.Length)
+            Assert.Equal(Complex.One, sum.Coeff)
+            //let ops = sum.Terms |> Seq.map (fun t -> t.Unapply.ToString())
+            //Assert.All([|left.IndexedOps.ToString(); right.IndexedOps.ToString()|], (fun c -> Assert.Contains(c, ops)))

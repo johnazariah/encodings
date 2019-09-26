@@ -4,15 +4,10 @@ module Terms_CIxOp =
     open Encodings
     open Xunit
     open FsCheck.Xunit
+    open System.Numerics
 
-    [<Property>]
-    let ``I (.<=.) I`` (i1 : uint32, i2 : uint32, randomString : string) =
-        let min = IxOp<_,_>.Apply (System.Math.Min (i1, i2), randomString)
-        let max = IxOp<_,_>.Apply (System.Math.Max (i1, i2), randomString)
-        Assert.True (min .<=. max)
-
-    [<Property>]
-    let ``I (.>=.) I`` (i1 : uint32, i2 : uint32, randomString : string) =
-        let min = IxOp<_,_>.Apply (System.Math.Min (i1, i2), randomString)
-        let max = IxOp<_,_>.Apply (System.Math.Max (i1, i2), randomString)
-        Assert.True (max .>=. min)
+    [<Property (Arbitrary = [|typeof<ComplexGenerator>|]) >]
+    let ``Unapply round-trips with Apply`` (coeff : Complex, indexedOp : IxOp<uint32, char>) =
+        let expected = C<_>.Apply(coeff, indexedOp)
+        let actual = (CIxOp<_,_>.Apply (coeff, indexedOp)).Unapply
+        Assert.Equal(expected, actual)

@@ -38,7 +38,7 @@ module Terms =
 
         override x.GetHashCode() = hash x.Reduce.Coeff ^^^ hash x.Item
 
-    type SC< ^term when ^term : equality> =
+    type SC< ^term when ^term : equality(* and ^term : (member Signature : string) *)> =
         | SumTerm of Map<string, C< ^term >>
     with
         member inline this.Unapply = match this with SumTerm st -> st
@@ -46,18 +46,20 @@ module Terms =
         member inline this.Terms = this.Unapply.Values
 
         static member inline internal ApplyInternal (coeff : Complex) =
-            let toTuple (t : C<_>) =
+            let toTuple (t : C< ^term >) =
                 let scaled = t.ScaleCoefficient coeff
-                (t.Item.ToString(), scaled)
+                //let key = (^term : (member Signature : string)(t.Item))
+                let key = sprintf "%O" t.Item
+                (key, scaled)
 
             let createMap =
-                let addOrUpdate (m : Dictionary<'key, C<_>>) (key : 'key, value : C<_>) =
+                let addOrUpdate (m : Dictionary<'key, C< ^term >>) (key : 'key, value : C< ^term >) =
                     if m.ContainsKey key then
                         m.[key] <- m.[key].AddCoefficient value.Coeff
                     else
                         m.[key] <- value
                     m
-                let dictToMap (d : Dictionary<'key, C<_>>) =
+                let dictToMap (d : Dictionary<'key, C< ^term >>) =
                     seq { for kvp in d do yield (kvp.Key, kvp.Value) }
                     |> Map.ofSeq
 
@@ -69,10 +71,10 @@ module Terms =
             >> SumTerm
 
         static member inline Unit =
-            SC<_>.ApplyInternal (Complex.One) ([||])
+            SC< ^term >.ApplyInternal (Complex.One) ([||])
 
         static member inline Zero =
-            SC<_>.ApplyInternal (Complex.Zero) ([||])
+            SC< ^term >.ApplyInternal (Complex.Zero) ([||])
 
         member inline this.Reduce =
             lazy

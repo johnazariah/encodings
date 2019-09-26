@@ -25,21 +25,21 @@ module PrettyPrint =
         else
             sprintf "%O" this
 
-    let prettyPrintI (this : IxOp<_,_>) =
-        sprintf "(%s, %i)" this.Op this.Index
+    let prettyPrintIxOp (this : IxOp<uint32, _>) =
+        sprintf "(%O, %i)" this.Op this.Index
 
-    let prettyPrintCIxOp (this : CIxOp<_,_>) =
-        prettyPrintI this.Unapply.Item
+    let prettyPrintCIxOp (this : CIxOp<uint32,_>) =
+        prettyPrintIxOp this.Unapply.Item
 
-    let prettyPrintPIxOp (this : PIxOp<_,_>) =
-        this.Units
-        |> Array.map prettyPrintCIxOp
+    let prettyPrintPIxOp (this : PIxOp<uint32,_>) =
+        this.IndexedOps
+        |> Array.map prettyPrintIxOp
         |> (fun rg -> System.String.Join (" | ", rg))
         |> sprintf "[%s]"
 
-    let prettyPrintSIxOp (this : SIxOp<_,_>) =
+    let prettyPrintSIxOp (this : SIxOp<uint32,_>) =
         this.Terms
-        |> Array.map prettyPrintPIxOp
+        |> Seq.map (fun t -> prettyPrintPIxOp t.Item)
         |> (fun rg -> System.String.Join ("; ", rg))
         |> sprintf "{%s}"
 

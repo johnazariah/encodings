@@ -12,6 +12,8 @@
     <Compile Include="Terms_C.fs" />
     <Compile Include="Terms_SC.fs" />
     <Compile Include="Terms_IxOp.fs" />
+    <Compile Include="Terms_CIxOp.fs" />
+    <Compile Include="Terms_PIxOp.fs" />
   </ItemGroup>
 
   <ItemGroup>
