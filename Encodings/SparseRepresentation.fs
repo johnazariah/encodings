@@ -35,7 +35,7 @@ module SparseRepresentation =
                 | Descending -> (.>=.)
             ops.IsOrdered comparer
 
-        member inline this.AsString =
+        member inline this.Signature =
             sprintf "%O%O" this.Op this.Index
 
     type CIxOp< ^idx, ^op when ^idx : comparison and ^op : equality> =
@@ -53,7 +53,8 @@ module SparseRepresentation =
         static member inline Apply (coeff, unit) =
             CIxOp< ^idx, ^op>.Indexed <| C<_>.Apply (coeff, unit)
 
-        member inline this.AsString = this.IndexedOp.AsString
+        member inline this.Signature =
+            this.IndexedOp.Signature
 
     type PIxOp< ^idx, ^op when ^idx : comparison and ^op : equality> =
         | ProductTerm of C<IxOp< ^idx, ^op>[]>
@@ -92,7 +93,7 @@ module SparseRepresentation =
 
         member inline this.Signature =
             this.Reduce.IndexedOps
-            |> Array.fold (fun result curr -> sprintf "%s%s" result curr.AsString) ""
+            |> Array.fold (fun result curr -> sprintf "%s%s" result curr.Signature) ""
 
         member inline this.IsInIndexOrder indexOrder =
             lazy
