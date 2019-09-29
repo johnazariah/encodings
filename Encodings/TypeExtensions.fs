@@ -1,4 +1,17 @@
 ﻿namespace Encodings
+[<AutoOpen>]
+module Demo =
+    type Test< ^op > =
+        { Op : ^op }
+    with
+        member inline __.Signature = ""
+
+    type (*and*) Wrapper< ^test when ^test : equality and ^test : (member Signature : string) > =
+        | W of ^test
+
+    type (*and*) Wrapper'< ^test when ^test : equality and ^test : (member Signature : string) > =
+        | W' of Wrapper<Test< ^test >>
+
 
 [<AutoOpen>]
 module TypeExtensions =
@@ -17,6 +30,7 @@ module TypeExtensions =
         | _ -> false
 
     let hashOn f x =  hash (f x)
+
     let compareOn f x (objY: obj) =
         match objY with
         | :? 'T as y -> compare (f x) (f y)

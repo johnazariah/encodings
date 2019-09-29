@@ -9,6 +9,11 @@ module Terms_SC =
     open FsCheck.Xunit
     open System.Numerics
 
+    type CChar =
+    | CC of char
+    with
+        member this.Signature = this.ToString()
+
     let verifyReduced (this : SC<_>) =
         let coefficientIsUnity =
             this.Reduce.Value.Coeff = Complex.One
@@ -21,16 +26,16 @@ module Terms_SC =
         coefficientIsUnity
 
     [<Property (Arbitrary = [|typeof<ComplexGenerator>|]) >]
-    let ``Coeff is Unity``(s : SC<_>) =
+    let ``Coeff is Unity``(s : SC<CChar>) =
         Assert.Equal (Complex.One, s.Coeff)
 
     [<Property (Arbitrary = [|typeof<ComplexGenerator>|]) >]
-    let ``S <- 'coeff * 'terms``(c : Complex, terms : C<char> []) =
+    let ``S <- 'coeff * 'terms``(c : Complex, terms : C<CChar> []) =
         let actual = SC<_>.Apply (c, terms)
         verifyReduced actual |> Assert.True
 
     [<Property (Arbitrary = [|typeof<ComplexGenerator>|]) >]
-    let ``IsZero is only true if coefficient is zero or all terms are zero`` (candidate : SC<char>) =
+    let ``IsZero is only true if coefficient is zero or all terms are zero`` (candidate : SC<CChar>) =
         let zeroCoeff = SC<_>.Apply(Complex.Zero, candidate.Terms)
         Assert.True (zeroCoeff.IsZero)
 
@@ -45,7 +50,7 @@ module Terms_SC =
             Assert.False (candidate.IsZero)
 
     [<Property (Arbitrary = [|typeof<ComplexGenerator>|]) >]
-    let ``Reduce removes all terms if coeff is zero`` (candidate : SC<char>) =
+    let ``Reduce removes all terms if coeff is zero`` (candidate : SC<CChar>) =
         if (candidate.Coeff = Complex.Zero) then
             Assert.False (true, "Zero coefficient?")
         else if (candidate.Terms = [||]) then
@@ -64,7 +69,7 @@ module Terms_SC =
 
     [<Fact>]
     let ``Reduce works on empty array``() =
-        let sc = SC<_>.Apply(Complex.One, [||])
+        let sc = SC<CChar>.Apply(Complex.One, [||])
         Assert.True(sc.IsZero)
         Assert.Empty(sc.Terms)
 
@@ -76,7 +81,7 @@ module Terms_SC =
 
     [<Property (Arbitrary = [|typeof<ComplexGenerator>|]) >]
     let ``Constructor coalesces coefficients for like terms``(coeffs : Complex[]) =
-        let terms = coeffs |> Array.map (fun coeff -> C<_>.Apply(coeff, 'a'))
+        let terms = coeffs |> Array.map (fun coeff -> C<_>.Apply(coeff, CC 'a'))
         let sc = SC<_>.Apply(Complex.One, terms)
         if (sc.IsZero) then
             Assert.Empty (sc.Terms)
@@ -90,7 +95,7 @@ module Terms_SC =
     let ``Addition operator coalesces coefficients for like terms``(lcoeffs : Complex[], rcoeffs : Complex[]) =
         let (ls, rs) =
             [| lcoeffs; rcoeffs; |]
-            |> Array.map (Array.map (fun coeff -> C<_>.Apply (coeff, 'a')))
+            |> Array.map (Array.map (fun coeff -> C<_>.Apply (coeff, CC 'a')))
             |> Array.map ((curry SC<_>.Apply) Complex.One)
             |> (fun rg -> (rg.[0], rg.[1]))
 
@@ -110,7 +115,7 @@ module Terms_SC =
         let (ls, rs) =
             [| lterms; rterms; |]
             |> Array.map (HashSet)
-            |> Array.map (Seq.map (fun term -> C<_>.Apply(Complex.One, term)) >> Array.ofSeq)
+            |> Array.map (Seq.map (fun term -> C<_>.Apply(Complex.One, CC term)) >> Array.ofSeq)
             |> Array.map ((curry SC<_>.Apply) Complex.One)
             |> (fun rg -> (rg.[0], rg.[1]))
 
@@ -123,7 +128,7 @@ module Terms_SC =
             Assert.Equal(expected.Count, actual.Length)
 
     [<Property (Arbitrary = [|typeof<ComplexGenerator>|]) >]
-    let ``Constructor coeff scales coefficient of all terms``(globalCoeff : Complex, terms : C<char>[]) =
+    let ``Constructor coeff scales coefficient of all terms``(globalCoeff : Complex, terms : C<CChar>[]) =
         let termWithUnitCoeff = SC<_>.Apply(Complex.One, terms)
         let expected = termWithUnitCoeff.ScaleCoefficient globalCoeff |> (fun t -> t.Reduce.Value)
         let actual   = SC<_>.Apply(globalCoeff, terms) |> (fun t -> t.Reduce.Value)
@@ -146,7 +151,7 @@ module Terms_SC =
         let ls =
             [| terms |]
             |> Array.map (HashSet)
-            |> Array.map (Seq.map (fun term -> C<_>.Apply(initialCoeff, term)) >> Array.ofSeq)
+            |> Array.map (Seq.map (fun term -> C<_>.Apply(initialCoeff, CC term)) >> Array.ofSeq)
             |> Array.map ((curry SC<_>.Apply) Complex.One)
             |> (fun rg -> rg.[0])
 
@@ -159,7 +164,7 @@ module Terms_SC =
         let ls =
             [| terms |]
             |> Array.map (HashSet)
-            |> Array.map (Seq.map (fun term -> C<_>.Apply(initialCoeff, term)) >> Array.ofSeq)
+            |> Array.map (Seq.map (fun term -> C<_>.Apply(initialCoeff, CC term)) >> Array.ofSeq)
             |> Array.map ((curry SC<_>.Apply) Complex.One)
             |> (fun rg -> rg.[0])
 

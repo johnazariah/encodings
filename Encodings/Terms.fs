@@ -38,7 +38,7 @@ module Terms =
 
         override x.GetHashCode() = hash x.Reduce.Coeff ^^^ hash x.Item
 
-    type SC< ^term when ^term : equality(* and ^term : (member Signature : string) *)> =
+    type SC< ^term when ^term : equality and ^term : (member Signature : string) > =
         | SumTerm of Map<string, C< ^term >>
     with
         member inline this.Unapply = match this with SumTerm st -> st
@@ -48,8 +48,7 @@ module Terms =
         static member inline internal ApplyInternal (coeff : Complex) =
             let toTuple (t : C< ^term >) =
                 let scaled = t.ScaleCoefficient coeff
-                //let key = (^term : (member Signature : string)(t.Item))
-                let key = sprintf "%O" t.Item
+                let key = (^term : (member Signature : string)(t.Item))
                 (key, scaled)
 
             let createMap =

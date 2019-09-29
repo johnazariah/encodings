@@ -41,10 +41,30 @@ module Terms_PIxOp =
     [<Property (Arbitrary = [|typeof<ComplexGenerator>|]) >]
     let ``Sum of two P's is an S with those terms`` (left : PIxOp<uint32, char>, right : PIxOp<uint32, char>) =
         let sum = left + right
-        if (left.IndexedOps.ToString() <> right.IndexedOps.ToString()) then
+        if (left.Signature <> right.Signature) then
             Assert.Equal(2, sum.Terms.Length)
         else
             Assert.Equal(1, sum.Terms.Length)
             Assert.Equal(Complex.One, sum.Coeff)
-            //let ops = sum.Terms |> Seq.map (fun t -> t.Unapply.ToString())
-            //Assert.All([|left.IndexedOps.ToString(); right.IndexedOps.ToString()|], (fun c -> Assert.Contains(c, ops)))
+            let ops = sum.Terms |> Seq.map (fun t -> t.Item.Signature)
+            Assert.All([|left.Signature; right.Signature|], (fun c -> Assert.Contains(c, ops)))
+
+    type Test =
+    | R
+    | L
+    with
+        static member FromString =
+            function
+            | "R" -> Some R
+            | "L" -> Some L
+            | _   -> None
+
+    [<Theory>]
+    [<InlineData("[(R,1)|(L,2)]", "R1L2")>]
+    [<InlineData("[(R,1)|(L,1)|(R,2)]", "R1L1R2")>]
+    [<InlineData("[(R,1)|(R,1)|(L,1)|(L,1)]", "R1R1L1L1")>]
+    let ``P Signature is generated correctly``(input, expected) =
+        match ProductTermFromString Test.FromString input with
+        | Some pixop -> Assert.Equal (expected, pixop.Signature)
+        | None -> Assert.True (false)
+

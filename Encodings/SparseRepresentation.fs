@@ -34,12 +34,11 @@ module SparseRepresentation =
                 | Ascending  -> (.<=.)
                 | Descending -> (.>=.)
             ops.IsOrdered comparer
+
         member inline this.AsString =
             sprintf "%O%O" this.Op this.Index
 
-        // override this.ToString() = this.AsString
-
-    and CIxOp< ^idx, ^op when ^idx : comparison and ^op : equality> =
+    type CIxOp< ^idx, ^op when ^idx : comparison and ^op : equality> =
         | Indexed of C<IxOp< ^idx, ^op>>
     with
         member inline this.Unapply = match this with Indexed c -> c
@@ -54,7 +53,9 @@ module SparseRepresentation =
         static member inline Apply (coeff, unit) =
             CIxOp< ^idx, ^op>.Indexed <| C<_>.Apply (coeff, unit)
 
-    and PIxOp< ^idx, ^op when ^idx : comparison and ^op : equality> =
+        member inline this.AsString = this.IndexedOp.AsString
+
+    type PIxOp< ^idx, ^op when ^idx : comparison and ^op : equality> =
         | ProductTerm of C<IxOp< ^idx, ^op>[]>
     with
         member inline this.Unapply = match this with ProductTerm pt -> pt
@@ -91,7 +92,7 @@ module SparseRepresentation =
 
         member inline this.Signature =
             this.Reduce.IndexedOps
-            |> Array.fold (sprintf "%s%O") ""
+            |> Array.fold (fun result curr -> sprintf "%s%s" result curr.AsString) ""
 
         member inline this.IsInIndexOrder indexOrder =
             lazy
@@ -108,10 +109,8 @@ module SparseRepresentation =
                 |> Array.map (fun curr -> curr.IndexedOp)
 
             PIxOp<_,_>.ApplyInternal (coeff * extractedCoeff, indexedOps)
-    //and Foo() = class
-    //    member __.Signature = "hello"
-    //end
-    and SIxOp< ^idx, ^op when ^idx : comparison and ^op : equality> =
+
+    type SIxOp< ^idx, ^op when ^idx : comparison and ^op : equality> =
         | SumTerm of SC<PIxOp< ^idx, ^op >>
     with
         member inline this.Unapply = match this with SumTerm st -> st
