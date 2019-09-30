@@ -147,7 +147,10 @@ module SparseRepresentation =
             lazy
                 allTermsIndexOrdered
 
-    type SIxWkOp< ^idx, ^op when ^idx : comparison and ^op : equality and ^op : (static member InNormalOrder : ^op -> ^op -> bool)> =
+    type SIxWkOp< ^idx, ^op
+            when ^idx : comparison
+            and ^op : equality
+            and ^op : (static member InNormalOrder : ^op -> ^op -> bool)> =
         | SumTerm of SIxOp< ^idx, ^op>
     with
         member inline this.Unapply = match this with SumTerm st -> st
@@ -160,9 +163,9 @@ module SparseRepresentation =
             SIxOp< ^idx, ^op>.Apply(coeff, terms)
             |> SIxWkOp< ^idx, ^op>.SumTerm
 
-        static member inline (+) (l : SIxOp< ^idx, ^op>, r : SIxOp< ^idx, ^op>) =
+        static member inline (+) (l : SIxWkOp< ^idx, ^op>, r : SIxWkOp< ^idx, ^op>) =
             l.Unapply + r.Unapply
-            |> SIxOp<_, _>.SumTerm
+            |> SIxWkOp<_, _>.SumTerm
 
         member inline this.IsZero =
             this.Unapply.IsZero
@@ -180,7 +183,9 @@ module SparseRepresentation =
             lazy
                 this.Terms
                 |> Seq.map (fun t -> t.Item)
-                |> Seq.fold (fun result curr -> result && SIxWkOp< ^idx, ^op>.PIxOpInNormalOrder curr) true
+                |> Seq.fold
+                    (fun result curr -> result && SIxWkOp< ^idx, ^op>.PIxOpInNormalOrder curr)
+                    true
 
         member inline this.AllTermsIndexOrdered indexOrder =
             let isIndexOrdered result (curr : PIxOp<_,_>) =
@@ -195,6 +200,6 @@ module SparseRepresentation =
             lazy
                 this.AllTermsNormalOrdered.Value && allTermsIndexOrdered
 
-    and PIxOp< ^idx, ^op when ^idx : comparison and ^op : equality> with
+    type PIxOp< ^idx, ^op when ^idx : comparison and ^op : equality> with
         static member inline (+) (l : PIxOp<_,_>, r : PIxOp<_,_>) : SIxOp< ^idx, ^op >=
             SIxOp< ^idx, ^op >.Apply(Complex.One, [| l; r |])
