@@ -20,3 +20,11 @@ module TestUtils
                         return System.Numerics.Complex (re.Get, im.Get)
                     }
             }
+
+
+    type CChar =
+    | CC of char
+    with
+        member this.Unapply = match this with CC c -> c
+        member this.Signature = this.ToString()
+        static member InNormalOrder (l : CChar, r : CChar) = l.Unapply <= r.Unapply

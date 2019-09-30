@@ -9,11 +9,6 @@ module Terms_SC =
     open FsCheck.Xunit
     open System.Numerics
 
-    type CChar =
-    | CC of char
-    with
-        member this.Signature = this.ToString()
-
     let verifyReduced (this : SC<_>) =
         let coefficientIsUnity =
             this.Reduce.Value.Coeff = Complex.One

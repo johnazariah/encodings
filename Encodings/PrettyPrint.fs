@@ -25,21 +25,21 @@ module PrettyPrint =
         else
             sprintf "%O" this
 
-    let prettyPrintIxOp (this : IxOp<uint32, _>) =
+    let inline prettyPrintIxOp< ^op when ^op : equality and ^op : (static member InNormalOrder : ^op -> ^op -> bool)> (this : IxOp<uint32, ^op>) =
         sprintf "(%O, %i)" this.Op this.Index
 
-    let prettyPrintCIxOp (this : CIxOp<uint32,_>) =
-        prettyPrintIxOp this.Unapply.Item
+    let inline prettyPrintCIxOp< ^op when ^op : equality and ^op : (static member InNormalOrder : ^op -> ^op -> bool)> (this : CIxOp<uint32, ^op>) =
+        prettyPrintIxOp< ^op > this.Unapply.Item
 
-    let prettyPrintPIxOp (this : PIxOp<uint32,_>) =
+    let inline prettyPrintPIxOp< ^op when ^op : equality and ^op : (static member InNormalOrder : ^op -> ^op -> bool)> (this : PIxOp<uint32, ^op>) =
         this.IndexedOps
-        |> Array.map prettyPrintIxOp
+        |> Array.map prettyPrintIxOp< ^op >
         |> (fun rg -> System.String.Join (" | ", rg))
         |> sprintf "[%s]"
 
-    let prettyPrintSIxOp (this : SIxOp<uint32,_>) =
+    let inline prettyPrintSIxOp< ^op when ^op : equality and ^op : (static member InNormalOrder : ^op -> ^op -> bool)> (this : SIxOp< uint32, ^op>) =
         this.Terms
-        |> Seq.map (fun t -> prettyPrintPIxOp t.Item)
+        |> Seq.map (fun t -> prettyPrintPIxOp< ^op > t.Item)
         |> (fun rg -> System.String.Join ("; ", rg))
         |> sprintf "{%s}"
 
