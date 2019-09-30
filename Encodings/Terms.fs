@@ -16,9 +16,6 @@ module Terms =
         static member Apply (coeff : Complex, unit) =
             { Coeff = coeff; Item = unit }
 
-        member this.Reduce =
-            { this with Coeff = this.Coeff.Reduce }
-
         member this.Normalize =
             { this with Coeff = Complex.One }
 
@@ -31,12 +28,12 @@ module Terms =
         member inline this.AddCoefficient coeff =
             { this with Coeff = this.Coeff + coeff }
 
-        override x.Equals objY =
-            match objY with
-            | :? C<'unit> as y -> (x.Reduce.Coeff = y.Reduce.Coeff) && (x.Item = y.Item)
+        override this.Equals otherObj =
+            match otherObj with
+            | :? C<'unit> as other -> Complex.ApproximatelyEqual(this.Coeff, other.Coeff) && (this.Item = other.Item)
             | _ -> false
 
-        override x.GetHashCode() = hash x.Reduce.Coeff ^^^ hash x.Item
+        override this.GetHashCode() = hash this.Coeff.Reduce ^^^ hash this.Item
 
     type SC< ^term when ^term : equality and ^term : (member Signature : string) > =
         | SumTerm of Map<string, C< ^term >>

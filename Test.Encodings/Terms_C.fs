@@ -1,15 +1,17 @@
 ﻿namespace Tests
 
-module Terms_C =
-    open Encodings
-    open Xunit
-    open FsCheck.Xunit
-    open System.Numerics
+open Encodings
+open Xunit
+open FsCheck.Xunit
+open System.Numerics
 
-    [<Property (Arbitrary = [|typeof<ComplexGenerator>|]) >]
+[<Properties (Arbitrary = [|typeof<ComplexGenerator>|], QuietOnSuccess = true) >]
+module Terms_C =
+
+    [<Property>]
     let ``IsZero true only when coeff is zero`` (c : Complex) (i : int) =
         let u = C<_>.Apply (c, i)
-        Assert.Equal(c.Reduce, u.Coeff.Reduce)
+        Assert.True(Complex.ApproximatelyEqual(c, u.Coeff))
 
         if (c = Complex.Zero) then
             Assert.True(u.IsZero)
@@ -20,7 +22,7 @@ module Terms_C =
         Assert.Equal(Complex.Zero, v.Coeff)
         Assert.True(v.IsZero)
 
-    [<Property (Arbitrary = [|typeof<ComplexGenerator>|]) >]
+    [<Property>]
     let ``Normalize sets coeff to One`` (c : C<int>) =
         if (c.Coeff <> Complex.One) then
             Assert.False(c.Coeff = Complex.One)
@@ -29,15 +31,15 @@ module Terms_C =
             Assert.True(c.Coeff = Complex.One)
             Assert.True(c.Normalize.Coeff = Complex.One)
 
-    [<Property (Arbitrary = [|typeof<ComplexGenerator>|]) >]
+    [<Property>]
     let ``Negate negates coeff`` (c : C<int>) =
-        Assert.Equal(-(c.Coeff.Reduce), (-c).Reduce.Coeff)
+        Assert.True(Complex.ApproximatelyEqual(-c.Coeff, (-c).Coeff))
 
-    [<Property (Arbitrary = [|typeof<ComplexGenerator>|]) >]
+    [<Property>]
     let ``ScaleCoefficient multiplies coefficient`` (s : Complex) (c : C<int>) =
         Assert.Equal((c.Coeff * s), (c.ScaleCoefficient s).Coeff)
 
-    [<Property (Arbitrary = [|typeof<ComplexGenerator>|]) >]
+    [<Property>]
     let ``AddCoefficient adds coefficient`` (s : Complex) (c : C<int>) =
         Assert.Equal((c.Coeff + s), (c.AddCoefficient s).Coeff)
 
@@ -47,10 +49,10 @@ module Terms_C =
         Assert.Equal(Complex.One, actual.Coeff)
         Assert.Equal(i, actual.Item)
 
-    [<Property (Arbitrary = [|typeof<ComplexGenerator>|]) >]
+    [<Property>]
     let ``C <- 'coeff * 'unit``(c : Complex, i : int) =
         let actual = C<_>.Apply (c, i)
-        Assert.Equal(c.Reduce, actual.Coeff.Reduce)
+        Assert.Equal(c, actual.Coeff)
         Assert.Equal(i, actual.Item)
 
     [<Theory>]

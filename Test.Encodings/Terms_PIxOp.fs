@@ -1,13 +1,15 @@
 ﻿namespace Tests
 
-module Terms_PIxOp =
-    open System.Collections
-    open Encodings
-    open Xunit
-    open FsCheck.Xunit
-    open System.Numerics
+open System.Collections
+open Encodings
+open Xunit
+open FsCheck.Xunit
+open System.Numerics
 
-    [<Property (Arbitrary = [|typeof<ComplexGenerator>|]) >]
+[<Properties (Arbitrary = [|typeof<ComplexGenerator>|]) >]
+module Terms_PIxOp =
+
+    [<Property>]
     let ``P constructor properly extracts coefficients from arguments``(args : (uint32 * char * Complex)[]) =
         let cixops = args |> Array.map (fun (index, op, coeff) -> CIxOp<uint32,CChar>.Apply(coeff, IxOp<uint32, CChar>.Apply(index, CC op)))
         let pixop = PIxOp<uint32,CChar>.Apply(Complex.One, cixops)
@@ -15,30 +17,30 @@ module Terms_PIxOp =
         let actualCoeff = pixop.Coeff
         Assert.Equal(expectedCoeff, actualCoeff)
 
-    [<Property (Arbitrary = [|typeof<ComplexGenerator>|]) >]
+    [<Property>]
     let ``Coefficient of the product of two P's is the product of the coefficients`` (left : PIxOp<uint32, CChar>, right : PIxOp<uint32, CChar>) =
         let product = left * right
         Assert.Equal (left.Coeff * right.Coeff, product.Coeff)
 
-    [<Property (Arbitrary = [|typeof<ComplexGenerator>|]) >]
+    [<Property>]
     let ``Terms of the product of two P's is the concatenation of the terms`` (left : PIxOp<uint32, CChar>, right : PIxOp<uint32, CChar>) =
         let product = left * right
         Assert.Equal<IEnumerable>([| yield! left.IndexedOps; yield! right.IndexedOps|], product.IndexedOps)
 
-    [<Property (Arbitrary = [|typeof<ComplexGenerator>|]) >]
+    [<Property>]
     let ``P constructor preserves terms even when coefficient is Zero``(cixops) =
         let p = PIxOp<uint32, CChar>.Apply(Complex.Zero, cixops)
         Assert.Equal(Complex.Zero, p.Coeff)
         Assert.Equal(cixops.Length, p.IndexedOps.Length)
 
-    [<Property (Arbitrary = [|typeof<ComplexGenerator>|]) >]
+    [<Property>]
     let ``Reduce returns Zero when Coeff is Zero``(cixops) =
         let p = PIxOp<uint32, CChar>.Apply(Complex.Zero, cixops)
         Assert.Equal(PIxOp<_,_>.Zero, p.Reduce)
         Assert.Equal(Complex.Zero, p.Reduce.Coeff)
         Assert.Empty(p.Reduce.IndexedOps)
 
-    [<Property (Arbitrary = [|typeof<ComplexGenerator>|]) >]
+    [<Property>]
     let ``Sum of two P's is an S with those terms`` (left : PIxOp<uint32, CChar>, right : PIxOp<uint32, CChar>) =
         let sum = left + right
         if (left.Signature <> right.Signature) then
@@ -60,8 +62,8 @@ module Terms_PIxOp =
             | _   -> None
         static member InNormalOrder (l, r) =
             match (l, r) with
-            | R, L -> true
-            | _, _ -> false
+            | L, R -> false
+            | _, _ -> true
 
     [<Theory>]
     [<InlineData("[(R,1)|(L,2)]", "R1L2")>]
@@ -70,5 +72,18 @@ module Terms_PIxOp =
     let ``P Signature is generated correctly``(input, expected) =
         match ProductTermFromString Test.FromString input with
         | Some pixop -> Assert.Equal (expected, pixop.Signature)
+        | None -> Assert.True (false)
+
+
+    [<Theory>]
+    [<InlineData("[(R,1)|(R,2)]", true)>]
+    [<InlineData("[(L,1)|(L,2)]", true)>]
+    [<InlineData("[(R,1)|(L,2)]", true)>]
+    [<InlineData("[(L,1)|(R,2)]", false)>]
+    [<InlineData("[(R,1)|(L,1)|(R,2)]", false)>]
+    [<InlineData("[(R,1)|(R,1)|(L,1)|(L,1)]", true)>]
+    let ``P InNormalOrder is computed correctly``(input, expected) =
+        match ProductTermFromString Test.FromString input with
+        | Some pixop -> Assert.Equal (expected, pixop.InNormalOrder.Value)
         | None -> Assert.True (false)
 

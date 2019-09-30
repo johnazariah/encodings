@@ -107,7 +107,7 @@ module SparseRepresentation =
                 this.IndexedOps
                 |> IxOp<_,_>.IndicesInOrder indexOrder
 
-        member inline this.IsInNormalOrder =
+        member inline this.InNormalOrder =
             lazy
                 this.IndexedOps
                 |> IxOp<_,_>.InNormalOrder
@@ -147,7 +147,7 @@ module SparseRepresentation =
 
         member inline this.AllTermsNormalOrdered =
             let isNormalOrdered result (curr : PIxOp<_,_>) =
-                let currIsNormalOrdered = curr.IsInNormalOrder
+                let currIsNormalOrdered = curr.InNormalOrder
                 result && currIsNormalOrdered.Value
             lazy
                 this.Terms
