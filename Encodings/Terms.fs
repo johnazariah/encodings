@@ -35,7 +35,10 @@ module Terms =
 
         override this.GetHashCode() = hash this.Coeff.Reduce ^^^ hash this.Item
 
-    type SC< ^term when ^term : equality and ^term : (member Signature : string) > =
+    type SC< ^term
+            when ^term : equality
+            and ^term : (member Signature : string)
+            and ^term : (static member (<.>) : C< ^term > -> C< ^term > -> C<C< ^term >[]>)> =
         | SumTerm of Map<string, C< ^term >>
     with
         member inline this.Unapply = match this with SumTerm st -> st
@@ -84,17 +87,18 @@ module Terms =
                     |]
                     |> SC<_>.ApplyInternal Complex.One
 
-        static member inline
-            Multiply
-                (multiplier : C< ^term > * C< ^term > -> SC< ^term >)
-                (l : SC< ^term >, r : SC< ^term >) =
+        static member inline (*) (l : SC< ^term >, r : SC< ^term >) =
+            let multiplier (lt, rt) = (^term : (static member (<.>) : C< ^term > -> C< ^term > -> C<C< ^term >[]>)(lt, rt))
             [|
                 for lt in l.Terms do
                     for rt in r.Terms do
-                        let ct = multiplier (lt, rt)
-                        yield! ct.Terms
+                        yield multiplier (lt, rt)
             |]
-            |> SC<_>.ApplyInternal Complex.One
+            |> Array.fold
+                (fun (resultCoeff, resultTerms) curr ->
+                    (resultCoeff * curr.Coeff, [| yield! resultTerms; yield! curr.Item |]))
+                (Complex.One, [||])
+            |> uncurry SC<_>.ApplyInternal
 
         static member inline (+) (l : SC<_>, r : SC<_>) =
             [|

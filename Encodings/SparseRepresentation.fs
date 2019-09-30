@@ -22,7 +22,9 @@ module SparseRepresentation =
         | Ascending
         | Descending
 
-    type IxOp< ^idx, ^op when ^idx : comparison and ^op : equality> =
+    type IxOp< ^idx, ^op
+            when ^idx : comparison
+            and ^op : equality> =
         { Index : ^idx; Op : ^op }
     with
         static member inline Apply (index : ^idx, op : ^op) = { Index = index; Op = op }
@@ -39,7 +41,9 @@ module SparseRepresentation =
         member inline this.Signature =
             sprintf "%O%O" this.Op this.Index
 
-    type CIxOp< ^idx, ^op when ^idx : comparison and ^op : equality> =
+    type CIxOp< ^idx, ^op
+            when ^idx : comparison
+            and ^op : equality> =
         | Indexed of C<IxOp< ^idx, ^op>>
     with
         member inline this.Unapply = match this with Indexed c -> c
@@ -57,7 +61,9 @@ module SparseRepresentation =
         member inline this.Signature =
             this.IndexedOp.Signature
 
-    type PIxOp< ^idx, ^op when ^idx : comparison and ^op : equality> =
+    type PIxOp< ^idx, ^op
+            when ^idx : comparison
+            and ^op : equality> =
         | ProductTerm of C<IxOp< ^idx, ^op>[]>
     with
         member inline this.Unapply = match this with ProductTerm pt -> pt
@@ -96,6 +102,14 @@ module SparseRepresentation =
             this.Reduce.IndexedOps
             |> Array.fold (fun result curr -> sprintf "%s%s" result curr.Signature) ""
 
+        static member inline (<.>) (l : C<PIxOp< ^idx, ^op>>, r : C<PIxOp< ^idx, ^op>>) : C<C<PIxOp< ^idx, ^op>>[]> =
+            let lp = l.Item.ScaleCoefficient l.Coeff
+            let rp = r.Item.ScaleCoefficient r.Coeff
+            lp * rp
+            |> curry C<_>.Apply Complex.One
+            |> (fun cp -> [| cp |])
+            |> curry C<_>.Apply Complex.One
+
         member inline this.IsInIndexOrder indexOrder =
             lazy
                 this.IndexedOps
@@ -112,7 +126,9 @@ module SparseRepresentation =
 
             PIxOp<_,_>.ApplyInternal (coeff * extractedCoeff, indexedOps)
 
-    type SIxOp< ^idx, ^op when ^idx : comparison and ^op : equality> =
+    type SIxOp< ^idx, ^op
+            when ^idx : comparison
+            and ^op : equality> =
         | SumTerm of SC<PIxOp< ^idx, ^op >>
     with
         member inline this.Unapply = match this with SumTerm st -> st
@@ -129,6 +145,10 @@ module SparseRepresentation =
 
         static member inline (+) (l : SIxOp< ^idx, ^op>, r : SIxOp< ^idx, ^op>) =
             l.Unapply + r.Unapply
+            |> SIxOp<_, _>.SumTerm
+
+        static member inline (*) (l : SIxOp< ^idx, ^op>, r : SIxOp< ^idx, ^op>) =
+            l.Unapply * r.Unapply
             |> SIxOp<_, _>.SumTerm
 
         member inline this.IsZero =

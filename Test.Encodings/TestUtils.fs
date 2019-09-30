@@ -1,6 +1,8 @@
 ﻿[<AutoOpen>]
 module TestUtils
     open FsCheck
+    open Encodings
+    open System.Numerics
 
     type TestcaseDatabase<'a> (generator : 'a[] seq) =
         interface seq<'a[]> with
@@ -27,3 +29,5 @@ module TestUtils
     with
         member this.Unapply = match this with CC c -> c
         member this.Signature = this.ToString()
+        static member (<.>) (l : C<CChar>, r : C<CChar>) : C<C<CChar>[]> =
+            C<_>.Apply (Complex.One, [| l; r |])

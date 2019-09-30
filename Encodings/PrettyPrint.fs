@@ -37,7 +37,7 @@ module PrettyPrint =
         |> (fun rg -> System.String.Join (" | ", rg))
         |> sprintf "[%s]"
 
-    let inline prettyPrintSIxOp< ^op when ^op : equality> (this : SIxOp< uint32, ^op>) =
+    let inline prettyPrintSIxOp< ^op when ^op : equality> (this : SIxOp<uint32, ^op>) =
         this.Terms
         |> Seq.map (fun t -> prettyPrintPIxOp< ^op > t.Item)
         |> (fun rg -> System.String.Join ("; ", rg))
