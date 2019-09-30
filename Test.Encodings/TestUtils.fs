@@ -27,4 +27,3 @@ module TestUtils
     with
         member this.Unapply = match this with CC c -> c
         member this.Signature = this.ToString()
-        static member InNormalOrder (l : CChar, r : CChar) = l.Unapply <= r.Unapply

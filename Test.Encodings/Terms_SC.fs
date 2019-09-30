@@ -78,12 +78,17 @@ module Terms_SC =
         let terms = coeffs |> Array.map (fun coeff -> C<_>.Apply(coeff, CC 'a'))
         let sc = SC<_>.Apply(Complex.One, terms)
         if (sc.IsZero) then
-            Assert.Empty (sc.Terms)
+            Assert.Empty (sc.Reduce.Value.Terms)
         else
             let found = Assert.Single(sc.Terms)
             let expected = coeffs |> Array.fold (+) Complex.Zero
             let actual   = found.Coeff
             Assert.Equal(expected, actual)
+
+    [<Fact>]
+    let ``Constructor coalesces coefficients for like terms : Regression 1``() =
+        let inputs = [| Complex.One; Complex.MinusOne |]
+        ``Constructor coalesces coefficients for like terms`` inputs
 
     [<Property>]
     let ``Addition operator coalesces coefficients for like terms``(lcoeffs : Complex[], rcoeffs : Complex[]) =

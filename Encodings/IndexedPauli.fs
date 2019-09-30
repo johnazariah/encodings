@@ -25,7 +25,5 @@ module IndexedPauli =
 
         override this.ToString() = this.AsString.Value
 
-        static member InNormalOrder (l : Pauli, r : Pauli) = true
-
         static member FromString =
             IndexedOpFromString Pauli.Apply

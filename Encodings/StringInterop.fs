@@ -4,7 +4,7 @@
 module StringInterop =
     open System.Numerics
 
-    let inline IndexedOpFromString< ^op when ^op : equality and ^op : (static member InNormalOrder : ^op -> ^op -> bool)>
+    let inline IndexedOpFromString< ^op when ^op : equality>
         (unitFactory : string ->  ^op  option)
         (s : System.String) =
         try
@@ -19,7 +19,7 @@ module StringInterop =
         with
         | _ -> None
 
-    let inline ProductTermFromString< ^op when ^op : equality and ^op : (static member InNormalOrder : ^op -> ^op -> bool)>
+    let inline ProductTermFromString< ^op when ^op : equality>
         (unitFactory : string ->  ^op  option)
         (s : System.String) : PIxOp<uint32, ^op > option =
         try
@@ -30,7 +30,7 @@ module StringInterop =
         with
         | _ -> None
 
-    let inline SumTermFromString< ^op when ^op : equality and ^op : (static member InNormalOrder : ^op -> ^op -> bool)>
+    let inline SumTermFromString< ^op when ^op : equality>
         (unitFactory : string ->  ^op  option)
         (s : System.String) : SIxOp<uint32, ^op > option =
         try

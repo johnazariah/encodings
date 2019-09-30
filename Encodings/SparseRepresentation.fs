@@ -22,30 +22,24 @@ module SparseRepresentation =
         | Ascending
         | Descending
 
-    and IxOp< ^idx, ^op when ^idx : comparison and ^op : equality and ^op : (static member InNormalOrder : ^op -> ^op -> bool)> =
+    type IxOp< ^idx, ^op when ^idx : comparison and ^op : equality> =
         { Index : ^idx; Op : ^op }
     with
         static member inline Apply (index : ^idx, op : ^op) = { Index = index; Op = op }
         static member inline (.>=.) (l : IxOp< ^idx, ^op >, r : IxOp< ^idx, ^op >) = l.Index >= r.Index
         static member inline (.<=.) (l : IxOp< ^idx, ^op >, r : IxOp< ^idx, ^op >) = l.Index <= r.Index
 
-        static member inline IndicesInOrder (indexOrder : IndexOrder) (ops : IxOp< ^idx, ^op> seq) : bool =
+        static member inline InIndexOrder (indexOrder : IndexOrder) (ops : IxOp< ^idx, ^op> seq) : bool =
             let comparer =
                 match indexOrder with
                 | Ascending  -> (.<=.)
                 | Descending -> (.>=.)
             ops.IsOrdered comparer
 
-        static member inline InNormalOrder  (ixops : IxOp< ^idx, ^op> seq) : bool =
-            let comparer l r = (^op : (static member InNormalOrder : ^op -> ^op -> bool)(l, r))
-            ixops
-            |> Seq.map (fun ixop -> ixop.Op)
-            |> (fun ops -> ops.IsOrdered comparer)
-
         member inline this.Signature =
             sprintf "%O%O" this.Op this.Index
 
-    type CIxOp< ^idx, ^op when ^idx : comparison and ^op : equality and ^op : (static member InNormalOrder : ^op -> ^op -> bool)> =
+    type CIxOp< ^idx, ^op when ^idx : comparison and ^op : equality> =
         | Indexed of C<IxOp< ^idx, ^op>>
     with
         member inline this.Unapply = match this with Indexed c -> c
@@ -63,7 +57,7 @@ module SparseRepresentation =
         member inline this.Signature =
             this.IndexedOp.Signature
 
-    type PIxOp< ^idx, ^op when ^idx : comparison and ^op : equality and ^op : (static member InNormalOrder : ^op -> ^op -> bool)> =
+    type PIxOp< ^idx, ^op when ^idx : comparison and ^op : equality> =
         | ProductTerm of C<IxOp< ^idx, ^op>[]>
     with
         member inline this.Unapply = match this with ProductTerm pt -> pt
@@ -105,12 +99,7 @@ module SparseRepresentation =
         member inline this.IsInIndexOrder indexOrder =
             lazy
                 this.IndexedOps
-                |> IxOp<_,_>.IndicesInOrder indexOrder
-
-        member inline this.InNormalOrder =
-            lazy
-                this.IndexedOps
-                |> IxOp<_,_>.InNormalOrder
+                |> IxOp<_,_>.InIndexOrder indexOrder
 
         static member inline Apply (coeff : Complex, units : CIxOp< ^idx, ^op >[]) =
             let extractedCoeff =
@@ -123,7 +112,7 @@ module SparseRepresentation =
 
             PIxOp<_,_>.ApplyInternal (coeff * extractedCoeff, indexedOps)
 
-    type SIxOp< ^idx, ^op when ^idx : comparison and ^op : equality and ^op : (static member InNormalOrder : ^op -> ^op -> bool)> =
+    type SIxOp< ^idx, ^op when ^idx : comparison and ^op : equality> =
         | SumTerm of SC<PIxOp< ^idx, ^op >>
     with
         member inline this.Unapply = match this with SumTerm st -> st
@@ -145,25 +134,67 @@ module SparseRepresentation =
         member inline this.IsZero =
             this.Unapply.IsZero
 
+        member inline this.AllTermsIndexOrdered indexOrder =
+            let isIndexOrdered result (curr : PIxOp<_,_>) =
+                let currIsIndexOrdered = curr.IsInIndexOrder indexOrder
+                result && currIsIndexOrdered.Value
+
+            let allTermsIndexOrdered =
+                this.Terms
+                |> Seq.map (fun t -> t.Item)
+                |> Seq.fold isIndexOrdered true
+
+            lazy
+                allTermsIndexOrdered
+
+    type SIxWkOp< ^idx, ^op when ^idx : comparison and ^op : equality and ^op : (static member InNormalOrder : ^op -> ^op -> bool)> =
+        | SumTerm of SIxOp< ^idx, ^op>
+    with
+        member inline this.Unapply = match this with SumTerm st -> st
+        member inline __.Coeff = Complex.One
+
+        member inline this.Terms =
+            this.Unapply.Terms
+
+        static member inline Apply (coeff : Complex, terms : PIxOp< ^idx, ^op>[]) =
+            SIxOp< ^idx, ^op>.Apply(coeff, terms)
+            |> SIxWkOp< ^idx, ^op>.SumTerm
+
+        static member inline (+) (l : SIxOp< ^idx, ^op>, r : SIxOp< ^idx, ^op>) =
+            l.Unapply + r.Unapply
+            |> SIxOp<_, _>.SumTerm
+
+        member inline this.IsZero =
+            this.Unapply.IsZero
+
+        static member inline IxOpsInNormalOrder  (ixops : IxOp< ^idx, ^op> seq) : bool =
+            let comparer l r = (^op : (static member InNormalOrder : ^op -> ^op -> bool)(l, r))
+            ixops
+            |> Seq.map (fun ixop -> ixop.Op)
+            |> (fun ops -> ops.IsOrdered comparer)
+
+        static member inline PIxOpInNormalOrder (this : PIxOp< ^idx, ^op>) =
+            SIxWkOp< ^idx, ^op>.IxOpsInNormalOrder this.IndexedOps
+
         member inline this.AllTermsNormalOrdered =
-            let isNormalOrdered result (curr : PIxOp<_,_>) =
-                let currIsNormalOrdered = curr.InNormalOrder
-                result && currIsNormalOrdered.Value
             lazy
                 this.Terms
                 |> Seq.map (fun t -> t.Item)
-                |> Seq.fold isNormalOrdered true
-
+                |> Seq.fold (fun result curr -> result && SIxWkOp< ^idx, ^op>.PIxOpInNormalOrder curr) true
 
         member inline this.AllTermsIndexOrdered indexOrder =
             let isIndexOrdered result (curr : PIxOp<_,_>) =
                 let currIsIndexOrdered = curr.IsInIndexOrder indexOrder
                 result && currIsIndexOrdered.Value
-            lazy
+
+            let allTermsIndexOrdered =
                 this.Terms
                 |> Seq.map (fun t -> t.Item)
                 |> Seq.fold isIndexOrdered true
 
-    and PIxOp< ^idx, ^op when ^idx : comparison and ^op : equality and ^op : (static member InNormalOrder : ^op -> ^op -> bool)> with
+            lazy
+                this.AllTermsNormalOrdered.Value && allTermsIndexOrdered
+
+    and PIxOp< ^idx, ^op when ^idx : comparison and ^op : equality> with
         static member inline (+) (l : PIxOp<_,_>, r : PIxOp<_,_>) : SIxOp< ^idx, ^op >=
             SIxOp< ^idx, ^op >.Apply(Complex.One, [| l; r |])

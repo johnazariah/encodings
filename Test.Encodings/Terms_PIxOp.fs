@@ -84,6 +84,6 @@ module Terms_PIxOp =
     [<InlineData("[(R,1)|(R,1)|(L,1)|(L,1)]", true)>]
     let ``P InNormalOrder is computed correctly``(input, expected) =
         match ProductTermFromString Test.FromString input with
-        | Some pixop -> Assert.Equal (expected, pixop.InNormalOrder.Value)
+        | Some pixop -> Assert.Equal (expected, SIxWkOp<uint32, Test>.PIxOpInNormalOrder pixop)
         | None -> Assert.True (false)
 

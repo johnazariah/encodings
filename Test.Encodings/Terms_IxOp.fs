@@ -20,18 +20,18 @@ module Terms_IxOp =
     [<Property>]
     let ``IndicesInOrder Ascending works`` (indices : uint32[]) =
         let items = indices |> Array.map (fun index -> IxOp<uint32,CChar>.Apply(index, CC 'X'))
-        if (IxOp<_,_>.IndicesInOrder IndexOrder.Ascending items) then
+        if (IxOp<_,_>.InIndexOrder IndexOrder.Ascending items) then
             Assert.True(true)
         else
             let sorted = items |> Seq.sortBy (fun item -> item.Index)
-            Assert.True (IxOp<_,_>.IndicesInOrder IndexOrder.Ascending sorted)
+            Assert.True (IxOp<_,_>.InIndexOrder IndexOrder.Ascending sorted)
 
     [<Property>]
     let ``IndicesInOrder Descending works`` (indices : uint32[]) =
         let items = indices |> Array.map (fun index -> IxOp<uint32,CChar>.Apply(index, CC 'X'))
-        if (IxOp<_,_>.IndicesInOrder IndexOrder.Descending items) then
+        if (IxOp<_,_>.InIndexOrder IndexOrder.Descending items) then
             Assert.True(true)
         else
             let sorted = items |> Seq.sortByDescending (fun item -> item.Index)
-            Assert.True (IxOp<_,_>.IndicesInOrder IndexOrder.Descending sorted)
+            Assert.True (IxOp<_,_>.InIndexOrder IndexOrder.Descending sorted)
 
