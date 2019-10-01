@@ -31,3 +31,18 @@ module TestUtils
         member this.Signature = this.ToString()
         static member (<.>) (l : C<CChar>, r : C<CChar>) : C<C<CChar>[]> =
             C<_>.Apply (Complex.One, [| l; r |])
+
+
+    type Test =
+    | R
+    | L
+    with
+        static member FromString =
+            function
+            | "R" -> Some R
+            | "L" -> Some L
+            | _   -> None
+        static member InNormalOrder (l, r) =
+            match (l, r) with
+            | L, R -> false
+            | _, _ -> true

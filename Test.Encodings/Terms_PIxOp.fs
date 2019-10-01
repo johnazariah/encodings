@@ -51,20 +51,6 @@ module Terms_PIxOp =
             let ops = sum.Terms |> Seq.map (fun t -> t.Item.Signature)
             Assert.All([|left.Signature; right.Signature|], (fun c -> Assert.Contains(c, ops)))
 
-    type Test =
-    | R
-    | L
-    with
-        static member FromString =
-            function
-            | "R" -> Some R
-            | "L" -> Some L
-            | _   -> None
-        static member InNormalOrder (l, r) =
-            match (l, r) with
-            | L, R -> false
-            | _, _ -> true
-
     [<Theory>]
     [<InlineData("[(R,1)|(L,2)]", "R1L2")>]
     [<InlineData("[(R,1)|(L,1)|(R,2)]", "R1L1R2")>]
@@ -73,7 +59,6 @@ module Terms_PIxOp =
         match ProductTermFromString Test.FromString input with
         | Some pixop -> Assert.Equal (expected, pixop.Signature)
         | None -> Assert.True (false)
-
 
     [<Theory>]
     [<InlineData("[(R,1)|(R,2)]", true)>]
@@ -87,3 +72,25 @@ module Terms_PIxOp =
         | Some pixop -> Assert.Equal (expected, SIxWkOp<uint32, Test>.PIxOpInNormalOrder pixop)
         | None -> Assert.True (false)
 
+    [<Theory>]
+    [<InlineData("[(R,1)|(R,2)]", "[(R,1)|(R,2)]", "[(R,1)|(R,2)|(R,1)|(R,2)]")>]
+    [<InlineData("[(L,1)|(L,2)]", "[(L,1)|(L,2)]", "[(L,1)|(L,2)|(L,1)|(L,2)]")>]
+    [<InlineData("[(R,1)|(R,2)]", "[(L,1)|(L,2)]", "[(R,1)|(R,2)|(L,1)|(L,2)]")>]
+    let ``P * P is computed correctly``(leftStr, rightStr, expected) =
+        let left  = ProductTermFromString Test.FromString leftStr
+        let right = ProductTermFromString Test.FromString rightStr
+        match (left, right) with
+        | Some l, Some r -> Assert.Equal(expected, prettyPrintPIxOp (l * r) |> shrinkString)
+        | _, _ -> Assert.True (false)
+
+
+    [<Theory>]
+    [<InlineData("[(R,1)|(R,2)]", "[(R,1)|(R,2)]", "{[(R,1)|(R,2)]}")>]
+    [<InlineData("[(L,1)|(L,2)]", "[(L,1)|(L,2)]", "{[(L,1)|(L,2)]}")>]
+    [<InlineData("[(R,1)|(R,2)]", "[(L,1)|(L,2)]", "{[(L,1)|(L,2)];[(R,1)|(R,2)]}")>]
+    let ``P + P is computed correctly``(leftStr, rightStr, expected) =
+        let left  = ProductTermFromString Test.FromString leftStr
+        let right = ProductTermFromString Test.FromString rightStr
+        match (left, right) with
+        | Some l, Some r -> Assert.Equal(expected, prettyPrintSIxOp (l + r) |> shrinkString)
+        | _, _ -> Assert.True (false)

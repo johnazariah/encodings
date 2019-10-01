@@ -3,6 +3,7 @@
 [<AutoOpen>]
 module StringInterop =
     open System.Numerics
+    let shrinkString (s : System.String) = s.Replace(" ", "")
 
     let inline IndexedOpFromString< ^op when ^op : equality>
         (unitFactory : string ->  ^op  option)
