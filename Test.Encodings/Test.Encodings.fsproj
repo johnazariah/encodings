@@ -15,6 +15,7 @@
     <Compile Include="Terms_CIxOp.fs" />
     <Compile Include="Terms_PIxOp.fs" />
     <Compile Include="Terms_SIxOp.fs" />
+    <Compile Include="PauliRegister.fs" />
   </ItemGroup>
 
   <ItemGroup>

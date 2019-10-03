@@ -7,11 +7,11 @@
   <ItemGroup>
     <Compile Include="TypeExtensions.fs" />
     <Compile Include="Terms.fs" />
-    <Compile Include="DenseRepresentation.fs" />
     <Compile Include="SparseRepresentation.fs" />
+    <Compile Include="DenseRepresentation.fs" />
+    <Compile Include="Operators.fs" />
     <Compile Include="PrettyPrint.fs" />
     <Compile Include="StringInterop.fs" />
-    <Compile Include="IndexedPauli.fs" />
   </ItemGroup>
 
 </Project>

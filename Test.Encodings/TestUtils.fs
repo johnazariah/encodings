@@ -33,16 +33,20 @@ module TestUtils
             C<_>.Apply (Complex.One, [| l; r |])
 
 
-    type Test =
-    | R
-    | L
+    type Wick =
+    | Raise
+    | Lower
     with
         static member FromString =
             function
-            | "R" -> Some R
-            | "L" -> Some L
+            | "R" -> Some Raise
+            | "L" -> Some Lower
             | _   -> None
+        override this.ToString() =
+            match this with
+            | Raise -> "R"
+            | Lower -> "L"
         static member InNormalOrder (l, r) =
             match (l, r) with
-            | L, R -> false
+            | Lower, Raise -> false
             | _, _ -> true

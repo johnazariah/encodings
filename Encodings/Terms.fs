@@ -6,34 +6,41 @@ open System.Collections.Generic
 module Terms =
     [<CustomEquality; NoComparison>]
     type C<'unit when 'unit : equality> =
-        { Coeff : Complex; Item : 'unit }
+        { C : Complex; U : 'unit }
     with
-        member this.IsZero = this.Coeff.IsZero
+        member inline this.IsZero = this.C.IsZero
 
-        static member Unit =
-            { Coeff = Complex.One; Item = Unchecked.defaultof<'unit> }
+        static member inline Unit =
+            { C = Complex.One; U = Unchecked.defaultof<'unit> }
 
-        static member Apply (coeff : Complex, unit) =
-            { Coeff = coeff; Item = unit }
+        static member inline Apply (coeff : Complex, unit) =
+            { C = coeff; U = unit }
 
-        member this.Normalize =
-            { this with Coeff = Complex.One }
+        member inline this.Normalize =
+            { this with C = Complex.One }
 
-        static member (~-) (v : C<'unit>) =
-            ({ v with Coeff = - v.Coeff })
+        static member inline (~-) (v : C<'unit>) =
+            ({ v with C = - v.C })
 
-        member inline this.ScaleCoefficient scale =
-            { this with Coeff = this.Coeff * scale }
+        member inline this.ScaleCoefficient (scale : Complex)  =
+            { this with C = this.C * scale }
 
-        member inline this.AddCoefficient coeff =
-            { this with Coeff = this.Coeff + coeff }
+        member inline this.AddCoefficient (diff : Complex) =
+            { this with C = this.C + diff }
 
+        // custom equality prevents inlining
         override this.Equals otherObj =
             match otherObj with
-            | :? C<'unit> as other -> Complex.ApproximatelyEqual(this.Coeff, other.Coeff) && (this.Item = other.Item)
+            | :? C<'unit> as other -> Complex.ApproximatelyEqual(this.C, other.C) && (this.U = other.U)
             | _ -> false
 
-        override this.GetHashCode() = hash this.Coeff.Reduce ^^^ hash this.Item
+        override this.GetHashCode() = hash this.C.Reduce ^^^ hash this.U
+
+        static member inline P1 x = C<'unit>.Apply (Complex.One          , x)
+        static member inline Pi x = C<'unit>.Apply (Complex.ImaginaryOne , x)
+        static member inline M1 x = C<'unit>.Apply (Complex.MinusOne     , x)
+        static member inline Mi x = C<'unit>.Apply (Complex.MinusI       , x)
+
 
     type SC< ^term
             when ^term : equality
@@ -41,20 +48,22 @@ module Terms =
             and ^term : (static member (<.>) : C< ^term > -> C< ^term > -> C<C< ^term >[]>)> =
         | SumTerm of Map<string, C< ^term >>
     with
+        static member inline private KeySignature(t : ^term) =
+            (^term : (member Signature : string)(t))
         member inline this.Unapply = match this with SumTerm st -> st
         member inline __.Coeff = Complex.One
-        member inline this.Terms = this.Unapply.Values
+        member inline this.Terms = [| for term in this.Unapply.Values do if SC< ^term >.KeySignature(term.U) <> "" then yield term |]
 
         static member inline internal ApplyInternal (coeff : Complex) =
             let toTuple (t : C< ^term >) =
                 let scaled = t.ScaleCoefficient coeff
-                let key = (^term : (member Signature : string)(t.Item))
+                let key = (^term : (member Signature : string)(t.U))
                 (key, scaled)
 
             let createMap =
                 let addOrUpdate (m : Dictionary<'key, C< ^term >>) (key : 'key, value : C< ^term >) =
                     if m.ContainsKey key then
-                        m.[key] <- m.[key].AddCoefficient value.Coeff
+                        m.[key] <- m.[key].AddCoefficient value.C
                     else
                         m.[key] <- value
                     m
@@ -96,7 +105,7 @@ module Terms =
             |]
             |> Array.fold
                 (fun (resultCoeff, resultTerms) curr ->
-                    (resultCoeff * curr.Coeff, [| yield! resultTerms; yield! curr.Item |]))
+                    (resultCoeff * curr.C, [| yield! resultTerms; yield! curr.U |]))
                 (Complex.One, [||])
             |> uncurry SC<_>.ApplyInternal
 
@@ -120,3 +129,4 @@ module Terms =
         member inline this.AddCoefficient coeff =
             let terms = this.Terms |> Array.map (fun t -> t.AddCoefficient coeff)
             SC<_>.ApplyInternal Complex.One terms
+

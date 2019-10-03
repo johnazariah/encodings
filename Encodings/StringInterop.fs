@@ -5,7 +5,7 @@ module StringInterop =
     open System.Numerics
     let shrinkString (s : System.String) = s.Replace(" ", "")
 
-    let inline IndexedOpFromString< ^op when ^op : equality>
+    let inline IxOpFromString< ^op when ^op : equality>
         (unitFactory : string ->  ^op  option)
         (s : System.String) =
         try
@@ -20,24 +20,41 @@ module StringInterop =
         with
         | _ -> None
 
-    let inline ProductTermFromString< ^op when ^op : equality>
+    let inline PIxOpFromString< ^op when ^op : equality>
         (unitFactory : string ->  ^op  option)
         (s : System.String) : PIxOp<uint32, ^op > option =
         try
             s.Trim().TrimStart('[').TrimEnd(']').Split('|')
-            |> Array.choose (IndexedOpFromString unitFactory)
+            |> Array.choose (IxOpFromString unitFactory)
             |> (curry PIxOp<_,_>.Apply) Complex.One
             |> Some
         with
         | _ -> None
 
-    let inline SumTermFromString< ^op when ^op : equality>
+    let inline SIxOpFromString< ^op when ^op : equality>
         (unitFactory : string ->  ^op  option)
         (s : System.String) : SIxOp<uint32, ^op > option =
         try
             s.Trim().TrimStart('{').TrimEnd('}').Split(';')
-            |> Array.choose (ProductTermFromString unitFactory)
+            |> Array.choose (PIxOpFromString unitFactory)
             |> (curry SIxOp<_,_>.Apply) Complex.One
             |> Some
         with
         | _ -> None
+
+    let inline RegisterFromString< ^op
+                        when ^op : (static member Identity : ^op)
+                        and  ^op : (static member Multiply : ^op -> ^op -> C< ^op >)
+                        and ^op : equality>
+        (unitFactory : char ->  ^op  option) (s : System.String) : R< ^op > option =
+        try
+            s.Trim().TrimStart().TrimEnd().ToCharArray()
+            |> Array.choose (unitFactory)
+            |> Array.map (curry C< ^op >.Apply Complex.One)
+            |> (curry R< ^op >.Apply) Complex.One
+            |> Some
+        with
+        | _ -> None
+
+    let inline IndexedPauliFromString s =
+        IxOpFromString (fun s -> Pauli.Apply (s.Chars 0)) s

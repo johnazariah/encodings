@@ -82,7 +82,7 @@ module Terms_SC =
         else
             let found = Assert.Single(sc.Terms)
             let expected = coeffs |> Array.fold (+) Complex.Zero
-            let actual   = found.Coeff
+            let actual   = found.C
             Assert.Equal(expected, actual)
 
     [<Fact>]
@@ -106,7 +106,7 @@ module Terms_SC =
             let lsum = lcoeffs |> Array.fold (+) Complex.Zero
             let rsum = rcoeffs |> Array.fold (+) Complex.Zero
             let expected = lsum + rsum
-            let actual   = found.Coeff
+            let actual   = found.C
             Assert.True(Complex.ApproximatelyEqual(expected, actual))
 
     [<Property>]
@@ -123,7 +123,7 @@ module Terms_SC =
             Assert.Empty (sc.Terms)
         else
             let expected = HashSet (seq { yield! lterms; yield! rterms} )
-            let actual   = sc.Terms |> Array.map (fun t -> t.Item)
+            let actual   = sc.Terms |> Array.map (fun t -> t.U)
             Assert.Equal(expected.Count, actual.Length)
 
     [<Property>]
@@ -135,12 +135,12 @@ module Terms_SC =
         Assert.Equal(expected.Coeff, actual.Coeff)
         Assert.Equal(Complex.One, actual.Coeff)
 
-        let expectedTerms = expected.Terms |> Seq.sortBy(fun t -> t.Item) |> List.ofSeq
-        let actualTerms   = actual.Terms   |> Seq.sortBy(fun t -> t.Item) |> List.ofSeq
+        let expectedTerms = expected.Terms |> Seq.sortBy(fun t -> t.U) |> List.ofSeq
+        let actualTerms   = actual.Terms   |> Seq.sortBy(fun t -> t.U) |> List.ofSeq
 
         let rec allTermsEqual = function
         | [], [] -> true
-        | (l : C<CChar>) :: ls, (r : C<CChar>) :: rs -> (Assert.True(Complex.ApproximatelyEqual(l.Coeff, r.Coeff)); Assert.Equal(l.Item, r.Item); true && allTermsEqual (ls, rs))
+        | (l : C<CChar>) :: ls, (r : C<CChar>) :: rs -> (Assert.True(Complex.ApproximatelyEqual(l.C, r.C)); Assert.Equal(l.U, r.U); true && allTermsEqual (ls, rs))
         | _, _ -> false
         Assert.True (allTermsEqual (expectedTerms, actualTerms))
 
@@ -150,8 +150,8 @@ module Terms_SC =
         let globalCoeff = Complex.One
         let terms =
             [|
-                {Coeff = Complex.Zero; Item = CC 'n'}
-                {Coeff = Complex.Zero; Item = CC 'a'}
+                {C = Complex.Zero; U = CC 'n'}
+                {C = Complex.Zero; U = CC 'a'}
             |]
         ``Constructor coeff scales coefficient of all terms``(globalCoeff, terms)
 
@@ -160,8 +160,8 @@ module Terms_SC =
         let globalCoeff = Complex(-2.588235294117647, -14.897435897435898)
         let terms =
             [|
-                {Coeff = Complex(4.5, 4.0); Item = CC 'a'}
-                {Coeff = Complex(1.0, 1.5); Item = CC 'a'}
+                {C = Complex(4.5, 4.0); U = CC 'a'}
+                {C = Complex(1.0, 1.5); U = CC 'a'}
             |]
         ``Constructor coeff scales coefficient of all terms``(globalCoeff, terms)
 
@@ -170,8 +170,8 @@ module Terms_SC =
         let globalCoeff = Complex(11.666666666666666, 6.)
         let terms =
             [|
-                {Coeff = Complex(-3., -3.5); Item = CC 'a'}
-                {Coeff = Complex(1.8333333333333333, -0.19999999999999996); Item = CC 'a'}
+                {C = Complex(-3., -3.5); U = CC 'a'}
+                {C = Complex(1.8333333333333333, -0.19999999999999996); U = CC 'a'}
             |]
         ``Constructor coeff scales coefficient of all terms``(globalCoeff, terms)
 
@@ -184,9 +184,9 @@ module Terms_SC =
             |> Array.map ((curry SC<_>.Apply) Complex.One)
             |> (fun rg -> rg.[0])
 
-        Assert.All(ls.Terms, (fun t -> Assert.True(Complex.ApproximatelyEqual(initialCoeff, t.Coeff))))
+        Assert.All(ls.Terms, (fun t -> Assert.True(Complex.ApproximatelyEqual(initialCoeff, t.C))))
         let result = ls.ScaleCoefficient(factor)
-        Assert.All(result.Terms, (fun t -> Assert.True(Complex.ApproximatelyEqual(initialCoeff * factor, t.Coeff))))
+        Assert.All(result.Terms, (fun t -> Assert.True(Complex.ApproximatelyEqual(initialCoeff * factor, t.C))))
 
     [<Property>]
     let ``AddCoefficient adds coefficient to all terms``(terms : char[], initialCoeff : Complex, diff : Complex) =
@@ -197,8 +197,8 @@ module Terms_SC =
             |> Array.map ((curry SC<_>.Apply) Complex.One)
             |> (fun rg -> rg.[0])
 
-        Assert.All(ls.Terms, (fun t -> Assert.True(Complex.ApproximatelyEqual(initialCoeff, t.Coeff))))
+        Assert.All(ls.Terms, (fun t -> Assert.True(Complex.ApproximatelyEqual(initialCoeff, t.C))))
         let result = ls.AddCoefficient(diff)
-        Assert.All(result.Terms, (fun t -> Assert.True(Complex.ApproximatelyEqual(initialCoeff + diff, t.Coeff))))
+        Assert.All(result.Terms, (fun t -> Assert.True(Complex.ApproximatelyEqual(initialCoeff + diff, t.C))))
 
     // TODO: Multiply

@@ -41,22 +41,47 @@ module Terms_PIxOp =
         Assert.Empty(p.Reduce.IndexedOps)
 
     [<Property>]
-    let ``Sum of two P's is an S with those terms`` (left : PIxOp<uint32, CChar>, right : PIxOp<uint32, CChar>) =
+    let ``P + P -> S`` (left : PIxOp<uint32, CChar>, right : PIxOp<uint32, CChar>) =
+        let zeroCount =
+            let zero (p : PIxOp<_,_>) = if p.IsZero then 1 else 0
+            zero left + zero right
+        let degeneracyCount =
+            if (not left.IsZero) && (left.Signature = right.Signature) then 1 else 0
+
+        let expectedTermCount =
+            2 - zeroCount - degeneracyCount
+        let expectedSignatures =
+            [|
+                if (not left.IsZero)  then yield left.Signature
+                if (not right.IsZero) then yield right.Signature
+            |]
+
         let sum = left + right
-        if (left.Signature <> right.Signature) then
-            Assert.Equal(2, sum.Terms.Length)
-        else
-            Assert.Equal(1, sum.Terms.Length)
-            Assert.Equal(Complex.One, sum.Coeff)
-            let ops = sum.Terms |> Seq.map (fun t -> t.Item.Signature)
-            Assert.All([|left.Signature; right.Signature|], (fun c -> Assert.Contains(c, ops)))
+        Assert.Equal(expectedTermCount, sum.Terms.Length)
+        Assert.Equal(Complex.One, sum.Coeff)
+
+        let ops = sum.Terms |> Seq.map (fun t -> t.U.Signature)
+        Assert.All(expectedSignatures, (fun c -> Assert.Contains(c, ops)))
+
+    [<Fact>]
+    let ``P + P -> S (Regression 1)``() =
+        let left  = ProductTerm { C = Complex.Zero; U = [||] }
+        let right = ProductTerm { C = Complex.Zero; U = [||] }
+        ``P + P -> S`` (left, right)
+
+
+    [<Fact>]
+    let ``P + P -> S (Regression 3)``() =
+        let left  = ProductTerm { C = Complex.One;  U = [||] }
+        let right = ProductTerm { C = Complex.Zero; U = [||] }
+        ``P + P -> S`` (left, right)
 
     [<Theory>]
     [<InlineData("[(R,1)|(L,2)]", "R1L2")>]
     [<InlineData("[(R,1)|(L,1)|(R,2)]", "R1L1R2")>]
     [<InlineData("[(R,1)|(R,1)|(L,1)|(L,1)]", "R1R1L1L1")>]
     let ``P Signature is generated correctly``(input, expected) =
-        match ProductTermFromString Test.FromString input with
+        match PIxOpFromString Wick.FromString input with
         | Some pixop -> Assert.Equal (expected, pixop.Signature)
         | None -> Assert.True (false)
 
@@ -68,8 +93,8 @@ module Terms_PIxOp =
     [<InlineData("[(R,1)|(L,1)|(R,2)]", false)>]
     [<InlineData("[(R,1)|(R,1)|(L,1)|(L,1)]", true)>]
     let ``P InNormalOrder is computed correctly``(input, expected) =
-        match ProductTermFromString Test.FromString input with
-        | Some pixop -> Assert.Equal (expected, SIxWkOp<uint32, Test>.PIxOpInNormalOrder pixop)
+        match PIxOpFromString Wick.FromString input with
+        | Some pixop -> Assert.Equal (expected, SIxWkOp<uint32, Wick>.PIxOpInNormalOrder pixop)
         | None -> Assert.True (false)
 
     [<Theory>]
@@ -77,8 +102,8 @@ module Terms_PIxOp =
     [<InlineData("[(L,1)|(L,2)]", "[(L,1)|(L,2)]", "[(L,1)|(L,2)|(L,1)|(L,2)]")>]
     [<InlineData("[(R,1)|(R,2)]", "[(L,1)|(L,2)]", "[(R,1)|(R,2)|(L,1)|(L,2)]")>]
     let ``P * P is computed correctly``(leftStr, rightStr, expected) =
-        let left  = ProductTermFromString Test.FromString leftStr
-        let right = ProductTermFromString Test.FromString rightStr
+        let left  = PIxOpFromString Wick.FromString leftStr
+        let right = PIxOpFromString Wick.FromString rightStr
         match (left, right) with
         | Some l, Some r -> Assert.Equal(expected, prettyPrintPIxOp (l * r) |> shrinkString)
         | _, _ -> Assert.True (false)
@@ -89,8 +114,8 @@ module Terms_PIxOp =
     [<InlineData("[(L,1)|(L,2)]", "[(L,1)|(L,2)]", "{[(L,1)|(L,2)]}")>]
     [<InlineData("[(R,1)|(R,2)]", "[(L,1)|(L,2)]", "{[(L,1)|(L,2)];[(R,1)|(R,2)]}")>]
     let ``P + P is computed correctly``(leftStr, rightStr, expected) =
-        let left  = ProductTermFromString Test.FromString leftStr
-        let right = ProductTermFromString Test.FromString rightStr
+        let left  = PIxOpFromString Wick.FromString leftStr
+        let right = PIxOpFromString Wick.FromString rightStr
         match (left, right) with
         | Some l, Some r -> Assert.Equal(expected, prettyPrintSIxOp (l + r) |> shrinkString)
         | _, _ -> Assert.True (false)

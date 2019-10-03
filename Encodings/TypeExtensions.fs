@@ -55,7 +55,8 @@ module TypeExtensions =
         static member SwapSignMultiple n (c : Complex) =
             [0..(n - 1)] |> Seq.fold (fun c' _ -> -c') c
 
-        static member MinusOne = Complex.One |> Complex.Negate
+        static member MinusOne = Complex.One          |> Complex.Negate
+        static member MinusI   = Complex.ImaginaryOne |> Complex.Negate
 
         member this.IsNonZero =
             Complex.IsFinite this && (this <> Complex.Zero)

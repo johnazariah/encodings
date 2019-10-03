@@ -1,21 +1,28 @@
 namespace Tests
 
+open FsCheck.Xunit
+
+
+[<Properties (Arbitrary = [|typeof<ComplexGenerator>|]) >]
 module PauliRegister =
     open Encodings
     open Xunit
-    open System.Numerics
+
+    [<Property>]
+    let ``Signature is computed correctly``(candidate : R<Pauli>) =
+        Assert.Equal(prettyPrintRegister candidate, candidate.Signature)
 
     [<Fact>]
     let ``Default register is all identities``() =
-        let reg = PauliRegister(4u)
-        Assert.Equal("IIII", reg.ToString())
+        let reg = R<Pauli>.New 4u
+        Assert.Equal("IIII", prettyPrintRegister reg)
 
     [<Fact>]
     let ``Register is Big Endian``() =
-        let reg = PauliRegister(4u)
-        do reg.[0] <- X
-        Assert.Equal(Some X, reg.[0])
-        Assert.Equal("XIII", reg.ToString())
+        let reg = RegisterFromString Pauli.Apply ("XIII")
+        Assert.True(reg.IsSome)
+        Assert.Equal(Some X, reg.Value.[0])
+        Assert.Equal("XIII", prettyPrintRegister reg.Value)
 
     [<Theory>]
     [<InlineData("IIIIII")>]
@@ -26,32 +33,36 @@ module PauliRegister =
     [<InlineData("IIXI")>]
     [<InlineData("IXII")>]
     [<InlineData("XIII")>]
-    let ``FromString creates a round-trippable register``(s : string) =
-        let reg = PauliRegister (s, Complex.One)
-        Assert.Equal(s, reg.ToString())
+    let ``RegisterFromString creates a round-trippable register``(s : string) =
+        let reg = RegisterFromString Pauli.Apply s
+        Assert.True(reg.IsSome)
+        Assert.Equal(s, prettyPrintRegister reg.Value)
 
     [<Theory>]
     [<InlineData("IIIX", 3)>]
     [<InlineData("IIXI", 2)>]
     [<InlineData("IXII", 1)>]
     [<InlineData("XIII", 0)>]
-    let ``FromString creates a BigEndian register``(s : string, index) =
-        let reg = PauliRegister (s, Complex.One)
-        Assert.Equal(Some X, reg.[index])
+    let ``RegisterFromString creates a BigEndian register``(s : string, index) =
+        let reg = RegisterFromString Pauli.Apply s
+        Assert.True(reg.IsSome)
+        Assert.Equal(Some X, reg.Value.[index])
 
     [<Theory>]
-    [<InlineData("IIII",     "", "",      "IIII")>]
-    [<InlineData("IIII", "IIII", "",      "IIII")>]
-    [<InlineData("IIII", "IIIX", "",      "IIIX")>]
-    [<InlineData("IIII", "XIII", "",      "XIII")>]
-    [<InlineData("XIII", "YIII", "( i) ", "ZIII")>]
-    [<InlineData("XXII", "YYII", " -",    "ZZII")>]
-    [<InlineData("XXIZ", "YYII", " -",    "ZZIZ")>]
-    [<InlineData("XXYI", "YYZI", "(-i) ", "ZZXI")>]
-    [<InlineData("XXYZ", "YYZX", "",      "ZZXY")>]
-    let ``Two registers can be multiplied`` (l : string, r : string, expectedPhase, expectedRegister) =
-        let l_reg = PauliRegister (l, Complex.One)
-        let r_reg = PauliRegister (r, Complex.One)
-        let result = l_reg * r_reg
-        Assert.Equal(expectedPhase, result.PhasePrefix)
-        Assert.Equal(sprintf "%s%s" expectedPhase expectedRegister, result.ToString())
+    [<InlineData("IIII",     "", "",     "IIII")>]
+    [<InlineData("IIII", "IIII", "",     "IIII")>]
+    [<InlineData("IIII", "IIIX", "",     "IIIX")>]
+    [<InlineData("IIII", "XIII", "",     "XIII")>]
+    [<InlineData("XIII", "YIII", "( i)", "ZIII")>]
+    [<InlineData("XXII", "YYII", " -",   "ZZII")>]
+    [<InlineData("XXIZ", "YYII", " -",   "ZZIZ")>]
+    [<InlineData("XXYI", "YYZI", "(-i)", "ZZXI")>]
+    [<InlineData("XXYZ", "YYZX", "",     "ZZXY")>]
+    let ``PauliRegister * PauliRegister -> PauliRegister : phases and values computed correctly`` (l : string, r : string, expectedPhase, expectedRegister) =
+        let l_reg = RegisterFromString Pauli.Apply l
+        let r_reg = RegisterFromString Pauli.Apply r
+        Assert.True(l_reg.IsSome)
+        Assert.True(r_reg.IsSome)
+        let result = l_reg.Value * r_reg.Value
+        Assert.Equal(expectedPhase, prettyPrintPhase result.Unapply.C)
+        Assert.Equal(expectedRegister, prettyPrintRegister result)

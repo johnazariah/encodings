@@ -48,8 +48,8 @@ module SparseRepresentation =
     with
         member inline this.Unapply = match this with Indexed c -> c
         member inline this.IsZero = this.Unapply.IsZero
-        member inline this.Coeff  = this.Unapply.Coeff
-        member inline this.IndexedOp = this.Unapply.Item
+        member inline this.Coeff  = this.Unapply.C
+        member inline this.IndexedOp = this.Unapply.U
         member inline this.Normalize = this.Unapply.Normalize
 
         static member inline Unit =
@@ -67,8 +67,8 @@ module SparseRepresentation =
         | ProductTerm of C<IxOp< ^idx, ^op>[]>
     with
         member inline this.Unapply = match this with ProductTerm pt -> pt
-        member inline this.Coeff = this.Unapply.Coeff
-        member inline this.IndexedOps = this.Unapply.Item
+        member inline this.Coeff = this.Unapply.C
+        member inline this.IndexedOps = this.Unapply.U
 
         static member inline internal ApplyInternal =
             C<_>.Apply >> PIxOp< ^idx, ^op >.ProductTerm
@@ -103,8 +103,8 @@ module SparseRepresentation =
             |> Array.fold (fun result curr -> sprintf "%s%s" result curr.Signature) ""
 
         static member inline (<.>) (l : C<PIxOp< ^idx, ^op>>, r : C<PIxOp< ^idx, ^op>>) : C<C<PIxOp< ^idx, ^op>>[]> =
-            let lp = l.Item.ScaleCoefficient l.Coeff
-            let rp = r.Item.ScaleCoefficient r.Coeff
+            let lp = l.U.ScaleCoefficient l.C
+            let rp = r.U.ScaleCoefficient r.C
             lp * rp
             |> curry C<_>.Apply Complex.One
             |> (fun cp -> [| cp |])
@@ -161,7 +161,7 @@ module SparseRepresentation =
 
             let allTermsIndexOrdered =
                 this.Terms
-                |> Seq.map (fun t -> t.Item)
+                |> Seq.map (fun t -> t.U)
                 |> Seq.fold isIndexOrdered true
 
             lazy
@@ -202,7 +202,7 @@ module SparseRepresentation =
         member inline this.AllTermsNormalOrdered =
             lazy
                 this.Terms
-                |> Seq.map (fun t -> t.Item)
+                |> Seq.map (fun t -> t.U)
                 |> Seq.fold
                     (fun result curr -> result && SIxWkOp< ^idx, ^op>.PIxOpInNormalOrder curr)
                     true
@@ -214,7 +214,7 @@ module SparseRepresentation =
 
             let allTermsIndexOrdered =
                 this.Terms
-                |> Seq.map (fun t -> t.Item)
+                |> Seq.map (fun t -> t.U)
                 |> Seq.fold isIndexOrdered true
 
             lazy
