@@ -16,23 +16,23 @@ module PrettyPrint =
         else sprintf "%O" this
 
     let prettyPrintC (this : C<'unit>) =
-        let itemString = sprintf "%O" this.U
-        if this.C = Complex.Zero then
+        let itemString = sprintf "%O" this.Thunk
+        if this.Coeff = Complex.Zero then
             ""
-        else if this.C = Complex.One then
+        else if this.Coeff = Complex.One then
             sprintf "%s" itemString
-        else if this.C = Complex.MinusOne then
+        else if this.Coeff = Complex.MinusOne then
             sprintf "(- %s)" itemString
-        else if this.C = Complex.ImaginaryOne then
+        else if this.Coeff = Complex.ImaginaryOne then
             sprintf "(i %s)" itemString
-        else if this.C = Complex.MinusI then
+        else if this.Coeff = Complex.MinusI then
             sprintf "(-i %s)" itemString
-        else if this.C.Imaginary = 0. then
-            sprintf "(%O %s)" this.C.Real itemString
-        else if this.C.Imaginary = 1. then
-            sprintf "(%Oi %s)" this.C.Real itemString
-        else if this.C.Imaginary = -1. then
-            sprintf "(-%Oi %s)" this.C.Real itemString
+        else if this.Coeff.Imaginary = 0. then
+            sprintf "(%O %s)" this.Coeff.Real itemString
+        else if this.Coeff.Imaginary = 1. then
+            sprintf "(%Oi %s)" this.Coeff.Real itemString
+        else if this.Coeff.Imaginary = -1. then
+            sprintf "(-%Oi %s)" this.Coeff.Real itemString
         else
             sprintf "%O" this
 
@@ -40,7 +40,7 @@ module PrettyPrint =
         sprintf "(%O, %i)" this.Op this.Index
 
     let inline prettyPrintCIxOp< ^op when ^op : equality> (this : CIxOp<uint32, ^op>) =
-        prettyPrintIxOp< ^op > this.Unapply.U
+        prettyPrintIxOp< ^op > this.Unapply.Thunk
 
     let inline prettyPrintPIxOp< ^op when ^op : equality> (this : PIxOp<uint32, ^op>) =
         this.IndexedOps
@@ -50,7 +50,7 @@ module PrettyPrint =
 
     let inline prettyPrintSIxOp< ^op when ^op : equality> (this : SIxOp<uint32, ^op>) =
         this.Terms
-        |> Seq.map (fun t -> prettyPrintPIxOp< ^op > t.U)
+        |> Seq.map (prettyPrintPIxOp)
         |> (fun rg -> System.String.Join ("; ", rg))
         |> sprintf "{%s}"
 
@@ -71,6 +71,6 @@ module PrettyPrint =
                         and ^op : equality>
         (this : SR< ^op>) =
         this.Terms
-        |> Seq.map (fun t -> sprintf "%s%s" (prettyPrintPhase t.C) (prettyPrintRegister< ^op > t.U))
+        |> Seq.map (fun t -> sprintf "%s%s" (prettyPrintPhase t.Coeff) (prettyPrintRegister< ^op > t))
         |> (fun rg -> System.String.Join (" + ", rg))
         |> sprintf "%s"

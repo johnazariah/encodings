@@ -63,6 +63,6 @@ module PauliRegister =
         let r_reg = RegisterFromString Pauli.Apply r
         Assert.True(l_reg.IsSome)
         Assert.True(r_reg.IsSome)
-        let result = l_reg.Value * r_reg.Value
-        Assert.Equal(expectedPhase, prettyPrintPhase result.Unapply.C)
+        let result = l_reg.Value <*> r_reg.Value
+        Assert.Equal(expectedPhase, prettyPrintPhase result.Unapply.Coeff)
         Assert.Equal(expectedRegister, prettyPrintRegister result)

@@ -11,7 +11,7 @@ module Terms_PIxOp =
 
     [<Property>]
     let ``P constructor properly extracts coefficients from arguments``(args : (uint32 * char * Complex)[]) =
-        let cixops = args |> Array.map (fun (index, op, coeff) -> CIxOp<uint32,CChar>.Apply(coeff, IxOp<uint32, CChar>.Apply(index, CC op)))
+        let cixops = args |> Array.map (fun (index, op, coeff) -> CIxOp<uint32,CChar>.Apply(coeff, IxOp<uint32, CChar>.Apply(index, CChar.Apply op)))
         let pixop = PIxOp<uint32,CChar>.Apply(Complex.One, cixops)
         let expectedCoeff = args |> Array.fold (fun result (_, _, coeff) -> result * coeff) Complex.One
         let actualCoeff = pixop.Coeff
@@ -19,12 +19,12 @@ module Terms_PIxOp =
 
     [<Property>]
     let ``Coefficient of the product of two P's is the product of the coefficients`` (left : PIxOp<uint32, CChar>, right : PIxOp<uint32, CChar>) =
-        let product = left * right
+        let product = left <*> right
         Assert.Equal (left.Coeff * right.Coeff, product.Coeff)
 
     [<Property>]
     let ``Terms of the product of two P's is the concatenation of the terms`` (left : PIxOp<uint32, CChar>, right : PIxOp<uint32, CChar>) =
-        let product = left * right
+        let product = left <*> right
         Assert.Equal<IEnumerable>([| yield! left.IndexedOps; yield! right.IndexedOps|], product.IndexedOps)
 
     [<Property>]
@@ -60,20 +60,25 @@ module Terms_PIxOp =
         Assert.Equal(expectedTermCount, sum.Terms.Length)
         Assert.Equal(Complex.One, sum.Coeff)
 
-        let ops = sum.Terms |> Seq.map (fun t -> t.U.Signature)
+        let ops = sum.Terms |> Seq.map (fun t -> t.Signature)
         Assert.All(expectedSignatures, (fun c -> Assert.Contains(c, ops)))
 
     [<Fact>]
     let ``P + P -> S (Regression 1)``() =
-        let left  = ProductTerm { C = Complex.Zero; U = [||] }
-        let right = ProductTerm { C = Complex.Zero; U = [||] }
+        let left  = ProductTerm { Coeff = Complex.Zero; Thunk = [||] }
+        let right = ProductTerm { Coeff = Complex.Zero; Thunk = [||] }
         ``P + P -> S`` (left, right)
 
+    [<Fact>]
+    let ``P + P -> S (Regression 2)``() =
+        let left  = ProductTerm { Coeff = Complex.One;  Thunk = [||] }
+        let right = PIxOp<uint32, CChar>.Apply(Complex.Zero, [| CIxOp.Apply(Complex.Zero, IxOp.Apply(0u, CChar.Apply(Complex.Zero, 'a'))) |])
+        ``P + P -> S`` (left, right)
 
     [<Fact>]
     let ``P + P -> S (Regression 3)``() =
-        let left  = ProductTerm { C = Complex.One;  U = [||] }
-        let right = ProductTerm { C = Complex.Zero; U = [||] }
+        let left  = ProductTerm { Coeff = Complex.One;  Thunk = [||] }
+        let right = ProductTerm { Coeff = Complex.Zero; Thunk = [||] }
         ``P + P -> S`` (left, right)
 
     [<Theory>]
@@ -105,7 +110,7 @@ module Terms_PIxOp =
         let left  = PIxOpFromString Wick.FromString leftStr
         let right = PIxOpFromString Wick.FromString rightStr
         match (left, right) with
-        | Some l, Some r -> Assert.Equal(expected, prettyPrintPIxOp (l * r) |> shrinkString)
+        | Some l, Some r -> Assert.Equal(expected, prettyPrintPIxOp (l <*> r) |> shrinkString)
         | _, _ -> Assert.True (false)
 
 

@@ -11,8 +11,8 @@ module DenseRepresentation =
         | Register of C< ^unit[] >
     with
         member inline this.Unapply = match this with Register pt -> pt
-        member inline this.Coeff = this.Unapply.C
-        member inline this.Units = this.Unapply.U
+        member inline this.Coeff = this.Unapply.Coeff
+        member inline this.Units = this.Unapply.Thunk
 
         member inline this.bindAtIndex f = function
             | n when n < 0 -> None
@@ -64,15 +64,15 @@ module DenseRepresentation =
         static member inline Apply (coeff : Complex, units : C< ^unit>[]) : R< ^unit > =
             let extractedCoeff =
                 units
-                |> Array.fold (fun coeff curr -> coeff * curr.C) Complex.One
+                |> Array.fold (fun coeff curr -> coeff * curr.Coeff) Complex.One
 
             let indexedOps =
                 units
-                |> Array.map (fun curr -> curr.U)
+                |> Array.map (fun curr -> curr.Thunk)
 
             R< ^unit >.ApplyInternal (coeff * extractedCoeff, indexedOps)
 
-        static member inline (*) (l : R< ^unit >, r : R< ^unit >) =
+        static member inline (<*>) (l : R< ^unit >, r : R< ^unit >) =
             let identityUnit =
                 (^unit : (static member Identity : ^unit) ())
 
@@ -94,12 +94,6 @@ module DenseRepresentation =
             let units' = pairwiseCombine l.Units r.Units
             R< ^unit >.Apply (coeff', units')
 
-        static member inline (<.>) (l : C<R< ^unit >>, r : C<R< ^unit >>) : C<C<R< ^unit >>[]> =
-            [|
-                C<_>.Apply(Complex.One, l.U.ScaleCoefficient l.C * r.U.ScaleCoefficient r.C)
-            |]
-            |> curry C<_>.Apply Complex.One
-
         static member inline New (length) =
             [| 1u .. length |]
             |> Array.map (fun _ -> R< ^unit>.IdentityUnit)
@@ -109,27 +103,16 @@ module DenseRepresentation =
                 when ^unit : (static member Identity : ^unit)
                 and  ^unit : (static member Multiply : ^unit * ^unit -> C< ^unit >)
                 and  ^unit : equality> =
-        | SumTerm of SC<R< ^unit >>
+        | SumTerm of S<R< ^unit >>
     with
         member inline this.Unapply = match this with SumTerm st -> st
-        member inline __.Coeff = Complex.One
-
-        member inline this.Terms =
-            this.Unapply.Terms
-
-        static member inline Apply (coeff : Complex, terms : R< ^unit>[]) : SR< ^unit > =
-            terms
-            |> Array.map (curry C<_>.Apply Complex.One)
-            |> (curry SC<R< ^unit>>.Apply coeff)
-            |> SR< ^unit >.SumTerm
+        member inline __.Coeff     = Complex.One
+        member inline this.Terms   = this.Unapply.Terms
+        static member inline Apply = S<R< ^unit>>.Apply >> SumTerm
+        member inline this.IsZero  = this.Unapply.IsZero
 
         static member inline (+) (l : SR< ^unit >, r : SR< ^unit >) =
-            l.Unapply + r.Unapply
-            |> SR< ^unit >.SumTerm
+            l.Unapply + r.Unapply |> SumTerm
 
         static member inline (*) (l : SR< ^unit >, r : SR< ^unit >) =
-            l.Unapply * r.Unapply
-            |> SR< ^unit >.SumTerm
-
-        member inline this.IsZero =
-            this.Unapply.IsZero
+            l.Unapply * r.Unapply |> SumTerm
