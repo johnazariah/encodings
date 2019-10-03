@@ -105,4 +105,31 @@ module DenseRepresentation =
             |> Array.map (fun _ -> R< ^unit>.IdentityUnit)
             |> curry R< ^unit >.ApplyInternal Complex.One
 
+    type SR< ^unit
+                when ^unit : (static member Identity : ^unit)
+                and  ^unit : (static member Multiply : ^unit * ^unit -> C< ^unit >)
+                and  ^unit : equality> =
+        | SumTerm of SC<R< ^unit >>
+    with
+        member inline this.Unapply = match this with SumTerm st -> st
+        member inline __.Coeff = Complex.One
 
+        member inline this.Terms =
+            this.Unapply.Terms
+
+        static member inline Apply (coeff : Complex, terms : R< ^unit>[]) : SR< ^unit > =
+            terms
+            |> Array.map (curry C<_>.Apply Complex.One)
+            |> (curry SC<R< ^unit>>.Apply coeff)
+            |> SR< ^unit >.SumTerm
+
+        static member inline (+) (l : SR< ^unit >, r : SR< ^unit >) =
+            l.Unapply + r.Unapply
+            |> SR< ^unit >.SumTerm
+
+        static member inline (*) (l : SR< ^unit >, r : SR< ^unit >) =
+            l.Unapply * r.Unapply
+            |> SR< ^unit >.SumTerm
+
+        member inline this.IsZero =
+            this.Unapply.IsZero

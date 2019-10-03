@@ -14,8 +14,8 @@ module FermionicOperator_JordanWigner =
     [<InlineData(8, 6, "0.5 ZZZZZZXI - (0.5 i) ZZZZZZYI")>]
     [<InlineData(8, 7, "0.5 ZZZZZZZX - (0.5 i) ZZZZZZZY")>]
     let ``CreationOperator generates correct JW string``(n : uint32, j : uint32, expected) =
-        let actual = (Raise j).ToJordanWignerTerms(n).ToString()
-        Assert.Equal(expected, actual)
+        let actual = (Cr, j) |> IndexedFermionicOperator.Apply |> (fun iop -> iop.JordanWignerEncodeToDensePauliTerm (n)) |> Option.get
+        Assert.Equal(expected, prettyPrintSR actual)
 
     [<Theory>]
     [<InlineData(8, 0, "0.5 XIIIIIII + (0.5 i) YIIIIIII")>]
@@ -27,8 +27,8 @@ module FermionicOperator_JordanWigner =
     [<InlineData(8, 6, "0.5 ZZZZZZXI + (0.5 i) ZZZZZZYI")>]
     [<InlineData(8, 7, "0.5 ZZZZZZZX + (0.5 i) ZZZZZZZY")>]
     let ``AnnihilationOperator generates correct JW string``(n : uint32, j : uint32, expected) =
-        let actual = (Lower j).ToJordanWignerTerms(n).ToString()
-        Assert.Equal(expected, actual)
+        let actual = (An, j) |> IndexedFermionicOperator.Apply |> (fun iop -> iop.JordanWignerEncodeToDensePauliTerm (n)) |> Option.get
+        Assert.Equal(expected, prettyPrintSR actual)
 
     [<Theory>]
     [<InlineData(8, 0, "0.5 IIIIIIII - 0.5 ZIIIIIII")>]
@@ -40,8 +40,8 @@ module FermionicOperator_JordanWigner =
     [<InlineData(8, 6, "0.5 IIIIIIII - 0.5 IIIIIIZI")>]
     [<InlineData(8, 7, "0.5 IIIIIIII - 0.5 IIIIIIIZ")>]
     let ``NumberOperator generates correct JW string``(n : uint32, j : uint32, expected) =
-        let cre = (Raise j).ToJordanWignerTerms(n)
-        let anh = (Lower j).ToJordanWignerTerms(n)
+        let cre = (Cr, j) |> IndexedFermionicOperator.Apply |> (fun iop -> iop.JordanWignerEncodeToDensePauliTerm (n)) |> Option.get
+        let anh = (An, j) |> IndexedFermionicOperator.Apply |> (fun iop -> iop.JordanWignerEncodeToDensePauliTerm (n)) |> Option.get
         let num = cre * anh
-        let actual = num.ToString()
+        let actual = prettyPrintSR num
         Assert.Equal(expected, actual)

@@ -55,6 +55,3 @@ module StringInterop =
             |> Some
         with
         | _ -> None
-
-    let inline IndexedPauliFromString s =
-        IxOpFromString (fun s -> Pauli.Apply (s.Chars 0)) s

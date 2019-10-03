@@ -63,3 +63,14 @@ module PrettyPrint =
         |> Seq.map (sprintf "%O")
         |> (fun rg -> System.String.Join ("", rg))
         |> sprintf "%s"
+
+
+    let inline prettyPrintSR< ^op
+                        when ^op : (static member Identity : ^op)
+                        and  ^op : (static member Multiply : ^op -> ^op -> C< ^op >)
+                        and ^op : equality>
+        (this : SR< ^op>) =
+        this.Terms
+        |> Seq.map (fun t -> sprintf "%s%s" (prettyPrintPhase t.C) (prettyPrintRegister< ^op > t.U))
+        |> (fun rg -> System.String.Join (" + ", rg))
+        |> sprintf "%s"
