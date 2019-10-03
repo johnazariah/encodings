@@ -3,7 +3,7 @@ namespace Tests
 open FsCheck.Xunit
 
 
-[<Properties (Arbitrary = [|typeof<ComplexGenerator>|]) >]
+[<Properties (Arbitrary = [|typeof<ComplexGenerator>|], QuietOnSuccess = true) >]
 module PauliRegister =
     open Encodings
     open Xunit

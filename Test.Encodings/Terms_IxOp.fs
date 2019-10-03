@@ -1,9 +1,11 @@
 ﻿namespace Tests
 
+open FsCheck.Xunit
+
+[<Properties (Arbitrary = [|typeof<ComplexGenerator>|], QuietOnSuccess = true) >]
 module Terms_IxOp =
     open Encodings
     open Xunit
-    open FsCheck.Xunit
 
     [<Property>]
     let ``I (.<=.) I`` (i1 : uint32, i2 : uint32, randomString : CChar) =

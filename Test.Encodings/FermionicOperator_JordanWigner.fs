@@ -1,5 +1,9 @@
 ﻿namespace Tests
 
+open FsCheck.Xunit
+
+
+[<Properties (Arbitrary = [|typeof<ComplexGenerator>|], QuietOnSuccess = true) >]
 module FermionicOperator_JordanWigner =
     open Encodings
     open Xunit
