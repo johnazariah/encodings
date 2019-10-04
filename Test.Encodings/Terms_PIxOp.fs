@@ -56,6 +56,15 @@ module Terms_PIxOp =
                 if (not right.IsZero) then yield right.Signature
             |]
 
+        (*
+        (ProductTerm { Coeff = (0, 0)
+         Thunk = [|{ Index = 0u
+                    Op = CC { Coeff = (0, 0)
+                              Thunk = 'a' } }|] },
+         ProductTerm { Coeff = (-1, 1)
+         Thunk = [||] })
+        *)
+
         let sum = left + right
         Assert.Equal(expectedTermCount, sum.Terms.Length)
         Assert.Equal(Complex.One, sum.Coeff)

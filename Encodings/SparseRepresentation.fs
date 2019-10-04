@@ -217,28 +217,35 @@ module SparseRepresentation =
                     (this.AllTermsNormalOrdered.Value)
 
         member inline this.SortNormalOrder =
-            let sortNormalOrder (p : PIxWkOp< ^idx, ^op >) =
-                let combine nextUnit productTerm =
-                    (^op : (static member Combine : PIxWkOp< ^idx, ^op > -> IxOp< ^idx, ^op > -> PIxWkOp< ^idx, ^op >[])(productTerm, nextUnit))
+            if this.AllTermsNormalOrdered.Value then
+                lazy this
+            else
+                let rec sortSingleProductTerm (p : PIxWkOp< ^idx, ^op >) =
+                    let combine nextUnit productTerm =
+                        (^op : (static member Combine : PIxWkOp< ^idx, ^op > -> IxOp< ^idx, ^op > -> PIxWkOp< ^idx, ^op >[])(productTerm, nextUnit))
 
-                let rec sortInternal (result : PIxWkOp< ^idx, ^op >[]) (remainingUnits : IxOp< ^idx, ^op >[]) : PIxWkOp< ^idx, ^op >[]=
-                    if remainingUnits.Length = 0 then
-                        result
+                    let rec sortInternal (result : PIxWkOp< ^idx, ^op >[]) (remainingUnits : IxOp< ^idx, ^op >[]) : PIxWkOp< ^idx, ^op >[]=
+                        if remainingUnits.Length = 0 then
+                            result
+                        else
+                            let nextUnit        = remainingUnits.[0]
+                            let remainingUnits' = remainingUnits.[1..]
+                            let result' =
+                                if result.Length = 0 then
+                                    [| PIxWkOp< ^idx, ^op >.Apply(Complex.One, [| nextUnit |]) |]
+                                else
+                                    result |> Array.collect (combine nextUnit)
+                            sortInternal result' remainingUnits'
+
+                    if p.IsInNormalOrder.Value then
+                        [| p |]
                     else
-                        let nextUnit        = remainingUnits.[0]
-                        let remainingUnits' = remainingUnits.[1..]
-                        let result' =
-                            if result.Length = 0 then
-                                [| PIxWkOp< ^idx, ^op >.Apply(Complex.One, [| nextUnit |]) |]
-                            else
-                                result |> Array.collect (combine nextUnit)
-                        sortInternal result' remainingUnits'
-                sortInternal [||] p.IndexedOps
-
-            lazy
-                this.Terms
-                |> Array.collect sortNormalOrder
-                |> curry SIxWkOp< ^idx, ^op>.Apply Complex.One
+                        sortInternal [||] p.IndexedOps
+                        |> Array.collect (sortSingleProductTerm)
+                lazy
+                    this.Terms
+                    |> Array.collect sortSingleProductTerm
+                    |> curry SIxWkOp< ^idx, ^op>.Apply Complex.One
 
     type PIxOp< ^idx, ^op
                     when ^idx : comparison

@@ -65,6 +65,7 @@ module Operators =
                 | Cr -> "R"
                 | An -> "L"
 
+        member inline this.IsIdentity = match this with | I  -> true | _ -> false
         member inline this.IsRaising  = match this with | Cr -> true | _ -> false
         member inline this.IsLowering = match this with | An -> true | _ -> false
 
@@ -81,15 +82,19 @@ module Operators =
         static member inline FromString (s : string) =
             FermionicOperator.Apply <| s.Chars 0
 
-        static member inline Combine< ^idx when ^idx : comparison>
-            (productTerm : PIxWkOp< ^idx, FermionicOperator>, nextUnit : IxOp< ^idx, FermionicOperator>) =
+        static member Combine
+            (productTerm : PIxWkOp<uint32, FermionicOperator>, nextUnit : IxOp<uint32, FermionicOperator>) =
             let nUnits = productTerm.IndexedOps.Length
+
+            printfn "%s" productTerm.Signature
 
             let prefix =
                 if nUnits > 2 then
                     productTerm.IndexedOps.[0..(nUnits - 2)]
+                else if nUnits > 1 then
+                    [| productTerm.IndexedOps.[0] |]
                 else
-                    [| IxOp<_,_>.Apply(Unchecked.defaultof<'idx>, I) |]
+                    [| IxOp<_,_>.Apply(0u, I) |]
 
             let lastUnit = productTerm.IndexedOps.[nUnits - 1]
 
@@ -101,26 +106,26 @@ module Operators =
                         yield nextUnit
                         yield lastUnit
                     |]
-                    |> curry PIxWkOp.Apply Complex.MinusOne
+                    |> curry PIxWkOp.Apply (productTerm.Coeff * Complex.MinusOne)
                     |> (fun term -> [| term |])
                 else
                     let leadingTerm =
                         [|
                             yield! prefix
-                        |] |> curry PIxWkOp<_,_>.Apply Complex.One
+                        |] |> curry PIxWkOp<_,_>.Apply productTerm.Coeff
                     let trailingTerm =
                         [|
                             yield! prefix
                             yield nextUnit
                             yield lastUnit
-                        |] |> curry PIxWkOp.Apply Complex.MinusOne
+                        |] |> curry PIxWkOp.Apply (productTerm.Coeff * Complex.MinusOne)
                     [| leadingTerm; trailingTerm |]
             | _, _ ->
                 [|
                     yield! productTerm.IndexedOps
                     yield nextUnit
                 |]
-                |> curry PIxWkOp<_,_>.Apply Complex.One
+                |> curry PIxWkOp<_,_>.Apply productTerm.Coeff
                 |> (fun term -> [| term |])
 
     type IndexedFermionicOperator =

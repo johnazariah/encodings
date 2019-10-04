@@ -66,6 +66,44 @@ module PrettyPrint =
         |> (fun rg -> System.String.Join ("; ", rg))
         |> sprintf "{%s}"
 
+
+    let inline prettyPrintPIxWkOp< ^op
+                        when ^op : equality
+                        and ^op : comparison
+                        and ^op : (static member Identity : ^op)
+                        and ^op : (member IsIdentity  : bool)
+                        and ^op : (member IsRaising  : bool)
+                        and ^op : (member IsLowering : bool)
+                        and ^op : (static member InNormalOrder : ^op -> ^op -> bool)
+                        and ^op : equality>
+        (this : PIxWkOp<uint32, ^op>) =
+        let Identity = (^op : (static member Identity : ^op)())
+        let isIdentity op = (^op : (member IsIdentity : bool)(op))
+
+        if this.IndexedOps = [| IxOp<uint32, ^op>.Apply(0u, Identity) |] then
+            sprintf "%s[1]" (prettyPrintPhase this.Coeff)
+        else
+            this.IndexedOps
+            |> Array.filter (fun t -> not (isIdentity t.Op))
+            |> Array.map prettyPrintIxOp< ^op >
+            |> (fun rg -> System.String.Join (" | ", rg))
+            |> sprintf "%s[%s]" (prettyPrintPhase this.Coeff)
+
+    let inline prettyPrintSIxWkOp< ^op
+                        when ^op : comparison
+                        and ^op : (static member Identity : ^op)
+                        and ^op : (member IsIdentity  : bool)
+                        and ^op : (member IsRaising  : bool)
+                        and ^op : (member IsLowering : bool)
+                        and ^op : (static member InNormalOrder : ^op -> ^op -> bool)
+                        and ^op : (static member Combine : PIxWkOp<uint32, ^op > -> IxOp<uint32, ^op > -> PIxWkOp<uint32, ^op >[])
+                        and ^op : equality>
+        (this : SIxWkOp<uint32, ^op>) =
+        this.Terms
+        |> Seq.map (prettyPrintPIxWkOp)
+        |> (fun rg -> System.String.Join ("; ", rg))
+        |> sprintf "{%s}"
+
     let inline prettyPrintRegister< ^op
                         when ^op : (static member Identity : ^op)
                         and  ^op : (static member Multiply : ^op -> ^op -> C< ^op >)
