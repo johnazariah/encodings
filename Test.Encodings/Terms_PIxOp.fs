@@ -11,7 +11,7 @@ module Terms_PIxOp =
 
     [<Property>]
     let ``P constructor properly extracts coefficients from arguments``(args : (uint32 * char * Complex)[]) =
-        let cixops = args |> Array.map (fun (index, op, coeff) -> CIxOp<uint32,CChar>.Apply(coeff, IxOp<uint32, CChar>.Apply(index, CChar.Apply op)))
+        let cixops = args |> Array.map (fun (index, op, coeff) -> CIxOp<uint32,CChar>.Apply(coeff, IxOp<uint32, CChar>.Apply(index, CChar.New op)))
         let pixop = PIxOp<uint32,CChar>.Apply(Complex.One, cixops)
         let expectedCoeff = args |> Array.fold (fun result (_, _, coeff) -> result * coeff) Complex.One
         let actualCoeff = pixop.Coeff

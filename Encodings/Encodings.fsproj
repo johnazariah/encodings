@@ -12,6 +12,7 @@
     <Compile Include="StringInterop.fs" />
     <Compile Include="Operators.fs" />
     <Compile Include="PrettyPrint.fs" />
+    <Compile Include="PauliRegister.fs" />
   </ItemGroup>
 
 </Project>

@@ -29,13 +29,13 @@ module TestUtils
     with
         member this.Unapply            = match this with CC c -> c
         member this.Coeff              = this.Unapply.Coeff
-        member this.Signature          = this.ToString()
+        member this.Signature          = this.Unapply.Thunk.ToString()
         member this.IsZero             = this.Unapply.IsZero
         member this.ScaleCoefficient c = this.Unapply.ScaleCoefficient c |> CC
         member this.AddCoefficient   c = this.Unapply.AddCoefficient   c |> CC
-        static member (<*>) (l, r) = failwith "NYI"
+        static member (<*>) (l, r)     = failwith "NYI"
         static member Apply (coeff, thunk) = CC <| C<_>.Apply (coeff, thunk)
-        static member Apply thunk = CChar.Apply (Complex.One, thunk)
+        static member New thunk = CChar.Apply (Complex.One, thunk)
 
     type Wick =
     | Raise

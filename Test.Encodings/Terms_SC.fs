@@ -98,23 +98,29 @@ module Terms_SC =
             |> Array.map ((curry S<_>.Apply) Complex.One)
             |> (fun rg -> (rg.[0], rg.[1]))
 
-        let S = ls + rs
-        if (S.IsZero) then
-            Assert.Empty (S.Reduce.Value.Terms)
+        let sum = ls + rs
+        if (sum.IsZero) then
+            Assert.Empty (sum.Reduce.Value.Terms)
         else
-            let found = Assert.Single(S.Terms)
+            let found = Assert.Single(sum.Terms)
             let lsum = lcoeffs |> Array.fold (+) Complex.Zero
             let rsum = rcoeffs |> Array.fold (+) Complex.Zero
             let expected = lsum + rsum
             let actual   = found.Coeff
             Assert.True(Complex.ApproximatelyEqual(expected, actual))
 
+    [<Fact>]
+    let ``Addition operator coalesces coefficients for like terms : Regression 1``() =
+        let lterms = [||]
+        let rterms = [|Complex(-0.5, -2.); Complex(0.5, -0.5)|]
+        ``Addition operator coalesces coefficients for like terms`` (lterms, rterms)
+
     [<Property>]
     let ``Addition operator coalesces terms from both arguments``(lterms : char[], rterms: char[]) =
         let (ls, rs) =
             [| lterms; rterms; |]
             |> Array.map (HashSet)
-            |> Array.map (Seq.map (CChar.Apply) >> Array.ofSeq)
+            |> Array.map (Seq.map (CChar.New) >> Array.ofSeq)
             |> Array.map ((curry S<_>.Apply) Complex.One)
             |> (fun rg -> (rg.[0], rg.[1]))
 

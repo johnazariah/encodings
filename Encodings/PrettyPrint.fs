@@ -1,5 +1,7 @@
 ﻿namespace Encodings
 
+open System
+
 [<AutoOpen>]
 module PrettyPrint =
     open System.Numerics
@@ -70,7 +72,37 @@ module PrettyPrint =
                         and  ^op : (static member Multiply : ^op -> ^op -> C< ^op >)
                         and ^op : equality>
         (this : SR< ^op>) =
+        let toPhasePrefix (this : Complex) =
+            match (this.Real, this.Imaginary) with
+            | (+1., 0.) -> ""
+            | (-1., 0.) -> " -"
+            | (0., +1.) -> "( i) "
+            | (0., -1.) -> "(-i) "
+            | (r, 0.)   -> sprintf "%A " r
+            | (0., i) -> sprintf "(%A i) " i
+            | _ -> sprintf "%A" this
+
+        let toPhaseConjunction (this : Complex) =
+            match (this.Real, this.Imaginary) with
+            | (+1., 0.) -> " + "
+            | (-1., 0.) -> " - "
+            | (0., +1.) -> " + i "
+            | (0., -1.) -> " - i "
+            | (r, 0.) when r >= 0. -> sprintf " + %A "     <| Math.Abs r
+            | (r, 0.) when r <  0. -> sprintf " - %A "     <| Math.Abs r
+            | (0., i) when i >= 0. -> sprintf " + (%A i) " <| Math.Abs i
+            | (0., i) when i <  0. -> sprintf " - (%A i) " <| Math.Abs i
+            | _ -> sprintf " + %A" this
+
+        let buildString result (term : R< ^op >) =
+            let termStr = term.Signature
+
+            if String.IsNullOrWhiteSpace result then
+                let phasePrefix = toPhasePrefix term.Coeff
+                sprintf "%s%s" phasePrefix termStr
+            else
+                let conjoiningPhase = toPhaseConjunction term.Coeff
+                sprintf "%s%s%s" result conjoiningPhase termStr
+
         this.Terms
-        |> Seq.map (fun t -> sprintf "%s%s" (prettyPrintPhase t.Coeff) (prettyPrintRegister< ^op > t))
-        |> (fun rg -> System.String.Join (" + ", rg))
-        |> sprintf "%s"
+        |> Seq.fold buildString ""
