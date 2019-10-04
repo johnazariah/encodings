@@ -86,7 +86,7 @@ module Terms_PIxOp =
     [<InlineData("[(R,1)|(L,1)|(R,2)]", "R1L1R2")>]
     [<InlineData("[(R,1)|(R,1)|(L,1)|(L,1)]", "R1R1L1L1")>]
     let ``P Signature is generated correctly``(input, expected) =
-        match PIxOpFromString Wick.FromString input with
+        match PIxOpFromString FermionicOperator.FromString input with
         | Some pixop -> Assert.Equal (expected, pixop.Signature)
         | None -> Assert.True (false)
 
@@ -95,8 +95,8 @@ module Terms_PIxOp =
     [<InlineData("[(L,1)|(L,2)]", "[(L,1)|(L,2)]", "[(L,1)|(L,2)|(L,1)|(L,2)]")>]
     [<InlineData("[(R,1)|(R,2)]", "[(L,1)|(L,2)]", "[(R,1)|(R,2)|(L,1)|(L,2)]")>]
     let ``P * P is computed correctly``(leftStr, rightStr, expected) =
-        let left  = PIxOpFromString Wick.FromString leftStr
-        let right = PIxOpFromString Wick.FromString rightStr
+        let left  = PIxOpFromString FermionicOperator.FromString leftStr
+        let right = PIxOpFromString FermionicOperator.FromString rightStr
         match (left, right) with
         | Some l, Some r -> Assert.Equal(expected, prettyPrintPIxOp (l <*> r) |> shrinkString)
         | _, _ -> Assert.True (false)
@@ -106,8 +106,8 @@ module Terms_PIxOp =
     [<InlineData("[(L,1)|(L,2)]", "[(L,1)|(L,2)]", "{[(L,1)|(L,2)]}")>]
     [<InlineData("[(R,1)|(R,2)]", "[(L,1)|(L,2)]", "{[(L,1)|(L,2)];[(R,1)|(R,2)]}")>]
     let ``P + P is computed correctly``(leftStr, rightStr, expected) =
-        let left  = PIxOpFromString Wick.FromString leftStr
-        let right = PIxOpFromString Wick.FromString rightStr
+        let left  = PIxOpFromString FermionicOperator.FromString leftStr
+        let right = PIxOpFromString FermionicOperator.FromString rightStr
         match (left, right) with
         | Some l, Some r -> Assert.Equal(expected, prettyPrintSIxOp (l + r) |> shrinkString)
         | _, _ -> Assert.True (false)

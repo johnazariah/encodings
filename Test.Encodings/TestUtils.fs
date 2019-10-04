@@ -36,22 +36,23 @@ module TestUtils
         static member Apply (coeff, thunk) = CC <| C<_>.Apply (coeff, thunk)
         static member New thunk = CChar.Apply (Complex.One, thunk)
 
-    type Wick =
-    | Raise
-    | Lower
-    with
-        static member FromString =
-            function
-            | "R" -> Some Raise
-            | "L" -> Some Lower
-            | _   -> None
-        override this.ToString() =
-            match this with
-            | Raise -> "R"
-            | Lower -> "L"
-        static member InNormalOrder (l, r) =
-            match (l, r) with
-            | Lower, Raise -> false
-            | _, _ -> true
-        member this.IsRaising  = match this with | Raise -> true | _ -> false
-        member this.IsLowering = match this with | Lower -> true | _ -> false
+    //type Wick =
+    //| Raise
+    //| Lower
+    //with
+    //    static member FromString =
+    //        function
+    //        | "R" -> Some Raise
+    //        | "L" -> Some Lower
+    //        | _   -> None
+    //    override this.ToString() =
+    //        match this with
+    //        | Raise -> "R"
+    //        | Lower -> "L"
+    //    static member InNormalOrder (l, r) =
+    //        match (l, r) with
+    //        | Lower, Raise -> false
+    //        | _, _ -> true
+    //    member this.IsRaising  = match this with | Raise -> true | _ -> false
+    //    member this.IsLowering = match this with | Lower -> true | _ -> false
+    //    static member Combine (result, curr) : PIxWkOp<uint32, Wick >[] = failwith "NYI"

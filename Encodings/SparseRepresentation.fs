@@ -142,7 +142,9 @@ module SparseRepresentation =
         member inline this.IsZero             = this.Unapply.IsZero
 
         static member inline Apply =
-            PIxOp< ^idx, ^op>.ProductTerm >> PIxWkOp< ^idx, ^op>.ProductTerm
+            C<_>.Apply
+            >> PIxOp< ^idx, ^op>.ProductTerm
+            >> PIxWkOp< ^idx, ^op>.ProductTerm
 
         static member inline (<*>) (l : PIxWkOp< ^idx, ^op>, r : PIxWkOp< ^idx, ^op>) =
             PIxOp< ^idx, ^op>.(<*>)(l.Unapply, r.Unapply) |> ProductTerm
@@ -184,7 +186,7 @@ module SparseRepresentation =
                     and ^op : (member IsRaising  : bool)
                     and ^op : (member IsLowering : bool)
                     and ^op : (static member InNormalOrder : ^op -> ^op -> bool)
-                    and ^op : (static member Combine : PIxWkOp< ^idx, ^op > -> C<IxOp< ^idx, ^op >> -> PIxWkOp< ^idx, ^op >[])
+                    and ^op : (static member Combine : PIxWkOp< ^idx, ^op > -> IxOp< ^idx, ^op > -> PIxWkOp< ^idx, ^op >[])
                     and ^op : equality> =
         | SumTerm of S<PIxWkOp< ^idx, ^op>>
     with
@@ -216,10 +218,10 @@ module SparseRepresentation =
 
         member inline this.SortNormalOrder =
             let sortNormalOrder (p : PIxWkOp< ^idx, ^op >) =
-                let combine (nextUnit : C<IxOp< ^idx, ^op >>) (productTerm : PIxWkOp< ^idx, ^op >) =
-                    (^op : (static member Combine : PIxWkOp< ^idx, ^op > -> C<IxOp< ^idx, ^op >> -> PIxWkOp< ^idx, ^op >[])(productTerm, nextUnit))
+                let combine nextUnit productTerm =
+                    (^op : (static member Combine : PIxWkOp< ^idx, ^op > -> IxOp< ^idx, ^op > -> PIxWkOp< ^idx, ^op >[])(productTerm, nextUnit))
 
-                let rec sortInternal (result : PIxWkOp< ^idx, ^op >[]) (remainingUnits : C<IxOp< ^idx, ^op >>[]) : PIxWkOp< ^idx, ^op >[]=
+                let rec sortInternal (result : PIxWkOp< ^idx, ^op >[]) (remainingUnits : IxOp< ^idx, ^op >[]) : PIxWkOp< ^idx, ^op >[]=
                     if remainingUnits.Length = 0 then
                         result
                     else

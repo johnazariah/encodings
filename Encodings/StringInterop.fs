@@ -54,6 +54,7 @@ module StringInterop =
                         and  ^op : (member IsRaising  : bool)
                         and  ^op : (member IsLowering : bool)
                         and  ^op : (static member InNormalOrder : ^op -> ^op -> bool)
+                        and  ^op : (static member Combine : PIxWkOp<uint32, ^op > -> IxOp<uint32, ^op > -> PIxWkOp<uint32, ^op >[])
                         and  ^op : comparison>
         (unitFactory : string ->  ^op  option)
         (s : System.String) : SIxWkOp<uint32, ^op > option =
