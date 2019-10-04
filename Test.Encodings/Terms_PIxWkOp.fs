@@ -15,11 +15,7 @@ module Terms_PIxWkOp =
     [<InlineData("[(R,1)|(R,1)|(L,1)|(L,1)]", true)>]
     let ``P InNormalOrder is computed correctly``(input, expected) =
         match PIxOpFromString Wick.FromString input with
-        | Some pixop ->
-            pixop
-            |> PIxWkOp.ProductTerm
-            |> PIxWkOp<uint32, Wick>.IsInNormalOrder
-            |> curry Assert.Equal expected
+        | Some pixop -> Assert.Equal (expected, (PIxWkOp.ProductTerm pixop).IsInNormalOrder.Value)
         | None -> Assert.True (false)
 
     [<Theory>]
@@ -36,9 +32,5 @@ module Terms_PIxWkOp =
     [<InlineData("[(R,1)|(R,2)|(L,1)|(L,2)]", false)>]
     let ``P InIndexOrder is computed correctly``(input, expected) =
         match PIxOpFromString Wick.FromString input with
-        | Some pixop ->
-            pixop
-            |> PIxWkOp.ProductTerm
-            |> PIxWkOp<uint32, Wick>.IsInIndexOrder
-            |> curry Assert.Equal expected
+        | Some pixop -> Assert.Equal (expected, (PIxWkOp.ProductTerm pixop).IsInIndexOrder.Value)
         | None -> Assert.True (false)

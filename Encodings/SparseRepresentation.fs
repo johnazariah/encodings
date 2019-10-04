@@ -176,12 +176,13 @@ module SparseRepresentation =
         static member inline Op_InNormalOrder (l : ^op) (r : ^op) =
             (^op : (static member InNormalOrder : ^op -> ^op -> bool)(l, r))
 
-        static member inline IsInNormalOrder (this : PIxWkOp< ^idx, ^op>) =
-            this.IndexedOps
-            |> Seq.map (fun ixop -> ixop.Op)
-            |> (fun ops -> ops.IsOrdered PIxWkOp< ^idx, ^op>.Op_InNormalOrder)
+        member inline this.IsInNormalOrder =
+            lazy
+                this.IndexedOps
+                |> Seq.map (fun ixop -> ixop.Op)
+                |> (fun ops -> ops.IsOrdered PIxWkOp< ^idx, ^op>.Op_InNormalOrder)
 
-        static member inline IsInIndexOrder (this : PIxWkOp< ^idx, ^op>) =
+        member inline this.IsInIndexOrder =
             let raisingOperatorsInOrder =
                 this.IndexedOps
                 |> Seq.filter (fun ixop -> PIxWkOp<_,_>.Op_IsRaisingOperator  ixop.Op)
@@ -192,7 +193,10 @@ module SparseRepresentation =
                 |> Seq.filter (fun ixop -> PIxWkOp<_,_>.Op_IsLoweringOperator ixop.Op)
                 |> IxOp<_,_>.InIndexOrder Descending
 
-            PIxWkOp< ^idx, ^op>.IsInNormalOrder this && raisingOperatorsInOrder && loweringOperatorsInOrder
+            lazy
+                this.IsInNormalOrder.Value &&
+                raisingOperatorsInOrder &&
+                loweringOperatorsInOrder
 
 
     type SIxWkOp< ^idx, ^op
@@ -212,20 +216,24 @@ module SparseRepresentation =
         static member inline Apply = S<PIxWkOp< ^idx, ^op>>.Apply >> SumTerm
 
         static member inline (+) (l : SIxWkOp< ^idx, ^op>, r : SIxWkOp< ^idx, ^op>) =
-            l.Unapply + r.Unapply
-            |> SIxWkOp< ^idx, ^op>.SumTerm
+            l.Unapply + r.Unapply |> SumTerm
 
-        member inline this.AllTermsNormalOrdered () =
-            this.Terms
-            |> Seq.fold
-                (fun result curr -> result && PIxWkOp<_,_>.IsInNormalOrder curr)
-                true
+        static member inline (*) (l : SIxWkOp< ^idx, ^op>, r : SIxWkOp< ^idx, ^op>) =
+            l.Unapply * r.Unapply |> SumTerm
 
-        member inline this.AllTermsIndexOrdered  () =
-            this.Terms
-            |> Seq.fold
-                (fun result curr -> result &&  PIxWkOp<_,_>.IsInIndexOrder curr)
-                (this.AllTermsNormalOrdered ())
+        member inline this.AllTermsNormalOrdered =
+            lazy
+                this.Terms
+                |> Seq.fold
+                    (fun result curr -> result && curr.IsInNormalOrder.Value)
+                    true
+
+        member inline this.AllTermsIndexOrdered =
+            lazy
+                this.Terms
+                |> Seq.fold
+                    (fun result curr -> result &&  curr.IsInIndexOrder.Value)
+                    (this.AllTermsNormalOrdered.Value)
 
 
     type PIxOp< ^idx, ^op
