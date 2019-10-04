@@ -46,19 +46,19 @@ module Terms =
                 | :? C<'unit> as other -> compare this.Thunk other.Thunk
                 | _ -> 0
 
-        static member inline P1 x = C<'unit>.Apply (Complex.One          , x)
-        static member inline Pi x = C<'unit>.Apply (Complex.ImaginaryOne , x)
-        static member inline M1 x = C<'unit>.Apply (Complex.MinusOne     , x)
-        static member inline Mi x = C<'unit>.Apply (Complex.MinusI       , x)
+        static member inline P1 (x : 'unit) = C<'unit>.Apply(Complex.One         , x)
+        static member inline Pi (x : 'unit) = C<'unit>.Apply(Complex.ImaginaryOne, x)
+        static member inline M1 (x : 'unit) = C<'unit>.Apply(Complex.MinusOne    , x)
+        static member inline Mi (x : 'unit) = C<'unit>.Apply(Complex.MinusI      , x)
 
     type S< ^term
         when ^term : equality
-        and ^term : (member Signature : string)
-        and ^term : (member ScaleCoefficient : Complex -> ^term)
-        and ^term : (member AddCoefficient : Complex -> ^term)
-        and ^term : (member Coeff : Complex)
-        and ^term : (member IsZero : bool)
-        and ^term : (static member (<*>) : ^term -> ^term -> ^term)> =
+        and  ^term : (member Signature        : string)
+        and  ^term : (member ScaleCoefficient : Complex -> ^term)
+        and  ^term : (member AddCoefficient   : Complex -> ^term)
+        and  ^term : (member Coeff            : Complex)
+        and  ^term : (member IsZero           : bool)
+        and  ^term : (static member (<*>)     : ^term -> ^term -> ^term)> =
         | SumTerm of Map<string, ^term>
     with
         static member inline private Term_ScaleCoefficient (value, scale) = (^term : (member ScaleCoefficient : Complex -> ^term)        (value, scale))

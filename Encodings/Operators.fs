@@ -65,6 +65,9 @@ module Operators =
                 | Cr -> "R"
                 | An -> "L"
 
+        member this.IsRaising  = match this with | Cr -> true | _ -> false
+        member this.IsLowering = match this with | An -> true | _ -> false
+
         override this.ToString() =
             this.AsLadderOperatorString.Value
 
@@ -107,3 +110,45 @@ module Operators =
                 |> Array.map (fun (a, b) ->  b.ScaleCoefficient a)
                 |> curry SR<Pauli>.Apply Complex.One
                 |> Some
+
+
+        static member Combine (productTerm : PIxWkOp<uint32, FermionicOperator>) (nextUnit : C<IxOp<uint32, FermionicOperator>>)=
+                    let nUnits = productTerm.IndexedOps.Length
+
+                    let prefix =
+                        if nUnits > 2 then
+                            productTerm.IndexedOps.[0..(nUnits - 2)]
+                        else
+                            [| IxOp<_,_>.Apply(0u, I) |]
+
+                    let lastUnit = productTerm.IndexedOps.[nUnits - 1]
+
+                    match (lastUnit.Op, nextUnit.Op) with
+                    | An, Cr ->
+                        if lastUnit.Index <> nextUnit.Index then
+                            let term =
+                                [|
+                                    yield! prefix
+                                    yield { nextUnit with Coeff = Complex.MinusOne }
+                                    yield lastUnit
+                                |] |> curry PIxWkOp<_,_>.Apply Complex.One
+                            [| term |]
+                        else
+                            let leadingTerm =
+                                [|
+                                    yield! prefix
+                                |] |> curry PIxWkOp<_,_>.Apply Complex.One
+                            let trailingTerm =
+                                [|
+                                    yield! prefix
+                                    yield { nextUnit with Coeff = Complex.MinusOne }
+                                    yield lastUnit
+                                |] |> curry PIxWkOp<_,_>.Apply Complex.One
+                            [| leadingTerm; trailingTerm |]
+                    | _, _ ->
+                        let term =
+                            [|
+                                yield! productTerm.IndexedOps
+                                yield nextUnit
+                            |] |> curry PIxWkOp<_,_>.Apply Complex.One
+                        [| term |]
