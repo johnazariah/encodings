@@ -1,10 +1,8 @@
 ﻿namespace Tests
 
-open System.Collections
 open Encodings
 open Xunit
 open FsCheck.Xunit
-open System.Numerics
 
 [<Properties (Arbitrary = [|typeof<ComplexGenerator>|], QuietOnSuccess = true) >]
 module Terms_SIxOp =

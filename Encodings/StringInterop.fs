@@ -48,6 +48,24 @@ module StringInterop =
         with
         | _ -> None
 
+    let inline SIxWkOpFromString< ^op
+                        when ^op : equality
+                        and  ^op : comparison
+                        and  ^op : (member IsRaising  : bool)
+                        and  ^op : (member IsLowering : bool)
+                        and  ^op : (static member InNormalOrder : ^op -> ^op -> bool)
+                        and  ^op : comparison>
+        (unitFactory : string ->  ^op  option)
+        (s : System.String) : SIxWkOp<uint32, ^op > option =
+        try
+            s.Trim().TrimStart('{').TrimEnd('}').Split(';')
+            |> Array.choose (PIxOpFromString unitFactory)
+            |> Array.map (PIxWkOp<_,_>.ProductTerm)
+            |> (curry SIxWkOp<_,_>.Apply) Complex.One
+            |> Some
+        with
+        | _ -> None
+
     let inline RegisterFromString< ^op
                         when ^op : (static member Identity : ^op)
                         and  ^op : (static member Multiply : ^op -> ^op -> C< ^op >)

@@ -91,21 +91,6 @@ module Terms_PIxOp =
         | None -> Assert.True (false)
 
     [<Theory>]
-    [<InlineData("[(R,1)|(R,2)]", true)>]
-    [<InlineData("[(L,1)|(L,2)]", true)>]
-    [<InlineData("[(R,1)|(L,2)]", true)>]
-    [<InlineData("[(L,1)|(R,2)]", false)>]
-    [<InlineData("[(R,1)|(L,1)|(R,2)]", false)>]
-    [<InlineData("[(R,1)|(R,1)|(L,1)|(L,1)]", true)>]
-    let ``P InNormalOrder is computed correctly``(input, expected) =
-        match PIxOpFromString Wick.FromString input with
-        | Some pixop ->
-            let p = PIxWkOp.ProductTerm pixop
-            let isInNormalOrder =  PIxWkOp<uint32, Wick>.IsInNormalOrder p
-            Assert.Equal (expected, isInNormalOrder)
-        | None -> Assert.True (false)
-
-    [<Theory>]
     [<InlineData("[(R,1)|(R,2)]", "[(R,1)|(R,2)]", "[(R,1)|(R,2)|(R,1)|(R,2)]")>]
     [<InlineData("[(L,1)|(L,2)]", "[(L,1)|(L,2)]", "[(L,1)|(L,2)|(L,1)|(L,2)]")>]
     [<InlineData("[(R,1)|(R,2)]", "[(L,1)|(L,2)]", "[(R,1)|(R,2)|(L,1)|(L,2)]")>]
@@ -115,7 +100,6 @@ module Terms_PIxOp =
         match (left, right) with
         | Some l, Some r -> Assert.Equal(expected, prettyPrintPIxOp (l <*> r) |> shrinkString)
         | _, _ -> Assert.True (false)
-
 
     [<Theory>]
     [<InlineData("[(R,1)|(R,2)]", "[(R,1)|(R,2)]", "{[(R,1)|(R,2)]}")>]

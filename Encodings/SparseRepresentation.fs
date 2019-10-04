@@ -176,6 +176,11 @@ module SparseRepresentation =
         static member inline Op_InNormalOrder (l : ^op) (r : ^op) =
             (^op : (static member InNormalOrder : ^op -> ^op -> bool)(l, r))
 
+        static member inline IsInNormalOrder (this : PIxWkOp< ^idx, ^op>) =
+            this.IndexedOps
+            |> Seq.map (fun ixop -> ixop.Op)
+            |> (fun ops -> ops.IsOrdered PIxWkOp< ^idx, ^op>.Op_InNormalOrder)
+
         static member inline IsInIndexOrder (this : PIxWkOp< ^idx, ^op>) =
             let raisingOperatorsInOrder =
                 this.IndexedOps
@@ -187,12 +192,8 @@ module SparseRepresentation =
                 |> Seq.filter (fun ixop -> PIxWkOp<_,_>.Op_IsLoweringOperator ixop.Op)
                 |> IxOp<_,_>.InIndexOrder Descending
 
-            raisingOperatorsInOrder && loweringOperatorsInOrder
+            PIxWkOp< ^idx, ^op>.IsInNormalOrder this && raisingOperatorsInOrder && loweringOperatorsInOrder
 
-        static member inline IsInNormalOrder (this : PIxWkOp< ^idx, ^op>) =
-            this.IndexedOps
-            |> Seq.map (fun ixop -> ixop.Op)
-            |> (fun ops -> ops.IsOrdered PIxWkOp< ^idx, ^op>.Op_InNormalOrder)
 
     type SIxWkOp< ^idx, ^op
             when ^idx : comparison
