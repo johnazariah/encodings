@@ -5,12 +5,18 @@ open FsCheck.Xunit
 
 [<Properties (Arbitrary = [|typeof<ComplexGenerator>|], QuietOnSuccess = true) >]
 module PauliRegister =
+    open System.Numerics
     open Encodings
     open Xunit
 
     [<Property>]
     let ``Signature is computed correctly``(candidate : R<Pauli>) =
         Assert.Equal(prettyPrintRegister candidate, candidate.Signature)
+
+    [<Fact>]
+    let ``Signature is computed correctly : Regression 1`` () =
+        let candidate = R<Pauli>.ApplyInternal(Complex.Zero, [|Z|])
+        ``Signature is computed correctly`` candidate
 
     [<Fact>]
     let ``Default register is all identities``() =

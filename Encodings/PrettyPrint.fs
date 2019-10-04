@@ -38,19 +38,29 @@ module PrettyPrint =
         else
             sprintf "%O" this
 
-    let inline prettyPrintIxOp< ^op when ^op : equality> (this : IxOp<uint32, ^op>) =
-        sprintf "(%O, %i)" this.Op this.Index
+    let inline prettyPrintIxOp< ^op
+                when ^op : equality
+                and ^op : comparison>
+        (this : IxOp<uint32, ^op>) = sprintf "(%O, %i)" this.Op this.Index
 
-    let inline prettyPrintCIxOp< ^op when ^op : equality> (this : CIxOp<uint32, ^op>) =
-        prettyPrintIxOp< ^op > this.Unapply.Thunk
+    let inline prettyPrintCIxOp< ^op
+                when ^op : equality
+                and ^op : comparison>
+        (this : CIxOp<uint32, ^op>) = prettyPrintIxOp< ^op > this.Unapply.Thunk
 
-    let inline prettyPrintPIxOp< ^op when ^op : equality> (this : PIxOp<uint32, ^op>) =
+    let inline prettyPrintPIxOp< ^op
+                when ^op : equality
+                and ^op : comparison>
+        (this : PIxOp<uint32, ^op>) =
         this.IndexedOps
         |> Array.map prettyPrintIxOp< ^op >
         |> (fun rg -> System.String.Join (" | ", rg))
         |> sprintf "[%s]"
 
-    let inline prettyPrintSIxOp< ^op when ^op : equality> (this : SIxOp<uint32, ^op>) =
+    let inline prettyPrintSIxOp< ^op
+                when ^op : equality
+                and  ^op : comparison>
+        (this : SIxOp<uint32, ^op>) =
         this.Terms
         |> Seq.map (prettyPrintPIxOp)
         |> (fun rg -> System.String.Join ("; ", rg))
@@ -61,10 +71,13 @@ module PrettyPrint =
                         and  ^op : (static member Multiply : ^op -> ^op -> C< ^op >)
                         and ^op : equality>
         (this : R< ^op >) =
-        this.Units
-        |> Seq.map (sprintf "%O")
-        |> (fun rg -> System.String.Join ("", rg))
-        |> sprintf "%s"
+        if this.IsZero then
+            ""
+        else
+            this.Units
+            |> Seq.map (sprintf "%O")
+            |> (fun rg -> System.String.Join ("", rg))
+            |> sprintf "%s"
 
 
     let inline prettyPrintSR< ^op
@@ -104,5 +117,8 @@ module PrettyPrint =
                 let conjoiningPhase = toPhaseConjunction term.Coeff
                 sprintf "%s%s%s" result conjoiningPhase termStr
 
-        this.Terms
-        |> Seq.fold buildString ""
+        if this.IsZero then
+            ""
+        else
+            this.Terms
+            |> Seq.fold buildString ""

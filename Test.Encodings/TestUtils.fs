@@ -23,7 +23,6 @@ module TestUtils
                     }
             }
 
-
     type CChar =
     | CC of C<char>
     with
@@ -54,3 +53,5 @@ module TestUtils
             match (l, r) with
             | Lower, Raise -> false
             | _, _ -> true
+        member this.IsRaising  = match this with | Raise -> true | _ -> false
+        member this.IsLowering = match this with | Lower -> true | _ -> false

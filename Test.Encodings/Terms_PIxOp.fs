@@ -65,20 +65,20 @@ module Terms_PIxOp =
 
     [<Fact>]
     let ``P + P -> S (Regression 1)``() =
-        let left  = ProductTerm { Coeff = Complex.Zero; Thunk = [||] }
-        let right = ProductTerm { Coeff = Complex.Zero; Thunk = [||] }
+        let left  = PIxOp<_,_>.ProductTerm { Coeff = Complex.Zero; Thunk = [||] }
+        let right = PIxOp<_,_>.ProductTerm { Coeff = Complex.Zero; Thunk = [||] }
         ``P + P -> S`` (left, right)
 
     [<Fact>]
     let ``P + P -> S (Regression 2)``() =
-        let left  = ProductTerm { Coeff = Complex.One;  Thunk = [||] }
+        let left  = PIxOp<_,_>.ProductTerm { Coeff = Complex.One;  Thunk = [||] }
         let right = PIxOp<uint32, CChar>.Apply(Complex.Zero, [| CIxOp.Apply(Complex.Zero, IxOp.Apply(0u, CChar.Apply(Complex.Zero, 'a'))) |])
         ``P + P -> S`` (left, right)
 
     [<Fact>]
     let ``P + P -> S (Regression 3)``() =
-        let left  = ProductTerm { Coeff = Complex.One;  Thunk = [||] }
-        let right = ProductTerm { Coeff = Complex.Zero; Thunk = [||] }
+        let left  = PIxOp<_,_>.ProductTerm { Coeff = Complex.One;  Thunk = [||] }
+        let right = PIxOp<_,_>.ProductTerm { Coeff = Complex.Zero; Thunk = [||] }
         ``P + P -> S`` (left, right)
 
     [<Theory>]
@@ -99,7 +99,10 @@ module Terms_PIxOp =
     [<InlineData("[(R,1)|(R,1)|(L,1)|(L,1)]", true)>]
     let ``P InNormalOrder is computed correctly``(input, expected) =
         match PIxOpFromString Wick.FromString input with
-        | Some pixop -> Assert.Equal (expected, SIxWkOp<uint32, Wick>.PIxOpInNormalOrder pixop)
+        | Some pixop ->
+            let p = PIxWkOp.ProductTerm pixop
+            let isInNormalOrder =  PIxWkOp<uint32, Wick>.IsInNormalOrder p
+            Assert.Equal (expected, isInNormalOrder)
         | None -> Assert.True (false)
 
     [<Theory>]

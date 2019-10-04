@@ -7,7 +7,8 @@ module DenseRepresentation =
     type R< ^unit
                 when ^unit : (static member Identity : ^unit)
                 and  ^unit : (static member Multiply : ^unit * ^unit -> C< ^unit >)
-                and  ^unit : equality> =
+                and  ^unit : equality
+                and  ^unit : comparison> =
         | Register of C< ^unit[] >
     with
         member inline this.Unapply = match this with Register pt -> pt

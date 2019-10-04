@@ -5,7 +5,9 @@ module StringInterop =
     open System.Numerics
     let shrinkString (s : System.String) = s.Replace(" ", "")
 
-    let inline IxOpFromString< ^op when ^op : equality>
+    let inline IxOpFromString< ^op
+            when ^op : equality
+            and ^op : comparison>
         (unitFactory : string ->  ^op  option)
         (s : System.String) =
         try
@@ -20,7 +22,9 @@ module StringInterop =
         with
         | _ -> None
 
-    let inline PIxOpFromString< ^op when ^op : equality>
+    let inline PIxOpFromString< ^op
+            when ^op : equality
+            and  ^op : comparison>
         (unitFactory : string ->  ^op  option)
         (s : System.String) : PIxOp<uint32, ^op > option =
         try
@@ -31,7 +35,9 @@ module StringInterop =
         with
         | _ -> None
 
-    let inline SIxOpFromString< ^op when ^op : equality>
+    let inline SIxOpFromString< ^op
+            when ^op : equality
+            and  ^op : comparison>
         (unitFactory : string ->  ^op  option)
         (s : System.String) : SIxOp<uint32, ^op > option =
         try
