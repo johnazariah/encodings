@@ -99,15 +99,15 @@ module Terms =
             |> SumTerm
 
         static member inline Unit : S< ^term> =
-            S< ^term >.Apply (Complex.One, [||])
+            S< ^term >.Apply (Complex.One, [| |])
 
         static member inline Zero : S< ^term> =
-            S< ^term >.Apply (Complex.Zero, [||])
+            S< ^term >.Apply (Complex.Zero, [| |])
 
         member inline this.Reduce =
             lazy
                 if this.Coeff.IsZero then
-                    S< ^term >.Apply (Complex.Zero, [||])
+                    S< ^term >.Apply (Complex.Zero, [| |])
                 else
                     [|
                         for pt in this.Terms do

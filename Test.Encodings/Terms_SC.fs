@@ -13,7 +13,7 @@ module Terms_SC =
             this.Reduce.Value.Coeff = Complex.One
 
         let coefficientIsZeroWhenThereAreNoTerms =
-            (this.Reduce.Value.Terms = [||]) &&
+            (this.Reduce.Value.Terms = [| |]) &&
             (this.Reduce.Value.Coeff = Complex.Zero)
 
         coefficientIsZeroWhenThereAreNoTerms ||
@@ -47,7 +47,7 @@ module Terms_SC =
     let ``Reduce removes all terms if coeff is zero`` (candidate : S<CChar>) =
         if (candidate.Coeff = Complex.Zero) then
             Assert.False (true, "Zero coefficient?")
-        else if (candidate.Terms = [||]) then
+        else if (candidate.Terms = [| |]) then
             Assert.Empty (candidate.Terms)
             Assert.Empty (candidate.Reduce.Value.Terms)
             Assert.Equal (Complex.One, candidate.Coeff)
@@ -63,7 +63,7 @@ module Terms_SC =
 
     [<Fact>]
     let ``Reduce works on empty array``() =
-        let S = S<CChar>.Apply(Complex.One, [||])
+        let S = S<CChar>.Apply(Complex.One, [| |])
         Assert.True(S.IsZero)
         Assert.Empty(S.Terms)
 
@@ -111,7 +111,7 @@ module Terms_SC =
 
     [<Fact>]
     let ``Addition operator coalesces coefficients for like terms : Regression 1``() =
-        let lterms = [||]
+        let lterms = [| |]
         let rterms = [|Complex(-0.5, -2.); Complex(0.5, -0.5)|]
         ``Addition operator coalesces coefficients for like terms`` (lterms, rterms)
 

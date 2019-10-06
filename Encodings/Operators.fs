@@ -82,6 +82,28 @@ module Operators =
         static member inline FromString (s : string) =
             FermionicOperator.Apply <| s.Chars 0
 
+        static member Commute (a : IxOp<uint32, FermionicOperator>, b : IxOp<uint32, FermionicOperator>) : C<IxOp<uint32, FermionicOperator>[]>[] =
+                match (a.Op, b.Op) with
+                | _, I
+                | I, _ ->
+                        [|
+                            C<_>.Apply(Complex.One, [| b; a |])
+                        |]
+                | An, Cr ->
+                    if a.Index = b.Index then
+                        [|
+                            C<_>.Apply(Complex.One, [| IxOp<_,_>.Apply(a.Index, I) |])
+                            C<_>.Apply(Complex.MinusOne, [| b; a |])
+                        |]
+                    else
+                        [|
+                            C<_>.Apply(Complex.MinusOne, [| b; a |])
+                        |]
+                | _, _ ->
+                    [|
+                        C<_>.Apply(Complex.MinusOne, [| b; a |])
+                    |]
+
         static member Combine
             (productTerm : PIxWkOp<uint32, FermionicOperator>, nextUnit : IxOp<uint32, FermionicOperator>) =
             let nUnits = productTerm.IndexedOps.Length

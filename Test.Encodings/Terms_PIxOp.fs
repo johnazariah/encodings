@@ -62,7 +62,7 @@ module Terms_PIxOp =
                     Op = CC { Coeff = (0, 0)
                               Thunk = 'a' } }|] },
          ProductTerm { Coeff = (-1, 1)
-         Thunk = [||] })
+         Thunk = [| |] })
         *)
 
         let sum = left + right
@@ -74,20 +74,20 @@ module Terms_PIxOp =
 
     [<Fact>]
     let ``P + P -> S (Regression 1)``() =
-        let left  = PIxOp<_,_>.ProductTerm { Coeff = Complex.Zero; Thunk = [||] }
-        let right = PIxOp<_,_>.ProductTerm { Coeff = Complex.Zero; Thunk = [||] }
+        let left  = PIxOp<_,_>.ProductTerm { Coeff = Complex.Zero; Thunk = [| |] }
+        let right = PIxOp<_,_>.ProductTerm { Coeff = Complex.Zero; Thunk = [| |] }
         ``P + P -> S`` (left, right)
 
     [<Fact>]
     let ``P + P -> S (Regression 2)``() =
-        let left  = PIxOp<_,_>.ProductTerm { Coeff = Complex.One;  Thunk = [||] }
+        let left  = PIxOp<_,_>.ProductTerm { Coeff = Complex.One;  Thunk = [| |] }
         let right = PIxOp<uint32, CChar>.Apply(Complex.Zero, [| CIxOp.Apply(Complex.Zero, IxOp.Apply(0u, CChar.Apply(Complex.Zero, 'a'))) |])
         ``P + P -> S`` (left, right)
 
     [<Fact>]
     let ``P + P -> S (Regression 3)``() =
-        let left  = PIxOp<_,_>.ProductTerm { Coeff = Complex.One;  Thunk = [||] }
-        let right = PIxOp<_,_>.ProductTerm { Coeff = Complex.Zero; Thunk = [||] }
+        let left  = PIxOp<_,_>.ProductTerm { Coeff = Complex.One;  Thunk = [| |] }
+        let right = PIxOp<_,_>.ProductTerm { Coeff = Complex.Zero; Thunk = [| |] }
         ``P + P -> S`` (left, right)
 
     [<Theory>]

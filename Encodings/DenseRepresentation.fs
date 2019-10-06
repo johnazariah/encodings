@@ -25,8 +25,8 @@ module DenseRepresentation =
         static member inline ApplyInternal =
             C< ^unit >.Apply >> R< ^unit >.Register
 
-        static member inline Unit = R< ^unit >.ApplyInternal (Complex.One,  [||])
-        static member inline Zero = R< ^unit >.ApplyInternal (Complex.Zero, [||])
+        static member inline Unit = R< ^unit >.ApplyInternal (Complex.One,  [| |])
+        static member inline Zero = R< ^unit >.ApplyInternal (Complex.Zero, [| |])
 
         member inline this.Item
             with get i =
@@ -50,7 +50,7 @@ module DenseRepresentation =
             |> R< ^unit >.Register
 
         member inline this.IsZero =
-            this.Coeff.IsZero || (this.Units = [||])
+            this.Coeff.IsZero || (this.Units = [| |])
 
         member inline this.Reduce =
             if this.IsZero then

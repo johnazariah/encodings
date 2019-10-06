@@ -1,4 +1,10 @@
 ﻿namespace Encodings
+
+module AssemblyInfo =
+    open System.Runtime.CompilerServices
+    [<assembly: InternalsVisibleTo("Test.Encodings")>]
+    do()
+
 [<AutoOpen>]
 module Demo =
     type Test< ^op > =
@@ -103,7 +109,7 @@ module TypeExtensions =
     type Map<'Key, 'Value when 'Key : comparison>
     with
         member this.Key =
-            this |> Map.fold (fun s k _ ->Array.concat [| s; [| k |] |]) [||]
+            this |> Map.fold (fun s k _ ->Array.concat [| s; [| k |] |]) ([| |])
 
         member this.Values =
-            this |> Map.fold (fun s _ v ->Array.concat [| s; [| v |] |]) [||]
+            this |> Map.fold (fun s _ v ->Array.concat [| s; [| v |] |]) ([| |])

@@ -66,7 +66,6 @@ module PrettyPrint =
         |> (fun rg -> System.String.Join ("; ", rg))
         |> sprintf "{%s}"
 
-
     let inline prettyPrintPIxWkOp< ^op
                         when ^op : equality
                         and ^op : comparison
@@ -75,12 +74,13 @@ module PrettyPrint =
                         and ^op : (member IsRaising  : bool)
                         and ^op : (member IsLowering : bool)
                         and ^op : (static member InNormalOrder : ^op -> ^op -> bool)
+                        and ^op : (static member Commute : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
                         and ^op : equality>
         (this : PIxWkOp<uint32, ^op>) =
         let Identity = (^op : (static member Identity : ^op)())
         let isIdentity op = (^op : (member IsIdentity : bool)(op))
 
-        if this.IndexedOps = [| IxOp<uint32, ^op>.Apply(0u, Identity) |] then
+        if isIdentity this.IndexedOps.[0].Op then
             sprintf "%s[1]" (prettyPrintPhase this.Coeff)
         else
             this.IndexedOps
@@ -97,6 +97,7 @@ module PrettyPrint =
                         and ^op : (member IsLowering : bool)
                         and ^op : (static member InNormalOrder : ^op -> ^op -> bool)
                         and ^op : (static member Combine : PIxWkOp<uint32, ^op > -> IxOp<uint32, ^op > -> PIxWkOp<uint32, ^op >[])
+                        and ^op : (static member Commute : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
                         and ^op : equality>
         (this : SIxWkOp<uint32, ^op>) =
         this.Terms

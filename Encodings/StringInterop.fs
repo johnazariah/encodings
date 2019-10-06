@@ -48,20 +48,32 @@ module StringInterop =
         with
         | _ -> None
 
+    let inline PIxWkOpFromString< ^op
+                        when ^op : equality
+                        and  ^op : (member IsRaising  : bool)
+                        and  ^op : (member IsLowering : bool)
+                        and  ^op : (static member InNormalOrder : ^op -> ^op -> bool)
+                        and  ^op : (static member Commute : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
+                        and  ^op : comparison>
+        (unitFactory : string ->  ^op  option)
+        (s : System.String) : PIxWkOp<uint32, ^op > option =
+        PIxOpFromString<_> unitFactory s
+        |> Option.map PIxWkOp<_,_>.ProductTerm
+
     let inline SIxWkOpFromString< ^op
                         when ^op : equality
                         and  ^op : comparison
                         and  ^op : (member IsRaising  : bool)
                         and  ^op : (member IsLowering : bool)
                         and  ^op : (static member InNormalOrder : ^op -> ^op -> bool)
+                        and  ^op : (static member Commute : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
                         and  ^op : (static member Combine : PIxWkOp<uint32, ^op > -> IxOp<uint32, ^op > -> PIxWkOp<uint32, ^op >[])
                         and  ^op : comparison>
         (unitFactory : string ->  ^op  option)
         (s : System.String) : SIxWkOp<uint32, ^op > option =
         try
             s.Trim().TrimStart('{').TrimEnd('}').Split(';')
-            |> Array.choose (PIxOpFromString unitFactory)
-            |> Array.map (PIxWkOp<_,_>.ProductTerm)
+            |> Array.choose (PIxWkOpFromString unitFactory)
             |> (curry SIxWkOp<_,_>.Apply) Complex.One
             |> Some
         with
