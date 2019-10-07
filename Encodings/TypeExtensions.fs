@@ -9,7 +9,7 @@ module AssemblyInfo =
 [<RequireQualifiedAccess>]
 module Array =
     let inline last (arr:_[]) = arr.[arr.Length - 1]
-    let inline allButLast (arr:_[]) = 
+    let inline allButLast (arr:_[]) =
         if arr.Length = 1 then [| |] else arr.[0..arr.Length - 2]
 
 [<AutoOpen>]

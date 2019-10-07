@@ -101,7 +101,7 @@ module PrettyPrint =
         |> (fun rg -> System.String.Join ("; ", rg))
         |> sprintf "{%s}"
 
-    let inline prettyPrintSIxWkOp (this : SIxWkOp<_,_>) = 
+    let inline prettyPrintSIxWkOp (this : SIxWkOp<_,_>) =
         sprintf "%s %s" (prettyPrintPhase this.Coeff) (prettyPrintPIxWkOps this.Terms)
 
     let inline prettyPrintSignature< ^op
@@ -115,7 +115,7 @@ module PrettyPrint =
             this.Units
             |> Seq.map (sprintf "%O")
             |> (fun rg -> System.String.Join ("", rg))
-            |> sprintf "%s" 
+            |> sprintf "%s"
 
     let inline prettyPrintRegister< ^op
                         when ^op : (static member Identity : ^op)

@@ -78,7 +78,7 @@ module Terms_PIxWkOp =
         match PIxWkOpFromString FermionicOperator.FromString input with
         | Some pixop ->
             let actual =
-                pixop.ToNormalOrder 
+                pixop.ToNormalOrder
                 |> (fun t -> t.Value)
                 |> Array.map (prettyPrintPIxWkOps >> shrinkString)
                 |> (fun rg -> String.Join(":", rg))

@@ -143,7 +143,7 @@ module SparseRepresentation =
         member inline this.ScaleCoefficient c = this.Unapply.ScaleCoefficient c |> ProductTerm
         member inline this.AddCoefficient   c = this.Unapply.AddCoefficient   c |> ProductTerm
         member inline this.IsZero             = this.Unapply.IsZero
-        
+
         static member inline Op_IsIdentityOperator op =
             (^op : (member IsIdentity : bool)(op))
 
@@ -161,7 +161,7 @@ module SparseRepresentation =
 
         static member inline Apply (coeff, ixops : IxOp<_,_>[]) =
             let isIdentityTerm (t : IxOp<_,_>) = PIxWkOp< ^idx, ^op>.Op_IsIdentityOperator t.Op
-            let identityOpExists = 
+            let identityOpExists =
                 ixops
                 |> Array.exists isIdentityTerm
 
@@ -169,7 +169,7 @@ module SparseRepresentation =
                 ixops
                 |> Array.filter (isIdentityTerm >> not)
 
-            let ops = 
+            let ops =
                 if opsExceptIdentity = [| |] && identityOpExists then
                     [| ixops.[0] |]
                 else
@@ -251,7 +251,7 @@ module SparseRepresentation =
 
                 | _ ->
                     let first = ixops.[0]
-                    let ((coeff', matching), others) = findItemsWithMatchingIndex ((coeff, [| |]),[| |]) first ixops.[1..]                    
+                    let ((coeff', matching), others) = findItemsWithMatchingIndex ((coeff, [| |]),[| |]) first ixops.[1..]
                     [|
                         yield! result
                         yield PIxWkOp<_,_>.Apply(coeff', [| first; yield! matching |])
@@ -261,10 +261,10 @@ module SparseRepresentation =
             lazy
                 toChunksWithCommonIndex (this.Coeff, this.IndexedOps) ([| |])
 
-        member inline this.ToNormalOrder = 
+        member inline this.ToNormalOrder =
             let joinTerm (sorted : PIxWkOp<_,_>) (candidate : PIxWkOp<_,_>) : PIxWkOp<_,_> =
                 let rec includeSingleOp (op : IxOp<_,_>) (coeff, pre, post) : PIxWkOp<_,_> =
-                    let candidate = PIxWkOp<_,_>.Apply (coeff, [| yield! pre; op; yield! post |]) 
+                    let candidate = PIxWkOp<_,_>.Apply (coeff, [| yield! pre; op; yield! post |])
                     if candidate.IsInNormalOrder.Value then
                         candidate
                     else
@@ -279,6 +279,7 @@ module SparseRepresentation =
 
             let sortTerm (chunk : PIxWkOp<_,_>) : PIxWkOp<_,_>[] =
                 match chunk.IndexedOps.Length with
+                | 0 -> [| |]
                 | 1 -> [| chunk |]
                 | 2 ->
                     if chunk.IsInNormalOrder.Value then
@@ -286,18 +287,18 @@ module SparseRepresentation =
                     else
                         PIxWkOp<_,_>.Op_Swap chunk.IndexedOps.[0] chunk.IndexedOps.[1]
                         |> Array.map (fun c -> PIxWkOp<_,_>.Apply(c.Coeff * chunk.Coeff, c.Thunk))
-                | _ -> [| |]
+                | _ -> [| |] // JOHNAZ: bug for bosons!
 
             let includeChunk (state : PIxWkOp<_, _>[][]) (chunk : PIxWkOp<_,_>) : PIxWkOp<_, _>[][] =
                 if state = [| |] then
-                    [| 
+                    [|
                         sortTerm chunk
                     |]
                 else
                     [|
                         for stateChunk in state do
                             [|
-                                for sorted in stateChunk do 
+                                for sorted in stateChunk do
                                     for candidate in sortTerm chunk do
                                         yield joinTerm sorted candidate
                             |]
@@ -348,7 +349,7 @@ module SparseRepresentation =
             if this.AllTermsNormalOrdered.Value then
                 lazy this
             else
-                let sortSingleProductTerm (p : PIxWkOp< ^idx, ^op >) = 
+                let sortSingleProductTerm (p : PIxWkOp< ^idx, ^op >) =
                     p.ToNormalOrder.Value
                     |> Array.map (curry SIxWkOp< ^idx, ^op>.Apply Complex.One)
                     |> Array.reduce (<+>)

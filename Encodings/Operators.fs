@@ -83,29 +83,29 @@ module Operators =
             FermionicOperator.Apply <| s.Chars 0
 
         static member Swap (a : IxOp<uint32, FermionicOperator>, b : IxOp<uint32, FermionicOperator>) : C<IxOp<uint32, FermionicOperator>[]>[] =
-                match (a.Op, b.Op) with
-                | _, I -> 
+            match (a.Op, b.Op) with
+            | _, I ->
+                [|
+                    C<_>.Apply(Complex.One, [| a |])
+                |]
+            | I, _ ->
+                [|
+                    C<_>.Apply(Complex.One, [| b |])
+                |]
+            | An, Cr ->
+                if a.Index = b.Index then
                     [|
-                        C<_>.Apply(Complex.One, [| a |])
+                        C<_>.Apply(Complex.One, [| IxOp<_,_>.Apply(0u, I) |])
+                        C<_>.Apply(Complex.MinusOne, [| b; a |])
                     |]
-                | I, _ ->
-                    [|
-                        C<_>.Apply(Complex.One, [| b |])
-                    |]
-                | An, Cr ->
-                    if a.Index = b.Index then
-                        [|
-                            C<_>.Apply(Complex.One, [| IxOp<_,_>.Apply(0u, I) |])
-                            C<_>.Apply(Complex.MinusOne, [| b; a |])
-                        |]
-                    else
-                        [|
-                            C<_>.Apply(Complex.MinusOne, [| b; a |])
-                        |]
-                | _, _ ->
+                else
                     [|
                         C<_>.Apply(Complex.MinusOne, [| b; a |])
                     |]
+            | _, _ ->
+                [|
+                    C<_>.Apply(Complex.MinusOne, [| b; a |])
+                |]
 
     type IndexedFermionicOperator =
         | InFmOp of IxOp<uint32, FermionicOperator>

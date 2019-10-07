@@ -43,7 +43,8 @@ module Terms =
         interface System.IComparable with
             member this.CompareTo otherObj =
                 match (otherObj) with
-                | :? C<'unit> as other -> compare this.Thunk other.Thunk
+                | :? C<'unit> as other ->
+                    compare this.Thunk other.Thunk
                 | _ -> 0
 
         static member inline P1 (x : 'unit) = C<'unit>.Apply(Complex.One         , x)
