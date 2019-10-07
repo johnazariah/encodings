@@ -11,7 +11,7 @@ module PauliRegister =
 
     [<Property>]
     let ``Signature is computed correctly``(candidate : R<Pauli>) =
-        Assert.Equal(prettyPrintRegister candidate, candidate.Signature)
+        Assert.Equal(prettyPrintSignature candidate, candidate.Signature)
 
     [<Fact>]
     let ``Signature is computed correctly : Regression 1`` () =
@@ -59,10 +59,10 @@ module PauliRegister =
     [<InlineData("IIII", "IIII", "",     "IIII")>]
     [<InlineData("IIII", "IIIX", "",     "IIIX")>]
     [<InlineData("IIII", "XIII", "",     "XIII")>]
-    [<InlineData("XIII", "YIII", "( i)", "ZIII")>]
-    [<InlineData("XXII", "YYII", " -",   "ZZII")>]
-    [<InlineData("XXIZ", "YYII", " -",   "ZZIZ")>]
-    [<InlineData("XXYI", "YYZI", "(-i)", "ZZXI")>]
+    [<InlineData("XIII", "YIII", "( i)", "( i)ZIII")>]
+    [<InlineData("XXII", "YYII", " -",   " -ZZII")>]
+    [<InlineData("XXIZ", "YYII", " -",   " -ZZIZ")>]
+    [<InlineData("XXYI", "YYZI", "(-i)", "(-i)ZZXI")>]
     [<InlineData("XXYZ", "YYZX", "",     "ZZXY")>]
     let ``PauliRegister * PauliRegister -> PauliRegister : phases and values computed correctly`` (l : string, r : string, expectedPhase, expectedRegister) =
         let l_reg = RegisterFromString Pauli.Apply l

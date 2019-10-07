@@ -73,19 +73,19 @@ module PrettyPrint =
                         and ^op : (member IsRaising  : bool)
                         and ^op : (member IsLowering : bool)
                         and ^op : (static member InNormalOrder : ^op -> ^op -> bool)
-                        and ^op : (static member Commute : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
+                        and ^op : (static member Swap : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
                         and ^op : equality>
         (this : PIxWkOp<uint32, ^op>) =
         let isIdentity op = (^op : (member IsIdentity : bool)(op))
 
         if isIdentity this.IndexedOps.[0].Op then
-            sprintf "%s[1]" (prettyPrintPhase this.Coeff)
+            sprintf "%s [1]" (prettyPrintPhase this.Coeff)
         else
             this.IndexedOps
             |> Array.filter (fun t -> not (isIdentity t.Op))
             |> Array.map prettyPrintIxOp< ^op >
             |> (fun rg -> System.String.Join (" | ", rg))
-            |> sprintf "%s[%s]" (prettyPrintPhase this.Coeff)
+            |> sprintf "%s [%s]" (prettyPrintPhase this.Coeff)
 
     let inline prettyPrintPIxWkOps< ^op
                         when ^op : comparison
@@ -93,7 +93,7 @@ module PrettyPrint =
                         and ^op : (member IsRaising  : bool)
                         and ^op : (member IsLowering : bool)
                         and ^op : (static member InNormalOrder : ^op -> ^op -> bool)
-                        and ^op : (static member Commute : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
+                        and ^op : (static member Swap : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
                         and ^op : equality>
         (this : PIxWkOp<uint32, ^op>[]) =
         this
@@ -102,7 +102,20 @@ module PrettyPrint =
         |> sprintf "{%s}"
 
     let inline prettyPrintSIxWkOp (this : SIxWkOp<_,_>) = 
-        prettyPrintPIxWkOps this.Terms
+        sprintf "%s %s" (prettyPrintPhase this.Coeff) (prettyPrintPIxWkOps this.Terms)
+
+    let inline prettyPrintSignature< ^op
+                        when ^op : (static member Identity : ^op)
+                        and  ^op : (static member Multiply : ^op -> ^op -> C< ^op >)
+                        and ^op : equality>
+        (this : R< ^op >) =
+        if this.IsZero then
+            ""
+        else
+            this.Units
+            |> Seq.map (sprintf "%O")
+            |> (fun rg -> System.String.Join ("", rg))
+            |> sprintf "%s" 
 
     let inline prettyPrintRegister< ^op
                         when ^op : (static member Identity : ^op)
@@ -115,8 +128,7 @@ module PrettyPrint =
             this.Units
             |> Seq.map (sprintf "%O")
             |> (fun rg -> System.String.Join ("", rg))
-            |> sprintf "%s"
-
+            |> sprintf "%s%s" (prettyPrintPhase this.Coeff)
 
     let inline prettyPrintSR< ^op
                         when ^op : (static member Identity : ^op)

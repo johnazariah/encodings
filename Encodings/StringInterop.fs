@@ -54,7 +54,7 @@ module StringInterop =
                         and  ^op : (member IsRaising  : bool)
                         and  ^op : (member IsLowering : bool)
                         and  ^op : (static member InNormalOrder : ^op -> ^op -> bool)
-                        and  ^op : (static member Commute : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
+                        and  ^op : (static member Swap : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
                         and  ^op : comparison>
         (unitFactory : string ->  ^op  option)
         (s : System.String) : PIxWkOp<uint32, ^op > option =
@@ -68,7 +68,7 @@ module StringInterop =
                         and  ^op : (member IsRaising  : bool)
                         and  ^op : (member IsLowering : bool)
                         and  ^op : (static member InNormalOrder : ^op -> ^op -> bool)
-                        and  ^op : (static member Commute : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
+                        and  ^op : (static member Swap : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
                         and  ^op : comparison>
         (unitFactory : string ->  ^op  option)
         (s : System.String) : SIxWkOp<uint32, ^op > option =
