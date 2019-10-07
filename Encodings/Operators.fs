@@ -139,20 +139,3 @@ module Operators =
                 |> Array.map (fun (a, b) ->  b.ScaleCoefficient a)
                 |> curry SR<Pauli>.Apply Complex.One
                 |> Some
-
-    let ToNormalOrder (this :SIxWkOp<uint32, FermionicOperator>) =
-        if this.AllTermsNormalOrdered.Value then
-            this
-        else
-            let sortSingleProductTerm (p : PIxWkOp<_,_>) = 
-                let r = 
-                    p.ToNormalOrder.Value
-                    |> Array.map (curry SIxWkOp<_,_>.Apply Complex.One)
-                    |> Array.reduce (<+>)
-                r
-
-            let r =
-                this.Terms
-                |> Array.map sortSingleProductTerm
-                |> Array.reduce (<+>)
-            r

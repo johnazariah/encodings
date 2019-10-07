@@ -353,12 +353,10 @@ module SparseRepresentation =
                     |> Array.map (curry SIxWkOp< ^idx, ^op>.Apply Complex.One)
                     |> Array.reduce (<+>)
 
-                let s = 
+                lazy
                     this.Terms
                     |> Array.map sortSingleProductTerm
                     |> Array.reduce (<+>)
-                lazy
-                    s
 
     type PIxOp< ^idx, ^op
                     when ^idx : comparison
