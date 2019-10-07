@@ -50,6 +50,7 @@ module StringInterop =
 
     let inline PIxWkOpFromString< ^op
                         when ^op : equality
+                        and  ^op : (member IsIdentity  : bool)
                         and  ^op : (member IsRaising  : bool)
                         and  ^op : (member IsLowering : bool)
                         and  ^op : (static member InNormalOrder : ^op -> ^op -> bool)
@@ -63,11 +64,11 @@ module StringInterop =
     let inline SIxWkOpFromString< ^op
                         when ^op : equality
                         and  ^op : comparison
+                        and  ^op : (member IsIdentity  : bool)
                         and  ^op : (member IsRaising  : bool)
                         and  ^op : (member IsLowering : bool)
                         and  ^op : (static member InNormalOrder : ^op -> ^op -> bool)
                         and  ^op : (static member Commute : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
-                        and  ^op : (static member Combine : PIxWkOp<uint32, ^op > -> IxOp<uint32, ^op > -> PIxWkOp<uint32, ^op >[])
                         and  ^op : comparison>
         (unitFactory : string ->  ^op  option)
         (s : System.String) : SIxWkOp<uint32, ^op > option =

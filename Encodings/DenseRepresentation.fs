@@ -112,8 +112,8 @@ module DenseRepresentation =
         static member inline Apply = S<R< ^unit>>.Apply >> SumTerm
         member inline this.IsZero  = this.Unapply.IsZero
 
-        static member inline (+) (l : SR< ^unit >, r : SR< ^unit >) =
-            l.Unapply + r.Unapply |> SumTerm
+        static member inline (<+>) (l : SR< ^unit >, r : SR< ^unit >) =
+            l.Unapply <+> r.Unapply |> SumTerm
 
-        static member inline (*) (l : SR< ^unit >, r : SR< ^unit >) =
-            l.Unapply * r.Unapply |> SumTerm
+        static member inline (<*>) (l : SR< ^unit >, r : SR< ^unit >) =
+            l.Unapply <*> r.Unapply |> SumTerm

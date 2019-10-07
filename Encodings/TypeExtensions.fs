@@ -5,19 +5,12 @@ module AssemblyInfo =
     [<assembly: InternalsVisibleTo("Test.Encodings")>]
     do()
 
-[<AutoOpen>]
-module Demo =
-    type Test< ^op > =
-        { Op : ^op }
-    with
-        member inline __.Signature = ""
-
-    type (*and*) Wrapper< ^test when ^test : equality and ^test : (member Signature : string) > =
-        | W of ^test
-
-    type (*and*) Wrapper'< ^test when ^test : equality and ^test : (member Signature : string) > =
-        | W' of Wrapper<Test< ^test >>
-
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+[<RequireQualifiedAccess>]
+module Array =
+    let inline last (arr:_[]) = arr.[arr.Length - 1]
+    let inline allButLast (arr:_[]) = 
+        if arr.Length = 1 then [| |] else arr.[0..arr.Length - 2]
 
 [<AutoOpen>]
 module TypeExtensions =

@@ -115,7 +115,7 @@ module Terms =
                     |]
                     |> curry S< ^term >.Apply Complex.One
 
-        static member inline (*) (l : S< ^term >, r : S< ^term >) =
+        static member inline (<*>) (l : S< ^term >, r : S< ^term >) =
             [|
                 for lt in l.Terms do
                     for rt in r.Terms do
@@ -123,7 +123,7 @@ module Terms =
             |]
             |> curry S<_>.Apply Complex.One
 
-        static member inline (+) (l : S< ^term >, r : S< ^term >) =
+        static member inline (<+>) (l : S< ^term >, r : S< ^term >) =
             [|
                 yield! l.Terms
                 yield! r.Terms

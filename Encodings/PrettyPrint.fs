@@ -69,7 +69,6 @@ module PrettyPrint =
     let inline prettyPrintPIxWkOp< ^op
                         when ^op : equality
                         and ^op : comparison
-                        and ^op : (static member Identity : ^op)
                         and ^op : (member IsIdentity  : bool)
                         and ^op : (member IsRaising  : bool)
                         and ^op : (member IsLowering : bool)
@@ -77,7 +76,6 @@ module PrettyPrint =
                         and ^op : (static member Commute : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
                         and ^op : equality>
         (this : PIxWkOp<uint32, ^op>) =
-        let Identity = (^op : (static member Identity : ^op)())
         let isIdentity op = (^op : (member IsIdentity : bool)(op))
 
         if isIdentity this.IndexedOps.[0].Op then
@@ -89,21 +87,22 @@ module PrettyPrint =
             |> (fun rg -> System.String.Join (" | ", rg))
             |> sprintf "%s[%s]" (prettyPrintPhase this.Coeff)
 
-    let inline prettyPrintSIxWkOp< ^op
+    let inline prettyPrintPIxWkOps< ^op
                         when ^op : comparison
-                        and ^op : (static member Identity : ^op)
                         and ^op : (member IsIdentity  : bool)
                         and ^op : (member IsRaising  : bool)
                         and ^op : (member IsLowering : bool)
                         and ^op : (static member InNormalOrder : ^op -> ^op -> bool)
-                        and ^op : (static member Combine : PIxWkOp<uint32, ^op > -> IxOp<uint32, ^op > -> PIxWkOp<uint32, ^op >[])
                         and ^op : (static member Commute : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
                         and ^op : equality>
-        (this : SIxWkOp<uint32, ^op>) =
-        this.Terms
+        (this : PIxWkOp<uint32, ^op>[]) =
+        this
         |> Seq.map (prettyPrintPIxWkOp)
         |> (fun rg -> System.String.Join ("; ", rg))
         |> sprintf "{%s}"
+
+    let inline prettyPrintSIxWkOp (this : SIxWkOp<_,_>) = 
+        prettyPrintPIxWkOps this.Terms
 
     let inline prettyPrintRegister< ^op
                         when ^op : (static member Identity : ^op)

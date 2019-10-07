@@ -104,51 +104,51 @@ module Operators =
                         C<_>.Apply(Complex.MinusOne, [| b; a |])
                     |]
 
-        static member Combine
-            (productTerm : PIxWkOp<uint32, FermionicOperator>, nextUnit : IxOp<uint32, FermionicOperator>) =
-            let nUnits = productTerm.IndexedOps.Length
+        //static member Combine
+        //    (productTerm : PIxWkOp<uint32, FermionicOperator>, nextUnit : IxOp<uint32, FermionicOperator>) =
+        //    let nUnits = productTerm.IndexedOps.Length
 
-            printfn "%s" productTerm.Signature
+        //    printfn "%s" productTerm.Signature
 
-            let prefix =
-                if nUnits > 2 then
-                    productTerm.IndexedOps.[0..(nUnits - 2)]
-                else if nUnits > 1 then
-                    [| productTerm.IndexedOps.[0] |]
-                else
-                    [| IxOp<_,_>.Apply(0u, I) |]
+        //    let prefix =
+        //        if nUnits > 2 then
+        //            productTerm.IndexedOps.[0..(nUnits - 2)]
+        //        else if nUnits > 1 then
+        //            [| productTerm.IndexedOps.[0] |]
+        //        else
+        //            [| IxOp<_,_>.Apply(0u, I) |]
 
-            let lastUnit = productTerm.IndexedOps.[nUnits - 1]
+        //    let lastUnit = productTerm.IndexedOps.[nUnits - 1]
 
-            match (lastUnit.Op, nextUnit.Op) with
-            | An, Cr ->
-                if lastUnit.Index <> nextUnit.Index then
-                    [|
-                        yield! prefix
-                        yield nextUnit
-                        yield lastUnit
-                    |]
-                    |> curry PIxWkOp.Apply (productTerm.Coeff * Complex.MinusOne)
-                    |> (fun term -> [| term |])
-                else
-                    let leadingTerm =
-                        [|
-                            yield! prefix
-                        |] |> curry PIxWkOp<_,_>.Apply productTerm.Coeff
-                    let trailingTerm =
-                        [|
-                            yield! prefix
-                            yield nextUnit
-                            yield lastUnit
-                        |] |> curry PIxWkOp.Apply (productTerm.Coeff * Complex.MinusOne)
-                    [| leadingTerm; trailingTerm |]
-            | _, _ ->
-                [|
-                    yield! productTerm.IndexedOps
-                    yield nextUnit
-                |]
-                |> curry PIxWkOp<_,_>.Apply productTerm.Coeff
-                |> (fun term -> [| term |])
+        //    match (lastUnit.Op, nextUnit.Op) with
+        //    | An, Cr ->
+        //        if lastUnit.Index <> nextUnit.Index then
+        //            [|
+        //                yield! prefix
+        //                yield nextUnit
+        //                yield lastUnit
+        //            |]
+        //            |> curry PIxWkOp.Apply (productTerm.Coeff * Complex.MinusOne)
+        //            |> (fun term -> [| term |])
+        //        else
+        //            let leadingTerm =
+        //                [|
+        //                    yield! prefix
+        //                |] |> curry PIxWkOp<_,_>.Apply productTerm.Coeff
+        //            let trailingTerm =
+        //                [|
+        //                    yield! prefix
+        //                    yield nextUnit
+        //                    yield lastUnit
+        //                |] |> curry PIxWkOp.Apply (productTerm.Coeff * Complex.MinusOne)
+        //            [| leadingTerm; trailingTerm |]
+        //    | _, _ ->
+        //        [|
+        //            yield! productTerm.IndexedOps
+        //            yield nextUnit
+        //        |]
+        //        |> curry PIxWkOp<_,_>.Apply productTerm.Coeff
+        //        |> (fun term -> [| term |])
 
     type IndexedFermionicOperator =
         | InFmOp of IxOp<uint32, FermionicOperator>
@@ -182,3 +182,51 @@ module Operators =
                 |> Array.map (fun (a, b) ->  b.ScaleCoefficient a)
                 |> curry SR<Pauli>.Apply Complex.One
                 |> Some
+
+(*
+    let ToNormalOrder (this : PIxWkOp<uint32, FermionicOperator>) : Lazy<PIxWkOp<uint32, FermionicOperator>[][]> = 
+        let joinTerm (sorted : PIxWkOp<_,_>) (candidate : PIxWkOp<_,_>) : PIxWkOp<_,_> =
+            let rec includeSingleOp (op : IxOp<_,_>) (coeff, pre, post) : PIxWkOp<_,_> =
+                let candidate = [| yield! pre; op |] |> curry PIxWkOp<_,_>.Apply Complex.One
+                if candidate.IsInNormalOrder.Value then
+                    PIxWkOp<_,_>.Apply(coeff, [| yield! pre; op; yield! post |])
+                else
+                    let swapped = PIxWkOp<_,_>.Op_Swap (Array.last pre) op
+                    System.Diagnostics.Debug.Assert (swapped.Length = 1, "algebra limitation - commuting terms with same index produced a sum term!")
+                    let swapped' = swapped.[0]
+                    includeSingleOp op (coeff * swapped'.Coeff, (Array.allButLast pre), ([| Array.last pre; yield! post |]))
+
+            candidate.IndexedOps
+            |> Array.fold (fun result curr -> includeSingleOp curr (result.Coeff, result.IndexedOps, [| |])) sorted
+            |> (fun result -> result.ScaleCoefficient candidate.Coeff)
+
+        let sortTerm (chunk : PIxWkOp<_,_>) : PIxWkOp<_,_>[] =
+            match chunk.IndexedOps.Length with
+            | 1 -> [| chunk |]
+            | 2 ->
+                if chunk.IsInNormalOrder.Value then
+                    [| chunk |]
+                else
+                    PIxWkOp<_,_>.Op_Swap chunk.IndexedOps.[0] chunk.IndexedOps.[1]
+                    |> Array.map (fun c -> PIxWkOp<_,_>.Apply(c.Coeff * chunk.Coeff, c.Thunk))
+            | _ -> [| |]
+
+        let includeChunk (state : PIxWkOp<_, _>[][]) (chunk : PIxWkOp<_,_>) : PIxWkOp<_, _>[][]=
+            if state = [| |] then
+                [| 
+                    sortTerm chunk
+                |]
+            else
+                [|
+                    for stateChunk in state do
+                        [|
+                            for sorted in stateChunk do 
+                                for candidate in sortTerm chunk do
+                                    yield joinTerm sorted candidate
+                        |]
+                |]
+
+        lazy
+            let chunks = this.IndexedOpsGroupedByIndex.Value
+            chunks |> Array.fold includeChunk [| |]
+*)

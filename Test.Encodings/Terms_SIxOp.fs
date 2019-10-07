@@ -17,7 +17,7 @@ module Terms_SIxOp =
         let left  = SIxOpFromString FermionicOperator.FromString leftStr
         let right = SIxOpFromString FermionicOperator.FromString rightStr
         match (left, right) with
-        | Some l, Some r -> Assert.Equal(expected, prettyPrintSIxOp (l + r) |> shrinkString)
+        | Some l, Some r -> Assert.Equal(expected, prettyPrintSIxOp (l <+> r) |> shrinkString)
         | _, _ -> Assert.True (false)
 
 
@@ -30,5 +30,5 @@ module Terms_SIxOp =
         let left  = SIxOpFromString FermionicOperator.FromString leftStr
         let right = SIxOpFromString FermionicOperator.FromString rightStr
         match (left, right) with
-        | Some l, Some r -> Assert.Equal(expected, prettyPrintSIxOp (l * r) |> shrinkString)
+        | Some l, Some r -> Assert.Equal(expected, prettyPrintSIxOp (l <*> r) |> shrinkString)
         | _, _ -> Assert.True (false)

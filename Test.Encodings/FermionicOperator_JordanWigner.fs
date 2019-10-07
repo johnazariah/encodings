@@ -46,6 +46,6 @@ module FermionicOperator_JordanWigner =
     let ``NumberOperator generates correct JW string``(n : uint32, j : uint32, expected) =
         let cre = (Cr, j) |> IndexedFermionicOperator.Apply |> (fun iop -> iop.JordanWignerEncodeToDensePauliTerm (n)) |> Option.get
         let anh = (An, j) |> IndexedFermionicOperator.Apply |> (fun iop -> iop.JordanWignerEncodeToDensePauliTerm (n)) |> Option.get
-        let num = cre * anh
+        let num = cre <*> anh
         let actual = prettyPrintSR num
         Assert.Equal(expected, actual)

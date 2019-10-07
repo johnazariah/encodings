@@ -98,7 +98,7 @@ module Terms_SC =
             |> Array.map ((curry S<_>.Apply) Complex.One)
             |> (fun rg -> (rg.[0], rg.[1]))
 
-        let sum = ls + rs
+        let sum = ls <+> rs
         if (sum.IsZero) then
             Assert.Empty (sum.Reduce.Value.Terms)
         else
@@ -124,7 +124,7 @@ module Terms_SC =
             |> Array.map ((curry S<_>.Apply) Complex.One)
             |> (fun rg -> (rg.[0], rg.[1]))
 
-        let S = ls + rs
+        let S = ls <+> rs
         if (S.IsZero) then
             Assert.Empty (S.Terms)
         else

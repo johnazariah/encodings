@@ -111,11 +111,11 @@ module SparseRepresentation =
         static member inline Apply = S<PIxOp< ^idx, ^op >>.Apply >> SumTerm
         member inline this.IsZero  = this.Unapply.IsZero
 
-        static member inline (+) (l : SIxOp< ^idx, ^op>, r : SIxOp< ^idx, ^op>) =
-            l.Unapply + r.Unapply |> SumTerm
+        static member inline (<+>) (l : SIxOp< ^idx, ^op>, r : SIxOp< ^idx, ^op>) =
+            l.Unapply <+> r.Unapply |> SumTerm
 
-        static member inline (*) (l : SIxOp< ^idx, ^op>, r : SIxOp< ^idx, ^op>) =
-            l.Unapply * r.Unapply |> SumTerm
+        static member inline (<*>) (l : SIxOp< ^idx, ^op>, r : SIxOp< ^idx, ^op>) =
+            l.Unapply <*> r.Unapply |> SumTerm
 
         member inline this.AllTermsIndexOrdered indexOrder =
             let isIndexOrdered result (curr : PIxOp<_,_>) =
@@ -128,6 +128,7 @@ module SparseRepresentation =
     type PIxWkOp< ^idx, ^op
             when ^idx : comparison
             and ^op : comparison
+            and ^op : (member IsIdentity  : bool)
             and ^op : (member IsRaising  : bool)
             and ^op : (member IsLowering : bool)
             and ^op : (static member InNormalOrder : ^op -> ^op -> bool)
@@ -142,14 +143,9 @@ module SparseRepresentation =
         member inline this.ScaleCoefficient c = this.Unapply.ScaleCoefficient c |> ProductTerm
         member inline this.AddCoefficient   c = this.Unapply.AddCoefficient   c |> ProductTerm
         member inline this.IsZero             = this.Unapply.IsZero
-
-        static member inline Apply =
-            C<_>.Apply
-            >> PIxOp< ^idx, ^op>.ProductTerm
-            >> PIxWkOp< ^idx, ^op>.ProductTerm
-
-        static member inline (<*>) (l : PIxWkOp< ^idx, ^op>, r : PIxWkOp< ^idx, ^op>) =
-            PIxOp< ^idx, ^op>.(<*>)(l.Unapply, r.Unapply) |> ProductTerm
+        
+        static member inline Op_IsIdentityOperator op =
+            (^op : (member IsIdentity : bool)(op))
 
         static member inline Op_IsRaisingOperator op =
             (^op : (member IsRaising : bool)(op))
@@ -162,6 +158,28 @@ module SparseRepresentation =
 
         static member inline Op_Swap this other =
             (^op : (static member Commute : IxOp< ^idx, ^op > -> IxOp< ^idx, ^op > -> C<IxOp< ^idx, ^op >[]>[])(this, other))
+
+        static member inline Apply (coeff, ixops : IxOp<_,_>[]) =
+            let isIdentityTerm (t : IxOp<_,_>) = PIxWkOp< ^idx, ^op>.Op_IsIdentityOperator t.Op
+            let identityOpExists = 
+                ixops
+                |> Array.exists isIdentityTerm
+
+            let opsExceptIdentity =
+                ixops
+                |> Array.filter (isIdentityTerm >> not)
+
+            let ops = 
+                if opsExceptIdentity = [| |] && identityOpExists then
+                    [| ixops.[0] |]
+                else
+                    opsExceptIdentity
+
+            (coeff, ops)
+            |> (C<_>.Apply >> PIxOp< ^idx, ^op>.ProductTerm >> PIxWkOp< ^idx, ^op>.ProductTerm)
+
+        static member inline (<*>) (l : PIxWkOp< ^idx, ^op>, r : PIxWkOp< ^idx, ^op>) =
+            PIxOp< ^idx, ^op>.(<*>)(l.Unapply, r.Unapply) |> ProductTerm
 
         member inline this.IsInNormalOrder =
             lazy
@@ -186,7 +204,7 @@ module SparseRepresentation =
                 loweringOperatorsInOrder
 
         member inline this.IndexedOpsGroupedByIndex =
-            let extractItemsWithIndex target indexedOps =
+            let rec findItemsWithMatchingIndex result target indexedOps =
                 let rec split index pre (ops : IxOp<_,_>[]) =
                     match ops with
                     | [| |] -> (pre, None, [| |])
@@ -203,7 +221,7 @@ module SparseRepresentation =
                         else
                             split index ((Array.append pre ([| head |]))) rest
 
-                let swapSingle target (curr : IxOp<_,_>)  (c, xs) =
+                let includeSingleOp target (curr : IxOp<_,_>)  (c, xs) =
                     let product = PIxWkOp<_,_>.Op_Swap curr target
                     System.Diagnostics.Debug.Assert(product.Length = 1, "algebra limitation: commuting terms with same index produced a sum term!")
                     (c * product.[0].Coeff, Array.append product.[0].Thunk.[1..] xs)
@@ -213,12 +231,16 @@ module SparseRepresentation =
                 match found with
                 | Some head ->
                     let (coeff, swapped) =
-                        Array.foldBack (swapSingle head) pre (Complex.One, [| |]) 
-                    ((coeff, [| head |]), Array.append swapped post)
+                        Array.foldBack (includeSingleOp head) pre (Complex.One, [| |])
+                    let ((resultCoeff, resultMatching), resultRest) = result
+                    let result' = ((coeff * resultCoeff, Array.append resultMatching [| head |]), Array.append resultRest swapped)
+                    findItemsWithMatchingIndex result' target post
                 | None ->
-                    ((Complex.One, [| |]), Array.append pre post)
+                    let ((resultCoeff, resultMatching), resultRest) = result
+                    let result' = ((resultCoeff, resultMatching), Array.append resultRest pre)
+                    result'
 
-            let rec behead (ixops) (result) =
+            let rec toChunksWithCommonIndex (ixops) (result) =
                 match ixops with
                 | [| |] -> result
                 | [| first |] ->
@@ -229,43 +251,70 @@ module SparseRepresentation =
 
                 | _ ->
                     let first = ixops.[0]
-                    let ((coeff, matching), others) =
-                        ixops.[1..]
-                        |> extractItemsWithIndex first
+                    let ((coeff, matching), others) = findItemsWithMatchingIndex ((Complex.One, [| |]),[| |]) first ixops.[1..]                    
                     [|
                         yield! result
                         yield PIxWkOp<_,_>.Apply(coeff, [| first; yield! matching |])
                     |]
-                    |> behead others
+                    |> toChunksWithCommonIndex others
             in
             lazy
-                behead (this.IndexedOps) ([| |])
+                toChunksWithCommonIndex (this.IndexedOps) ([| |])
 
-        member inline this.ToNormalOrder =        
-            let swapOps (term : PIxWkOp<_,_>) =
-                PIxWkOp<_,_>.Op_Swap term.IndexedOps.[0] term.IndexedOps.[1]
-                |> Array.map (fun t -> PIxWkOp<_,_>.Apply(t.Coeff, t.Thunk))
+        member inline this.ToNormalOrder = 
+            let joinTerm (sorted : PIxWkOp<_,_>) (candidate : PIxWkOp<_,_>) : PIxWkOp<_,_> =
+                let rec includeSingleOp (op : IxOp<_,_>) (coeff, pre, post) : PIxWkOp<_,_> =
+                    let candidate = [| yield! pre; op |] |> curry PIxWkOp<_,_>.Apply Complex.One
+                    if candidate.IsInNormalOrder.Value then
+                        PIxWkOp<_,_>.Apply(coeff, [| yield! pre; op; yield! post |])
+                    else
+                        let swapped = PIxWkOp<_,_>.Op_Swap (Array.last pre) op
+                        System.Diagnostics.Debug.Assert (swapped.Length = 1, "algebra limitation - commuting terms with same index produced a sum term!")
+                        let swapped' = swapped.[0]
+                        includeSingleOp op (coeff * swapped'.Coeff, (Array.allButLast pre), ([| Array.last pre; yield! post |]))
+
+                candidate.IndexedOps
+                |> Array.fold (fun result curr -> includeSingleOp curr (result.Coeff, result.IndexedOps, [| |])) sorted
+                |> (fun result -> result.ScaleCoefficient candidate.Coeff)
+
+            let sortTerm (chunk : PIxWkOp<_,_>) : PIxWkOp<_,_>[] =
+                match chunk.IndexedOps.Length with
+                | 1 -> [| chunk |]
+                | 2 ->
+                    if chunk.IsInNormalOrder.Value then
+                        [| chunk |]
+                    else
+                        PIxWkOp<_,_>.Op_Swap chunk.IndexedOps.[0] chunk.IndexedOps.[1]
+                        |> Array.map (fun c -> PIxWkOp<_,_>.Apply(c.Coeff * chunk.Coeff, c.Thunk))
+                | _ -> [| |]
+
+            let includeChunk (state : PIxWkOp<_, _>[][]) (chunk : PIxWkOp<_,_>) : PIxWkOp<_, _>[][] =
+                if state = [| |] then
+                    [| 
+                        sortTerm chunk
+                    |]
+                else
+                    [|
+                        for stateChunk in state do
+                            [|
+                                for sorted in stateChunk do 
+                                    for candidate in sortTerm chunk do
+                                        yield joinTerm sorted candidate
+                            |]
+                    |]
+
             lazy
-                this.IndexedOpsGroupedByIndex.Value
-                |> Array.map (fun productTerm ->
-                    match productTerm.IndexedOps.Length with
-                    | 1 -> 
-                        [| productTerm |]
-                    | 2 -> 
-                        if productTerm.IsInNormalOrder.Value then
-                            [| productTerm |]
-                        else
-                            swapOps productTerm
-                    | _ -> [| |])
+                let chunks = this.IndexedOpsGroupedByIndex.Value
+                chunks |> Array.fold includeChunk [| |]
 
     type SIxWkOp< ^idx, ^op
                     when ^idx : comparison
                     and ^op : comparison
+                    and ^op : (member IsIdentity  : bool)
                     and ^op : (member IsRaising  : bool)
                     and ^op : (member IsLowering : bool)
                     and ^op : (static member InNormalOrder : ^op -> ^op -> bool)
                     and ^op : (static member Commute : IxOp< ^idx, ^op > -> IxOp< ^idx, ^op > -> C<IxOp< ^idx, ^op >[]>[])
-                    and ^op : (static member Combine : PIxWkOp< ^idx, ^op > -> IxOp< ^idx, ^op > -> PIxWkOp< ^idx, ^op >[])
                     and ^op : equality> =
         | SumTerm of S<PIxWkOp< ^idx, ^op>>
     with
@@ -275,11 +324,11 @@ module SparseRepresentation =
         member inline this.Terms   = this.Unapply.Terms
         static member inline Apply = S<PIxWkOp< ^idx, ^op>>.Apply >> SumTerm
 
-        static member inline (+) (l : SIxWkOp< ^idx, ^op>, r : SIxWkOp< ^idx, ^op>) =
-            l.Unapply + r.Unapply |> SumTerm
+        static member inline (<+>) (l : SIxWkOp< ^idx, ^op>, r : SIxWkOp< ^idx, ^op>) =
+            l.Unapply <+> r.Unapply |> SumTerm
 
-        static member inline (*) (l : SIxWkOp< ^idx, ^op>, r : SIxWkOp< ^idx, ^op>) =
-            l.Unapply * r.Unapply |> SumTerm
+        static member inline (<*>) (l : SIxWkOp< ^idx, ^op>, r : SIxWkOp< ^idx, ^op>) =
+            l.Unapply <*> r.Unapply |> SumTerm
 
         member inline this.AllTermsNormalOrdered =
             lazy
@@ -295,36 +344,18 @@ module SparseRepresentation =
                     (fun result curr -> result &&  curr.IsInIndexOrder.Value)
                     (this.AllTermsNormalOrdered.Value)
 
-        member inline this.SortNormalOrder =
+        member inline this.ToNormalOrder =
             if this.AllTermsNormalOrdered.Value then
                 lazy this
             else
-                let rec sortSingleProductTerm (p : PIxWkOp< ^idx, ^op >) =
-                    let combine nextUnit productTerm =
-                        (^op : (static member Combine : PIxWkOp< ^idx, ^op > -> IxOp< ^idx, ^op > -> PIxWkOp< ^idx, ^op >[])(productTerm, nextUnit))
+                let sortSingleProductTerm (p : PIxWkOp< ^idx, ^op >) = 
+                    p.ToNormalOrder.Value
+                    |> Array.map (curry SIxWkOp< ^idx, ^op>.Apply Complex.One)
 
-                    let rec sortInternal (result : PIxWkOp< ^idx, ^op >[]) (remainingUnits : IxOp< ^idx, ^op >[]) : PIxWkOp< ^idx, ^op >[]=
-                        if remainingUnits.Length = 0 then
-                            result
-                        else
-                            let nextUnit        = remainingUnits.[0]
-                            let remainingUnits' = remainingUnits.[1..]
-                            let result' =
-                                if result.Length = 0 then
-                                    [| PIxWkOp< ^idx, ^op >.Apply(Complex.One, [| nextUnit |]) |]
-                                else
-                                    result |> Array.collect (combine nextUnit)
-                            sortInternal result' remainingUnits'
-
-                    if p.IsInNormalOrder.Value then
-                        [| p |]
-                    else
-                        sortInternal ([| |]) p.IndexedOps
-                        |> Array.collect (sortSingleProductTerm)
                 lazy
                     this.Terms
                     |> Array.collect sortSingleProductTerm
-                    |> curry SIxWkOp< ^idx, ^op>.Apply Complex.One
+                    |> Array.reduce (<+>)
 
     type PIxOp< ^idx, ^op
                     when ^idx : comparison

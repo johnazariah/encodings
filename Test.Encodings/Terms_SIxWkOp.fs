@@ -56,7 +56,7 @@ module Terms_SIxWkOp =
     [<InlineData("{[(R,3)|(L,1)|(R,1)|(R,2)]}", "{[(R,3)|(R,1)|(R,2)|(L,1)];[(R,3)|(R,2)]}")>]
     [<InlineData("{[(L,1)|(R,1)|(R,2)|(R,3)|(R,4)]}", "{[(R,1)|(R,2)|(R,3)|(R,4)|(L,1)];[(R,2)|(R,3)|(R,4)]}")>]
     [<InlineData("{[(L,1)|(L,2)|(R,1)|(R,2)]}", "{-[1];[(R,1)|(L,1)];[(R,1)|(R,2)|(L,1)|(L,2)];[(R,2)|(L,2)]}")>]
-    let ``S SortNormalOrder is computed correctly`` (input, expected) =
+    let ``S ToNormalOrder is computed correctly`` (input, expected) =
         match SIxWkOpFromString FermionicOperator.FromString input with
-        | Some sixop -> Assert.Equal(expected, prettyPrintSIxWkOp sixop.SortNormalOrder.Value |> shrinkString)
+        | Some sixop -> Assert.Equal(expected, prettyPrintSIxWkOp sixop.ToNormalOrder.Value |> shrinkString)
         | None -> Assert.True (false)
