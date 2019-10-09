@@ -18,8 +18,8 @@ module Terms_SIxWkOp =
     [<InlineData("{[(R,1)|(L,1)|(R,2)] ; [(R,1)|(L,2)]}", false)>]
     [<InlineData("{[(R,1)|(L,1)|(R,2)] ; [(L,1)|(R,2)]}", false)>]
     let ``S InNormalOrder is computed correctly``(input, expected) =
-        match SIxWkOpFromString FermionicOperator.FromString input with
-        | Some sixop -> Assert.Equal(expected, sixop.AllTermsNormalOrdered.Value)
+        match SIxOpFromString FermionicOperator.FromString input with
+        | Some sixop -> Assert.Equal(expected, sixop.AllTermsOperatorOrdered.Value)
         | None -> Assert.True (false)
 
     [<Theory>]
@@ -39,7 +39,7 @@ module Terms_SIxWkOp =
     [<InlineData("{[(R,2)|(R,1)|(L,2)|(L,1)] ; [(R,1)|(R,2)]}", false)>]
     [<InlineData("{[(R,2)|(R,1)|(L,2)|(L,1)] ; [(L,1)|(R,2)]}", false)>]
     let ``S InIndexOrder is computed correctly``(input, expected) =
-        match SIxWkOpFromString FermionicOperator.FromString input with
+        match SIxOpFromString FermionicOperator.FromString input with
         | Some sixop -> Assert.Equal(expected, sixop.AllTermsIndexOrdered.Value)
         | None -> Assert.True (false)
 
@@ -60,6 +60,6 @@ module Terms_SIxWkOp =
     [<InlineData("{[(L,1)|(R,1)];[(L,2)|(R,2)]}", "{(2)[1];-[(R,1)|(L,1)];-[(R,2)|(L,2)]}")>]
     [<InlineData("{[(L,1)|(R,1)];[(L,1)|(R,1)]}", "{(2)[1];(-2)[(R,1)|(L,1)]}")>]
     let ``S ToNormalOrder is computed correctly`` (input, expected) =
-        match SIxWkOpFromString FermionicOperator.FromString input with
-        | Some sixop -> Assert.Equal(expected, prettyPrintSIxWkOp (sixop.ToNormalOrder.Value) |> shrinkString)
+        match SIxOpFromString FermionicOperator.FromString input with
+        | Some sixop -> Assert.Equal(expected, prettyPrintSIxOp (sixop.ToOperatorOrder.Value) |> shrinkString)
         | None -> Assert.True (false)

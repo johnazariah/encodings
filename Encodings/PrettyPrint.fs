@@ -39,43 +39,32 @@ module PrettyPrint =
             sprintf "%O" this
 
     let inline prettyPrintIxOp< ^op
-                when ^op : equality
-                and ^op : comparison>
+                        when ^op : equality
+                        and ^op : (static member InIndexOrder    : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> bool)
+                        and ^op : (static member InOperatorOrder : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> bool)
+                        and ^op : (static member ToIndexOrder    : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
+                        and ^op : (static member ToOperatorOrder : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
+                        and ^op : comparison>
         (this : IxOp<uint32, ^op>) = sprintf "(%O, %i)" this.Op this.Index
 
     let inline prettyPrintCIxOp< ^op
-                when ^op : equality
-                and ^op : comparison>
+                        when ^op : equality
+                        and ^op : (static member InIndexOrder    : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> bool)
+                        and ^op : (static member InOperatorOrder : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> bool)
+                        and ^op : (static member ToIndexOrder    : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
+                        and ^op : (static member ToOperatorOrder : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
+                        and ^op : comparison>
         (this : CIxOp<uint32, ^op>) = prettyPrintIxOp< ^op > this.Unapply.Thunk
 
     let inline prettyPrintPIxOp< ^op
-                when ^op : equality
-                and ^op : comparison>
-        (this : PIxOp<uint32, ^op>) =
-        this.IndexedOps
-        |> Array.map prettyPrintIxOp< ^op >
-        |> (fun rg -> System.String.Join (" | ", rg))
-        |> sprintf "[%s]"
-
-    let inline prettyPrintSIxOp< ^op
-                when ^op : equality
-                and  ^op : comparison>
-        (this : SIxOp<uint32, ^op>) =
-        this.Terms
-        |> Seq.map (prettyPrintPIxOp)
-        |> (fun rg -> System.String.Join ("; ", rg))
-        |> sprintf "{%s}"
-
-    let inline prettyPrintPIxWkOp< ^op
                         when ^op : equality
-                        and ^op : comparison
-                        and ^op : (member IsIdentity  : bool)
-                        and ^op : (member IsRaising  : bool)
-                        and ^op : (member IsLowering : bool)
-                        and ^op : (static member InNormalOrder : ^op -> ^op -> bool)
-                        and ^op : (static member Swap : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
-                        and ^op : equality>
-        (this : PIxWkOp<uint32, ^op>) =
+                        and  ^op : (member IsIdentity  : bool)
+                        and  ^op : (static member InIndexOrder    : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> bool)
+                        and  ^op : (static member InOperatorOrder : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> bool)
+                        and  ^op : (static member ToIndexOrder    : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
+                        and  ^op : (static member ToOperatorOrder : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
+                        and ^op : comparison>
+        (this : PIxOp<uint32, ^op>) =
         let isIdentity op = (^op : (member IsIdentity : bool)(op))
 
         if isIdentity this.IndexedOps.[0].Op then
@@ -85,24 +74,36 @@ module PrettyPrint =
             |> Array.filter (fun t -> not (isIdentity t.Op))
             |> Array.map prettyPrintIxOp< ^op >
             |> (fun rg -> System.String.Join (" | ", rg))
-            |> sprintf "%s [%s]" (prettyPrintPhase this.Coeff)
+            |> sprintf "[%s]"
+            
 
-    let inline prettyPrintPIxWkOps< ^op
-                        when ^op : comparison
-                        and ^op : (member IsIdentity  : bool)
-                        and ^op : (member IsRaising  : bool)
-                        and ^op : (member IsLowering : bool)
-                        and ^op : (static member InNormalOrder : ^op -> ^op -> bool)
-                        and ^op : (static member Swap : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
-                        and ^op : equality>
-        (this : PIxWkOp<uint32, ^op>[]) =
+    let inline prettyPrintPIxOps< ^op
+                        when ^op : equality
+                        and  ^op : (member IsIdentity  : bool)
+                        and  ^op : (static member InIndexOrder    : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> bool)
+                        and  ^op : (static member InOperatorOrder : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> bool)
+                        and  ^op : (static member ToIndexOrder    : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
+                        and  ^op : (static member ToOperatorOrder : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
+                        and  ^op : comparison>
+        (this : PIxOp<uint32, ^op>[]) =
         this
-        |> Seq.map (prettyPrintPIxWkOp)
+        |> Seq.map (prettyPrintPIxOp)
         |> (fun rg -> System.String.Join ("; ", rg))
         |> sprintf "{%s}"
 
-    let inline prettyPrintSIxWkOp (this : SIxWkOp<_,_>) =
-        sprintf "%s %s" (prettyPrintPhase this.Coeff) (prettyPrintPIxWkOps this.Terms)
+    let inline prettyPrintSIxOp< ^op
+                        when ^op : equality
+                        and  ^op : (member IsIdentity  : bool)
+                        and  ^op : (static member InIndexOrder    : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> bool)
+                        and  ^op : (static member InOperatorOrder : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> bool)
+                        and  ^op : (static member ToIndexOrder    : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
+                        and  ^op : (static member ToOperatorOrder : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
+                        and  ^op : comparison>
+        (this : SIxOp<uint32, ^op>) =
+        this.Terms
+        |> Seq.map (prettyPrintPIxOp)
+        |> (fun rg -> System.String.Join ("; ", rg))
+        |> sprintf "{%s}"
 
     let inline prettyPrintSignature< ^op
                         when ^op : (static member Identity : ^op)

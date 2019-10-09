@@ -66,23 +66,34 @@ module Operators =
                 | An -> "L"
 
         member inline this.IsIdentity = match this with | I  -> true | _ -> false
-        member inline this.IsRaising  = match this with | Cr -> true | _ -> false
-        member inline this.IsLowering = match this with | An -> true | _ -> false
 
         override this.ToString() =
             this.AsLadderOperatorString.Value
 
         static member inline Identity = I
 
-        static member inline InNormalOrder (l, r) =
-            match (l, r) with
-            | An, Cr -> false
-            | _, _ -> true
-
         static member inline FromString (s : string) =
             FermionicOperator.Apply <| s.Chars 0
 
-        static member Swap (a : IxOp<uint32, FermionicOperator>, b : IxOp<uint32, FermionicOperator>) : C<IxOp<uint32, FermionicOperator>[]>[] =
+        static member InIndexOrder (a : IxOp<uint32, FermionicOperator>, b : IxOp<uint32, FermionicOperator>) =
+            match (a.Op, b.Op) with
+            | _, I   -> true
+            | I, _   -> true
+            | Cr, An -> true
+            | An, Cr -> false
+            | Cr, Cr -> a.Index <= b.Index
+            | An, An -> a.Index >= b.Index
+
+        static member InOperatorOrder (a : IxOp<uint32, FermionicOperator>, b : IxOp<uint32, FermionicOperator>) =
+            match (a.Op, b.Op) with
+            | _, I   -> true
+            | I, _   -> true
+            | Cr, An -> true
+            | An, Cr -> false
+            | Cr, Cr -> true
+            | An, An -> true
+
+        static member ToOperatorOrder (a : IxOp<uint32, FermionicOperator>, b : IxOp<uint32, FermionicOperator>) : C<IxOp<uint32, FermionicOperator>[]>[] =
             match (a.Op, b.Op) with
             | _, I ->
                 [|
@@ -106,6 +117,49 @@ module Operators =
                 [|
                     C<_>.Apply(Complex.MinusOne, [| b; a |])
                 |]
+
+        static member ToIndexOrder (a : IxOp<uint32, FermionicOperator>, b : IxOp<uint32, FermionicOperator>) : C<IxOp<uint32, FermionicOperator>[]>[] =
+            match (a.Op, b.Op) with
+            | _, I ->
+                [|
+                    C<_>.Apply(Complex.One, [| a |])
+                |]
+            | I, _ ->
+                [|
+                    C<_>.Apply(Complex.One, [| b |])
+                |]
+            | Cr, An ->
+                [|
+                    C<_>.Apply(Complex.One, [| a; b |])
+                |]
+            | An, Cr ->
+                if a.Index = b.Index then
+                    [|
+                        C<_>.Apply(Complex.One, [| IxOp<_,_>.Apply(0u, I) |])
+                        C<_>.Apply(Complex.MinusOne, [| b; a |])
+                    |]
+                else
+                    [|
+                        C<_>.Apply(Complex.MinusOne, [| b; a |])
+                    |]
+            | Cr, Cr ->
+                if a.Index > b.Index then
+                    [|
+                        C<_>.Apply(Complex.MinusOne, [| b; a |])
+                    |]
+                else
+                    [|
+                        C<_>.Apply(Complex.One, [| a; b |])
+                    |]
+            | An, An ->
+                if a.Index < b.Index then
+                    [|
+                        C<_>.Apply(Complex.MinusOne, [| b; a |])
+                    |]
+                else
+                    [|
+                        C<_>.Apply(Complex.One, [| a; b |])
+                    |]
 
     type IndexedFermionicOperator =
         | InFmOp of IxOp<uint32, FermionicOperator>

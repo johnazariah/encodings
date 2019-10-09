@@ -6,8 +6,12 @@ module StringInterop =
     let shrinkString (s : System.String) = s.Replace(" ", "")
 
     let inline IxOpFromString< ^op
-            when ^op : equality
-            and ^op : comparison>
+                        when ^op : equality
+                        and ^op : (static member InIndexOrder    : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> bool)
+                        and ^op : (static member InOperatorOrder : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> bool)
+                        and ^op : (static member ToIndexOrder    : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
+                        and ^op : (static member ToOperatorOrder : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
+                        and ^op : comparison>
         (unitFactory : string ->  ^op  option)
         (s : System.String) =
         try
@@ -23,8 +27,13 @@ module StringInterop =
         | _ -> None
 
     let inline PIxOpFromString< ^op
-            when ^op : equality
-            and  ^op : comparison>
+                        when ^op : equality
+                        and  ^op : (member IsIdentity  : bool)
+                        and  ^op : (static member InIndexOrder    : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> bool)
+                        and  ^op : (static member InOperatorOrder : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> bool)
+                        and  ^op : (static member ToIndexOrder    : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
+                        and  ^op : (static member ToOperatorOrder : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
+                        and  ^op : comparison>
         (unitFactory : string ->  ^op  option)
         (s : System.String) : PIxOp<uint32, ^op > option =
         try
@@ -36,46 +45,19 @@ module StringInterop =
         | _ -> None
 
     let inline SIxOpFromString< ^op
-            when ^op : equality
-            and  ^op : comparison>
+                        when ^op : equality
+                        and  ^op : (member IsIdentity  : bool)
+                        and  ^op : (static member InIndexOrder    : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> bool)
+                        and  ^op : (static member InOperatorOrder : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> bool)
+                        and  ^op : (static member ToIndexOrder    : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
+                        and  ^op : (static member ToOperatorOrder : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
+                        and  ^op : comparison>
         (unitFactory : string ->  ^op  option)
         (s : System.String) : SIxOp<uint32, ^op > option =
         try
             s.Trim().TrimStart('{').TrimEnd('}').Split(';')
             |> Array.choose (PIxOpFromString unitFactory)
             |> (curry SIxOp<_,_>.Apply) Complex.One
-            |> Some
-        with
-        | _ -> None
-
-    let inline PIxWkOpFromString< ^op
-                        when ^op : equality
-                        and  ^op : (member IsIdentity  : bool)
-                        and  ^op : (member IsRaising  : bool)
-                        and  ^op : (member IsLowering : bool)
-                        and  ^op : (static member InNormalOrder : ^op -> ^op -> bool)
-                        and  ^op : (static member Swap : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
-                        and  ^op : comparison>
-        (unitFactory : string ->  ^op  option)
-        (s : System.String) : PIxWkOp<uint32, ^op > option =
-        PIxOpFromString<_> unitFactory s
-        |> Option.map PIxWkOp<_,_>.ProductTerm
-
-    let inline SIxWkOpFromString< ^op
-                        when ^op : equality
-                        and  ^op : comparison
-                        and  ^op : (member IsIdentity  : bool)
-                        and  ^op : (member IsRaising  : bool)
-                        and  ^op : (member IsLowering : bool)
-                        and  ^op : (static member InNormalOrder : ^op -> ^op -> bool)
-                        and  ^op : (static member Swap : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
-                        and  ^op : comparison>
-        (unitFactory : string ->  ^op  option)
-        (s : System.String) : SIxWkOp<uint32, ^op > option =
-        try
-            s.Trim().TrimStart('{').TrimEnd('}').Split(';')
-            |> Array.choose (PIxWkOpFromString unitFactory)
-            |> (curry SIxWkOp<_,_>.Apply) Complex.One
             |> Some
         with
         | _ -> None
