@@ -64,6 +64,7 @@ module SparseRepresentation =
             and ^op : (static member InOperatorOrder : IxOp< ^idx, ^op > -> IxOp< ^idx, ^op > -> bool)
             and ^op : (static member ToIndexOrder    : IxOp< ^idx, ^op > -> IxOp< ^idx, ^op > -> C<IxOp< ^idx, ^op >[]>[])
             and ^op : (static member ToOperatorOrder : IxOp< ^idx, ^op > -> IxOp< ^idx, ^op > -> C<IxOp< ^idx, ^op >[]>[])
+            and ^op : (static member NextIndexLocation : ^op * IxOp< ^idx, ^op >[] -> ^idx option )
             and ^op : comparison> =
         | ProductTerm of C<IxOp< ^idx, ^op>[]>
     with
@@ -136,9 +137,9 @@ module SparseRepresentation =
                 this.IndexedOps
                 |> (fun ops -> ops.IsOrdered PIxOp< ^idx, ^op>.Op_InIndexOrder)
 
-        member inline this.IndexedOpsGroupedByIndex =
+        static member inline FindItemsWithMatchingIndex (target, (coeff, ixops)) =
             let rec findItemsWithMatchingIndex result target indexedOps =
-                let rec split index pre (ops : IxOp<_,_>[]) =
+                let rec findItemWithMatchingIndex index pre (ops : IxOp<_,_>[]) =
                     match ops with
                     | [| |] -> (pre, None, [| |])
                     | [| first |] ->
@@ -152,30 +153,34 @@ module SparseRepresentation =
                         if (head.Index = index) then
                             (pre, Some head, rest)
                         else
-                            split index ((Array.append pre ([| head |]))) rest
+                            findItemWithMatchingIndex index ((Array.append pre ([| head |]))) rest
 
                 let includeSingleOp target (curr : IxOp<_,_>)  (c, xs) =
                     let product = PIxOp<_,_>.Op_ToOperatorOrder curr target
                     System.Diagnostics.Debug.Assert(product.Length = 1, "algebra limitation: commuting terms with same index produced a sum term!")
                     (c * product.[0].Coeff, Array.append product.[0].Thunk.[1..] xs)
 
-                let (pre, found, post) = split target.Index [| |] indexedOps
+                let (pre, found, post) = findItemWithMatchingIndex target.Index [| |] indexedOps
+
+                let ((resultCoeff, resultMatching), resultRest) = result
 
                 match found with
                 | Some head ->
                     let (coeff, swapped) =
                         Array.foldBack (includeSingleOp head) pre (Complex.One, [| |])
-                    let ((resultCoeff, resultMatching), resultRest) = result
                     let result' = ((coeff * resultCoeff, Array.append resultMatching [| head |]), Array.append resultRest swapped)
                     findItemsWithMatchingIndex result' target post
                 | None ->
-                    let ((resultCoeff, resultMatching), resultRest) = result
                     let result' = ((resultCoeff, resultMatching), Array.append resultRest pre)
                     result'
+            in
+            findItemsWithMatchingIndex ((coeff, [| |]),[| |]) target ixops
 
-            let rec toChunksWithCommonIndex (coeff, ixops) (result) =
+        member inline this.IndexedOpsGroupedByIndex =
+            let rec groupedByIndex (coeff, ixops) (result) =
                 match ixops with
                 | [| |] -> result
+
                 | [| first |] ->
                     [|
                         yield! result
@@ -184,16 +189,15 @@ module SparseRepresentation =
 
                 | _ ->
                     let first = ixops.[0]
-                    let ((coeff', matching), others) = findItemsWithMatchingIndex ((coeff, [| |]),[| |]) first ixops.[1..]
+                    let ((coeff', matching), others) =  PIxOp< ^idx, ^op>.FindItemsWithMatchingIndex (first, (coeff, ixops.[1..]))
                     [|
                         yield! result
                         yield PIxOp<_,_>.ApplyInternal(coeff', [| first; yield! matching |])
                     |]
-                    |> toChunksWithCommonIndex (coeff, others)
+                    |> groupedByIndex (coeff, others)
             in
             lazy
-                toChunksWithCommonIndex (this.Coeff, this.IndexedOps) ([| |])
-
+                groupedByIndex (this.Coeff, this.IndexedOps) ([| |])
 
         member inline this.ToOperatorOrder =
             let joinTerm (sorted : PIxOp<_,_>) (candidate : PIxOp<_,_>) : PIxOp<_,_> =
@@ -242,6 +246,12 @@ module SparseRepresentation =
                 let chunks = this.IndexedOpsGroupedByIndex.Value
                 chunks |> Array.fold includeChunk [| |]
 
+        member inline this.ToIndexOrder =
+            let input = this.ToOperatorOrder.Value
+
+            failwith "NYI"
+
+
         static member inline Apply (coeff : Complex, units : CIxOp< ^idx, ^op >[]) =
             let extractedCoeff = units |> Array.fold (fun coeff curr -> coeff * curr.Coeff) Complex.One
             let indexedOps     = units |> Array.map  (fun curr -> curr.IndexedOp)
@@ -255,6 +265,7 @@ module SparseRepresentation =
             and ^op : (static member InOperatorOrder : IxOp< ^idx, ^op > -> IxOp< ^idx, ^op > -> bool)
             and ^op : (static member ToIndexOrder    : IxOp< ^idx, ^op > -> IxOp< ^idx, ^op > -> C<IxOp< ^idx, ^op >[]>[])
             and ^op : (static member ToOperatorOrder : IxOp< ^idx, ^op > -> IxOp< ^idx, ^op > -> C<IxOp< ^idx, ^op >[]>[])
+            and ^op : (static member NextIndexLocation : ^op * IxOp< ^idx, ^op >[] -> ^idx option )
             and ^op : comparison> =
         | SumTerm of S<PIxOp< ^idx, ^op >>
     with
@@ -304,6 +315,7 @@ module SparseRepresentation =
             and ^op : (static member InOperatorOrder : IxOp< ^idx, ^op > -> IxOp< ^idx, ^op > -> bool)
             and ^op : (static member ToIndexOrder    : IxOp< ^idx, ^op > -> IxOp< ^idx, ^op > -> C<IxOp< ^idx, ^op >[]>[])
             and ^op : (static member ToOperatorOrder : IxOp< ^idx, ^op > -> IxOp< ^idx, ^op > -> C<IxOp< ^idx, ^op >[]>[])
+            and ^op : (static member NextIndexLocation : ^op * IxOp< ^idx, ^op >[] -> ^idx option )
             and ^op : comparison>
     with
         static member inline (+) (l : PIxOp<_,_>, r : PIxOp<_,_>) : SIxOp< ^idx, ^op >=

@@ -161,6 +161,30 @@ module Operators =
                         C<_>.Apply(Complex.One, [| a; b |])
                     |]
 
+        static member NextIndexLocation (target : FermionicOperator, items : IxOp<uint32, FermionicOperator>[]) : uint32 option =
+            let findLocationOfMatched pred t =
+                Array.fold
+                    (fun (matched, index) curr ->
+                        let matched' =
+                            if (curr.Op = t) then
+                                matched
+                                |> Option.map (fun (item, location) -> if (pred curr.Index item.Index) then (curr, index) else (item, location))
+                                |> Option.defaultValue (curr, index)
+                                |> Some
+                            else
+                                matched
+                        (matched', index + 1u))
+                    (None, 0u)
+
+            let findLocationOfMaximumIndex = findLocationOfMatched (>)
+            let findLocationOfMinimumIndex = findLocationOfMatched (<)
+            let findLocationOfNextIndex    = findLocationOfMatched (fun _ _ -> true)
+
+            match target with
+            | An -> findLocationOfMaximumIndex target items |> (fun (f, s) -> f |> Option.map (fun _ -> s))
+            | Cr -> findLocationOfMinimumIndex target items |> (fun (f, s) -> f |> Option.map (fun _ -> s))
+            | I  -> findLocationOfNextIndex    target items |> (fun (f, s) -> f |> Option.map (fun _ -> s))
+
     type IndexedFermionicOperator =
         | InFmOp of IxOp<uint32, FermionicOperator>
     with
