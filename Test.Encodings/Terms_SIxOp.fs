@@ -10,7 +10,7 @@ module Terms_SIxOp =
     [<Theory>]
     [<InlineData("{}", "{}", "{}")>]
     [<InlineData("{[(R,1)|(R,2)];[(L,1)|(L,2)]}", "{}", "{[(L,1)|(L,2)];[(R,1)|(R,2)]}")>]
-    [<InlineData("{[(R,1)|(R,2)]}", "{[(R,1)|(R,2)]}", "{[(R,1)|(R,2)]}")>]
+    [<InlineData("{[(R,1)|(R,2)]}", "{[(R,1)|(R,2)]}", "{(2)[(R,1)|(R,2)]}")>]
     [<InlineData("{[(R,1)|(R,2)]}", "{[(R,2)|(R,1)]}", "{[(R,1)|(R,2)];[(R,2)|(R,1)]}")>]
     [<InlineData("{[(R,1)|(R,2)]}", "{[(L,1)|(L,2)]}", "{[(L,1)|(L,2)];[(R,1)|(R,2)]}")>]
     let ``S + S is computed correctly``(leftStr, rightStr, expected) =

@@ -74,8 +74,8 @@ module PrettyPrint =
             |> Array.filter (fun t -> not (isIdentity t.Op))
             |> Array.map prettyPrintIxOp< ^op >
             |> (fun rg -> System.String.Join (" | ", rg))
-            |> sprintf "[%s]"
-            
+            |> sprintf "%s[%s]" (prettyPrintPhase this.Coeff)
+
 
     let inline prettyPrintPIxOps< ^op
                         when ^op : equality

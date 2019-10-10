@@ -52,8 +52,7 @@ module Terms_PIxWkOp =
         | Some pixop ->
             let actual =
                 pixop.IndexedOpsGroupedByIndex.Value
-                |> prettyPrintPIxOps
-                |> shrinkString
+                |> (prettyPrintPIxOps >> shrinkString)
 
             Assert.Equal (expected, actual)
         | None -> Assert.True (false)

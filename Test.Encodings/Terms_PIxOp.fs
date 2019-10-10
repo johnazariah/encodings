@@ -11,8 +11,8 @@ module Terms_PIxOp =
 
     [<Property>]
     let ``P constructor properly extracts coefficients from arguments``(args : (uint32 * char * Complex)[]) =
-        let cixops = args |> Array.map (fun (index, op, coeff) -> CIxOp<uint32,CChar>.Apply(coeff, IxOp<uint32, CChar>.Apply(index, CChar.New op)))
-        let pixop = PIxOp<uint32,CChar>.Apply(Complex.One, cixops)
+        let cixops = args |> Array.map (fun (index, op, coeff) -> CIxOp<uint32, CChar>.Apply(coeff, IxOp<uint32, CChar>.Apply(index, CChar.New op)))
+        let pixop = PIxOp<uint32, CChar>.Apply(Complex.One, cixops)
         let expectedCoeff = args |> Array.fold (fun result (_, _, coeff) -> result * coeff) Complex.One
         let actualCoeff = pixop.Coeff
         Assert.Equal(expectedCoeff, actualCoeff)
@@ -111,8 +111,8 @@ module Terms_PIxOp =
         | _, _ -> Assert.True (false)
 
     [<Theory>]
-    [<InlineData("[(R,1)|(R,2)]", "[(R,1)|(R,2)]", "{[(R,1)|(R,2)]}")>]
-    [<InlineData("[(L,1)|(L,2)]", "[(L,1)|(L,2)]", "{[(L,1)|(L,2)]}")>]
+    [<InlineData("[(R,1)|(R,2)]", "[(R,1)|(R,2)]", "{(2)[(R,1)|(R,2)]}")>]
+    [<InlineData("[(L,1)|(L,2)]", "[(L,1)|(L,2)]", "{(2)[(L,1)|(L,2)]}")>]
     [<InlineData("[(R,1)|(R,2)]", "[(L,1)|(L,2)]", "{[(L,1)|(L,2)];[(R,1)|(R,2)]}")>]
     let ``P + P is computed correctly``(leftStr, rightStr, expected) =
         let left  = PIxOpFromString FermionicOperator.FromString leftStr

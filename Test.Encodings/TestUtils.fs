@@ -32,6 +32,14 @@ module TestUtils
         member this.IsZero             = this.Unapply.IsZero
         member this.ScaleCoefficient c = this.Unapply.ScaleCoefficient c |> CC
         member this.AddCoefficient   c = this.Unapply.AddCoefficient   c |> CC
-        static member (<*>) (l, r)     = failwith "NYI"
-        static member Apply (coeff, thunk) = CC <| C<_>.Apply (coeff, thunk)
+
+        static member Apply (coeff, thunk) = (coeff, thunk) |> (C<_>.Apply >> CC)
         static member New thunk = CChar.Apply (Complex.One, thunk)
+
+        member this.IsIdentity = false
+        static member (<*>) (l, r)     = failwith "NYI"
+
+        static member InIndexOrder    (a : IxOp<uint32, CChar>, b : IxOp<uint32, CChar>) = a.Index >= b.Index
+        static member InOperatorOrder (a : IxOp<uint32, CChar>, b : IxOp<uint32, CChar>) = a.Op    >  b.Op
+        static member ToOperatorOrder (a : IxOp<uint32, CChar>, b : IxOp<uint32, CChar>) : C<IxOp<uint32, CChar>[]>[] = failwith "FYI"
+        static member ToIndexOrder    (a : IxOp<uint32, CChar>, b : IxOp<uint32, CChar>) : C<IxOp<uint32, CChar>[]>[] = failwith "FYI"
