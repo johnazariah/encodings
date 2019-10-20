@@ -218,51 +218,110 @@ module Operators =
                 |> curry SR<Pauli>.Apply Complex.One
                 |> Some
 
-    module FermionicOperator_Order =
-        let findNextIndex (rg : IxOp<uint32, FermionicOperator>[]) =
-            let folder (index, best) (curr : IxOp<uint32, FermionicOperator>)=
-                let here = Some (curr, index)
-                let best' =
-                    match best with
-                    | None -> here
-                    | Some (bestItem, _) ->
-                        match bestItem.Op, curr.Op with
-                        | _, I -> best
-                        | I, _ -> here
-                        | Cr, Cr -> if (bestItem.Index < curr.Index) then best else here
-                        | Cr, An -> best
-                        | An, Cr -> here
-                        | An, An -> if (bestItem.Index > curr.Index) then best else here
-                (index + 1, best')
-            rg
-            |> Array.fold folder (0, None)
-            |> snd
+module FermionicOperator_Order =
+    open System.Numerics
 
-        let bringToFront (index : int) (rg : IxOp<uint32, FermionicOperator>[]) =
-            let pre = if index = 0 then [| |] else rg.[ .. (index - 1)]
-            let post = rg.[(index + 1) .. ]
-            let ixops =
-                [|
-                    yield rg.[index]
-                    yield! pre
-                    yield! post
-                |]
-            let coeff = if index % 2 = 0 then Complex.One else Complex.MinusOne
-            C<_>.Apply(coeff, ixops)
+    let findNextIndex (rg : IxOp<uint32, FermionicOperator>[]) =
+        let folder (index, best) (curr : IxOp<uint32, FermionicOperator>)=
+            let here = Some (curr, index)
+            let best' =
+                match best with
+                | None -> here
+                | Some (bestItem, _) ->
+                    match bestItem.Op, curr.Op with
+                    | _, I -> best
+                    | I, _ -> here
+                    | Cr, Cr -> if (bestItem.Index < curr.Index) then best else here
+                    | Cr, An -> best
+                    | An, Cr -> here
+                    | An, An -> if (bestItem.Index > curr.Index) then best else here
+            (index + 1, best')
+        rg
+        |> Array.fold folder (0, None)
+        |> snd
 
-        let findItemsWithIndex (target : uint32) (rg : IxOp<uint32, FermionicOperator>[]) =
-            rg
-            |> Array.fold
-                (fun (index, result) curr ->
-                    let result' =
-                        if (target = curr.Index) then
-                            (curr, index) :: result
-                        else
-                            result
-                    (index + 1, result'))
-                (0, [])
-            |> snd
-            |> List.rev
+    let behead (index : int) (rg : IxOp<uint32, FermionicOperator>[]) =
+        let pre  = if index = 0 then [| |] else rg.[ .. (index - 1)]
+        let post = if index = rg.Length then [| |] else rg.[(index + 1) .. ]
+        let remainder =
+            [|
+                yield! pre
+                yield! post
+            |]
+        let coeff = if index % 2 = 0 then Complex.One else Complex.MinusOne
+        let head = C<_>.Apply(coeff, rg.[index])
+        (head, remainder)
 
-        let toCanonicalOrder (input : IxOp<uint32, FermionicOperator>[]) : SIxOp<uint32, FermionicOperator> =
-            failwith "NYI"
+    let findLocationOfNextItemWithIndex (target : uint32) (rg : IxOp<uint32, FermionicOperator>[]) =
+        rg
+        |> Array.fold
+            (fun (index, result) curr ->
+                match result with
+                | Some _ -> (index + 1, result)
+                | None ->
+                    if (target = curr.Index) then
+                        (index + 1, Some index)
+                    else
+                        (index + 1, None))
+            (0, None)
+        |> snd
+
+    //let findItemsWithIndex (target : uint32) (rg : IxOp<uint32, FermionicOperator>[]) =
+    //    rg
+    //    |> Array.fold
+    //        (fun (index, result) curr ->
+    //            let result' =
+    //                if (target = curr.Index) then
+    //                    (curr, index) :: result
+    //                else
+    //                    result
+    //            (index + 1, result'))
+    //        (0, [])
+    //    |> snd
+    //    |> List.rev
+
+    let chunkByIndex (rg : IxOp<uint32, FermionicOperator>[]) : PIxOp<uint32, FermionicOperator>[]=
+        let getChunkWithIndex input (headItem, _) =
+            let buildChunkFromFoundItems result curr =
+                let (chunkItems, remainder) = result
+                let (_, currIndex) = curr
+                let head, tail = behead currIndex remainder
+                (chunkItems @ [head], tail)
+
+            let toPixOp (head, tail) =
+                let head' =
+                    head
+                    |> Array.map (fun c -> CIxOp<_,_>.Apply(c.Coeff, c.Thunk))
+                    |> curry PIxOp<_,_>.Apply Complex.One
+                (head', tail)
+
+            let rec buildChunk target (chunk, remainder) =
+                match remainder with
+                | [||] -> (chunk, [||])
+                | _ ->
+                    match findLocationOfNextItemWithIndex target remainder with
+                    | None -> (chunk, remainder)
+                    | Some location ->
+                        let (head, tail) = behead location remainder
+                        buildChunk target ([| yield! chunk; head |], tail)
+
+            buildChunk headItem.Index ([||], input)
+            |> toPixOp
+
+        let findNextChunk input =
+            findNextIndex input
+            |> Option.map (getChunkWithIndex input)
+
+        let rec makeChunks (chunks, remainder) =
+            match remainder with
+            | [||] -> (chunks, remainder)
+            | _ ->
+                match findNextChunk remainder with
+                | None -> failwith "how?"
+                | Some (chunk, rest) -> makeChunks ([| yield! chunks; chunk |], rest)
+
+        makeChunks ([||], rg)
+        |> fst
+
+    let toCanonicalOrder (input : IxOp<uint32, FermionicOperator>[]) : SIxOp<uint32, FermionicOperator> =
+        failwith "NYI"

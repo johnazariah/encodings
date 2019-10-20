@@ -3,7 +3,7 @@
 open FsCheck.Xunit
 open System.Numerics
 open Encodings.Operators
-open Encodings.Operators.FermionicOperator_Order
+open Encodings.FermionicOperator_Order
 open Encodings.SparseRepresentation
 open Encodings.TypeExtensions
 open Xunit
@@ -67,46 +67,64 @@ module FermionicOperator_CanonicalSort =
         Assert.Equal (expected, actual)
 
     [<Property>]
-    let ``BringToFront brings the desired item to the front`` (ixops : IxOp<uint32, FermionicOperator>[]) =
+    let ``Behead extracts the desired item and its coefficient`` (ixops : IxOp<uint32, FermionicOperator>[]) =
         ixops
         |> findNextIndex
         |> Option.iter
             (fun (expectedItem, expectedIndex) ->
-                let swapped = ixops |> bringToFront expectedIndex
+                let (head, _) = ixops |> behead expectedIndex
                 let expectedCoeff = if expectedIndex % 2 = 0 then Complex.One else Complex.MinusOne
-                Assert.Equal(expectedCoeff, swapped.Coeff)
-                Assert.Equal(expectedItem, swapped.Thunk.[0]))
+                Assert.Equal(expectedCoeff, head.Coeff)
+                Assert.Equal(expectedItem, head.Thunk))
 
     [<Fact>]
-    let ``BringToFront brings the desired item to the front (Regression 1)`` () =
+    let ``Behead extracts the desired item and its coefficient (Regression 1)`` () =
         let ixops =
             [|
                 IxOp<_,_>.Apply (0u, Cr)
             |]
-        ``BringToFront brings the desired item to the front`` ixops
+        ``Behead extracts the desired item and its coefficient`` ixops
+
+    //[<Property>]
+    //let ``FindItemsWithIndex finds all items with target index`` (target : uint32, ixops1 : IxOp<uint32, FermionicOperator>[], ixops2 : IxOp<uint32, FermionicOperator>[]) =
+    //    let ixops =
+    //        [|
+    //            yield! ixops1 |> Array.map (fun ixop -> IxOp<_,_>.Apply(target, ixop.Op))
+    //            yield! ixops2
+    //        |]
+
+    //    let expected =
+    //        ixops
+    //        |> Array.fold
+    //            (fun (index, result) curr ->
+    //                if (curr.Index = target) then
+    //                    (index + 1, (curr, index) :: result)
+    //                else
+    //                    (index + 1, result))
+    //            (0, [])
+    //        |> snd
+    //        |> List.rev
+
+    //    let actual =
+    //        ixops
+    //        |> findItemsWithIndex target
+
+    //    Assert.Equal<IEnumerable<IxOp<_,_> * int>>(expected, actual)
 
     [<Property>]
-    let ``FindItemsWithIndex finds all items with target index`` (target : uint32, ixops1 : IxOp<uint32, FermionicOperator>[], ixops2 : IxOp<uint32, FermionicOperator>[]) =
-        let ixops =
-            [|
-                yield! ixops1 |> Array.map (fun ixop -> IxOp<_,_>.Apply(target, ixop.Op))
-                yield! ixops2
-            |]
+    let ``ChunkByIndex returns chunks with the same index`` (ixops : IxOp<uint32, FermionicOperator>[]) =
+        let allElementsHaveSameIndex (curr : PIxOp<uint32, FermionicOperator>) =
+            if curr.IndexedOps.Length = 0 then
+                true
+            else
+                let target = curr.IndexedOps.[0].Index
+                curr.IndexedOps
+                |> Array.map (fun ixop -> ixop.Index)
+                |> Array.fold (fun result curr -> result && (curr = target)) true
+        let allChunksHaveSameIndex result curr =
+            result && allElementsHaveSameIndex curr
 
-        let expected =
-            ixops
-            |> Array.fold
-                (fun (index, result) curr ->
-                    if (curr.Index = target) then
-                        (index + 1, (curr, index) :: result)
-                    else
-                        (index + 1, result))
-                (0, [])
-            |> snd
-            |> List.rev
-
-        let actual =
-            ixops
-            |> findItemsWithIndex target
-
-        Assert.Equal<IEnumerable<IxOp<_,_> * int>>(expected, actual)
+        ixops
+        |> chunkByIndex
+        |> Array.fold allChunksHaveSameIndex true
+        |> Assert.True
