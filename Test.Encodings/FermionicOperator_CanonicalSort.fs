@@ -2,6 +2,7 @@
 
 open FsCheck.Xunit
 open System.Numerics
+open Encodings
 open Encodings.Operators
 open Encodings.FermionicOperator_Order
 open Encodings.SparseRepresentation
@@ -128,3 +129,124 @@ module FermionicOperator_CanonicalSort =
         |> chunkByIndex
         |> Array.fold allChunksHaveSameIndex true
         |> Assert.True
+
+    [<Property>]
+    let ``ChunkByIndex returns chunks in index order`` (ixops : IxOp<uint32, FermionicOperator>[]) =
+        let chunksAreInIndexOrder result (curr : PIxOp<_,_>) =
+            let (prevIndex, inOrder) = result
+            match prevIndex with
+            | None ->
+                findNextIndex curr.IndexedOps
+                |> Option.map (fun (firstOp, _) ->
+                    (Some firstOp, true))
+                |> Option.defaultValue (None, false)
+            | Some firstOp ->
+                findNextIndex curr.IndexedOps
+                |> Option.map (fun (secondOp, _) ->
+                    (Some secondOp, inOrder && FermionicOperator.InIndexOrder(firstOp, secondOp)))
+                |> Option.defaultValue (None, false)
+
+        ixops
+        |> chunkByIndex
+        |> Array.fold chunksAreInIndexOrder (None, true)
+        |> snd
+        |> Assert.True
+
+    [<Fact>]
+    let ``ChunkByIndex returns chunks in index order (Regression 1)`` () =
+        [|
+            IxOp<_,_>.Apply (0u, FermionicOperator.An)
+            IxOp<_,_>.Apply (1u, FermionicOperator.An)
+            IxOp<_,_>.Apply (0u, FermionicOperator.Cr)
+        |]
+        |> ``ChunkByIndex returns chunks in index order``
+
+    [<Fact>]
+    let ``ChunkByIndex returns chunks in index order (Regression 2)`` () =
+        [|
+            IxOp<_,_>.Apply (0u, FermionicOperator.An)
+            IxOp<_,_>.Apply (1u, FermionicOperator.An)
+            IxOp<_,_>.Apply (2u, FermionicOperator.An)
+            IxOp<_,_>.Apply (3u, FermionicOperator.An)
+            IxOp<_,_>.Apply (4u, FermionicOperator.An)
+            IxOp<_,_>.Apply (5u, FermionicOperator.An)
+            IxOp<_,_>.Apply (6u, FermionicOperator.An)
+        |]
+        |> ``ChunkByIndex returns chunks in index order``
+
+    [<Fact>]
+    let ``ChunkByIndex returns chunks in index order (Regression 3)`` () =
+        [|
+            IxOp<_,_>.Apply (0u, FermionicOperator.Cr)
+            IxOp<_,_>.Apply (1u, FermionicOperator.Cr)
+            IxOp<_,_>.Apply (2u, FermionicOperator.Cr)
+            IxOp<_,_>.Apply (3u, FermionicOperator.Cr)
+            IxOp<_,_>.Apply (4u, FermionicOperator.Cr)
+            IxOp<_,_>.Apply (5u, FermionicOperator.Cr)
+            IxOp<_,_>.Apply (6u, FermionicOperator.Cr)
+        |]
+        |> ``ChunkByIndex returns chunks in index order``
+
+    [<Fact>]
+    let ``ChunkByIndex returns chunks in index order (Regression 4)`` () =
+        let ixops =
+            [|
+                IxOp<_,_>.Apply (0u, FermionicOperator.An)
+                IxOp<_,_>.Apply (1u, FermionicOperator.An)
+                IxOp<_,_>.Apply (2u, FermionicOperator.An)
+                IxOp<_,_>.Apply (3u, FermionicOperator.An)
+                IxOp<_,_>.Apply (4u, FermionicOperator.An)
+                IxOp<_,_>.Apply (5u, FermionicOperator.An)
+                IxOp<_,_>.Apply (6u, FermionicOperator.An)
+            |]
+        let chunked = chunkByIndex ixops
+        Assert.Equal (ixops.Length, chunked.Length)
+        Assert.Equal<IEnumerable<uint32>>
+            (
+                ixops   |> Seq.map (fun io -> io.Index) |> Seq.rev,
+                chunked |> Seq.map (fun pi -> pi.IndexedOps.[0].Index)
+            )
+
+    [<Fact>]
+    let ``ChunkByIndex returns chunks in index order (Regression 5)`` () =
+        let ixops =
+            [|
+                IxOp<_,_>.Apply (0u, FermionicOperator.Cr)
+                IxOp<_,_>.Apply (1u, FermionicOperator.Cr)
+                IxOp<_,_>.Apply (2u, FermionicOperator.Cr)
+                IxOp<_,_>.Apply (3u, FermionicOperator.Cr)
+                IxOp<_,_>.Apply (4u, FermionicOperator.Cr)
+                IxOp<_,_>.Apply (5u, FermionicOperator.Cr)
+                IxOp<_,_>.Apply (6u, FermionicOperator.Cr)
+            |]
+        let chunked = chunkByIndex ixops
+        Assert.Equal (ixops.Length, chunked.Length)
+        Assert.Equal<IEnumerable<uint32>>
+            (
+                ixops   |> Seq.map (fun io -> io.Index),
+                chunked |> Seq.map (fun pi -> pi.IndexedOps.[0].Index)
+            )
+
+    [<Theory>]
+    [<InlineData("", "{}")>]
+    [<InlineData("[]", "{}")>]
+    [<InlineData("[(R,1)]", "{[(R,1)]}")>]
+    [<InlineData("[(R,1)|(L,1)]", "{[(R,1)|(L,1)]}")>]
+    [<InlineData("[(R,1)|(L,1)|(L,1)]", "{[(R,1)|(L,1)|(L,1)]}")>]
+    [<InlineData("[(R,1)|(L,1)|(L,2)|(L,1)]", "{-[(R,1)|(L,1)|(L,1)];[(L,2)]}")>]
+    [<InlineData("[(R,1)|(R,2)]", "{[(R,1)];[(R,2)]}")>]
+    [<InlineData("[(R,1)|(R,2)|(L,1)]", "{-[(R,1)|(L,1)];[(R,2)]}")>]
+    [<InlineData("[(R,2)|(R,1)|(L,1)]", "{[(R,1)|(L,1)];[(R,2)]}")>]
+    [<InlineData("[(R,1)|(R,2)|(L,1)|(L,2)]", "{-[(R,1)|(L,1)];[(R,2)|(L,2)]}")>]
+    [<InlineData("[(R,1)|(R,2)|(L,2)|(L,1)]", "{[(R,1)|(L,1)];[(R,2)|(L,2)]}")>]
+    [<InlineData("[(R,2)|(L,2)|(R,1)|(L,1)]", "{[(R,1)|(L,1)];[(R,2)|(L,2)]}")>]
+    let ``ChunkByIndex groups operators into indexed-based chunks`` (input, expected) =
+        match PIxOpFromString FermionicOperator.FromString input with
+        | Some pixop ->
+            let actual =
+                pixop.IndexedOps
+                |> chunkByIndex
+                |> (prettyPrintPIxOps >> shrinkString)
+            Assert.Equal (expected, actual)
+        | None -> Assert.True (false)
+
