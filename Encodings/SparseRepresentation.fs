@@ -138,6 +138,20 @@ module SparseRepresentation =
                 |> (fun ops -> ops.IsOrdered PIxOp< ^idx, ^op>.Op_InIndexOrder)
 
         static member inline FindItemsWithMatchingIndex (target, (coeff, ixops)) =
+            let findLocationOfMatched pred t =
+                Array.fold
+                    (fun (matched, index) curr ->
+                        let matched' =
+                            if (curr.Op = t) then
+                                matched
+                                |> Option.map (fun (item, location) -> if (pred curr.Index item.Index) then (curr, index) else (item, location))
+                                |> Option.defaultValue (curr, index)
+                                |> Some
+                            else
+                                matched
+                        (matched', index + 1u))
+                    (None, 0u)
+
             let rec findItemsWithMatchingIndex result target indexedOps =
                 let rec findItemWithMatchingIndex index pre (ops : IxOp<_,_>[]) =
                     match ops with
@@ -247,9 +261,10 @@ module SparseRepresentation =
                 chunks |> Array.fold includeChunk [| |]
 
         member inline this.ToIndexOrder =
-            let input = this.ToOperatorOrder.Value
+            if not this.IsInOperatorOrder.Value then
+                failwith "P term must be in operator (normal) order before being put in index order"
 
-            failwith "NYI"
+
 
 
         static member inline Apply (coeff : Complex, units : CIxOp< ^idx, ^op >[]) =
