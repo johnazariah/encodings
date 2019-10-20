@@ -250,5 +250,19 @@ module Operators =
             let coeff = if index % 2 = 0 then Complex.One else Complex.MinusOne
             C<_>.Apply(coeff, ixops)
 
+        let findItemsWithIndex (target : uint32) (rg : IxOp<uint32, FermionicOperator>[]) =
+            rg
+            |> Array.fold
+                (fun (index, result) curr ->
+                    let result' =
+                        if (target = curr.Index) then
+                            (curr, index) :: result
+                        else
+                            result
+                    (index + 1, result'))
+                (0, [])
+            |> snd
+            |> List.rev
+
         let toCanonicalOrder (input : IxOp<uint32, FermionicOperator>[]) : SIxOp<uint32, FermionicOperator> =
             failwith "NYI"

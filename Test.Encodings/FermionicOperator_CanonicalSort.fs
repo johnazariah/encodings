@@ -7,6 +7,7 @@ open Encodings.Operators.FermionicOperator_Order
 open Encodings.SparseRepresentation
 open Encodings.TypeExtensions
 open Xunit
+open System.Collections.Generic
 
 [<Properties (Arbitrary = [|typeof<ComplexGenerator>|], QuietOnSuccess = true) >]
 module FermionicOperator_CanonicalSort =
@@ -83,3 +84,29 @@ module FermionicOperator_CanonicalSort =
                 IxOp<_,_>.Apply (0u, Cr)
             |]
         ``BringToFront brings the desired item to the front`` ixops
+
+    [<Property>]
+    let ``FindItemsWithIndex finds all items with target index`` (target : uint32, ixops1 : IxOp<uint32, FermionicOperator>[], ixops2 : IxOp<uint32, FermionicOperator>[]) =
+        let ixops =
+            [|
+                yield! ixops1 |> Array.map (fun ixop -> IxOp<_,_>.Apply(target, ixop.Op))
+                yield! ixops2
+            |]
+
+        let expected =
+            ixops
+            |> Array.fold
+                (fun (index, result) curr ->
+                    if (curr.Index = target) then
+                        (index + 1, (curr, index) :: result)
+                    else
+                        (index + 1, result))
+                (0, [])
+            |> snd
+            |> List.rev
+
+        let actual =
+            ixops
+            |> findItemsWithIndex target
+
+        Assert.Equal<IEnumerable<IxOp<_,_> * int>>(expected, actual)
