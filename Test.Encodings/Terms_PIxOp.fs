@@ -56,15 +56,6 @@ module Terms_PIxOp =
                 if (not right.IsZero) then yield right.Signature
             |]
 
-        (*
-        (ProductTerm { Coeff = (0, 0)
-         Thunk = [|{ Index = 0u
-                    Op = CC { Coeff = (0, 0)
-                              Thunk = 'a' } }|] },
-         ProductTerm { Coeff = (-1, 1)
-         Thunk = [| |] })
-        *)
-
         let sum = left + right
         Assert.Equal(expectedTermCount, sum.Terms.Length)
         Assert.Equal(Complex.One, sum.Coeff)
@@ -88,6 +79,25 @@ module Terms_PIxOp =
     let ``P + P -> S (Regression 3)``() =
         let left  = PIxOp<_,_>.ProductTerm { Coeff = Complex.One;  Thunk = [| |] }
         let right = PIxOp<_,_>.ProductTerm { Coeff = Complex.Zero; Thunk = [| |] }
+        ``P + P -> S`` (left, right)
+
+    [<Fact>]
+    let ``P + P -> S (Regression 4)`` () =
+        let left =
+            PIxOp<_,_>.ProductTerm
+                {
+                    Coeff = Complex.Zero
+                    Thunk =
+                        [|
+                            IxOp<_,_>.Apply(0u, CC <| C<CChar>.Apply (Complex.Zero, 'a'))
+                        |]
+                }
+        let right =
+            PIxOp<_,_>.ProductTerm
+                {
+                    Coeff = Complex(-1., 1.)
+                    Thunk = [| |]
+                }
         ``P + P -> S`` (left, right)
 
     [<Theory>]

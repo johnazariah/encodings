@@ -14,7 +14,7 @@ module PauliRegister =
         Assert.Equal(prettyPrintSignature candidate, candidate.Signature)
 
     [<Fact>]
-    let ``Signature is computed correctly : Regression 1`` () =
+    let ``Signature is computed correctly (Regression 1)`` () =
         let candidate = R<Pauli>.ApplyInternal(Complex.Zero, [|Z|])
         ``Signature is computed correctly`` candidate
 

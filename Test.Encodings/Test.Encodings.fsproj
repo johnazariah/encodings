@@ -18,6 +18,7 @@
     <Compile Include="Terms_SIxOp.fs" />
     <Compile Include="Terms_SIxWkOp.fs" />
     <Compile Include="PauliRegister.fs" />
+    <Compile Include="FermionicOperator_CanonicalSort.fs" />
     <Compile Include="FermionicOperator_JordanWigner.fs" />
   </ItemGroup>
 

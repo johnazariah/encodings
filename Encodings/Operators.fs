@@ -217,3 +217,38 @@ module Operators =
                 |> Array.map (fun (a, b) ->  b.ScaleCoefficient a)
                 |> curry SR<Pauli>.Apply Complex.One
                 |> Some
+
+    module FermionicOperator_Order =
+        let findNextIndex (rg : IxOp<uint32, FermionicOperator>[]) =
+            let folder (index, best) (curr : IxOp<uint32, FermionicOperator>)=
+                let here = Some (curr, index)
+                let best' =
+                    match best with
+                    | None -> here
+                    | Some (bestItem, _) ->
+                        match bestItem.Op, curr.Op with
+                        | _, I -> best
+                        | I, _ -> here
+                        | Cr, Cr -> if (bestItem.Index < curr.Index) then best else here
+                        | Cr, An -> best
+                        | An, Cr -> here
+                        | An, An -> if (bestItem.Index > curr.Index) then best else here
+                (index + 1, best')
+            rg
+            |> Array.fold folder (0, None)
+            |> snd
+
+        let bringToFront (index : int) (rg : IxOp<uint32, FermionicOperator>[]) =
+            let pre = if index = 0 then [| |] else rg.[ .. (index - 1)]
+            let post = rg.[(index + 1) .. ]
+            let ixops =
+                [|
+                    yield rg.[index]
+                    yield! pre
+                    yield! post
+                |]
+            let coeff = if index % 2 = 0 then Complex.One else Complex.MinusOne
+            C<_>.Apply(coeff, ixops)
+
+        let toCanonicalOrder (input : IxOp<uint32, FermionicOperator>[]) : SIxOp<uint32, FermionicOperator> =
+            failwith "NYI"

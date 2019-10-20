@@ -264,9 +264,6 @@ module SparseRepresentation =
             if not this.IsInOperatorOrder.Value then
                 failwith "P term must be in operator (normal) order before being put in index order"
 
-
-
-
         static member inline Apply (coeff : Complex, units : CIxOp< ^idx, ^op >[]) =
             let extractedCoeff = units |> Array.fold (fun coeff curr -> coeff * curr.Coeff) Complex.One
             let indexedOps     = units |> Array.map  (fun curr -> curr.IndexedOp)

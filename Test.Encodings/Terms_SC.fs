@@ -86,7 +86,7 @@ module Terms_SC =
             Assert.Equal(expected, actual)
 
     [<Fact>]
-    let ``Constructor coalesces coefficients for like terms : Regression 1``() =
+    let ``Constructor coalesces coefficients for like terms (Regression 1)``() =
         let inputs = [| Complex.One; Complex.MinusOne |]
         ``Constructor coalesces coefficients for like terms`` inputs
 
@@ -110,7 +110,7 @@ module Terms_SC =
             Assert.True(Complex.ApproximatelyEqual(expected, actual))
 
     [<Fact>]
-    let ``Addition operator coalesces coefficients for like terms : Regression 1``() =
+    let ``Addition operator coalesces coefficients for like terms (Regression 1)``() =
         let lterms = [| |]
         let rterms = [|Complex(-0.5, -2.); Complex(0.5, -0.5)|]
         ``Addition operator coalesces coefficients for like terms`` (lterms, rterms)
@@ -152,7 +152,7 @@ module Terms_SC =
 
 
     [<Fact>]
-    let ``Constructor coeff scales coefficient of all terms : Regression 1``() =
+    let ``Constructor coeff scales coefficient of all terms (Regression 1)``() =
         let globalCoeff = Complex.One
         let terms =
             [|
@@ -162,7 +162,7 @@ module Terms_SC =
         ``Constructor coeff scales coefficient of all terms``(globalCoeff, terms)
 
     [<Fact>]
-    let ``Constructor coeff scales coefficient of all terms : Regression 2``() =
+    let ``Constructor coeff scales coefficient of all terms (Regression 2)``() =
         let globalCoeff = Complex(-2.588235294117647, -14.897435897435898)
         let terms =
             [|
@@ -172,7 +172,7 @@ module Terms_SC =
         ``Constructor coeff scales coefficient of all terms``(globalCoeff, terms)
 
     [<Fact>]
-    let ``Constructor coeff scales coefficient of all terms : Regression 3``() =
+    let ``Constructor coeff scales coefficient of all terms (Regression 3)``() =
         let globalCoeff = Complex(11.666666666666666, 6.)
         let terms =
             [|
