@@ -3,10 +3,7 @@
 open FsCheck.Xunit
 open System.Numerics
 open Encodings
-open Encodings.Operators
 open Encodings.FermionicOperator_Order
-open Encodings.SparseRepresentation
-open Encodings.TypeExtensions
 open Xunit
 open System.Collections.Generic
 
@@ -85,32 +82,6 @@ module FermionicOperator_CanonicalSort =
                 IxOp<_,_>.Apply (0u, Cr)
             |]
         ``Behead extracts the desired item and its coefficient`` ixops
-
-    //[<Property>]
-    //let ``FindItemsWithIndex finds all items with target index`` (target : uint32, ixops1 : IxOp<uint32, FermionicOperator>[], ixops2 : IxOp<uint32, FermionicOperator>[]) =
-    //    let ixops =
-    //        [|
-    //            yield! ixops1 |> Array.map (fun ixop -> IxOp<_,_>.Apply(target, ixop.Op))
-    //            yield! ixops2
-    //        |]
-
-    //    let expected =
-    //        ixops
-    //        |> Array.fold
-    //            (fun (index, result) curr ->
-    //                if (curr.Index = target) then
-    //                    (index + 1, (curr, index) :: result)
-    //                else
-    //                    (index + 1, result))
-    //            (0, [])
-    //        |> snd
-    //        |> List.rev
-
-    //    let actual =
-    //        ixops
-    //        |> findItemsWithIndex target
-
-    //    Assert.Equal<IEnumerable<IxOp<_,_> * int>>(expected, actual)
 
     [<Property>]
     let ``ChunkByIndex returns chunks with the same index`` (ixops : IxOp<uint32, FermionicOperator>[]) =
@@ -250,3 +221,23 @@ module FermionicOperator_CanonicalSort =
             Assert.Equal (expected, actual)
         | None -> Assert.True (false)
 
+    [<Theory>]
+    //[<InlineData("", "{}")>]
+    //[<InlineData("[]", "{}")>]
+    [<InlineData("[(R,1)|(I,1)]", "{[(R,1)]}")>]
+    [<InlineData("[(I,1)|(L,1)]", "{[(L,1)]}")>]
+    [<InlineData("[(R,1)|(R,1)]", "{}")>]
+    [<InlineData("[(L,1)|(L,1)]", "{}")>]
+    [<InlineData("[(R,1)|(L,1)]", "{[(R,1)|(L,1)]}")>]
+    [<InlineData("[(L,1)|(R,1)]", "{[1];-[(R,1)|(L,1)]}")>]
+    let ``SortChunk sorts single chunk product terms`` (input, expected) =
+        match PIxOpFromString FermionicOperator.FromString input with
+        | Some pixop ->
+            let actual =
+                pixop.IndexedOps
+                |> chunkByIndex
+                |> Array.map sortChunk
+                |> (fun rg -> rg.[0])
+                |> (prettyPrintSIxOp >> shrinkString)
+            Assert.Equal (expected, actual)
+        | None -> Assert.True (false)

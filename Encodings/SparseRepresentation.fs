@@ -290,6 +290,9 @@ module SparseRepresentation =
         static member inline (<+>) (l : SIxOp< ^idx, ^op>, r : SIxOp< ^idx, ^op>) = l.Unapply <+> r.Unapply |> SumTerm
         static member inline (<*>) (l : SIxOp< ^idx, ^op>, r : SIxOp< ^idx, ^op>) = l.Unapply <*> r.Unapply |> SumTerm
 
+        static member inline Unit = SIxOp< ^idx, ^op >.Apply (Complex.One,  [| |])
+        static member inline Zero = SIxOp< ^idx, ^op >.Apply (Complex.One,  [| |])
+
         member inline this.AllTermsIndexOrdered =
             lazy
                 this.Terms
