@@ -107,10 +107,13 @@ module FermionicOperator_CanonicalSort =
             let (prevIndex, inOrder) = result
             match prevIndex with
             | None ->
-                findNextIndex curr.IndexedOps
-                |> Option.map (fun (firstOp, _) ->
-                    (Some firstOp, true))
-                |> Option.defaultValue (None, false)
+                if curr = PIxOp<_,_>.Unit then
+                    (None, true)
+                else
+                    findNextIndex curr.IndexedOps
+                    |> Option.map (fun (firstOp, _) ->
+                        (Some firstOp, true))
+                    |> Option.defaultValue (None, false)
             | Some firstOp ->
                 findNextIndex curr.IndexedOps
                 |> Option.map (fun (secondOp, _) ->
@@ -126,6 +129,12 @@ module FermionicOperator_CanonicalSort =
     [<Fact>]
     let ``ChunkByIndex returns chunks in index order (Regression 1)`` () =
         [|
+        |]
+        |> ``ChunkByIndex returns chunks in index order``
+
+    [<Fact>]
+    let ``ChunkByIndex returns chunks in index order (Regression 2)`` () =
+        [|
             IxOp<_,_>.Apply (0u, FermionicOperator.An)
             IxOp<_,_>.Apply (1u, FermionicOperator.An)
             IxOp<_,_>.Apply (0u, FermionicOperator.Cr)
@@ -133,7 +142,7 @@ module FermionicOperator_CanonicalSort =
         |> ``ChunkByIndex returns chunks in index order``
 
     [<Fact>]
-    let ``ChunkByIndex returns chunks in index order (Regression 2)`` () =
+    let ``ChunkByIndex returns chunks in index order (Regression 3)`` () =
         [|
             IxOp<_,_>.Apply (0u, FermionicOperator.An)
             IxOp<_,_>.Apply (1u, FermionicOperator.An)
@@ -146,7 +155,7 @@ module FermionicOperator_CanonicalSort =
         |> ``ChunkByIndex returns chunks in index order``
 
     [<Fact>]
-    let ``ChunkByIndex returns chunks in index order (Regression 3)`` () =
+    let ``ChunkByIndex returns chunks in index order (Regression 4)`` () =
         [|
             IxOp<_,_>.Apply (0u, FermionicOperator.Cr)
             IxOp<_,_>.Apply (1u, FermionicOperator.Cr)
@@ -159,7 +168,7 @@ module FermionicOperator_CanonicalSort =
         |> ``ChunkByIndex returns chunks in index order``
 
     [<Fact>]
-    let ``ChunkByIndex returns chunks in index order (Regression 4)`` () =
+    let ``ChunkByIndex returns chunks in index order (Regression 5)`` () =
         let ixops =
             [|
                 IxOp<_,_>.Apply (0u, FermionicOperator.An)
@@ -179,7 +188,7 @@ module FermionicOperator_CanonicalSort =
             )
 
     [<Fact>]
-    let ``ChunkByIndex returns chunks in index order (Regression 5)`` () =
+    let ``ChunkByIndex returns chunks in index order (Regression 6)`` () =
         let ixops =
             [|
                 IxOp<_,_>.Apply (0u, FermionicOperator.Cr)
@@ -253,6 +262,28 @@ module FermionicOperator_CanonicalSort =
     [<InlineData("[(R,2)|(L,2)|(R,1)|(L,1)]", "{[(R,1)|(L,1)|(R,2)|(L,2)]}")>]
     [<InlineData("[(L,1)|(R,1)|(R,2)|(L,2)]", "{-[(R,1)|(L,1)|(R,2)|(L,2)];[(R,2)|(L,2)]}")>]
     let ``SortChunks sorts chunk product terms`` (input, expected) =
+        match PIxOpFromString FermionicOperator.FromString input with
+        | Some pixop ->
+            let actual =
+                pixop.IndexedOps
+                |> chunkByIndex
+                |> sortChunks
+                |> (prettyPrintSIxOp >> shrinkString)
+            Assert.Equal (expected, actual)
+        | None -> Assert.True (false)
+
+
+    [<Theory>]
+    [<InlineData("[(R,1)|(I,1)]", "{[(R,1)]}")>]
+    [<InlineData("[(I,1)|(L,1)]", "{[(L,1)]}")>]
+    [<InlineData("[(R,1)|(R,1)]", "{}")>]
+    [<InlineData("[(L,1)|(L,1)]", "{}")>]
+    [<InlineData("[(R,1)|(L,1)]", "{[(R,1)|(L,1)]}")>]
+    [<InlineData("[(L,1)|(R,1)]", "{[1];-[(R,1)|(L,1)]}")>]
+    [<InlineData("[(R,1)|(L,1)|(R,2)|(L,2)]", "{[(R,1)|(L,1)|(R,2)|(L,2)]}")>]
+    [<InlineData("[(R,2)|(L,2)|(R,1)|(L,1)]", "{[(R,1)|(L,1)|(R,2)|(L,2)]}")>]
+    [<InlineData("[(L,1)|(R,1)|(R,2)|(L,2)]", "{-[(R,1)|(L,1)|(R,2)|(L,2)];[(R,2)|(L,2)]}")>]
+    let ``ToCanonicalOrder puts product term into canonical sum term`` (input, expected) =
         match PIxOpFromString FermionicOperator.FromString input with
         | Some pixop ->
             let actual =

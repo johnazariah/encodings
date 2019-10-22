@@ -222,7 +222,7 @@ module Operators =
 module FermionicOperator_Order =
     open System.Numerics
 
-    let findNextIndex (rg : IxOp<uint32, FermionicOperator>[]) =
+    let internal findNextIndex (rg : IxOp<uint32, FermionicOperator>[]) =
         let folder (index, best) (curr : IxOp<uint32, FermionicOperator>)=
             let here = Some (curr, index)
             let best' =
@@ -241,7 +241,7 @@ module FermionicOperator_Order =
         |> Array.fold folder (0, None)
         |> snd
 
-    let behead (index : int) (rg : IxOp<uint32, FermionicOperator>[]) =
+    let internal behead (index : int) (rg : IxOp<uint32, FermionicOperator>[]) =
         let pre  = if index = 0 then [| |] else rg.[ .. (index - 1)]
         let post = if index = rg.Length then [| |] else rg.[(index + 1) .. ]
         let remainder =
@@ -253,7 +253,7 @@ module FermionicOperator_Order =
         let head = C<_>.Apply(coeff, rg.[index])
         (head, remainder)
 
-    let findLocationOfNextItemWithIndex (target : uint32) (rg : IxOp<uint32, FermionicOperator>[]) =
+    let internal findLocationOfNextItemWithIndex (target : uint32) (rg : IxOp<uint32, FermionicOperator>[]) =
         rg
         |> Array.fold
             (fun (index, result) curr ->
@@ -272,7 +272,7 @@ module FermionicOperator_Order =
         |> Array.map (fun c -> CIxOp<_,_>.Apply(c.Coeff, c.Thunk))
         |> curry PIxOp<_,_>.Apply Complex.One
 
-    let chunkByIndex (rg : IxOp<_,_>[]) =
+    let internal chunkByIndex (rg : IxOp<_,_>[]) =
         let getChunkWithIndex input (headItem, _) =
             let rec buildChunk target (chunk, remainder) =
                 match findLocationOfNextItemWithIndex target remainder with
@@ -367,10 +367,11 @@ module FermionicOperator_Order =
 
         SIxOp<_,_>.Apply (Complex.One, sortedChunk)
 
-    let sortChunks chunks =
-        let sorted = chunks |> Array.map sortChunk
-        let folded = sorted |> Array.fold (<*>) SIxOp<_,_>.Unit
-        folded
+    let internal sortChunks chunks =
+        chunks
+        |> Array.map sortChunk
+        |> Array.fold (<*>) SIxOp<_,_>.Unit
 
     let toCanonicalOrder (input : IxOp<uint32, FermionicOperator>[]) : SIxOp<uint32, FermionicOperator> =
-        failwith "NYI"
+        chunkByIndex input
+        |> sortChunks
