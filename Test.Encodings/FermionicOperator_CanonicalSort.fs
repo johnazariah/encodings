@@ -42,10 +42,10 @@ module FermionicOperator_CanonicalSort =
             indices
 
     [<Property>]
-    let ``FindNextIndex finds the largest An as the next index`` (indices : uint32[]) =
+    let ``FindNextIndex finds the smallest An as the next index`` (indices : uint32[]) =
         ``FindNextIndex finds the next index``
             (fun ix -> IxOp<_,_>.Apply(ix, FermionicOperator.An))
-            (>=)
+            (<=)
             indices
 
     [<Property>]
@@ -102,8 +102,8 @@ module FermionicOperator_CanonicalSort =
         |> Assert.True
 
     [<Property>]
-    let ``ChunkByIndex returns chunks in index order`` (ixops : IxOp<uint32, FermionicOperator>[]) =
-        let chunksAreInIndexOrder result (curr : PIxOp<_,_>) =
+    let ``ChunkByIndex returns chunks in order`` (ixops : IxOp<uint32, FermionicOperator>[]) =
+        let chunkIndicesAreInOrder result (curr : PIxOp<_,_>) =
             let (prevIndex, inOrder) = result
             match prevIndex with
             | None ->
@@ -117,32 +117,32 @@ module FermionicOperator_CanonicalSort =
             | Some firstOp ->
                 findNextIndex curr.IndexedOps
                 |> Option.map (fun (secondOp, _) ->
-                    (Some secondOp, inOrder && FermionicOperator.InIndexOrder(firstOp, secondOp)))
+                    (Some secondOp, inOrder && FermionicOperator.InOperatorOrder(firstOp, secondOp)))
                 |> Option.defaultValue (None, false)
 
         ixops
         |> chunkByIndex
-        |> Array.fold chunksAreInIndexOrder (None, true)
+        |> Array.fold chunkIndicesAreInOrder (None, true)
         |> snd
         |> Assert.True
 
     [<Fact>]
-    let ``ChunkByIndex returns chunks in index order (Regression 1)`` () =
+    let ``ChunkByIndex returns chunks in order (Regression 1)`` () =
         [|
         |]
-        |> ``ChunkByIndex returns chunks in index order``
+        |> ``ChunkByIndex returns chunks in order``
 
     [<Fact>]
-    let ``ChunkByIndex returns chunks in index order (Regression 2)`` () =
+    let ``ChunkByIndex returns chunks in order (Regression 2)`` () =
         [|
             IxOp<_,_>.Apply (0u, FermionicOperator.An)
             IxOp<_,_>.Apply (1u, FermionicOperator.An)
             IxOp<_,_>.Apply (0u, FermionicOperator.Cr)
         |]
-        |> ``ChunkByIndex returns chunks in index order``
+        |> ``ChunkByIndex returns chunks in order``
 
     [<Fact>]
-    let ``ChunkByIndex returns chunks in index order (Regression 3)`` () =
+    let ``ChunkByIndex returns chunks in order (Regression 3)`` () =
         [|
             IxOp<_,_>.Apply (0u, FermionicOperator.An)
             IxOp<_,_>.Apply (1u, FermionicOperator.An)
@@ -152,10 +152,10 @@ module FermionicOperator_CanonicalSort =
             IxOp<_,_>.Apply (5u, FermionicOperator.An)
             IxOp<_,_>.Apply (6u, FermionicOperator.An)
         |]
-        |> ``ChunkByIndex returns chunks in index order``
+        |> ``ChunkByIndex returns chunks in order``
 
     [<Fact>]
-    let ``ChunkByIndex returns chunks in index order (Regression 4)`` () =
+    let ``ChunkByIndex returns chunks in order (Regression 4)`` () =
         [|
             IxOp<_,_>.Apply (0u, FermionicOperator.Cr)
             IxOp<_,_>.Apply (1u, FermionicOperator.Cr)
@@ -165,10 +165,10 @@ module FermionicOperator_CanonicalSort =
             IxOp<_,_>.Apply (5u, FermionicOperator.Cr)
             IxOp<_,_>.Apply (6u, FermionicOperator.Cr)
         |]
-        |> ``ChunkByIndex returns chunks in index order``
+        |> ``ChunkByIndex returns chunks in order``
 
     [<Fact>]
-    let ``ChunkByIndex returns chunks in index order (Regression 5)`` () =
+    let ``ChunkByIndex returns chunks in order (Regression 5)`` () =
         let ixops =
             [|
                 IxOp<_,_>.Apply (0u, FermionicOperator.An)
@@ -183,12 +183,12 @@ module FermionicOperator_CanonicalSort =
         Assert.Equal (ixops.Length, chunked.Length)
         Assert.Equal<IEnumerable<uint32>>
             (
-                ixops   |> Seq.map (fun io -> io.Index) |> Seq.rev,
+                ixops   |> Seq.map (fun io -> io.Index),
                 chunked |> Seq.map (fun pi -> pi.IndexedOps.[0].Index)
             )
 
     [<Fact>]
-    let ``ChunkByIndex returns chunks in index order (Regression 6)`` () =
+    let ``ChunkByIndex returns chunks in order (Regression 6)`` () =
         let ixops =
             [|
                 IxOp<_,_>.Apply (0u, FermionicOperator.Cr)

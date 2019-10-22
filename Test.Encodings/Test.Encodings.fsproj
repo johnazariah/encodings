@@ -14,9 +14,7 @@
     <Compile Include="Terms_IxOp.fs" />
     <Compile Include="Terms_CIxOp.fs" />
     <Compile Include="Terms_PIxOp.fs" />
-    <Compile Include="Terms_PIxWkOp.fs" />
     <Compile Include="Terms_SIxOp.fs" />
-    <Compile Include="Terms_SIxWkOp.fs" />
     <Compile Include="PauliRegister.fs" />
     <Compile Include="FermionicOperator_CanonicalSort.fs" />
     <Compile Include="FermionicOperator_JordanWigner.fs" />

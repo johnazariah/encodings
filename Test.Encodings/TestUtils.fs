@@ -38,9 +38,3 @@ module TestUtils
 
         member this.IsIdentity = false
         static member (<*>) (l, r)     = failwith "NYI"
-
-        static member InIndexOrder    (a : IxOp<uint32, CChar>, b : IxOp<uint32, CChar>) = a.Index >= b.Index
-        static member InOperatorOrder (a : IxOp<uint32, CChar>, b : IxOp<uint32, CChar>) = a.Op    >  b.Op
-        static member ToOperatorOrder (a : IxOp<uint32, CChar>, b : IxOp<uint32, CChar>) : C<IxOp<uint32, CChar>[]>[] = failwith "FYI"
-        static member ToIndexOrder    (a : IxOp<uint32, CChar>, b : IxOp<uint32, CChar>) : C<IxOp<uint32, CChar>[]>[] = failwith "FYI"
-        static member NextIndexLocation (target : CChar, ops : IxOp<uint32, CChar>[]) : uint32 option = failwith "FYI"

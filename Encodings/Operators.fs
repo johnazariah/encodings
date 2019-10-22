@@ -44,7 +44,6 @@ module Operators =
             | (Z, X) -> C<Pauli>.Pi Y
             | (X, Z) -> C<Pauli>.Mi Y
 
-
     type FermionicOperator =
         | I
         | Cr
@@ -74,6 +73,7 @@ module Operators =
 
         static member inline FromString (s : string) =
             FermionicOperator.Apply <| s.Chars 0
+
         static member InIndexOrder (a : IxOp<uint32, FermionicOperator>, b : IxOp<uint32, FermionicOperator>) =
             match (a.Op, b.Op) with
             | _, I   -> true
@@ -141,7 +141,7 @@ module Operators =
                         | Cr, Cr -> if (bestItem.Index < curr.Index) then best else here
                         | Cr, An -> best
                         | An, Cr -> here
-                        | An, An -> if (bestItem.Index > curr.Index) then best else here
+                        | An, An -> if (bestItem.Index < curr.Index) then best else here
                 (index + 1, best')
             rg
             |> Array.fold folder (0, None)
