@@ -117,12 +117,18 @@ module Terms =
                     |> curry S< ^term >.Apply Complex.One
 
         static member inline (<*>) (l : S< ^term >, r : S< ^term >) =
-            [|
-                for lt in l.Terms do
-                    for rt in r.Terms do
-                        yield S< ^term >.Term_Combine (lt, rt)
-            |]
-            |> curry S<_>.Apply Complex.One
+            let terms =
+                match l.Terms, r.Terms with
+                | [| |], rt -> rt
+                | lt, [| |] -> lt
+                | lt, rt ->
+                    [|
+                        for lt in l.Terms do
+                            for rt in r.Terms do
+                                yield S< ^term >.Term_Combine (lt, rt)
+                    |]
+            let raw = S<_>.Apply ((l.Coeff * r.Coeff), terms)
+            raw.Reduce.Value
 
         static member inline (<+>) (l : S< ^term >, r : S< ^term >) =
             [|

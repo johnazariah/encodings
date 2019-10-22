@@ -222,8 +222,8 @@ module FermionicOperator_CanonicalSort =
         | None -> Assert.True (false)
 
     [<Theory>]
-    //[<InlineData("", "{}")>]
-    //[<InlineData("[]", "{}")>]
+    [<InlineData("", "{}")>]
+    [<InlineData("[]", "{}")>]
     [<InlineData("[(R,1)|(I,1)]", "{[(R,1)]}")>]
     [<InlineData("[(I,1)|(L,1)]", "{[(L,1)]}")>]
     [<InlineData("[(R,1)|(R,1)]", "{}")>]
@@ -238,6 +238,27 @@ module FermionicOperator_CanonicalSort =
                 |> chunkByIndex
                 |> Array.map sortChunk
                 |> (fun rg -> rg.[0])
+                |> (prettyPrintSIxOp >> shrinkString)
+            Assert.Equal (expected, actual)
+        | None -> Assert.True (false)
+
+    [<Theory>]
+    [<InlineData("[(R,1)|(I,1)]", "{[(R,1)]}")>]
+    [<InlineData("[(I,1)|(L,1)]", "{[(L,1)]}")>]
+    [<InlineData("[(R,1)|(R,1)]", "{}")>]
+    [<InlineData("[(L,1)|(L,1)]", "{}")>]
+    [<InlineData("[(R,1)|(L,1)]", "{[(R,1)|(L,1)]}")>]
+    [<InlineData("[(L,1)|(R,1)]", "{[1];-[(R,1)|(L,1)]}")>]
+    [<InlineData("[(R,1)|(L,1)|(R,2)|(L,2)]", "{[(R,1)|(L,1)|(R,2)|(L,2)]}")>]
+    [<InlineData("[(R,2)|(L,2)|(R,1)|(L,1)]", "{[(R,1)|(L,1)|(R,2)|(L,2)]}")>]
+    [<InlineData("[(L,1)|(R,1)|(R,2)|(L,2)]", "{-[(R,1)|(L,1)|(R,2)|(L,2)];[(R,2)|(L,2)]}")>]
+    let ``SortChunks sorts chunk product terms`` (input, expected) =
+        match PIxOpFromString FermionicOperator.FromString input with
+        | Some pixop ->
+            let actual =
+                pixop.IndexedOps
+                |> chunkByIndex
+                |> sortChunks
                 |> (prettyPrintSIxOp >> shrinkString)
             Assert.Equal (expected, actual)
         | None -> Assert.True (false)

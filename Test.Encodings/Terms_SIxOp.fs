@@ -24,7 +24,7 @@ module Terms_SIxOp =
     [<Theory>]
     [<InlineData("{[(R,1)|(R,2)]}", "{[(R,1)|(R,2)]}", "{[(R,1)|(R,2)|(R,1)|(R,2)]}")>]
     [<InlineData("{[(R,1)|(R,2)];[(L,1)|(L,2)]}", "{[(R,1)|(R,2)]}", "{[(L,1)|(L,2)|(R,1)|(R,2)];[(R,1)|(R,2)|(R,1)|(R,2)]}")>]
-    [<InlineData("{[(R,1)|(R,2)];[(L,1)|(L,2)]}", "{}", "{}")>]
+    [<InlineData("{[(R,1)|(R,2)];[(L,1)|(L,2)]}", "{}", "{[(L,1)|(L,2)];[(R,1)|(R,2)]}")>]
     [<InlineData("{}", "{}", "{}")>]
     let ``S * S is computed correctly``(leftStr, rightStr, expected) =
         let left  = SIxOpFromString FermionicOperator.FromString leftStr

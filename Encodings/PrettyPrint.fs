@@ -70,7 +70,9 @@ module PrettyPrint =
         (this : PIxOp<uint32, ^op>) =
         let isIdentity op = (^op : (member IsIdentity : bool)(op))
 
-        if isIdentity this.IndexedOps.[0].Op then
+        if this.IsZero then
+            ""
+        else if isIdentity this.IndexedOps.[0].Op then
             sprintf "%s [1]" (prettyPrintPhase this.Coeff)
         else
             this.IndexedOps

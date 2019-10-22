@@ -272,7 +272,7 @@ module FermionicOperator_Order =
         |> Array.map (fun c -> CIxOp<_,_>.Apply(c.Coeff, c.Thunk))
         |> curry PIxOp<_,_>.Apply Complex.One
 
-    let chunkByIndex (rg : IxOp<uint32, FermionicOperator>[]) : PIxOp<uint32, FermionicOperator>[]=
+    let chunkByIndex (rg : IxOp<_,_>[]) =
         let getChunkWithIndex input (headItem, _) =
             let rec buildChunk target (chunk, remainder) =
                 match findLocationOfNextItemWithIndex target remainder with
@@ -294,8 +294,12 @@ module FermionicOperator_Order =
             | None -> (chunks, [||])
             | Some (chunk, rest) -> makeChunks ([| yield! chunks; chunk |], rest)
 
-        makeChunks ([||], rg)
-        |> fst
+        match rg with
+        | [| |] ->
+            [| PIxOp<_,_>.Unit |]
+        | _ ->
+            makeChunks ([| |], rg)
+            |> fst
 
     let internal sortChunk (chunk : PIxOp<_,_>) =
         let sortOpsWithSameIndex (left : IxOp<_,_>, right : IxOp<_,_>) =
@@ -363,8 +367,10 @@ module FermionicOperator_Order =
 
         SIxOp<_,_>.Apply (Complex.One, sortedChunk)
 
-    let sortChunks =
-        Array.map sortChunk //>> Array.fold (<*>) SIxOp<_,_>.Unit
+    let sortChunks chunks =
+        let sorted = chunks |> Array.map sortChunk
+        let folded = sorted |> Array.fold (<*>) SIxOp<_,_>.Unit
+        folded
 
     let toCanonicalOrder (input : IxOp<uint32, FermionicOperator>[]) : SIxOp<uint32, FermionicOperator> =
         failwith "NYI"
