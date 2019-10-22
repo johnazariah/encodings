@@ -3,7 +3,7 @@
 open FsCheck.Xunit
 open System.Numerics
 open Encodings
-open Encodings.FermionicOperator_Order
+open FermionicOperator_Order
 open Xunit
 open System.Collections.Generic
 

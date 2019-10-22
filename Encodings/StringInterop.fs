@@ -7,11 +7,6 @@ module StringInterop =
 
     let inline IxOpFromString< ^op
                         when ^op : equality
-                        and  ^op : (static member InIndexOrder    : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> bool)
-                        and  ^op : (static member InOperatorOrder : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> bool)
-                        and  ^op : (static member ToIndexOrder    : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
-                        and  ^op : (static member ToOperatorOrder : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
-                        and  ^op : (static member NextIndexLocation : ^op * IxOp<uint32, ^op >[] -> uint32 option )
                         and  ^op : comparison>
         (unitFactory : string ->  ^op  option)
         (s : System.String) =
@@ -30,11 +25,6 @@ module StringInterop =
     let inline PIxOpFromString< ^op
                         when ^op : equality
                         and  ^op : (member IsIdentity  : bool)
-                        and  ^op : (static member InIndexOrder    : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> bool)
-                        and  ^op : (static member InOperatorOrder : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> bool)
-                        and  ^op : (static member ToIndexOrder    : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
-                        and  ^op : (static member ToOperatorOrder : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
-                        and  ^op : (static member NextIndexLocation : ^op * IxOp<uint32, ^op >[] -> uint32 option )
                         and  ^op : comparison>
         (unitFactory : string ->  ^op  option)
         (s : System.String) : PIxOp<uint32, ^op > option =
@@ -49,11 +39,6 @@ module StringInterop =
     let inline SIxOpFromString< ^op
                         when ^op : equality
                         and  ^op : (member IsIdentity  : bool)
-                        and  ^op : (static member InIndexOrder    : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> bool)
-                        and  ^op : (static member InOperatorOrder : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> bool)
-                        and  ^op : (static member ToIndexOrder    : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
-                        and  ^op : (static member ToOperatorOrder : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
-                        and  ^op : (static member NextIndexLocation : ^op * IxOp<uint32, ^op >[] -> uint32 option )
                         and  ^op : comparison>
         (unitFactory : string ->  ^op  option)
         (s : System.String) : SIxOp<uint32, ^op > option =

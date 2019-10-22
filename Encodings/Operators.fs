@@ -66,16 +66,14 @@ module Operators =
                 | Cr -> "R"
                 | An -> "L"
 
-        member inline this.IsIdentity = match this with | I  -> true | _ -> false
+        override this.ToString() = this.AsLadderOperatorString.Value
 
-        override this.ToString() =
-            this.AsLadderOperatorString.Value
+        member inline this.IsIdentity = match this with | I  -> true | _ -> false
 
         static member inline Identity = I
 
         static member inline FromString (s : string) =
             FermionicOperator.Apply <| s.Chars 0
-
         static member InIndexOrder (a : IxOp<uint32, FermionicOperator>, b : IxOp<uint32, FermionicOperator>) =
             match (a.Op, b.Op) with
             | _, I   -> true
@@ -93,98 +91,6 @@ module Operators =
             | An, Cr -> false
             | Cr, Cr -> true
             | An, An -> true
-
-        static member ToOperatorOrder (a : IxOp<uint32, FermionicOperator>, b : IxOp<uint32, FermionicOperator>) : C<IxOp<uint32, FermionicOperator>[]>[] =
-            match (a.Op, b.Op) with
-            | _, I ->
-                [|
-                    C<_>.Apply(Complex.One, [| a |])
-                |]
-            | I, _ ->
-                [|
-                    C<_>.Apply(Complex.One, [| b |])
-                |]
-            | An, Cr ->
-                if a.Index = b.Index then
-                    [|
-                        C<_>.Apply(Complex.One, [| IxOp<_,_>.Apply(0u, I) |])
-                        C<_>.Apply(Complex.MinusOne, [| b; a |])
-                    |]
-                else
-                    [|
-                        C<_>.Apply(Complex.MinusOne, [| b; a |])
-                    |]
-            | _, _ ->
-                [|
-                    C<_>.Apply(Complex.MinusOne, [| b; a |])
-                |]
-
-        static member ToIndexOrder (a : IxOp<uint32, FermionicOperator>, b : IxOp<uint32, FermionicOperator>) : C<IxOp<uint32, FermionicOperator>[]>[] =
-            match (a.Op, b.Op) with
-            | _, I ->
-                [|
-                    C<_>.Apply(Complex.One, [| a |])
-                |]
-            | I, _ ->
-                [|
-                    C<_>.Apply(Complex.One, [| b |])
-                |]
-            | Cr, An ->
-                [|
-                    C<_>.Apply(Complex.One, [| a; b |])
-                |]
-            | An, Cr ->
-                if a.Index = b.Index then
-                    [|
-                        C<_>.Apply(Complex.One, [| IxOp<_,_>.Apply(0u, I) |])
-                        C<_>.Apply(Complex.MinusOne, [| b; a |])
-                    |]
-                else
-                    [|
-                        C<_>.Apply(Complex.MinusOne, [| b; a |])
-                    |]
-            | Cr, Cr ->
-                if a.Index > b.Index then
-                    [|
-                        C<_>.Apply(Complex.MinusOne, [| b; a |])
-                    |]
-                else
-                    [|
-                        C<_>.Apply(Complex.One, [| a; b |])
-                    |]
-            | An, An ->
-                if a.Index < b.Index then
-                    [|
-                        C<_>.Apply(Complex.MinusOne, [| b; a |])
-                    |]
-                else
-                    [|
-                        C<_>.Apply(Complex.One, [| a; b |])
-                    |]
-
-        static member NextIndexLocation (target : FermionicOperator, items : IxOp<uint32, FermionicOperator>[]) : uint32 option =
-            let findLocationOfMatched pred t =
-                Array.fold
-                    (fun (matched, index) curr ->
-                        let matched' =
-                            if (curr.Op = t) then
-                                matched
-                                |> Option.map (fun (item, location) -> if (pred curr.Index item.Index) then (curr, index) else (item, location))
-                                |> Option.defaultValue (curr, index)
-                                |> Some
-                            else
-                                matched
-                        (matched', index + 1u))
-                    (None, 0u)
-
-            let findLocationOfMaximumIndex = findLocationOfMatched (>)
-            let findLocationOfMinimumIndex = findLocationOfMatched (<)
-            let findLocationOfNextIndex    = findLocationOfMatched (fun _ _ -> true)
-
-            match target with
-            | An -> findLocationOfMaximumIndex target items |> (fun (f, s) -> f |> Option.map (fun _ -> s))
-            | Cr -> findLocationOfMinimumIndex target items |> (fun (f, s) -> f |> Option.map (fun _ -> s))
-            | I  -> findLocationOfNextIndex    target items |> (fun (f, s) -> f |> Option.map (fun _ -> s))
 
     type IndexedFermionicOperator =
         | InFmOp of IxOp<uint32, FermionicOperator>
@@ -219,213 +125,221 @@ module Operators =
                 |> curry SR<Pauli>.Apply Complex.One
                 |> Some
 
-module FermionicOperator_Order =
-    open System.Numerics
+    module FermionicOperator_Order =
+        open System.Numerics
 
-    let internal findNextIndex (rg : IxOp<uint32, FermionicOperator>[]) =
-        let folder (index, best) (curr : IxOp<uint32, FermionicOperator>)=
-            let here = Some (curr, index)
-            let best' =
-                match best with
-                | None -> here
-                | Some (bestItem, _) ->
-                    match bestItem.Op, curr.Op with
-                    | _, I -> best
-                    | I, _ -> here
-                    | Cr, Cr -> if (bestItem.Index < curr.Index) then best else here
-                    | Cr, An -> best
-                    | An, Cr -> here
-                    | An, An -> if (bestItem.Index > curr.Index) then best else here
-            (index + 1, best')
-        rg
-        |> Array.fold folder (0, None)
-        |> snd
+        let internal findNextIndex (rg : IxOp<uint32, FermionicOperator>[]) =
+            let folder (index, best) (curr : IxOp<uint32, FermionicOperator>)=
+                let here = Some (curr, index)
+                let best' =
+                    match best with
+                    | None -> here
+                    | Some (bestItem, _) ->
+                        match bestItem.Op, curr.Op with
+                        | _, I -> best
+                        | I, _ -> here
+                        | Cr, Cr -> if (bestItem.Index < curr.Index) then best else here
+                        | Cr, An -> best
+                        | An, Cr -> here
+                        | An, An -> if (bestItem.Index > curr.Index) then best else here
+                (index + 1, best')
+            rg
+            |> Array.fold folder (0, None)
+            |> snd
 
-    let internal behead (index : int) (rg : IxOp<uint32, FermionicOperator>[]) =
-        let pre  = if index = 0 then [| |] else rg.[ .. (index - 1)]
-        let post = if index = rg.Length then [| |] else rg.[(index + 1) .. ]
-        let remainder =
-            [|
-                yield! pre
-                yield! post
-            |]
-        let coeff = if index % 2 = 0 then Complex.One else Complex.MinusOne
-        let head = C<_>.Apply(coeff, rg.[index])
-        (head, remainder)
-
-    let internal findLocationOfNextItemWithIndex (target : uint32) (rg : IxOp<uint32, FermionicOperator>[]) =
-        rg
-        |> Array.fold
-            (fun (index, result) curr ->
-                match result with
-                | Some _ -> (index + 1, result)
-                | None ->
-                    if (target = curr.Index) then
-                        (index + 1, Some index)
-                    else
-                        (index + 1, None))
-            (0, None)
-        |> snd
-
-    let internal chunkByIndex (rg : IxOp<_,_>[]) =
-        let getChunkWithIndex input (headItem, _) =
-            let toPixOp =
-                Array.map (fun c -> CIxOp<_,_>.Apply(c.Coeff, c.Thunk))
-                >> curry PIxOp<_,_>.Apply Complex.One
-
-            let rec buildChunk target (chunk, remainder) =
-                match findLocationOfNextItemWithIndex target remainder with
-                | None -> (chunk, remainder)
-                | Some location ->
-                    let (head, tail) = behead location remainder
-                    buildChunk target ([| yield! chunk; head |], tail)
-
-            buildChunk headItem.Index ([||], input)
-            |> (fun (h, t) -> (toPixOp h, t))
-
-        let findNextChunk input =
-            input
-            |> findNextIndex
-            |> Option.map (getChunkWithIndex input)
-
-        let rec makeChunks (chunks, remainder) =
-            match findNextChunk remainder with
-            | None -> (chunks, [||])
-            | Some (chunk, rest) -> makeChunks ([| yield! chunks; chunk |], rest)
-
-        match rg with
-        | [| |] ->
-            [| PIxOp<_,_>.Unit |]
-        | _ ->
-            makeChunks ([| |], rg)
-            |> fst
-
-    let internal sortChunk (chunk : PIxOp<_,_>) =
-        let sortOpsWithSameIndex (left : IxOp<_,_>, right : IxOp<_,_>) =
-            if (left.Index <> right.Index) then
-                failwith "A chunk cannot have heterogenous indices"
-            else
-                match (left.Op, right.Op) with
-                | _, I ->
-                    [|
-                        PIxOp<_,_>.Apply(
-                            Complex.One,
-                            [|
-                                CIxOp<_,_>.Apply(Complex.One, left)
-                            |])
-                    |]
-                | I, _ ->
-                    [|
-                        PIxOp<_,_>.Apply(
-                            Complex.One,
-                            [|
-                                CIxOp<_,_>.Apply(Complex.One, right)
-                            |])
-                    |]
-                | An, Cr ->
-                    [|
-                        PIxOp<_,_>.Apply(
-                            Complex.One,
-                            [|
-                                CIxOp<_,_>.Apply(Complex.One, IxOp<_,_>.Apply (0u, I))
-                            |])
-
-                        PIxOp<_,_>.Apply(
-                            Complex.MinusOne,
-                            [|
-                                CIxOp<_,_>.Apply(Complex.One, right)
-                                CIxOp<_,_>.Apply(Complex.One, left)
-                            |])
-                    |]
-                | Cr, An ->
-                    [|
-                        PIxOp<_,_>.Apply(
-                            Complex.One,
-                            [|
-                                CIxOp<_,_>.Apply(Complex.One, left)
-                                CIxOp<_,_>.Apply(Complex.One, right)
-                            |])
-                    |]
-                | _, _ ->
-                    [| |]
-
-        let sortedChunk =
-            match chunk.IndexedOps.Length with
-            | 0 ->
+        let internal behead (index : int) (rg : IxOp<uint32, FermionicOperator>[]) =
+            let pre  = if index = 0 then [| |] else rg.[ .. (index - 1)]
+            let post = if index = rg.Length then [| |] else rg.[(index + 1) .. ]
+            let remainder =
                 [|
+                    yield! pre
+                    yield! post
                 |]
-            | 1 ->
+            let coeff = if index % 2 = 0 then Complex.One else Complex.MinusOne
+            let head = C<_>.Apply(coeff, rg.[index])
+            (head, remainder)
+
+        let internal findLocationOfNextItemWithIndex (target : uint32) (rg : IxOp<uint32, FermionicOperator>[]) =
+            rg
+            |> Array.fold
+                (fun (index, result) curr ->
+                    match result with
+                    | Some _ -> (index + 1, result)
+                    | None ->
+                        if (target = curr.Index) then
+                            (index + 1, Some index)
+                        else
+                            (index + 1, None))
+                (0, None)
+            |> snd
+
+        let internal chunkByIndex (rg : IxOp<uint32, FermionicOperator>[]) =
+            let getChunkWithIndex input (headItem, _) =
+                let toPixOp =
+                    Array.map (fun c -> CIxOp<uint32, FermionicOperator>.Apply(c.Coeff, c.Thunk))
+                    >> curry PIxOp<uint32, FermionicOperator>.Apply Complex.One
+
+                let rec buildChunk target (chunk, remainder) =
+                    match findLocationOfNextItemWithIndex target remainder with
+                    | None -> (chunk, remainder)
+                    | Some location ->
+                        let (head, tail) = behead location remainder
+                        buildChunk target ([| yield! chunk; head |], tail)
+
+                buildChunk headItem.Index ([||], input)
+                |> (fun (h, t) -> (toPixOp h, t))
+
+            let findNextChunk input =
+                input
+                |> findNextIndex
+                |> Option.map (getChunkWithIndex input)
+
+            let rec makeChunks (chunks, remainder) =
+                match findNextChunk remainder with
+                | None -> (chunks, [||])
+                | Some (chunk, rest) -> makeChunks ([| yield! chunks; chunk |], rest)
+
+            match rg with
+            | [| |] ->
+                [| PIxOp<uint32, FermionicOperator>.Unit |]
+            | _ ->
+                makeChunks ([| |], rg)
+                |> fst
+
+        let internal sortChunk (chunk : PIxOp<uint32, FermionicOperator>) =
+            let sortOpsWithSameIndex (left : IxOp<_,_>, right : IxOp<_,_>) =
+                if (left.Index <> right.Index) then
+                    failwith "A chunk cannot have heterogenous indices"
+                else
+                    match (left.Op, right.Op) with
+                    | _, I ->
+                        [|
+                            PIxOp<_,_>.Apply(
+                                Complex.One,
+                                [|
+                                    CIxOp<_,_>.Apply(Complex.One, left)
+                                |])
+                        |]
+                    | I, _ ->
+                        [|
+                            PIxOp<_,_>.Apply(
+                                Complex.One,
+                                [|
+                                    CIxOp<_,_>.Apply(Complex.One, right)
+                                |])
+                        |]
+                    | An, Cr ->
+                        [|
+                            PIxOp<_,_>.Apply(
+                                Complex.One,
+                                [|
+                                    CIxOp<_,_>.Apply(Complex.One, IxOp<_,_>.Apply (0u, I))
+                                |])
+
+                            PIxOp<_,_>.Apply(
+                                Complex.MinusOne,
+                                [|
+                                    CIxOp<_,_>.Apply(Complex.One, right)
+                                    CIxOp<_,_>.Apply(Complex.One, left)
+                                |])
+                        |]
+                    | Cr, An ->
+                        [|
+                            PIxOp<_,_>.Apply(
+                                Complex.One,
+                                [|
+                                    CIxOp<_,_>.Apply(Complex.One, left)
+                                    CIxOp<_,_>.Apply(Complex.One, right)
+                                |])
+                        |]
+                    | _, _ ->
+                        [| |]
+
+            let sortedChunk =
+                match chunk.IndexedOps.Length with
+                | 0 ->
+                    [|
+                    |]
+                | 1 ->
+                    [|
+                        chunk
+                    |]
+                | 2 ->
+                    (chunk.IndexedOps.[0], chunk.IndexedOps.[1])
+                    |> sortOpsWithSameIndex
+                    |> Array.map (fun p -> p.ScaleCoefficient chunk.Coeff)
+                | _ -> failwith "what do we do here?"
+
+            SIxOp<_,_>.Apply (Complex.One, sortedChunk)
+
+        let internal sortChunks chunks =
+            chunks
+            |> Array.map sortChunk
+            |> Array.fold (<*>) SIxOp<uint32, FermionicOperator>.Unit
+
+        let internal chunkByIndexToTuples (input : PIxOp<_,_>) =
+            let toTuple (chunk : PIxOp<_,_>) =
+                let rec toTuple' (fs, ss) (rest : IxOp<_,_>[]) =
+                    match rest.Length with
+                    | 0 -> (fs, ss)
+                    | _ ->
+                        let h = rest.[0]
+                        let remainder = rest.[1..]
+                        match h.Op with
+                        | Cr -> toTuple' (([| yield! fs; h;|]), ss) remainder
+                        | An -> toTuple' (fs, ([| yield! ss; h;|])) remainder
+                        | I  -> toTuple' ([| h |], [| |]) remainder
+                toTuple' ([| |], [| |]) chunk.Reduce.IndexedOps
+
+            chunkByIndex input.Reduce.IndexedOps
+            |> Array.map toTuple
+
+        let internal pivotTuples (rfs : C<IxOp<_,_>[]>, rss : C<IxOp<_,_>[]>) (fs : IxOp<_,_>[], ss : IxOp<_,_>[]) =
+            let appendfs c (rfs : C<IxOp<_,_>[]>) (f : IxOp<_,_>) =
+                [| yield! rfs.Thunk; yield f |]
+                |> curry C<_>.Apply (rfs.Coeff * c)
+
+            let prependss (rss : C<IxOp<_,_>[]>) (s : IxOp<_,_>) =
+                let coeff' = if rss.Thunk.Length % 2 = 0 then Complex.One else Complex.MinusOne
+                [| yield s; yield! rss.Thunk |]
+                |> curry C<_>.Apply (rss.Coeff * coeff')
+
+            let cf = if rss.Thunk.Length % 2 = 0 then Complex.One else Complex.MinusOne
+            let rfs' = fs |> Array.fold (appendfs cf) rfs
+            let rss' = ss |> Array.fold (prependss  ) rss
+            (rfs', rss')
+
+        let toCanonicalOrder (input : PIxOp<_,_>) : SIxOp<_,_> =
+            let toPixOp (fs : C<IxOp<_,_>[]>, ss : C<IxOp<_,_>[]>) =
                 [|
-                    chunk
+                    yield! (fs.Thunk |> Array.map (curry CIxOp<_,_>.Apply Complex.One))
+                    yield! (ss.Thunk |> Array.map (curry CIxOp<_,_>.Apply Complex.One))
                 |]
-            | 2 ->
-                (chunk.IndexedOps.[0], chunk.IndexedOps.[1])
-                |> sortOpsWithSameIndex
-                |> Array.map (fun p -> p.ScaleCoefficient chunk.Coeff)
-            | _ -> failwith "what do we do here?"
+                |> curry PIxOp<_,_>.Apply (fs.Coeff * ss.Coeff)
 
-        SIxOp<_,_>.Apply (Complex.One, sortedChunk)
+            let sortSingleTerm term =
+                let chunked =
+                    term
+                    |> chunkByIndexToTuples
+                let sorted =
+                    chunked
+                    |> Array.fold pivotTuples (C<IxOp<_,_>[]>.Apply(Complex.One, [| |]), C<IxOp<_,_>[]>.Apply(Complex.One, [| |]))
+                let result =
+                    sorted
+                    |> toPixOp
+                result.ScaleCoefficient term.Coeff
 
-    let internal sortChunks chunks =
-        chunks
-        |> Array.map sortChunk
-        |> Array.fold (<*>) SIxOp<_,_>.Unit
+            chunkByIndex input.IndexedOps
+            |> sortChunks
+            |> (fun s -> s.Terms)
+            |> Array.map sortSingleTerm
+            |> curry SIxOp<uint32,FermionicOperator>.Apply input.Coeff
 
-    let internal chunkByIndexToTuples (input : PIxOp<_,_>) =
-        let toTuple (chunk : PIxOp<_,_>) =
-            let rec toTuple' (fs, ss) (rest : IxOp<_,_>[]) =
-                match rest.Length with
-                | 0 -> (fs, ss)
-                | _ ->
-                    let h = rest.[0]
-                    let remainder = rest.[1..]
-                    match h.Op with
-                    | Cr -> toTuple' (([| yield! fs; h;|]), ss) remainder
-                    | An -> toTuple' (fs, ([| yield! ss; h;|])) remainder
-                    | I  -> toTuple' ([| h |], [| |]) remainder
-            toTuple' ([| |], [| |]) chunk.Reduce.IndexedOps
+    type FermionicOperator with
+        static member ToCanonicalOrder (input : PIxOp<uint32, FermionicOperator>) : SIxOp<uint32, FermionicOperator> =
+            input |> FermionicOperator_Order.toCanonicalOrder
 
-        chunkByIndex input.Reduce.IndexedOps
-        |> Array.map toTuple
-
-    let internal pivotTuples (rfs : C<IxOp<_,_>[]>, rss : C<IxOp<_,_>[]>) (fs : IxOp<_,_>[], ss : IxOp<_,_>[]) =
-        let appendfs c (rfs : C<IxOp<_,_>[]>) (f : IxOp<_,_>) =
-            [| yield! rfs.Thunk; yield f |]
-            |> curry C<_>.Apply (rfs.Coeff * c)
-
-        let prependss (rss : C<IxOp<_,_>[]>) (s : IxOp<_,_>) =
-            let coeff' = if rss.Thunk.Length % 2 = 0 then Complex.One else Complex.MinusOne
-            [| yield s; yield! rss.Thunk |]
-            |> curry C<_>.Apply (rss.Coeff * coeff')
-
-        let cf = if rss.Thunk.Length % 2 = 0 then Complex.One else Complex.MinusOne
-        let rfs' = fs |> Array.fold (appendfs cf) rfs
-        let rss' = ss |> Array.fold (prependss  ) rss
-        (rfs', rss')
-
-    let toCanonicalOrder (input : PIxOp<_,_>) : SIxOp<_,_> =
-        let toPixOp (fs : C<IxOp<_,_>[]>, ss : C<IxOp<_,_>[]>) =
-            [|
-                yield! (fs.Thunk |> Array.map (curry CIxOp<_,_>.Apply Complex.One))
-                yield! (ss.Thunk |> Array.map (curry CIxOp<_,_>.Apply Complex.One))
-            |]
-            |> curry PIxOp<_,_>.Apply (fs.Coeff * ss.Coeff)
-
-        let sortSingleTerm term =
-            let chunked =
-                term
-                |> chunkByIndexToTuples
-            let sorted =
-                chunked
-                |> Array.fold pivotTuples (C<IxOp<_,_>[]>.Apply(Complex.One, [| |]), C<IxOp<_,_>[]>.Apply(Complex.One, [| |]))
-            let result =
-                sorted
-                |> toPixOp
-            result.ScaleCoefficient term.Coeff
-
-        chunkByIndex input.IndexedOps
-        |> sortChunks
-        |> (fun s -> s.Terms)
-        |> Array.map sortSingleTerm
-        |> curry SIxOp<uint32,FermionicOperator>.Apply input.Coeff
-
+        static member ToCanonicalOrder (input : SIxOp<uint32, FermionicOperator>) : SIxOp<uint32, FermionicOperator> =
+            input.Terms
+            |> Array.map FermionicOperator_Order.toCanonicalOrder
+            |> Array.reduce (<+>)

@@ -40,32 +40,17 @@ module PrettyPrint =
 
     let inline prettyPrintIxOp< ^op
                         when ^op : equality
-                        and  ^op : (static member InIndexOrder    : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> bool)
-                        and  ^op : (static member InOperatorOrder : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> bool)
-                        and  ^op : (static member ToIndexOrder    : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
-                        and  ^op : (static member ToOperatorOrder : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
-                        and  ^op : (static member NextIndexLocation : ^op * IxOp<uint32, ^op >[] -> uint32 option )
                         and  ^op : comparison>
         (this : IxOp<uint32, ^op>) = sprintf "(%O, %i)" this.Op this.Index
 
     let inline prettyPrintCIxOp< ^op
                         when ^op : equality
-                        and  ^op : (static member InIndexOrder    : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> bool)
-                        and  ^op : (static member InOperatorOrder : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> bool)
-                        and  ^op : (static member ToIndexOrder    : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
-                        and  ^op : (static member ToOperatorOrder : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
-                        and  ^op : (static member NextIndexLocation : ^op * IxOp<uint32, ^op >[] -> uint32 option )
                         and  ^op : comparison>
         (this : CIxOp<uint32, ^op>) = prettyPrintIxOp< ^op > this.Unapply.Thunk
 
     let inline prettyPrintPIxOp< ^op
                         when ^op : equality
                         and  ^op : (member IsIdentity  : bool)
-                        and  ^op : (static member InIndexOrder    : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> bool)
-                        and  ^op : (static member InOperatorOrder : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> bool)
-                        and  ^op : (static member ToIndexOrder    : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
-                        and  ^op : (static member ToOperatorOrder : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
-                        and  ^op : (static member NextIndexLocation : ^op * IxOp<uint32, ^op >[] -> uint32 option )
                         and ^op : comparison>
         (this : PIxOp<uint32, ^op>) =
         let isIdentity op = (^op : (member IsIdentity : bool)(op))
@@ -85,11 +70,6 @@ module PrettyPrint =
     let inline prettyPrintPIxOps< ^op
                         when ^op : equality
                         and  ^op : (member IsIdentity  : bool)
-                        and  ^op : (static member InIndexOrder    : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> bool)
-                        and  ^op : (static member InOperatorOrder : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> bool)
-                        and  ^op : (static member ToIndexOrder    : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
-                        and  ^op : (static member ToOperatorOrder : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
-                        and  ^op : (static member NextIndexLocation : ^op * IxOp<uint32, ^op >[] -> uint32 option )
                         and  ^op : comparison>
         (this : PIxOp<uint32, ^op>[]) =
         this
@@ -100,11 +80,6 @@ module PrettyPrint =
     let inline prettyPrintSIxOp< ^op
                         when ^op : equality
                         and  ^op : (member IsIdentity  : bool)
-                        and  ^op : (static member InIndexOrder    : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> bool)
-                        and  ^op : (static member InOperatorOrder : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> bool)
-                        and  ^op : (static member ToIndexOrder    : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
-                        and  ^op : (static member ToOperatorOrder : IxOp<uint32, ^op > -> IxOp<uint32, ^op > -> C<IxOp<uint32, ^op >[]>[])
-                        and  ^op : (static member NextIndexLocation : ^op * IxOp<uint32, ^op >[] -> uint32 option )
                         and  ^op : comparison>
         (this : SIxOp<uint32, ^op>) =
         this.Terms

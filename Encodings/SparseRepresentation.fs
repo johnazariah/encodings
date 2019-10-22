@@ -60,31 +60,18 @@ module SparseRepresentation =
             when ^idx : comparison
             and ^op : equality
             and ^op : (member IsIdentity  : bool)
-            and ^op : (static member InIndexOrder    : IxOp< ^idx, ^op > -> IxOp< ^idx, ^op > -> bool)
-            and ^op : (static member InOperatorOrder : IxOp< ^idx, ^op > -> IxOp< ^idx, ^op > -> bool)
-            and ^op : (static member ToIndexOrder    : IxOp< ^idx, ^op > -> IxOp< ^idx, ^op > -> C<IxOp< ^idx, ^op >[]>[])
-            and ^op : (static member ToOperatorOrder : IxOp< ^idx, ^op > -> IxOp< ^idx, ^op > -> C<IxOp< ^idx, ^op >[]>[])
-            and ^op : (static member NextIndexLocation : ^op * IxOp< ^idx, ^op >[] -> ^idx option )
             and ^op : comparison> =
         | ProductTerm of C<IxOp< ^idx, ^op>[]>
     with
         static member inline Op_IsIdentityOperator op =
             (^op : (member IsIdentity              : bool)(op))
-        static member inline Op_InIndexOrder    a b =
-            (^op : (static member InIndexOrder    : IxOp< ^idx, ^op > -> IxOp< ^idx, ^op > -> bool)(a, b))
-        static member inline Op_InOperatorOrder a b =
-            (^op : (static member InOperatorOrder : IxOp< ^idx, ^op > -> IxOp< ^idx, ^op > -> bool)(a, b))
-        static member inline Op_ToOperatorOrder a b =
-            (^op : (static member ToOperatorOrder : IxOp< ^idx, ^op > -> IxOp< ^idx, ^op > -> C<IxOp< ^idx, ^op >[]>[])(a, b))
-        static member inline Op_ToIndexOrder a b =
-            (^op : (static member ToIndexOrder    : IxOp< ^idx, ^op > -> IxOp< ^idx, ^op > -> C<IxOp< ^idx, ^op >[]>[])(a, b))
 
         member inline this.Unapply    = match this with ProductTerm pt -> pt
         member inline this.Coeff      = this.Unapply.Coeff
         member inline this.IndexedOps = this.Unapply.Thunk
 
-        static member inline internal ApplyInternal (coeff, ixops : IxOp<_,_>[]) =
-            let isIdentityTerm (t : IxOp<_,_>) = PIxOp< ^idx, ^op>.Op_IsIdentityOperator t.Op
+        static member inline internal ApplyInternal (coeff, ixops : IxOp< ^idx, ^op>[]) =
+            let isIdentityTerm (t : IxOp< ^idx, ^op>) = PIxOp< ^idx, ^op>.Op_IsIdentityOperator t.Op
             let identityOpExists =
                 ixops
                 |> Array.exists isIdentityTerm
@@ -126,144 +113,6 @@ module SparseRepresentation =
                 (fun result curr -> sprintf "%s%s" result curr.Signature)
                 ""
 
-        member inline this.IsInOperatorOrder =
-            lazy
-                this.IndexedOps
-                |> (fun ops -> ops.IsOrdered PIxOp< ^idx, ^op>.Op_InOperatorOrder)
-
-        member inline this.IsInIndexOrder =
-            lazy
-                this.IsInOperatorOrder.Value &&
-                this.IndexedOps
-                |> (fun ops -> ops.IsOrdered PIxOp< ^idx, ^op>.Op_InIndexOrder)
-
-        static member inline FindItemsWithMatchingIndex (target, (coeff, ixops)) =
-            let findLocationOfMatched pred t =
-                Array.fold
-                    (fun (matched, index) curr ->
-                        let matched' =
-                            if (curr.Op = t) then
-                                matched
-                                |> Option.map (fun (item, location) -> if (pred curr.Index item.Index) then (curr, index) else (item, location))
-                                |> Option.defaultValue (curr, index)
-                                |> Some
-                            else
-                                matched
-                        (matched', index + 1u))
-                    (None, 0u)
-
-            let rec findItemsWithMatchingIndex result target indexedOps =
-                let rec findItemWithMatchingIndex index pre (ops : IxOp<_,_>[]) =
-                    match ops with
-                    | [| |] -> (pre, None, [| |])
-                    | [| first |] ->
-                        if first.Index = index then
-                            (pre, Some first, [| |])
-                        else
-                            (Array.append pre ([| first |]), None, [| |])
-                    | _ ->
-                        let head = ops.[0]
-                        let rest = ops.[1..]
-                        if (head.Index = index) then
-                            (pre, Some head, rest)
-                        else
-                            findItemWithMatchingIndex index ((Array.append pre ([| head |]))) rest
-
-                let includeSingleOp target (curr : IxOp<_,_>)  (c, xs) =
-                    let product = PIxOp<_,_>.Op_ToOperatorOrder curr target
-                    System.Diagnostics.Debug.Assert(product.Length = 1, "algebra limitation: commuting terms with same index produced a sum term!")
-                    (c * product.[0].Coeff, Array.append product.[0].Thunk.[1..] xs)
-
-                let (pre, found, post) = findItemWithMatchingIndex target.Index [| |] indexedOps
-
-                let ((resultCoeff, resultMatching), resultRest) = result
-
-                match found with
-                | Some head ->
-                    let (coeff, swapped) =
-                        Array.foldBack (includeSingleOp head) pre (Complex.One, [| |])
-                    let result' = ((coeff * resultCoeff, Array.append resultMatching [| head |]), Array.append resultRest swapped)
-                    findItemsWithMatchingIndex result' target post
-                | None ->
-                    let result' = ((resultCoeff, resultMatching), Array.append resultRest pre)
-                    result'
-            in
-            findItemsWithMatchingIndex ((coeff, [| |]),[| |]) target ixops
-
-        member inline this.IndexedOpsGroupedByIndex =
-            let rec groupedByIndex (coeff, ixops) (result) =
-                match ixops with
-                | [| |] -> result
-
-                | [| first |] ->
-                    [|
-                        yield! result
-                        yield PIxOp<_,_>.ApplyInternal(coeff, [| first |])
-                    |]
-
-                | _ ->
-                    let first = ixops.[0]
-                    let ((coeff', matching), others) =  PIxOp< ^idx, ^op>.FindItemsWithMatchingIndex (first, (coeff, ixops.[1..]))
-                    [|
-                        yield! result
-                        yield PIxOp<_,_>.ApplyInternal(coeff', [| first; yield! matching |])
-                    |]
-                    |> groupedByIndex (coeff, others)
-            in
-            lazy
-                groupedByIndex (this.Coeff, this.IndexedOps) ([| |])
-
-        member inline this.ToOperatorOrder =
-            let joinTerm (sorted : PIxOp<_,_>) (candidate : PIxOp<_,_>) : PIxOp<_,_> =
-                let rec includeSingleOp (op : IxOp<_,_>) (coeff, pre, post) : PIxOp<_,_> =
-                    let candidate = PIxOp<_,_>.ApplyInternal (coeff, [| yield! pre; op; yield! post |])
-                    if candidate.IsInOperatorOrder.Value then
-                        candidate
-                    else
-                        let swapped = PIxOp<_,_>.Op_ToOperatorOrder (Array.last pre) op
-                        System.Diagnostics.Debug.Assert (swapped.Length = 1, "algebra limitation - commuting terms with different index produced a sum term!")
-                        let swapped' = swapped.[0]
-                        includeSingleOp op (coeff * swapped'.Coeff, (Array.allButLast pre), ([| Array.last pre; yield! post |]))
-
-                candidate.IndexedOps
-                |> Array.fold (fun result curr -> includeSingleOp curr (result.Coeff, result.IndexedOps, [| |])) sorted
-                |> (fun result -> result.ScaleCoefficient candidate.Coeff)
-
-            let sortTerm (chunk : PIxOp<_,_>) : PIxOp<_,_>[] =
-                match chunk.IndexedOps.Length with
-                | 0 -> [| |]
-                | 1 -> [| chunk |]
-                | 2 ->
-                    if chunk.IsInOperatorOrder.Value then
-                        [| chunk |]
-                    else
-                        PIxOp<_,_>.Op_ToOperatorOrder chunk.IndexedOps.[0] chunk.IndexedOps.[1]
-                        |> Array.map (fun c -> PIxOp<_,_>.ApplyInternal(c.Coeff * chunk.Coeff, c.Thunk))
-                | _ -> [| |] // JOHNAZ: bug for bosons!
-
-            let includeChunk (state : PIxOp<_, _>[][]) (chunk : PIxOp<_,_>) : PIxOp<_, _>[][] =
-                if state = [| |] then
-                    [|
-                        sortTerm chunk
-                    |]
-                else
-                    [|
-                        for stateChunk in state do
-                            [|
-                                for sorted in stateChunk do
-                                    for candidate in sortTerm chunk do
-                                        yield joinTerm sorted candidate
-                            |]
-                    |]
-
-            lazy
-                let chunks = this.IndexedOpsGroupedByIndex.Value
-                chunks |> Array.fold includeChunk [| |]
-
-        member inline this.ToIndexOrder =
-            if not this.IsInOperatorOrder.Value then
-                failwith "P term must be in operator (normal) order before being put in index order"
-
         static member inline Apply (coeff : Complex, units : CIxOp< ^idx, ^op >[]) =
             let extractedCoeff = units |> Array.fold (fun coeff curr -> coeff * curr.Coeff) Complex.One
             let indexedOps     = units |> Array.map  (fun curr -> curr.IndexedOp)
@@ -273,11 +122,6 @@ module SparseRepresentation =
             when ^idx : comparison
             and ^op : equality
             and ^op : (member IsIdentity  : bool)
-            and ^op : (static member InIndexOrder    : IxOp< ^idx, ^op > -> IxOp< ^idx, ^op > -> bool)
-            and ^op : (static member InOperatorOrder : IxOp< ^idx, ^op > -> IxOp< ^idx, ^op > -> bool)
-            and ^op : (static member ToIndexOrder    : IxOp< ^idx, ^op > -> IxOp< ^idx, ^op > -> C<IxOp< ^idx, ^op >[]>[])
-            and ^op : (static member ToOperatorOrder : IxOp< ^idx, ^op > -> IxOp< ^idx, ^op > -> C<IxOp< ^idx, ^op >[]>[])
-            and ^op : (static member NextIndexLocation : ^op * IxOp< ^idx, ^op >[] -> ^idx option )
             and ^op : comparison> =
         | SumTerm of S<PIxOp< ^idx, ^op >>
     with
@@ -293,44 +137,10 @@ module SparseRepresentation =
         static member inline Unit = SIxOp< ^idx, ^op >.Apply (Complex.One,  [| PIxOp< ^idx, ^op>.Unit |])
         static member inline Zero = SIxOp< ^idx, ^op >.Apply (Complex.Zero, [| |])
 
-        member inline this.AllTermsIndexOrdered =
-            lazy
-                this.Terms
-                |> Seq.fold
-                    (fun result curr -> result && curr.IsInIndexOrder.Value)
-                    true
-
-        member inline this.AllTermsOperatorOrdered =
-            lazy
-                this.Terms
-                |> Seq.fold
-                    (fun result curr -> result && curr.IsInOperatorOrder.Value)
-                    true
-
-
-        member inline this.ToOperatorOrder =
-            if this.AllTermsOperatorOrdered.Value then
-                lazy this
-            else
-                let sortSingleProductTerm (p : PIxOp< ^idx, ^op >) =
-                    p.ToOperatorOrder.Value
-                    |> Array.map (curry SIxOp< ^idx, ^op>.Apply Complex.One)
-                    |> Array.reduce (<+>)
-
-                lazy
-                    this.Terms
-                    |> Array.map sortSingleProductTerm
-                    |> Array.reduce (<+>)
-
     type PIxOp< ^idx, ^op
             when ^idx : comparison
             and ^op : equality
             and ^op : (member IsIdentity  : bool)
-            and ^op : (static member InIndexOrder    : IxOp< ^idx, ^op > -> IxOp< ^idx, ^op > -> bool)
-            and ^op : (static member InOperatorOrder : IxOp< ^idx, ^op > -> IxOp< ^idx, ^op > -> bool)
-            and ^op : (static member ToIndexOrder    : IxOp< ^idx, ^op > -> IxOp< ^idx, ^op > -> C<IxOp< ^idx, ^op >[]>[])
-            and ^op : (static member ToOperatorOrder : IxOp< ^idx, ^op > -> IxOp< ^idx, ^op > -> C<IxOp< ^idx, ^op >[]>[])
-            and ^op : (static member NextIndexLocation : ^op * IxOp< ^idx, ^op >[] -> ^idx option )
             and ^op : comparison>
     with
         static member inline (+) (l : PIxOp<_,_>, r : PIxOp<_,_>) : SIxOp< ^idx, ^op >=
