@@ -10,7 +10,7 @@ open System.Collections.Generic
 [<Properties (Arbitrary = [|typeof<ComplexGenerator>|], QuietOnSuccess = true) >]
 module FermionicOperator_CanonicalSort =
 
-    let ``FindNextIndex finds the next index`` apply compare indices =
+    let private ``FindNextIndex finds the next index`` apply compare indices =
         let ixops =
             indices
             |> Array.map apply
@@ -252,6 +252,8 @@ module FermionicOperator_CanonicalSort =
         | None -> Assert.True (false)
 
     [<Theory>]
+    [<InlineData("", "{}")>]
+    [<InlineData("[]", "{}")>]
     [<InlineData("[(R,1)|(I,1)]", "{[(R,1)]}")>]
     [<InlineData("[(I,1)|(L,1)]", "{[(L,1)]}")>]
     [<InlineData("[(R,1)|(R,1)]", "{}")>]
@@ -272,24 +274,42 @@ module FermionicOperator_CanonicalSort =
             Assert.Equal (expected, actual)
         | None -> Assert.True (false)
 
-
     [<Theory>]
+    [<InlineData("", "{}")>]
+    [<InlineData("[]", "{}")>]
     [<InlineData("[(R,1)|(I,1)]", "{[(R,1)]}")>]
     [<InlineData("[(I,1)|(L,1)]", "{[(L,1)]}")>]
     [<InlineData("[(R,1)|(R,1)]", "{}")>]
     [<InlineData("[(L,1)|(L,1)]", "{}")>]
     [<InlineData("[(R,1)|(L,1)]", "{[(R,1)|(L,1)]}")>]
     [<InlineData("[(L,1)|(R,1)]", "{[1];-[(R,1)|(L,1)]}")>]
-    [<InlineData("[(R,1)|(L,1)|(R,2)|(L,2)]", "{[(R,1)|(L,1)|(R,2)|(L,2)]}")>]
-    [<InlineData("[(R,2)|(L,2)|(R,1)|(L,1)]", "{[(R,1)|(L,1)|(R,2)|(L,2)]}")>]
-    [<InlineData("[(L,1)|(R,1)|(R,2)|(L,2)]", "{-[(R,1)|(L,1)|(R,2)|(L,2)];[(R,2)|(L,2)]}")>]
+    [<InlineData("[(R,1)|(L,1)|(R,2)|(L,2)]", "{[(R,1)|(R,2)|(L,2)|(L,1)]}")>]
+    [<InlineData("[(R,1)|(R,2)|(L,1)|(L,2)]", "{-[(R,1)|(R,2)|(L,2)|(L,1)]}")>]
+    [<InlineData("[(R,2)|(R,1)|(L,2)|(L,1)]", "{-[(R,1)|(R,2)|(L,2)|(L,1)]}")>]
+    [<InlineData("[(R,1)|(L,2)|(R,2)|(L,1)]", "{[(R,1)|(L,1)];-[(R,1)|(R,2)|(L,2)|(L,1)]}")>]
+    [<InlineData("[(L,1)|(R,1)|(R,2)|(L,2)]", "{-[(R,1)|(R,2)|(L,2)|(L,1)];[(R,2)|(L,2)]}")>]
     let ``ToCanonicalOrder puts product term into canonical sum term`` (input, expected) =
         match PIxOpFromString FermionicOperator.FromString input with
         | Some pixop ->
             let actual =
-                pixop.IndexedOps
-                |> chunkByIndex
-                |> sortChunks
-                |> (prettyPrintSIxOp >> shrinkString)
+                pixop
+                |> (toCanonicalOrder >> prettyPrintSIxOp >> shrinkString)
             Assert.Equal (expected, actual)
         | None -> Assert.True (false)
+
+    [<Property>]
+    let ``ToCanonicalOrder puts product term into canonical order`` (input : PIxOp<uint32, FermionicOperator>) =
+        let assertInCanonicalOrder (p : PIxOp<_,_>) =
+            if p.IndexedOps.Length = 1 && p.IndexedOps.[0].Op = I then
+                Assert.True true
+            else
+                let crs = [| for p in p.IndexedOps do if p.Op = Cr then yield p |]
+                let ans = [| for p in p.IndexedOps do if p.Op = Cr then yield p |]
+                let crs_incr = crs |> Array.map (fun p -> p.Index) |> (fun rg -> rg.IsOrdered (>=))
+                let ans_decr = ans |> Array.map (fun p -> p.Index) |> (fun rg -> rg.IsOrdered (<=))
+                Assert.True crs_incr
+                Assert.True ans_decr
+
+        let canonicalForm = input |> toCanonicalOrder
+        canonicalForm.Terms
+        |> Array.iter assertInCanonicalOrder

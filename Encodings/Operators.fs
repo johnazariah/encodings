@@ -267,13 +267,12 @@ module FermionicOperator_Order =
             (0, None)
         |> snd
 
-    let private toPixOp cixops =
-        cixops
-        |> Array.map (fun c -> CIxOp<_,_>.Apply(c.Coeff, c.Thunk))
-        |> curry PIxOp<_,_>.Apply Complex.One
-
     let internal chunkByIndex (rg : IxOp<_,_>[]) =
         let getChunkWithIndex input (headItem, _) =
+            let toPixOp =
+                Array.map (fun c -> CIxOp<_,_>.Apply(c.Coeff, c.Thunk))
+                >> curry PIxOp<_,_>.Apply Complex.One
+
             let rec buildChunk target (chunk, remainder) =
                 match findLocationOfNextItemWithIndex target remainder with
                 | None -> (chunk, remainder)
@@ -372,6 +371,61 @@ module FermionicOperator_Order =
         |> Array.map sortChunk
         |> Array.fold (<*>) SIxOp<_,_>.Unit
 
-    let toCanonicalOrder (input : IxOp<uint32, FermionicOperator>[]) : SIxOp<uint32, FermionicOperator> =
-        chunkByIndex input
+    let internal chunkByIndexToTuples (input : PIxOp<_,_>) =
+        let toTuple (chunk : PIxOp<_,_>) =
+            let rec toTuple' (fs, ss) (rest : IxOp<_,_>[]) =
+                match rest.Length with
+                | 0 -> (fs, ss)
+                | _ ->
+                    let h = rest.[0]
+                    let remainder = rest.[1..]
+                    match h.Op with
+                    | Cr -> toTuple' (([| yield! fs; h;|]), ss) remainder
+                    | An -> toTuple' (fs, ([| yield! ss; h;|])) remainder
+                    | I  -> toTuple' ([| h |], [| |]) remainder
+            toTuple' ([| |], [| |]) chunk.Reduce.IndexedOps
+
+        chunkByIndex input.Reduce.IndexedOps
+        |> Array.map toTuple
+
+    let internal pivotTuples (rfs : C<IxOp<_,_>[]>, rss : C<IxOp<_,_>[]>) (fs : IxOp<_,_>[], ss : IxOp<_,_>[]) =
+        let appendfs c (rfs : C<IxOp<_,_>[]>) (f : IxOp<_,_>) =
+            [| yield! rfs.Thunk; yield f |]
+            |> curry C<_>.Apply (rfs.Coeff * c)
+
+        let prependss (rss : C<IxOp<_,_>[]>) (s : IxOp<_,_>) =
+            let coeff' = if rss.Thunk.Length % 2 = 0 then Complex.One else Complex.MinusOne
+            [| yield s; yield! rss.Thunk |]
+            |> curry C<_>.Apply (rss.Coeff * coeff')
+
+        let cf = if rss.Thunk.Length % 2 = 0 then Complex.One else Complex.MinusOne
+        let rfs' = fs |> Array.fold (appendfs cf) rfs
+        let rss' = ss |> Array.fold (prependss  ) rss
+        (rfs', rss')
+
+    let toCanonicalOrder (input : PIxOp<_,_>) : SIxOp<_,_> =
+        let toPixOp (fs : C<IxOp<_,_>[]>, ss : C<IxOp<_,_>[]>) =
+            [|
+                yield! (fs.Thunk |> Array.map (curry CIxOp<_,_>.Apply Complex.One))
+                yield! (ss.Thunk |> Array.map (curry CIxOp<_,_>.Apply Complex.One))
+            |]
+            |> curry PIxOp<_,_>.Apply (fs.Coeff * ss.Coeff)
+
+        let sortSingleTerm term =
+            let chunked =
+                term
+                |> chunkByIndexToTuples
+            let sorted =
+                chunked
+                |> Array.fold pivotTuples (C<IxOp<_,_>[]>.Apply(Complex.One, [| |]), C<IxOp<_,_>[]>.Apply(Complex.One, [| |]))
+            let result =
+                sorted
+                |> toPixOp
+            result.ScaleCoefficient term.Coeff
+
+        chunkByIndex input.IndexedOps
         |> sortChunks
+        |> (fun s -> s.Terms)
+        |> Array.map sortSingleTerm
+        |> curry SIxOp<uint32,FermionicOperator>.Apply input.Coeff
+
