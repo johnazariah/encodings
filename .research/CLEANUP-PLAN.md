@@ -7,10 +7,15 @@ cross-platform messaging.
 Goals:
 1. **Publication-ready repository** for JOSS submission (Paper 2)
 2. **NuGet package** — pre-built, versioned, ready to `dotnet add package`
-3. **GitHub Pages documentation site** — API reference with MathJax,
-   tutorials, architecture guide
+3. **GitHub Pages documentation site** — not just API reference, but
+   extensive educational content: motivation, background theory, worked
+   examples, architecture guides, and literate F# tutorials with
+   inline MathJax notation
 4. **Cross-platform emphasis** — .NET 8 runs on Windows, macOS, and Linux;
    F# is fully open-source under the F# Software Foundation and .NET Foundation
+5. **Future-proof naming** — the library currently handles fermionic
+   encodings but will extend to bosonic modes; the package name must
+   not bake in "fermion"
 
 ---
 
@@ -392,9 +397,9 @@ Create comprehensive README with:
 - Badges: CI status, NuGet version, license, .NET 8, platforms
 - **What is this?** — 2-paragraph explanation of fermion-to-qubit encodings
 - **Cross-platform** — prominent callout:
-  > Fermion2Qubit runs on **Windows**, **macOS**, and **Linux** via
+  > This library runs on **Windows**, **macOS**, and **Linux** via
   > [.NET 8](https://dotnet.microsoft.com/), Microsoft's open-source,
-  > cross-platform runtime.  The library is written in
+  > cross-platform runtime.  It is written in
   > [F#](https://fsharp.org/), a functional-first language that is
   > fully open-source under the
   > [F# Software Foundation](https://foundation.fsharp.org/) and the
@@ -402,11 +407,11 @@ Create comprehensive README with:
 - **Installation** — two paths:
   ```bash
   # As a NuGet package (recommended)
-  dotnet add package Fermion2Qubit
+  dotnet add package <PackageName>
 
   # From source
-  git clone https://github.com/<org>/Fermion2Qubit.git
-  cd Fermion2Qubit && dotnet build && dotnet test
+  git clone https://github.com/<org>/<PackageName>.git
+  cd <PackageName> && dotnet build && dotnet test
   ```
 - **Quick start** — 5-line F# example encoding a single operator
 - **Available encodings** — table of all 5 with weight scaling O(·)
@@ -615,7 +620,7 @@ jobs:
           dotnet-version: '8.0.x'
       - run: dotnet tool restore
       - run: dotnet build --configuration Release
-      - run: dotnet fsdocs build --output docs-output --parameters root /Fermion2Qubit/
+      - run: dotnet fsdocs build --output docs-output --parameters root /<PackageName>/
       - uses: actions/upload-pages-artifact@v3
         with:
           path: docs-output
@@ -675,13 +680,13 @@ jobs:
 After Phase 7 adds the `.fsproj` metadata, `dotnet pack` will produce:
 
 ```
-Fermion2Qubit.0.1.0.nupkg
+<PackageName>.0.1.0.nupkg
 ├── lib/net8.0/
 │   ├── Encodings.dll          # The compiled library
 │   └── Encodings.xml          # XML docs (IntelliSense + fsdocs)
 ├── README.md                   # Rendered on nuget.org
 ├── LICENSE.md                  # Embedded license
-└── Fermion2Qubit.0.1.0.snupkg  # Symbol package (Source Link)
+└── <PackageName>.0.1.0.snupkg  # Symbol package (Source Link)
 ```
 
 **Zero runtime dependencies.**  The package contains only the F# library
@@ -716,7 +721,7 @@ dotnet run
 ### 8.4 NuGet.org listing
 
 The NuGet.org package page will show:
-- **Title:** Fermion2Qubit
+- **Title:** <PackageName> (e.g. FockMap)
 - **Description:** From the `<Description>` in `.fsproj`
 - **Tags:** quantum, encoding, jordan-wigner, bravyi-kitaev, fsharp
 - **README:** Rendered from the embedded `README.md`
@@ -727,12 +732,36 @@ The NuGet.org package page will show:
 
 ### 8.5 Package name decision
 
-Check availability on nuget.org.  Candidates:
-1. `Fermion2Qubit` — matches the paper title, memorable
-2. `FSharp.Quantum.Encodings` — follows F# community convention
-3. `Encodings.Quantum` — shorter
+The name must NOT bake in "fermion" — bosonic encodings are coming.
 
-Recommendation: `Fermion2Qubit` unless already taken.
+Criteria:
+- General enough to cover fermions, bosons, and future particle types
+- Specific enough that people searching NuGet for quantum encoding find it
+- Short enough to type in `dotnet add package`
+- Not already taken on nuget.org
+
+Candidates (ranked):
+
+| Name | Pros | Cons |
+|------|------|------|
+| `FockMap` | Short, evocative (Fock space → qubit), covers fermions + bosons | May be too cryptic for non-physicists |
+| `ModeQubit` | Clear: maps modes to qubits | Slightly generic |
+| `QubitEncoding` | Obvious, searchable | Very generic, may collide |
+| `FSharp.Quantum.Encodings` | Follows F# community `FSharp.*` convention | Long |
+| `SecondQuantize` | Descriptive of the domain | Implies more than encoding |
+| `Encodings` | Already the internal project name | Way too generic for NuGet |
+
+**Recommendation: `FockMap`.**
+
+Rationale: Fock space is the unifying mathematical framework for both
+fermionic and bosonic systems.  The library maps operators on Fock space
+to operators on qubits.  "FockMap" is short (7 chars), memorable,
+accurate, and unlikely to collide.  It also sounds like a proper noun
+("I used FockMap to encode my Hamiltonian"), which is good for a library.
+
+Fallback: `ModeQubit` or `FSharp.Quantum.Encodings`.
+
+**Action:** Check nuget.org for availability before committing.
 
 ---
 
@@ -744,7 +773,7 @@ Recommendation: `Fermion2Qubit` unless already taken.
 is the standard documentation tool for F# libraries.  It:
 
 - Generates **API reference** from `///` XML doc comments
-- Renders **literate F# scripts** (`.fsx` files with `(** ... *)` 
+- Renders **literate F# scripts** (`.fsx` files with `(** ... *)`
   markdown blocks) as tutorial pages
 - Supports **MathJax/KaTeX** for mathematical notation out of the box
 - Produces a static site ready for GitHub Pages deployment
@@ -766,22 +795,295 @@ dotnet fsdocs watch  # live preview at http://localhost:8901
 dotnet fsdocs build --output docs-output
 ```
 
-### 9.3 Documentation site structure
+### 9.3 Documentation philosophy
+
+The docs site is NOT just an API reference.  It's the primary way a
+newcomer — a grad student, a quantum software engineer, a curious
+physicist — learns what this library is, why it exists, and how to
+use it.  The site must answer these questions in order:
+
+1. **What problem does this solve?** (motivation)
+2. **What are fermion-to-qubit encodings?** (background theory)
+3. **How do I install and use it?** (quickstart)
+4. **Show me a complete worked example** (H₂ tutorial)
+5. **What encodings are available and how do they differ?** (catalogue)
+6. **How is the library designed?** (architecture)
+7. **How do I define my own encoding?** (extensibility)
+8. **What's the full API?** (reference)
+
+Every page should have runnable code.  Every formula should have a
+corresponding computation.  The reader should never see a definition
+without an example.
+
+### 9.4 Documentation site structure
 
 ```
-docs/                          # Source files for fsdocs
-├── index.md                   # Landing page
-├── tutorial.fsx               # Literate F# tutorial (H₂ walkthrough)
-├── architecture.md            # Two-framework architecture diagram
-├── encodings.md               # Table of all 5 encodings with formulas
-├── custom-encoding.fsx        # Literate: how to define your own
-├── custom-tree.fsx            # Literate: how to build a tree encoding
-└── cross-platform.md          # .NET/F# ecosystem and platform support
-
-(API reference is auto-generated from XML doc comments — no manual files needed)
+docs/
+│
+├── index.md                          # Landing page (see 9.5)
+│
+├── background/                       # Educational content
+│   ├── 01-why-encodings.md           # The encoding problem: why it exists
+│   ├── 02-second-quantization.md     # Fock space, creation/annihilation, CAR
+│   ├── 03-pauli-algebra.md           # Pauli matrices, strings, multiplication
+│   ├── 04-jordan-wigner.md           # JW derivation with worked examples
+│   ├── 05-beyond-jordan-wigner.md    # BK, Parity, trees — and WHY
+│   └── 06-bosonic-preview.md         # Roadmap: bosonic modes (placeholder)
+│
+├── tutorials/                        # Literate F# scripts (.fsx)
+│   ├── 01-first-encoding.fsx         # Encode a single operator (5 min)
+│   ├── 02-h2-molecule.fsx            # Full H₂ pipeline (30 min)
+│   ├── 03-compare-encodings.fsx      # All 5 encodings side-by-side
+│   ├── 04-custom-encoding.fsx        # Define your own EncodingScheme
+│   ├── 05-custom-tree.fsx            # Build an arbitrary tree encoding
+│   └── 06-scaling.fsx                # Weight vs. system size analysis
+│
+├── guides/                           # Conceptual/architectural docs
+│   ├── architecture.md               # Two-framework design (index-set + path)
+│   ├── type-system.md                # C/P/S algebra, why types are this shape
+│   ├── fenwick-tree.md               # Persistent Fenwick tree deep-dive
+│   ├── monotonicity.md               # The star-tree discovery
+│   └── cross-platform.md             # .NET 8, F#, platform support
+│
+└── (reference/)                      # Auto-generated by fsdocs from XML docs
 ```
 
-### 9.4 Mathematical notation in docs
+### 9.5 Detailed page descriptions
+
+#### Landing page: `index.md`
+
+First thing anyone sees.  Must answer "what is this?" in 10 seconds.
+
+```markdown
+# <PackageName>
+
+A composable functional framework for encoding quantum operators
+as qubit Pauli strings.
+
+> Map creation and annihilation operators on Fock space to Pauli
+> operators on qubits — using algebraic data types, pure functions,
+> and zero dependencies.
+
+## Install
+
+    dotnet add package <PackageName>
+
+## 30-Second Example
+
+```fsharp
+open Encodings
+
+// Encode the creation operator a†₂ on 4 modes using Jordan-Wigner
+let pauli = jordanWignerTerms Raise 2u 4u
+// → ½(ZZXI) − ½i(ZZYI)
+
+// Same operator under Bravyi-Kitaev (O(log n) weight)
+let pauliBK = bravyiKitaevTerms Raise 2u 4u
+```
+
+## Why this library?
+
+| Feature | OpenFermion | Qiskit Nature | **This library** |
+|---------|:-----------:|:------------:|:----------:|
+| Define a new encoding | ~200 lines | Not supported | **3–5 lines** |
+| Tree → encoding pipeline | ❌ | ❌ | **✅** |
+| Type-safe operator algebra | ❌ | ❌ | **✅** |
+| Pure functional, zero mutation | ❌ | ❌ | **✅** |
+
+## Available Encodings
+
+| Encoding | Worst-Case Weight | Function |
+|----------|:-:|---|
+| Jordan-Wigner | $O(n)$ | `jordanWignerTerms` |
+| Bravyi-Kitaev | $O(\log_2 n)$ | `bravyiKitaevTerms` |
+| Parity | $O(n)$ | `parityTerms` |
+| Balanced Binary Tree | $O(\log_2 n)$ | `balancedBinaryTreeTerms` |
+| Balanced Ternary Tree | $O(\log_3 n)$ | `ternaryTreeTerms` |
+
+## Cross-Platform
+
+Runs on **Windows**, **macOS**, and **Linux** via
+[.NET 8](https://dotnet.microsoft.com/).
+Written in [F#](https://fsharp.org/), fully open-source under the
+[F# Software Foundation](https://foundation.fsharp.org/) and the
+[.NET Foundation](https://dotnetfoundation.org/).
+
+## Learn More
+
+- **New to encodings?** Start with [Why Encodings?](background/01-why-encodings.html)
+- **Want to try it?** Jump to [Your First Encoding](tutorials/01-first-encoding.html)
+- **Full walkthrough:** [Encoding the H₂ Molecule](tutorials/02-h2-molecule.html)
+- **Library internals:** [Architecture Guide](guides/architecture.html)
+- **API Reference:** [All types and functions](reference/index.html)
+```
+
+#### Background pages
+
+These are substantial educational content — the kind of thing that
+makes a documentation site genuinely useful, not just a glorified
+README.  Each page is self-contained but they build on each other.
+
+**`01-why-encodings.md`** (~1500 words)
+- The problem: quantum computers speak qubits; chemistry speaks fermions
+- Qubits commute across sites; fermions anti-commute — the algebra mismatch
+- The "obvious" mapping (raising/lowering operators) and why it fails
+- What a correct encoding must satisfy: CAR preservation
+- The punchline: different encodings trade off locality vs. weight
+- Figures: commutation vs anti-commutation diagram, weight comparison plot
+
+**`02-second-quantization.md`** (~2000 words)
+- First quantization recap: wavefunctions, Slater determinants, the N! problem
+- The leap: track orbitals, not particles
+- Occupation number vectors, Fock space, the vacuum
+- Creation $a^\dagger_j$ and annihilation $a_j$ with worked sign examples
+- The CAR: $\{a_i, a^\dagger_j\} = \delta_{ij}$ — derive it, don't just state it
+- Number operators, the Hamiltonian in second quantization
+- The two-body operator ordering trap ($a^\dagger_p a^\dagger_q a_s a_r$ — reversed!)
+- Inline F# showing the library's `Raise`/`Lower` types matching the math
+
+**`03-pauli-algebra.md`** (~1200 words)
+- The four Pauli matrices (with actual matrices rendered in MathJax)
+- Multiplication table: $XY = iZ$, etc.
+- Pauli strings as tensor products
+- Phase tracking: why $\pm 1, \pm i$ matter
+- Weight of a Pauli string and why it determines circuit cost
+- Inline F# showing `PauliRegister` multiplication matching the math
+
+**`04-jordan-wigner.md`** (~2000 words)
+- Majorana fermions: $c_j = a^\dagger_j + a_j$, $d_j = i(a^\dagger_j - a_j)$
+- Why Majoranas simplify encoding: Hermitian, square to identity
+- The JW mapping: $c_j \mapsto X_j Z_{j-1} \cdots Z_0$
+- Why the Z-chain works: tracking parity
+- Verify anti-commutation by hand for $n=3$
+- The cost: $O(n)$ weight, and what that means for circuits
+- Complete JW table for $n=4$ and $n=8$
+- Inline F# computing everything we derive by hand
+
+**`05-beyond-jordan-wigner.md`** (~2500 words)
+- The question: can we reduce $O(n)$ to $O(\log n)$?
+- Bravyi-Kitaev: Fenwick trees, prefix sums, the three index sets
+  - Update, Parity, Occupation — with diagrams
+  - Why it achieves $O(\log_2 n)$
+- Parity encoding: the dual of JW (store cumulative parity)
+- The Majorana encoding framework: `EncodingScheme` as 3 functions
+  - Show that JW, BK, Parity are all instances of the SAME type
+  - This is the library's key insight — code IS the math
+- Tree encodings: every tree defines an encoding
+  - Path-based construction (Jiang/Bonsai approach)
+  - Balanced ternary → optimal $O(\log_3 n)$
+  - The monotonicity discovery (preview of Paper 3)
+- Weight comparison table and scaling plot for $n = 4, 8, 16, 32, 64$
+
+**`06-bosonic-preview.md`** (~500 words, placeholder)
+- Bosons: commutation instead of anti-commutation
+- Truncated Fock space: each mode can have $0, 1, \ldots, d-1$ particles
+- Gray code and unary encodings
+- Status: coming in v0.2.0
+
+#### Tutorial pages (literate F#)
+
+These are `.fsx` files with `(** ... *)` markdown blocks.  FSharp.Formatting
+renders them as pages with interspersed code and output.  The reader
+can copy-paste any code block and run it.
+
+**`01-first-encoding.fsx`** (~80 lines, 5-minute read)
+```fsharp
+(** # Your First Encoding
+Let's encode the creation operator $a^\dagger_0$ on a system with
+4 modes, using the Jordan-Wigner transform. *)
+
+#r "nuget: <PackageName>"
+open Encodings
+
+let result = jordanWignerTerms Raise 0u 4u
+printfn "%A" result
+
+(** The result is $\frac{1}{2}(XIII) - \frac{i}{2}(YIII)$.
+The $X$ and $Y$ act on qubit 0; the remaining qubits are identity
+because mode 0 has no preceding modes to track parity for.
+
+Now let's try mode 2: *)
+
+let result2 = jordanWignerTerms Raise 2u 4u
+printfn "%A" result2
+
+(** Now we see the Z-chain: $\frac{1}{2}(ZZXI) - \frac{i}{2}(ZZYI)$.
+The $Z_0 Z_1$ track the parity of modes 0 and 1. *)
+```
+
+**`02-h2-molecule.fsx`** (~300 lines, 30-minute read)
+- Define molecular integrals (STO-3G, hardcoded)
+- Build the spin-orbital Hamiltonian
+- Encode with JW, then BK, then all 5
+- Count terms, compare weights
+- Verify identity coefficient = −1.0704 Ha across all encodings
+- Inline explanation of every physical step
+
+**`03-compare-encodings.fsx`** (~150 lines)
+- Encode the same operator with all 5 encodings
+- Print Pauli strings side-by-side
+- Plot (or table) weight vs. mode index
+- Discuss: when does each encoding win?
+
+**`04-custom-encoding.fsx`** (~100 lines)
+- Define the Parity encoding "from scratch" as an `EncodingScheme`
+- Verify it matches the built-in `parityScheme`
+- Define a completely novel encoding scheme
+- Run anti-commutation checks on it
+
+**`05-custom-tree.fsx`** (~120 lines)
+- Build a star tree, a caterpillar tree, an unbalanced tree
+- Encode operators with each
+- Compare Pauli weights
+- Discuss the tree ↔ weight relationship
+
+**`06-scaling.fsx`** (~100 lines)
+- Loop over $n = 4, 8, 16, 32, 64$
+- Measure max Pauli weight for each encoding
+- Print scaling table
+- Fit to $O(n)$, $O(\log_2 n)$, $O(\log_3 n)$
+
+#### Guide pages
+
+**`architecture.md`** (~1500 words)
+- The two-framework design and why both exist
+- Index-set framework: `EncodingScheme` → Majorana → Pauli
+- Path-based framework: `TreeNode` → edge labels → Majorana → Pauli
+- The shared output type: `PauliRegisterSequence`
+- Diagram: data flow from `LadderOperatorUnit` to qubit Hamiltonian
+- Why two frameworks: the monotonicity constraint
+
+**`type-system.md`** (~1200 words)
+- The `C<'T>`, `P<'T>`, `S<'T>` algebra
+- Why the type parameter matters: same algebra for fermions and Paulis
+- Normal ordering as algebraic rewriting
+- `FermionicAlgebra` and the `ICombiningAlgebra` interface
+- How the type system prevents invalid operator constructions
+
+**`fenwick-tree.md`** (~1000 words)
+- What a Fenwick tree is (with diagrams)
+- Classical use: prefix sums
+- Our twist: persistent/immutable, parameterised over any monoid
+- How BK index sets fall out as Fenwick queries on `Set.union`
+- Why this matters: the Fenwick tree IS the Bravyi-Kitaev encoding
+
+**`monotonicity.md`** (~800 words)
+- The discovery: index-set framework only works for star-shaped trees
+- What monotonicity means (ancestor index > descendant index)
+- The census: only $(n-1)!$ of $n^{n-1}$ trees satisfy it, all stars
+- Why this motivated the path-based framework
+- Connection to Paper 3
+
+**`cross-platform.md`** (~600 words)
+- .NET 8: Microsoft's open-source, cross-platform runtime
+- F#: MIT-licensed compiler, F# Software Foundation, .NET Foundation
+- Installation on each platform (Windows, macOS via Homebrew, Linux)
+- Docker: `mcr.microsoft.com/dotnet/sdk:8.0`
+- Performance: .NET 8 JIT vs. Python interpreter (relevant for
+  scaling benchmarks — this library is 10-100× faster than OpenFermion
+  for encoding operations)
+
+### 9.6 Mathematical notation in docs
 
 FSharp.Formatting supports LaTeX math via MathJax.  In XML doc comments:
 
@@ -800,7 +1102,8 @@ In literate `.fsx` files:
 
 The creation operator $a^\dagger_j$ maps to:
 
-$$a^\dagger_j = \frac{1}{2}(c_j - id_j) \mapsto \frac{1}{2}(X_j - iY_j) \otimes Z_{j-1} \otimes \cdots \otimes Z_0$$
+$$a^\dagger_j = \frac{1}{2}(c_j - id_j) \mapsto
+  \frac{1}{2}(X_j - iY_j) \otimes Z_{j-1} \otimes \cdots \otimes Z_0$$
 *)
 let result = jordanWignerTerms Raise 0u 4u
 printfn "%A" result
@@ -809,59 +1112,29 @@ printfn "%A" result
 The output of the F# code is captured and rendered inline — so the
 reader sees both the formula and the computed Pauli string.
 
-### 9.5 Landing page content (`docs/index.md`)
+### 9.7 Estimated page count and word count
 
-```markdown
-# Fermion2Qubit
+| Section | Pages | Words | Format |
+|---------|:-----:|:-----:|--------|
+| Landing page | 1 | 400 | `.md` |
+| Background (6 pages) | 6 | ~9,600 | `.md` |
+| Tutorials (6 pages) | 6 | ~3,000 + code | `.fsx` |
+| Guides (5 pages) | 5 | ~5,100 | `.md` |
+| API Reference | ~15 | auto-generated | XML docs |
+| **Total** | **~33** | **~18,100** | mixed |
 
-A composable functional framework for fermion-to-qubit encodings.
+This is a *documentation site*, not a README.  It's comparable in
+scope to [Plotly.NET docs](https://plotly.net/) or
+[FSharp.Data docs](https://fsprojects.github.io/FSharp.Data/) — the
+kind of site that makes people say "wow, this F# library has better
+docs than most Python packages."
 
-## What is this?
-
-[2-paragraph explanation]
-
-## Cross-Platform
-
-Fermion2Qubit runs on **Windows**, **macOS**, and **Linux**.
-Built on [.NET 8](https://dotnet.microsoft.com/) (MIT-licensed,
-cross-platform runtime) and written in
-[F#](https://fsharp.org/) (open-source, governed by the
-[F# Software Foundation](https://foundation.fsharp.org/)).
-
-## Install
-
-    dotnet add package Fermion2Qubit
-
-## Quick Start
-
-    open Encodings
-    let h2 = jordanWignerTerms Raise 0u 4u
-    printfn "%A" h2
-
-## Available Encodings
-
-| Encoding | Max Weight | Constructor |
-|----------|-----------|-------------|
-| Jordan-Wigner | O(n) | `jordanWignerTerms` |
-| Bravyi-Kitaev | O(log₂ n) | `bravyiKitaevTerms` |
-| Parity | O(n) | `parityTerms` |
-| Balanced Binary | O(log₂ n) | `balancedBinaryTreeTerms` |
-| Balanced Ternary | O(log₃ n) | `ternaryTreeTerms` |
-
-## Documentation
-
-- [Tutorial: H₂ from scratch](tutorial.html)
-- [Architecture: two frameworks](architecture.html)
-- [Define your own encoding](custom-encoding.html)
-- [API Reference](reference/index.html)
-```
-
-### 9.6 Deployment
+### 9.8 Deployment
 
 The Docs workflow (Phase 6.2) builds and deploys automatically on push
 to `main`.  The site URL will be:
 
-    https://<org>.github.io/Fermion2Qubit/
+    https://<org>.github.io/<PackageName>/
 
 ---
 
@@ -880,22 +1153,24 @@ compile order).  It needs full NuGet packaging metadata so that
     <TargetFramework>net8.0</TargetFramework>
 
     <!-- Package identity -->
-    <PackageId>Fermion2Qubit</PackageId>
+    <PackageId>FockMap</PackageId>  <!-- or chosen name -->
     <Version>0.1.0</Version>
     <Authors>John Aziz</Authors>
     <Company />
 
     <!-- Description and discoverability -->
     <Description>
-      A composable functional framework for fermion-to-qubit encodings.
-      Implements Jordan-Wigner, Bravyi-Kitaev, Parity, and tree-based
-      encodings (balanced binary, balanced ternary) as algebraic data
-      types in pure F#.  Define custom encodings in 3-5 lines.
+      A composable functional framework for encoding quantum operators
+      on Fock space as qubit Pauli operators.  Implements Jordan-Wigner,
+      Bravyi-Kitaev, Parity, and tree-based encodings (balanced binary,
+      balanced ternary) as algebraic data types in pure F#.  Define
+      custom encodings in 3-5 lines.  Fermionic modes now; bosonic
+      modes coming in v0.2.
     </Description>
-    <PackageTags>quantum;quantum-computing;quantum-chemistry;encoding;jordan-wigner;bravyi-kitaev;fsharp;functional-programming</PackageTags>
+    <PackageTags>quantum;quantum-computing;quantum-chemistry;encoding;jordan-wigner;bravyi-kitaev;fock-space;fsharp;functional-programming</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageProjectUrl>https://github.com/ORG/Fermion2Qubit</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/ORG/Fermion2Qubit</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/ORG/FockMap</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/ORG/FockMap</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
 
     <!-- License -->
@@ -934,8 +1209,10 @@ compile order).  It needs full NuGet packaging metadata so that
 ```
 
 Key points:
-- **`PackageId`** = `Fermion2Qubit` — the name users type in `dotnet add package`
-- **`PackageTags`** — discoverable via NuGet search for "quantum", "encoding", etc.
+- **`PackageId`** = chosen name — what users type in `dotnet add package`
+- **`PackageTags`** — discoverable via NuGet search for "quantum", "encoding",
+  "fock-space", etc.
+- **`Description`** — mentions both fermionic (now) and bosonic (coming)
 - **`GenerateDocumentationFile`** — produces `Encodings.xml` alongside the DLL;
   this is what `fsdocs` and IDEs consume for IntelliSense tooltips
 - **`IncludeSymbols` + Source Link** — enables consumers to step into our source
@@ -961,14 +1238,19 @@ Key points:
 | 5 | Phase 4.1: Remove empty test file | 5 min | No | Hygiene |
 | 6 | Phase 5: Organise examples/ | 1 hr | No | JOSS |
 | 7 | Phase 8: NuGet packaging (dotnet pack, local test, icon) | 1 hr | No | NuGet |
-| 8 | Phase 9: GitHub Pages with fsdocs | 2 hr | No | Docs |
+| 8 | Phase 9: GitHub Pages — landing + background + tutorials + guides | 8 hr | No | Docs |
 | 9 | Phase 6: CI/CD pipeline (3 workflows) | 2 hr | No | All |
 | 10 | Phase 3.2: AutoOpen documentation | 15 min | No | Nice-to-have |
 | 11 | Phase 4.2-4.3: Test docs and coverage | 2 hr | No | Nice-to-have |
 | 12 | Phase 3.3: Type renaming | 3 hr | **Yes** | Defer |
 | 13 | Phase 3.4: Dictionary→Map | 1 hr | No (internal) | Defer |
 
-**Total estimated effort: ~14 hours for core items (phases 1–9).**
+**Total estimated effort: ~20 hours for core items (phases 1–9).**
+
+The documentation site (Phase 9) is the largest single item at ~8 hours,
+but it's also the highest-impact: a 33-page docs site with background
+theory, literate tutorials, and auto-generated API reference is what
+turns "research code on GitHub" into "a library people actually use."
 
 Items 12–13 are deferred post-JOSS unless reviewer feedback demands them.
 
@@ -994,16 +1276,19 @@ Items 12–13 are deferred post-JOSS unless reviewer feedback demands them.
 
 ### NuGet Package
 - [ ] `dotnet pack` produces a valid `.nupkg` with README, XML docs, symbols
-- [ ] Package installs cleanly: `dotnet add package Fermion2Qubit`
+- [ ] Package installs cleanly: `dotnet add package <PackageName>`
 - [ ] NuGet.org listing shows description, tags, README, license
 - [ ] Source Link works (consumers can step into source in debugger)
 - [ ] Package has no unnecessary dependencies (zero runtime deps)
 
 ### GitHub Pages Documentation
-- [ ] API reference generated from XML docs with mathematical notation
-- [ ] Landing page with overview, quick start, and architecture
-- [ ] Tutorial page walking through H₂ encoding
-- [ ] All pages render correctly on https://<org>.github.io/Fermion2Qubit/
+- [ ] Landing page with install command, 30-second example, feature table
+- [ ] Background section: 6 pages of educational content (~9,600 words)
+- [ ] Tutorial section: 6 literate F# scripts with inline output
+- [ ] Guide section: architecture, type system, Fenwick tree, monotonicity
+- [ ] API reference auto-generated from XML docs with MathJax math
+- [ ] All pages render correctly on GitHub Pages
+- [ ] Total documentation: ~33 pages, ~18,000 words + code
 
 ### CI/CD Pipeline
 - [ ] CI workflow: build + test on all 3 platforms, on every push/PR
@@ -1036,6 +1321,12 @@ Items 12–13 are deferred post-JOSS unless reviewer feedback demands them.
   notation will transform the library from "research code" to "reference
   implementation."  This is what JOSS reviewers look at first.
 
+- **Phase 9 is the highest-visibility work.**  The docs site is what
+  people see before they install.  The background pages (why encodings,
+  second quantization, Pauli algebra, JW derivation, beyond JW) are
+  essentially a condensed version of Paper 1 — and they double as
+  advertising for the paper itself.
+
 - **NuGet is the primary distribution channel.**  Most .NET developers
   expect `dotnet add package` — not cloning a repo and building from
   source.  The package should be zero-dependency (just the DLL + XML
@@ -1060,7 +1351,14 @@ Items 12–13 are deferred post-JOSS unless reviewer feedback demands them.
   Foundation.  This matters for reproducibility and long-term
   availability — two things JOSS cares about.  Call it out explicitly.
 
-- **The NuGet package name `Fermion2Qubit` needs to be checked** for
-  availability on nuget.org before we commit to it.  Alternative:
-  `FSharp.Quantum.Encodings` (follows the `FSharp.*` convention for
-  community libraries).
+- **Package naming: do NOT use "Fermion" in the name.**  Bosonic
+  encodings are planned for v0.2.  The name must cover both.
+  Recommended: **`FockMap`** (Fock space → qubit map).  Alternatives:
+  `ModeQubit`, `FSharp.Quantum.Encodings`.  Check nuget.org for
+  availability before committing.
+
+- **The docs site content overlaps with Paper 1 — and that's fine.**
+  The background pages are a shorter, more practical version of the
+  tutorial paper.  Having both is a strength: the paper is the
+  citeable archival reference; the docs site is the living, runnable,
+  always-up-to-date version.  They reinforce each other.
