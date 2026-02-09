@@ -1,8 +1,16 @@
 # Repository Cleanup & Documentation Plan
 
 Prepared 2026-02-09 based on full codebase audit.  
-Goal: publication-ready repository for JOSS submission (Paper 2) and
-general open-source quality.
+Updated 2026-02-09 to include NuGet packaging, GitHub Pages, and
+cross-platform messaging.
+
+Goals:
+1. **Publication-ready repository** for JOSS submission (Paper 2)
+2. **NuGet package** — pre-built, versioned, ready to `dotnet add package`
+3. **GitHub Pages documentation site** — API reference with MathJax,
+   tutorials, architecture guide
+4. **Cross-platform emphasis** — .NET 8 runs on Windows, macOS, and Linux;
+   F# is fully open-source under the F# Software Foundation and .NET Foundation
 
 ---
 
@@ -19,6 +27,9 @@ general open-source quality.
 | `[<AutoOpen>]` | ⚠ | All 15 modules — namespace pollution |
 | Terse type names | ⚠ | `C`, `P`, `S` are collision-prone |
 | Dead code | ⚠ | Tests.fs is empty; commented code in Hamiltonian.fs |
+| NuGet packaging | ❌ | No package metadata, no `dotnet pack` support |
+| Documentation site | ❌ | No GitHub Pages, no fsdocs, no generated API docs |
+| Cross-platform CI | ❌ | No CI at all; needs Windows + macOS + Linux |
 
 ---
 
@@ -378,18 +389,37 @@ Already well-documented.  Minor additions:
 
 Create comprehensive README with:
 - Project title and one-line description
-- Badges (build status, license, .NET version)
+- Badges: CI status, NuGet version, license, .NET 8, platforms
 - **What is this?** — 2-paragraph explanation of fermion-to-qubit encodings
-- **Quick start** — 3-line F# example
-- **Installation** — `dotnet build`, `dotnet test`
-- **Available encodings** — table of all 5 with weight scaling
+- **Cross-platform** — prominent callout:
+  > Fermion2Qubit runs on **Windows**, **macOS**, and **Linux** via
+  > [.NET 8](https://dotnet.microsoft.com/), Microsoft's open-source,
+  > cross-platform runtime.  The library is written in
+  > [F#](https://fsharp.org/), a functional-first language that is
+  > fully open-source under the
+  > [F# Software Foundation](https://foundation.fsharp.org/) and the
+  > [.NET Foundation](https://dotnetfoundation.org/).
+- **Installation** — two paths:
+  ```bash
+  # As a NuGet package (recommended)
+  dotnet add package Fermion2Qubit
+
+  # From source
+  git clone https://github.com/<org>/Fermion2Qubit.git
+  cd Fermion2Qubit && dotnet build && dotnet test
+  ```
+- **Quick start** — 5-line F# example encoding a single operator
+- **Available encodings** — table of all 5 with weight scaling O(·)
 - **Architecture** — brief description of the two frameworks
-- **API overview** — key types and functions
-- **Examples** — link to H2Demo.fsx, ScalingBenchmark.fsx
-- **Running tests** — `dotnet test`
+- **API overview** — key types and functions, link to full API docs
+- **Documentation** — link to GitHub Pages site
+- **Examples** — link to `examples/` folder
+- **Running tests** — `dotnet test` on all 3 platforms
+- **NuGet package** — link to nuget.org listing
 - **Citation** — BibTeX block
 - **License** — MIT
 - **Related papers** — links to Paper 1 and Paper 2
+- **Platform support** — tested on Ubuntu, macOS (ARM + x64), Windows
 
 ### 2.2 LICENSE
 
@@ -521,11 +551,15 @@ cd .. && dotnet fsi examples/H2_Encoding.fsx
 
 ---
 
-## Phase 6: CI/CD Setup
+## Phase 6: CI/CD Pipeline
 
-### 6.1 GitHub Actions workflow
+Three GitHub Actions workflows: CI (every push), Docs (on main), Release
+(on tag).
 
-Create `.github/workflows/ci.yml`:
+### 6.1 CI workflow — `.github/workflows/ci.yml`
+
+Runs on every push and PR.  Tests on all three platforms.
+
 ```yaml
 name: CI
 on: [push, pull_request]
@@ -540,70 +574,446 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - run: dotnet build
-      - run: dotnet test
+      - run: dotnet build --configuration Release
+      - run: dotnet test --configuration Release --logger trx
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ matrix.os }}
+          path: '**/*.trx'
+      - name: Pack NuGet (ubuntu only, avoid duplicates)
+        if: matrix.os == 'ubuntu-latest'
+        run: dotnet pack Encodings/Encodings.fsproj --configuration Release --no-build -o nupkg
+      - name: Upload NuGet artifact
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-package
+          path: nupkg/*.nupkg
 ```
 
-### 6.2 GitHub release + Zenodo
+### 6.2 Docs workflow — `.github/workflows/docs.yml`
 
-- Create initial release v0.1.0
+Builds GitHub Pages documentation on push to `main`.
+
+```yaml
+name: Documentation
+on:
+  push:
+    branches: [main]
+permissions:
+  pages: write
+  id-token: write
+jobs:
+  build-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - run: dotnet tool restore
+      - run: dotnet build --configuration Release
+      - run: dotnet fsdocs build --output docs-output --parameters root /Fermion2Qubit/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs-output
+  deploy:
+    needs: build-docs
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+```
+
+### 6.3 Release workflow — `.github/workflows/release.yml`
+
+Publishes NuGet package when a version tag is pushed.
+
+```yaml
+name: Release
+on:
+  push:
+    tags: ['v*']
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - run: dotnet build --configuration Release
+      - run: dotnet test --configuration Release
+      - run: dotnet pack Encodings/Encodings.fsproj --configuration Release -o nupkg
+      - name: Publish to NuGet
+        run: dotnet nuget push nupkg/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: nupkg/*.nupkg
+          generate_release_notes: true
+```
+
+### 6.4 GitHub release + Zenodo
+
+- Create initial release v0.1.0 with tag `v0.1.0`
 - Link GitHub repo to Zenodo for automatic DOI minting
 - Add DOI badge to README
+- Zenodo archives every tagged release automatically
+
+---
+
+## Phase 8: NuGet Package
+
+### 8.1 Package structure
+
+After Phase 7 adds the `.fsproj` metadata, `dotnet pack` will produce:
+
+```
+Fermion2Qubit.0.1.0.nupkg
+├── lib/net8.0/
+│   ├── Encodings.dll          # The compiled library
+│   └── Encodings.xml          # XML docs (IntelliSense + fsdocs)
+├── README.md                   # Rendered on nuget.org
+├── LICENSE.md                  # Embedded license
+└── Fermion2Qubit.0.1.0.snupkg  # Symbol package (Source Link)
+```
+
+**Zero runtime dependencies.**  The package contains only the F# library
+itself.  No transitive `FSharp.Core` pinning issues because we target
+`net8.0` (which includes `FSharp.Core` in the runtime).
+
+### 8.2 Local testing before publish
+
+```bash
+# Build and pack
+dotnet pack Encodings/Encodings.fsproj --configuration Release -o nupkg
+
+# Inspect the package
+dotnet tool install --global NuGetPackageExplorer  # or use nuget.info
+# Or just unzip the .nupkg (it's a zip file)
+
+# Test install in a fresh project
+mkdir /tmp/test-install && cd /tmp/test-install
+dotnet new console -lang F#
+dotnet add package Fermion2Qubit --source /path/to/nupkg
+# Write a 3-line script that encodes an operator
+dotnet run
+```
+
+### 8.3 Versioning strategy
+
+- `0.1.0` — initial pre-release (before JOSS submission)
+- `0.2.0` — after incorporating JOSS reviewer feedback
+- `1.0.0` — after JOSS acceptance (stable API)
+- Follow [SemVer 2.0](https://semver.org/): breaking changes = major bump
+
+### 8.4 NuGet.org listing
+
+The NuGet.org package page will show:
+- **Title:** Fermion2Qubit
+- **Description:** From the `<Description>` in `.fsproj`
+- **Tags:** quantum, encoding, jordan-wigner, bravyi-kitaev, fsharp
+- **README:** Rendered from the embedded `README.md`
+- **License:** MIT (clickable)
+- **Dependencies:** None
+- **Frameworks:** net8.0
+- **Source repository:** Link to GitHub (via `<RepositoryUrl>`)
+
+### 8.5 Package name decision
+
+Check availability on nuget.org.  Candidates:
+1. `Fermion2Qubit` — matches the paper title, memorable
+2. `FSharp.Quantum.Encodings` — follows F# community convention
+3. `Encodings.Quantum` — shorter
+
+Recommendation: `Fermion2Qubit` unless already taken.
+
+---
+
+## Phase 9: GitHub Pages Documentation Site
+
+### 9.1 Tooling: FSharp.Formatting (`fsdocs`)
+
+[FSharp.Formatting](https://fsprojects.github.io/FSharp.Formatting/)
+is the standard documentation tool for F# libraries.  It:
+
+- Generates **API reference** from `///` XML doc comments
+- Renders **literate F# scripts** (`.fsx` files with `(** ... *)` 
+  markdown blocks) as tutorial pages
+- Supports **MathJax/KaTeX** for mathematical notation out of the box
+- Produces a static site ready for GitHub Pages deployment
+
+Major F# libraries use it: FSharp.Data, Plotly.NET, FsToolkit, Saturn.
+
+### 9.2 Setup
+
+```bash
+# Add fsdocs as a local tool
+dotnet new tool-manifest  # creates .config/dotnet-tools.json
+dotnet tool install fsdocs-tool
+
+# Generate docs locally
+dotnet build
+dotnet fsdocs watch  # live preview at http://localhost:8901
+
+# Build for deployment
+dotnet fsdocs build --output docs-output
+```
+
+### 9.3 Documentation site structure
+
+```
+docs/                          # Source files for fsdocs
+├── index.md                   # Landing page
+├── tutorial.fsx               # Literate F# tutorial (H₂ walkthrough)
+├── architecture.md            # Two-framework architecture diagram
+├── encodings.md               # Table of all 5 encodings with formulas
+├── custom-encoding.fsx        # Literate: how to define your own
+├── custom-tree.fsx            # Literate: how to build a tree encoding
+└── cross-platform.md          # .NET/F# ecosystem and platform support
+
+(API reference is auto-generated from XML doc comments — no manual files needed)
+```
+
+### 9.4 Mathematical notation in docs
+
+FSharp.Formatting supports LaTeX math via MathJax.  In XML doc comments:
+
+```fsharp
+/// The Majorana operator cⱼ maps to:
+///
+/// $$c_j \mapsto X_j \otimes Z_{j-1} \otimes \cdots \otimes Z_0$$
+///
+/// with Pauli weight $O(j)$ under Jordan-Wigner.
+```
+
+In literate `.fsx` files:
+```fsharp
+(**
+## The Jordan-Wigner Transform
+
+The creation operator $a^\dagger_j$ maps to:
+
+$$a^\dagger_j = \frac{1}{2}(c_j - id_j) \mapsto \frac{1}{2}(X_j - iY_j) \otimes Z_{j-1} \otimes \cdots \otimes Z_0$$
+*)
+let result = jordanWignerTerms Raise 0u 4u
+printfn "%A" result
+```
+
+The output of the F# code is captured and rendered inline — so the
+reader sees both the formula and the computed Pauli string.
+
+### 9.5 Landing page content (`docs/index.md`)
+
+```markdown
+# Fermion2Qubit
+
+A composable functional framework for fermion-to-qubit encodings.
+
+## What is this?
+
+[2-paragraph explanation]
+
+## Cross-Platform
+
+Fermion2Qubit runs on **Windows**, **macOS**, and **Linux**.
+Built on [.NET 8](https://dotnet.microsoft.com/) (MIT-licensed,
+cross-platform runtime) and written in
+[F#](https://fsharp.org/) (open-source, governed by the
+[F# Software Foundation](https://foundation.fsharp.org/)).
+
+## Install
+
+    dotnet add package Fermion2Qubit
+
+## Quick Start
+
+    open Encodings
+    let h2 = jordanWignerTerms Raise 0u 4u
+    printfn "%A" h2
+
+## Available Encodings
+
+| Encoding | Max Weight | Constructor |
+|----------|-----------|-------------|
+| Jordan-Wigner | O(n) | `jordanWignerTerms` |
+| Bravyi-Kitaev | O(log₂ n) | `bravyiKitaevTerms` |
+| Parity | O(n) | `parityTerms` |
+| Balanced Binary | O(log₂ n) | `balancedBinaryTreeTerms` |
+| Balanced Ternary | O(log₃ n) | `ternaryTreeTerms` |
+
+## Documentation
+
+- [Tutorial: H₂ from scratch](tutorial.html)
+- [Architecture: two frameworks](architecture.html)
+- [Define your own encoding](custom-encoding.html)
+- [API Reference](reference/index.html)
+```
+
+### 9.6 Deployment
+
+The Docs workflow (Phase 6.2) builds and deploys automatically on push
+to `main`.  The site URL will be:
+
+    https://<org>.github.io/Fermion2Qubit/
 
 ---
 
 ## Phase 7: Project File Cleanup
 
-### 7.1 Encodings.fsproj
+### 7.1 Encodings.fsproj — Full NuGet Package Metadata
 
-- [ ] Add `<Description>` — one-line package description
-- [ ] Add `<Authors>`, `<PackageLicenseExpression>`, `<RepositoryUrl>`
-- [ ] Add `<GenerateDocumentationFile>true</GenerateDocumentationFile>`
-      (enables XML doc generation for API docs)
-- [ ] Add `<TreatWarningsAsErrors>true</TreatWarningsAsErrors>` (optional,
-      catches missing docs)
+The `.fsproj` file is currently minimal (just `TargetFramework` and
+compile order).  It needs full NuGet packaging metadata so that
+`dotnet pack` produces a publication-ready `.nupkg`:
+
+```xml
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+
+    <!-- Package identity -->
+    <PackageId>Fermion2Qubit</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>John Aziz</Authors>
+    <Company />
+
+    <!-- Description and discoverability -->
+    <Description>
+      A composable functional framework for fermion-to-qubit encodings.
+      Implements Jordan-Wigner, Bravyi-Kitaev, Parity, and tree-based
+      encodings (balanced binary, balanced ternary) as algebraic data
+      types in pure F#.  Define custom encodings in 3-5 lines.
+    </Description>
+    <PackageTags>quantum;quantum-computing;quantum-chemistry;encoding;jordan-wigner;bravyi-kitaev;fsharp;functional-programming</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/ORG/Fermion2Qubit</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/ORG/Fermion2Qubit</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+
+    <!-- License -->
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+
+    <!-- Documentation -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <DocumentationFile>bin/$(Configuration)/$(TargetFramework)/Encodings.xml</DocumentationFile>
+
+    <!-- NuGet icon (optional, add later) -->
+    <!-- <PackageIcon>icon.png</PackageIcon> -->
+
+    <!-- Source Link for debugger source stepping -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <!-- Include README in NuGet package -->
+  <ItemGroup>
+    <None Include="../README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+  <!-- Source Link -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.*" PrivateAssets="All" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- ... existing Compile items ... -->
+  </ItemGroup>
+
+</Project>
+```
+
+Key points:
+- **`PackageId`** = `Fermion2Qubit` — the name users type in `dotnet add package`
+- **`PackageTags`** — discoverable via NuGet search for "quantum", "encoding", etc.
+- **`GenerateDocumentationFile`** — produces `Encodings.xml` alongside the DLL;
+  this is what `fsdocs` and IDEs consume for IntelliSense tooltips
+- **`IncludeSymbols` + Source Link** — enables consumers to step into our source
+  in the debugger, directly from the NuGet package
+- **`PackageReadmeFile`** — NuGet.org renders the README on the package page
 
 ### 7.2 Test.Encodings.fsproj
 
 - [ ] Remove `Tests.fs` from compilation order
 - [ ] Verify all test files are listed and in correct order
+- [ ] Ensure `IsPackable = false` remains (don't publish test project)
 
 ---
 
 ## Execution Order
 
-| Order | Phase | Effort | Breaking? | JOSS-required? |
-|:-----:|-------|:------:|:---------:|:--------------:|
-| 1 | Phase 2: Root files (README, LICENSE, CONTRIBUTING) | 2 hr | No | **Yes** |
-| 2 | Phase 1: XML docs on all 11 under-documented files | 4 hr | No | **Yes** |
-| 3 | Phase 3.1: Remove dead code | 15 min | No | No |
-| 4 | Phase 4.1: Remove empty test file | 5 min | No | No |
-| 5 | Phase 5: Organise examples/ | 1 hr | No | **Yes** |
-| 6 | Phase 7: Project file metadata | 30 min | No | **Yes** |
-| 7 | Phase 6: CI setup | 1 hr | No | **Yes** |
-| 8 | Phase 3.2: AutoOpen documentation | 15 min | No | No |
-| 9 | Phase 4.2-4.3: Test docs and coverage | 2 hr | No | Nice-to-have |
-| 10 | Phase 3.3: Type renaming | 3 hr | **Yes** | No (defer) |
-| 11 | Phase 3.4: Dictionary→Map | 1 hr | No (internal) | No (defer) |
+| Order | Phase | Effort | Breaking? | Required for? |
+|:-----:|-------|:------:|:---------:|:-------------:|
+| 1 | Phase 2: Root files (README, LICENSE, CONTRIBUTING) | 2 hr | No | JOSS + NuGet |
+| 2 | Phase 7: .fsproj NuGet metadata + `GenerateDocumentationFile` | 30 min | No | NuGet + Docs |
+| 3 | Phase 1: XML docs on all 11 under-documented files | 4 hr | No | JOSS + Docs + NuGet |
+| 4 | Phase 3.1: Remove dead code | 15 min | No | Hygiene |
+| 5 | Phase 4.1: Remove empty test file | 5 min | No | Hygiene |
+| 6 | Phase 5: Organise examples/ | 1 hr | No | JOSS |
+| 7 | Phase 8: NuGet packaging (dotnet pack, local test, icon) | 1 hr | No | NuGet |
+| 8 | Phase 9: GitHub Pages with fsdocs | 2 hr | No | Docs |
+| 9 | Phase 6: CI/CD pipeline (3 workflows) | 2 hr | No | All |
+| 10 | Phase 3.2: AutoOpen documentation | 15 min | No | Nice-to-have |
+| 11 | Phase 4.2-4.3: Test docs and coverage | 2 hr | No | Nice-to-have |
+| 12 | Phase 3.3: Type renaming | 3 hr | **Yes** | Defer |
+| 13 | Phase 3.4: Dictionary→Map | 1 hr | No (internal) | Defer |
 
-**Total estimated effort: ~12 hours for JOSS-required items (phases 1–7).**
+**Total estimated effort: ~14 hours for core items (phases 1–9).**
 
-Items 10–11 are deferred post-JOSS unless reviewer feedback demands them.
+Items 12–13 are deferred post-JOSS unless reviewer feedback demands them.
 
 ---
 
 ## Success Criteria
 
+### Repository & Code Quality
 - [ ] `dotnet build` produces zero warnings
 - [ ] `dotnet test` passes 303+ tests on Windows, Linux, macOS
 - [ ] Every public type and function has `///` XML documentation
-- [ ] README has installation, quick start, API overview, citation
 - [ ] LICENSE file exists (MIT)
-- [ ] CONTRIBUTING.md exists
+- [ ] CONTRIBUTING.md exists with code style guide
 - [ ] At least 4 example scripts in `examples/`
-- [ ] CI passes on all three platforms
-- [ ] JOSS `paper.md` compiles with `whedon` or Open Journals toolchain
-- [ ] Zenodo DOI minted
+
+### README & Messaging
+- [ ] README has NuGet install command as primary installation method
+- [ ] README has from-source build instructions as secondary method
+- [ ] README prominently states cross-platform support (Win/macOS/Linux)
+- [ ] README links to F# Software Foundation and .NET Foundation
+- [ ] README has badges: CI, NuGet version, license, platforms
+- [ ] README links to GitHub Pages API documentation
+
+### NuGet Package
+- [ ] `dotnet pack` produces a valid `.nupkg` with README, XML docs, symbols
+- [ ] Package installs cleanly: `dotnet add package Fermion2Qubit`
+- [ ] NuGet.org listing shows description, tags, README, license
+- [ ] Source Link works (consumers can step into source in debugger)
+- [ ] Package has no unnecessary dependencies (zero runtime deps)
+
+### GitHub Pages Documentation
+- [ ] API reference generated from XML docs with mathematical notation
+- [ ] Landing page with overview, quick start, and architecture
+- [ ] Tutorial page walking through H₂ encoding
+- [ ] All pages render correctly on https://<org>.github.io/Fermion2Qubit/
+
+### CI/CD Pipeline
+- [ ] CI workflow: build + test on all 3 platforms, on every push/PR
+- [ ] Docs workflow: auto-deploy GitHub Pages on merge to `main`
+- [ ] Release workflow: auto-publish NuGet on version tag push
+- [ ] Zenodo DOI minted and badge in README
+
+### JOSS Submission
+- [ ] `paper.md` compiles with Open Journals toolchain
+- [ ] All JOSS checklist items satisfied
 
 ---
 
@@ -625,3 +1035,32 @@ Items 10–11 are deferred post-JOSS unless reviewer feedback demands them.
 - **Phase 1 is the highest-value work.**  Rich XML docs with mathematical
   notation will transform the library from "research code" to "reference
   implementation."  This is what JOSS reviewers look at first.
+
+- **NuGet is the primary distribution channel.**  Most .NET developers
+  expect `dotnet add package` — not cloning a repo and building from
+  source.  The package should be zero-dependency (just the DLL + XML
+  docs + README) so it's trivial to add to any project.
+
+- **GitHub Pages via `fsdocs` is the gold standard for F# libraries.**
+  [FSharp.Formatting](https://fsprojects.github.io/FSharp.Formatting/)
+  (`fsdocs`) generates API reference from XML doc comments and renders
+  literate `.fsx` scripts as tutorial pages.  It supports LaTeX math
+  via MathJax out of the box.  Major F# libraries (FSharp.Data,
+  FsToolkit.ErrorHandling, Plotly.NET) all use it.
+
+- **Cross-platform messaging matters for JOSS.**  JOSS reviewers must
+  be able to install and test the software.  If they're on macOS (most
+  academics), they need to know .NET 8 works there.  The README should
+  make this obvious — not buried in a footnote but in the first
+  paragraph, with platform badges.
+
+- **F# open-source lineage is a strength.**  F# is governed by the
+  F# Software Foundation (an independent non-profit), the compiler is
+  MIT-licensed, and the .NET runtime is MIT-licensed under the .NET
+  Foundation.  This matters for reproducibility and long-term
+  availability — two things JOSS cares about.  Call it out explicitly.
+
+- **The NuGet package name `Fermion2Qubit` needs to be checked** for
+  availability on nuget.org before we commit to it.  Alternative:
+  `FSharp.Quantum.Encodings` (follows the `FSharp.*` convention for
+  community libraries).
