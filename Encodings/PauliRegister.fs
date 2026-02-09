@@ -5,106 +5,8 @@ module PauliRegister =
     open System.Numerics
     open System.Collections.Generic
 
-    type Pauli =
-        | I
-        | X
-        | Y
-        | Z
-    with
-        static member Identity = I
-        static member FromChar = function
-            | 'I' -> Some I
-            | 'X' -> Some X
-            | 'Y' -> Some Y
-            | 'Z' -> Some Z
-            | _ -> None
-
-        override this.ToString() =
-            match this with
-            | I -> "I"
-            | X -> "X"
-            | Y -> "Y"
-            | Z -> "Z"
-
-        static member (*) (l, r) =
-            match (l, r) with
-            | (I, s)
-            | (s, I) -> (s, P1)
-            | (X, X)
-            | (Y, Y)
-            | (Z, Z) -> (I, P1)
-            | (X, Y) -> (Z, Pi)
-            | (Y, X) -> (Z, Mi)
-            | (Y, Z) -> (X, Pi)
-            | (Z, Y) -> (X, Mi)
-            | (Z, X) -> (Y, Pi)
-            | (X, Z) -> (Y, Mi)
-
-    and Phase =
-        | P1    // +1
-        | M1    // -1
-        | Pi    // +i
-        | Mi    // -i
-    with
-        member this.FoldIntoGlobalPhase (globalPhase : Complex) =
-            match this with
-            | Pi -> globalPhase.TimesI
-            | Mi -> -(globalPhase.TimesI)
-            | P1 -> globalPhase
-            | M1 -> -globalPhase
-
-        static member (*) (l : Phase, r : Phase) =
-            match (l, r) with
-            | (P1, s)
-            | (s, P1)  -> s
-            | (M1, M1) -> P1
-            | (M1, Pi)
-            | (Pi, M1) -> Mi
-            | (M1, Mi)
-            | (Mi, M1) -> Pi
-            | (Pi, Pi) -> M1
-            | (Pi, Mi)
-            | (Mi, Pi) -> P1
-            | (Mi, Mi) -> M1
-
-        member this.IsPositive =
-            match this with
-            | P1
-            | Pi -> true
-            | M1
-            | Mi -> false
-
-        member this.IsComplex =
-            match this with
-            | P1
-            | M1 -> false
-            | Pi
-            | Mi -> true
-
-    and PauliRegister internal (operators : Pauli[], phase) =
+    type PauliRegister internal (operators : Pauli[], phase) =
         class
-            let toPhasePrefix (this : Complex) =
-                match (this.Real, this.Imaginary) with
-                | (+1., 0.) -> ""
-                | (-1., 0.) -> " -"
-                | (0., +1.) -> "( i) "
-                | (0., -1.) -> "(-i) "
-                | (r, 0.)   -> sprintf "%A " r
-                | (0., i) -> sprintf "(%A i) " i
-                | _ -> sprintf "%A" this
-
-            let toPhaseConjunction (this : Complex) =
-                match (this.Real, this.Imaginary) with
-                | (+1., 0.) -> " + "
-                | (-1., 0.) -> " - "
-                | (0., +1.) -> " + i "
-                | (0., -1.) -> " - i "
-                | (r, 0.) when r >= 0. -> sprintf " + %A "     <| Math.Abs r
-                | (r, 0.) when r <  0. -> sprintf " - %A "     <| Math.Abs r
-                | (0., i) when i >= 0. -> sprintf " + (%A i) " <| Math.Abs i
-                | (0., i) when i <  0. -> sprintf " - (%A i) " <| Math.Abs i
-                | _ -> sprintf " + %A" this
-
             let bindAtIndex f = function
             | n when n < 0 -> None
             | n when n >= operators.Length -> None
@@ -126,18 +28,23 @@ module PauliRegister =
             member internal __.Operators = operators
             member internal __.Size = operators.Length
 
-            member __.ResetPhase (p : Complex) = PauliRegister(operators, p)
+            member __.ResetPhase (p : Complex) = PauliRegister(operators |> Array.copy, p)
 
             member __.Coefficient      = phase
-            member __.PhasePrefix      = phase |> toPhasePrefix
-            member __.PhaseConjunction = phase |> toPhaseConjunction
+            member __.PhasePrefix      = phase.ToPhasePrefix
+            member __.PhaseConjunction = phase.ToPhaseConjunction
 
+            /// Get the Pauli operator at the given index.
             member __.Item
                 with get i =
                     mapAtIndex (fun idx -> operators.[idx]) i
-                and set i v =
-                    mapAtIndex (fun idx -> do operators.[idx] <- v) i
-                    |> ignore
+
+            /// Return a new PauliRegister with the operator at index i replaced.
+            member __.WithOperatorAt (i : int) (op : Pauli) =
+                let ops' = operators |> Array.copy
+                if i >= 0 && i < ops'.Length then
+                    ops'.[i] <- op
+                PauliRegister(ops', phase)
 
             member __.Signature =
                 operators
@@ -145,7 +52,7 @@ module PauliRegister =
                 |> (fun rgstr -> System.String.Join("", rgstr))
 
             member private this.AsString =
-                let phasePrefix = this.Coefficient |> toPhasePrefix
+                let phasePrefix = this.Coefficient.ToPhasePrefix
                 sprintf "%s%s" (phasePrefix) (this.Signature)
 
             override this.ToString() =
@@ -231,14 +138,11 @@ module PauliRegister =
 
             member __.SummandTerms = bag.Values |> Seq.toArray
 
-            member val Coefficient = coefficient
-                with get, set
+            member __.Coefficient = coefficient
 
             member __.Item
                 with get key =
                     bag.TryGetValue key
-                and set key (newValue : PauliRegister) =
-                    PauliRegisterSequence.AddToDictionary bag newValue |> ignore
 
             static member (*) (l : PauliRegisterSequence, r : PauliRegisterSequence) =
                 let (l_normal, r_normal) = (l.DistributeCoefficient, r.DistributeCoefficient)

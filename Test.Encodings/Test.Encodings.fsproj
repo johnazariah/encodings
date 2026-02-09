@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.2</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
 
     <IsPackable>false</IsPackable>
   </PropertyGroup>
@@ -12,19 +12,28 @@
     <Compile Include="Terms_C.fs" />
     <Compile Include="Terms_P.fs" />
     <Compile Include="Terms_S.fs" />
+    <Compile Include="Phase.fs" />
+    <Compile Include="Pauli.fs" />
+    <Compile Include="PauliRegister.fs" />
     <Compile Include="IndexedOperator.fs" />
     <Compile Include="SwapTrackingSort.fs" />
     <Compile Include="LadderOperatorUnit.fs" />
     <Compile Include="LadderOperatorProductTerm.fs" />
     <Compile Include="LadderOperatorSumExpression.fs" />
+    <Compile Include="FermionicOperator_JordanWigner.fs" />
+    <Compile Include="FenwickTree.fs" />
+    <Compile Include="BravyiKitaev.fs" />
+    <Compile Include="Parity.fs" />
+    <Compile Include="TreeEncoding.fs" />
+    <Compile Include="Hamiltonian.fs" />
     <Compile Include="Tests.fs" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="FsCheck.Xunit" Version="2.14.0" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.9.0" />
-    <PackageReference Include="xunit" Version="2.4.0" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.0" />
+    <PackageReference Include="FsCheck.Xunit" Version="2.16.6" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
+    <PackageReference Include="xunit" Version="2.7.0" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.7" />
   </ItemGroup>
 
   <ItemGroup>

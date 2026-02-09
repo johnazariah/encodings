@@ -20,16 +20,27 @@ module TypeExtensions =
         static member MinusOne = Complex.One |> Complex.Negate
 
         member this.IsFinite =
-            (System.Double.IsFinite this.Real) && (System.Double.IsFinite this.Imaginary)
+            not (System.Double.IsNaN this.Real || System.Double.IsInfinity this.Real) &&
+            not (System.Double.IsNaN this.Imaginary || System.Double.IsInfinity this.Imaginary)
 
         member this.IsNonZero =
-            this.IsFinite && (this <> Complex.Zero)
+            let isFinite =
+                not (System.Double.IsNaN this.Real || System.Double.IsInfinity this.Real) &&
+                not (System.Double.IsNaN this.Imaginary || System.Double.IsInfinity this.Imaginary)
+            isFinite && (this <> Complex.Zero)
 
         member this.IsZero =
-            not this.IsNonZero
+            let isFinite =
+                not (System.Double.IsNaN this.Real || System.Double.IsInfinity this.Real) &&
+                not (System.Double.IsNaN this.Imaginary || System.Double.IsInfinity this.Imaginary)
+            let isNonZero = isFinite && (this <> Complex.Zero)
+            not isNonZero
 
         member this.Reduce =
-            if this.IsFinite then
+            let isFinite =
+                not (System.Double.IsNaN this.Real || System.Double.IsInfinity this.Real) &&
+                not (System.Double.IsNaN this.Imaginary || System.Double.IsInfinity this.Imaginary)
+            if isFinite then
                 this
             else
                 Complex.Zero
@@ -60,8 +71,8 @@ module TypeExtensions =
 
     type Map<'Key, 'Value when 'Key : comparison>
     with
-        member this.Key =
-            this |> Map.fold (fun s k _ ->Array.concat [| s; [| k |] |]) [||]
+        member this.Keys =
+            this |> Map.toArray |> Array.map fst
 
         member this.Values =
-            this |> Map.fold (fun s _ v ->Array.concat [| s; [| v |] |]) [||]
+            this |> Map.toArray |> Array.map snd

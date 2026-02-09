@@ -4,11 +4,16 @@
 module CombiningAlgebra =
     open System.Numerics
 
+    /// Interface for algebras that define how to combine (commute/anti-commute)
+    /// operators when sorting into normal order.
     type ICombiningAlgebra<'op when 'op : equality> =
         interface
-            abstract Combine : ((*productTerm : *)P<IxOp<'op>>) -> ((*nextUnit : *)C<IxOp<'op>>) -> P<IxOp<'op>>[]
+            abstract Combine : ((*productTerm : *)P<IxOp<uint32, 'op>>) -> ((*nextUnit : *)C<IxOp<uint32, 'op>>) -> P<IxOp<uint32, 'op>>[]
         end
 
+    /// Fermionic anti-commutation algebra:
+    ///   {a†_i, a_j} = δ_ij
+    ///   {a_i, a_j}   = 0
     type FermionicAlgebra () =
         class
             interface ICombiningAlgebra<LadderOperatorUnit> with
@@ -28,25 +33,25 @@ module CombiningAlgebra =
                                     yield! prefix
                                     yield { nextUnit with Coeff = Complex.MinusOne }
                                     yield lastUnit
-                                |] |> P<IxOp<LadderOperatorUnit>>.Apply
+                                |] |> P<IxOp<uint32, LadderOperatorUnit>>.Apply
                             [| term.Reduce.Value |]
                         else
                             let leadingTerm =
                                 [|
                                     yield! prefix
-                                |] |> P<IxOp<LadderOperatorUnit>>.Apply
+                                |] |> P<IxOp<uint32, LadderOperatorUnit>>.Apply
                             let trailingTerm =
                                 [|
                                     yield! prefix
                                     yield { nextUnit with Coeff = Complex.MinusOne }
                                     yield lastUnit
-                                |] |> P<IxOp<LadderOperatorUnit>>.Apply
+                                |] |> P<IxOp<uint32, LadderOperatorUnit>>.Apply
                             [| leadingTerm.Reduce.Value; trailingTerm.Reduce.Value |]
                     | _, _ ->
                         let term =
                             [|
                                 yield! productTerm.Units
                                 yield nextUnit
-                            |] |> P<IxOp<LadderOperatorUnit>>.Apply
+                            |] |> P<IxOp<uint32, LadderOperatorUnit>>.Apply
                         [| term.Reduce.Value |]
         end

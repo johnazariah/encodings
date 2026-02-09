@@ -41,6 +41,6 @@ module LadderOperatorSumExpression =
         (input : string, expected : string) =
         match LadderOperatorSumExpression.TryCreateFromString input with
         | Some l ->
-            NormalOrderedLadderOperatorSumExprNormalOrderedLadderOperatorSumExpr.Construct l
+            LadderOperatorSumExpr<FermionicAlgebra>.ConstructNormalOrdered l.Unapply
             |> Option.iter (fun nols -> Assert.Equal (expected, nols.ToString()))
-            | None -> Assert.Equal(expected, "")
+        | None -> Assert.Equal(expected, "")

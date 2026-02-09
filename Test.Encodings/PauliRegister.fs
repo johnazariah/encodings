@@ -12,8 +12,7 @@ module PauliRegister =
 
     [<Fact>]
     let ``Register is Big Endian``() =
-        let reg = PauliRegister(4u)
-        do reg.[0] <- X
+        let reg = PauliRegister(4u).WithOperatorAt 0 X
         Assert.Equal(Some X, reg.[0])
         Assert.Equal("XIII", reg.ToString())
 

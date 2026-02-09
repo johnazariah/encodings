@@ -20,11 +20,16 @@ module Terms =
             else
                 P<'unit>.Apply (coeff, [| {l with Coeff = Complex.One}; {r with Coeff = Complex.One} |])
 
-        //static member (+) (l : C<'unit>, r : C<'unit>) =
-        //    if (l.Item <> r.Item) then
-        //        P<'unit>.Apply (Complex.One, [| l; r|])
-        //    else
-        //        P<'unit>.Apply ((l.Coeff + r.Coeff).Reduce, [| { l with C.Coeff = Complex.One } |])
+        // SUM operator: combine like terms or create a product term
+        static member (+) (l : C<'unit>, r : C<'unit>) =
+            if (l.Item = r.Item) then
+                let coeff = (l.Coeff + r.Coeff).Reduce
+                if coeff.IsZero then
+                    P<'unit>.Zero
+                else
+                    P<'unit>.Apply (coeff, [| { l with Coeff = Complex.One } |])
+            else
+                P<'unit>.Apply (Complex.One, [| l; r |])
 
         member this.IsZero = this.Coeff.IsZero
 
@@ -54,6 +59,8 @@ module Terms =
     and  P<'unit when 'unit : equality> =
         { Coeff : Complex; Units : C<'unit>[] }
     with
+        static member Zero : P<'unit> = { Coeff = Complex.Zero; Units = [||] }
+
         static member private ApplyInternal (coeff : Complex) (units : C<'unit>[]) =
             {
                 P.Coeff = coeff.Reduce
@@ -62,8 +69,6 @@ module Terms =
 
         static member Apply (coeff : Complex, units : C<'unit>[]) : P<'unit> =
             P<'unit>.ApplyInternal coeff units
-
-        static member Zero = { Coeff = Complex.Zero; Units = [||] }
 
         member this.Reduce =
             let normalize (resultCoeff : Complex, resultUnits) (currentUnit : C<'unit>) =
@@ -118,7 +123,7 @@ module Terms =
     and S<'unit when 'unit : equality> =
         { Coeff : Complex; Terms : Map<string, P<'unit>> }
     with
-        member this.ProductTerms = lazy this.ProductTerms.Value
+        member this.ProductTerms = lazy (this.Terms |> Map.toArray |> Array.map snd)
         static member Unity : S<'unit> = { Coeff = Complex.One; Terms = Map.empty}
         static member private ApplyInternal coeff terms =
             terms

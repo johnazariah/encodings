@@ -17,14 +17,13 @@ module IndexedTerms =
         | Ascending
         | Descending
 
+    /// An indexed operator: pairs an index (e.g., qubit number) with an operator.
     and IxOp<'idx, 'op when 'idx : comparison and 'op : equality> =
         { Index : 'idx; Op : 'op }
     with
         static member Apply (index, (op : 'op)) = { Index = index; Op = op }
         static member (.>=.) (l : IxOp<'idx, 'op>, r : IxOp<'idx, 'op>) = l.Index >= r.Index
         static member (.<=.) (l : IxOp<'idx, 'op>, r : IxOp<'idx, 'op>) = l.Index <= r.Index
-        static member WithMinIndex = { IxOp.Index = (System.UInt32.MinValue); Op = Unchecked.defaultof<'op> }
-        static member WithMaxIndex = { IxOp.Index = (System.UInt32.MaxValue); Op = Unchecked.defaultof<'op> }
         static member IndicesInOrder (indexOrder : IndexOrder) (ops : IxOp<'idx, 'op> seq) : bool =
             let comparer =
                 match indexOrder with
@@ -32,30 +31,41 @@ module IndexedTerms =
                 | Descending -> (.>=.)
             ops |> isOrdered comparer
 
-        static member TryCreateFromString
+        /// Parse an IxOp from a string like "(op, index)", with a custom index parser.
+        static member TryCreateFromStringWith
+            (indexParser : string -> 'idx option)
             (unitFactory : string -> 'op option)
             (s : System.String) =
             try
                 s.Trim().TrimStart('(').TrimEnd(')').Split(',')
                 |> Array.map (fun s -> s.Trim ())
                 |> (fun rg ->
-                    unitFactory (rg.[0])
-                    |> Option.map (fun op ->
-                        IxOp<_,_>.Apply(System.UInt32.Parse rg.[1], op)))
+                    match unitFactory rg.[0], indexParser rg.[1] with
+                    | Some op, Some idx -> Some (IxOp<_,_>.Apply(idx, op))
+                    | _ -> None)
             with
             | _ -> None
 
         override this.ToString() =
             sprintf "(%O, %O)" this.Op this.Index
 
-    and PIxOp<'idx, 'op when 'idx : comparison and 'op : equality> =
+    /// Parse an IxOp<uint32, 'op> from a string like "(op, 123)".
+    let tryParseIxOpUint32 (unitFactory : string -> 'op option) : string -> IxOp<uint32, 'op> option =
+        let parseUint32 (s : string) =
+            match System.UInt32.TryParse s with
+            | true, v -> Some v
+            | false, _ -> None
+        IxOp<_,_>.TryCreateFromStringWith parseUint32 unitFactory
+
+    /// A product of indexed operators.
+    type PIxOp<'idx, 'op when 'idx : comparison and 'op : equality> =
         | ProductTerm of P<IxOp<'idx, 'op>>
     with
         member this.Unapply = match this with ProductTerm term -> term
         member this.Units = lazy this.Unapply.Units
 
         static member TryCreateFromString (unitFactory : string -> 'op option) =
-            P<IxOp<'idx, 'op>>.TryCreateFromString (IxOp<_,_>.TryCreateFromString unitFactory)
+            P<IxOp<uint32, 'op>>.TryCreateFromString (tryParseIxOpUint32 unitFactory)
             >> Option.map ProductTerm
 
         member this.IsInIndexOrder indexOrder =
@@ -68,6 +78,7 @@ module IndexedTerms =
 
         override this.ToString() = this.Unapply.ToString()
 
+    /// A sum of products of indexed operators.
     and SIxOp<'idx, 'op when 'idx : comparison and 'op : equality> =
         | SumTerm of S<IxOp<'idx, 'op>>
     with
@@ -75,7 +86,7 @@ module IndexedTerms =
         member this.ProductTerms = this.Unapply.ProductTerms
 
         static member TryCreateFromString (unitFactory : string -> 'op option) =
-            S<IxOp<'idx,'op>>.TryCreateFromString (IxOp<_, _>.TryCreateFromString unitFactory)
+            S<IxOp<uint32,'op>>.TryCreateFromString (tryParseIxOpUint32 unitFactory)
             >> Option.map SumTerm
 
         member this.AllTermsIndexOrdered indexOrder  =

@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.2</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
@@ -10,9 +10,16 @@
     <Compile Include="IndexedTerms.fs" />
     <Compile Include="SwapTrackingSort.fs" />
     <Compile Include="IndexedPauli.fs" />
+    <Compile Include="PauliRegister.fs" />
     <Compile Include="IndexedLadderOperator.fs" />
     <Compile Include="CombiningAlgebra.fs" />
     <Compile Include="LadderOperatorSequence.fs" />
+    <Compile Include="JordanWigner.fs" />
+    <Compile Include="FenwickTree.fs" />
+    <Compile Include="MajoranaEncoding.fs" />
+    <Compile Include="BravyiKitaev.fs" />
+    <Compile Include="TreeEncoding.fs" />
+    <Compile Include="Hamiltonian.fs" />
   </ItemGroup>
 
 </Project>

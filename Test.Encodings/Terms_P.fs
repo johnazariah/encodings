@@ -31,10 +31,17 @@ module Terms_P =
     [<Property>]
     let ``P <- C + C``(l : C<int>, r : C<int>) =
         let actual = l + r
-        let expectedCount = if (l.Item = r.Item) then 1 else 2
-        let expectedCoeff = if (l.Item = r.Item) then (l.Coeff + r.Coeff) else Complex.One
-        Assert.Equal(expectedCount, actual.Units.Length)
-        Assert.Equal(expectedCoeff.Reduce, actual.Coeff)
+        let combinedCoeff = (l.Coeff + r.Coeff).Reduce
+        if l.Item = r.Item then
+            if combinedCoeff.IsZero then
+                Assert.Equal(0, actual.Units.Length)
+                Assert.Equal(Complex.Zero, actual.Coeff)
+            else
+                Assert.Equal(1, actual.Units.Length)
+                Assert.Equal(combinedCoeff, actual.Coeff)
+        else
+            Assert.Equal(2, actual.Units.Length)
+            Assert.Equal(Complex.One, actual.Coeff)
 
     [<Property>]
     let ``P <- C * C``(l : C<int>, r : C<int>) =

@@ -2,56 +2,53 @@
 
 [<AutoOpen>]
 module LadderOperatorSequence =
-    let isInNormalOrder productTerm =
-        let comparer p c =
-            match (p, c) with
-            | Lower, Raise -> false
-            | _, _         -> true
-        productTerm.Units
-        |> Seq.map (fun ciu -> ciu.Item.Op)
-        |> isOrdered comparer
+    open System.Numerics
 
+    /// Sorts the raise and lower operators within a product term into index order
+    /// using a selection sort that tracks sign changes from swaps.
+    let toIndexOrder (productTerm : P<IxOp<uint32, LadderOperatorUnit>>) : P<IxOp<uint32, LadderOperatorUnit>> =
+        let raiseSort =
+            SwapTrackingSort<IxOp<uint32, LadderOperatorUnit>, Complex>(
+                (fun a b -> a.Index <= b.Index),
+                { IxOp.Index = System.UInt32.MaxValue; Op = Raise },
+                Complex.SwapSignMultiple)
 
-    let isInIndexOrder productTerm =
-        let operators =
-            productTerm.Units
-            |> Seq.map (fun ciu -> ciu.Item)
-        let raisingOperatorsAreAscending =
-            operators
-            |> Seq.where (fun ico -> ico.Op = Raise)
-            |> IxOp<_>.IndicesInOrder Ascending
-        let loweringOperatorsAreDescending =
-            operators
-            |> Seq.where (fun ico -> ico.Op = Lower)
-            |> IxOp<_>.IndicesInOrder Descending
-        raisingOperatorsAreAscending && loweringOperatorsAreDescending
+        let lowerSort =
+            SwapTrackingSort<IxOp<uint32, LadderOperatorUnit>, Complex>(
+                (fun a b -> a.Index >= b.Index),
+                { IxOp.Index = System.UInt32.MinValue; Op = Lower },
+                Complex.SwapSignMultiple)
 
-    let toIndexOrder<'algebra when 'algebra :> ICombiningAlgebra<LadderOperatorUnit>> (productTerm) : P<IxOp<LadderOperatorUnit>> =
-        let (sortedCreationOps, createdPhase) =
+        let raiseOps =
             productTerm.Units
             |> Array.map (fun u -> u.Item)
-            |> LadderOperatorProductTerm.RaiseOperatorIndexSort.SortRaiseOperators
+            |> Array.where (fun io -> io.Op = Raise)
 
-        let (sortedAnnihilationOps, annihilatedPhase) =
+        let lowerOps =
             productTerm.Units
             |> Array.map (fun u -> u.Item)
-            |> LadderOperatorProductTerm.LowerOperatorIndexSort.SortLowerOperators
+            |> Array.where (fun io -> io.Op = Lower)
 
-        let phase = productTerm.Coeff * createdPhase * annihilatedPhase
-        let ops   = Array.concat [| sortedCreationOps; sortedAnnihilationOps |]
+        let (sortedRaise, raisePhase) = raiseSort.Sort Complex.One raiseOps
+        let (sortedLower, lowerPhase) = lowerSort.Sort Complex.One lowerOps
+
+        let phase = productTerm.Coeff * raisePhase * lowerPhase
+        let ops   = Array.concat [| sortedRaise; sortedLower |]
 
         (phase, ops)
-        |> P<IxOp<LadderOperatorUnit>>.Apply
+        |> P<IxOp<uint32, LadderOperatorUnit>>.Apply
 
 
+    /// A sum expression of ladder operators parameterized by a combining algebra
+    /// (e.g., fermionic anti-commutation relations).
     type LadderOperatorSumExpr<'algebra when 'algebra :> ICombiningAlgebra<LadderOperatorUnit> and 'algebra : (new : unit -> 'algebra)>
         private (sumTerm : S<IxOp<uint32, LadderOperatorUnit>>) =
         class
-            private new (productTerms : P<IxOp<LadderOperatorUnit>>[]) =
-                LadderOperatorSumExpr (S<IxOp<LadderOperatorUnit>>.Apply productTerms)
+            private new (productTerms : P<IxOp<uint32, LadderOperatorUnit>>[]) =
+                LadderOperatorSumExpr (S<IxOp<uint32, LadderOperatorUnit>>.Apply productTerms)
 
             static member TryCreateFromString =
-                (IxOp<_>.TryCreateFromString LadderOperatorUnit.Apply) |> S<IxOp<LadderOperatorUnit>>.TryCreateFromString
+                (tryParseIxOpUint32 LadderOperatorUnit.Apply) |> S<IxOp<uint32, LadderOperatorUnit>>.TryCreateFromString
                 >> Option.map (LadderOperatorSumExpr<'algebra>)
 
             member internal __.Unapply = sumTerm
@@ -75,12 +72,10 @@ module LadderOperatorSequence =
             override this.ToString() =
                 this.Unapply.ToString()
 
-            override this.ToString()  = this.Unapply.ToString()
-
             static member private CombiningAlgebra = new 'algebra ()
 
-            static member private SortSingleProductTerm (productTerm : P<IxOp<LadderOperatorUnit>>) : P<IxOp<LadderOperatorUnit>>[] =
-                let rec sortInternal (result : P<IxOp<LadderOperatorUnit>>[]) (remainingUnits : C<IxOp<LadderOperatorUnit>>[]) : P<IxOp<LadderOperatorUnit>>[] =
+            static member private SortSingleProductTerm (productTerm : P<IxOp<uint32, LadderOperatorUnit>>) : P<IxOp<uint32, LadderOperatorUnit>>[] =
+                let rec sortInternal (result : P<IxOp<uint32, LadderOperatorUnit>>[]) (remainingUnits : C<IxOp<uint32, LadderOperatorUnit>>[]) : P<IxOp<uint32, LadderOperatorUnit>>[] =
                     if remainingUnits.Length = 0 then
                         result
                     else
@@ -88,35 +83,39 @@ module LadderOperatorSequence =
                         let remainingUnits' = remainingUnits.[1..]
                         let result' =
                             if result.Length = 0 then
-                                [| P<IxOp<LadderOperatorUnit>>.Apply nextUnit |]
+                                [| P<IxOp<uint32, LadderOperatorUnit>>.Apply nextUnit |]
                             else
                                 let appendUnitToProductTerm nu pt =
-                                    LadderOperatorSumExpr<_>.CombiningAlgebra.Combine pt nu
-                                    |> S<IxOp<LadderOperatorUnit>>.Apply
+                                    LadderOperatorSumExpr<'algebra>.CombiningAlgebra.Combine pt nu
+                                    |> S<IxOp<uint32, LadderOperatorUnit>>.Apply
                                     |> LadderOperatorSumExpr<'algebra>.ConstructNormalOrdered
                                     |> Option.map (fun nols -> nols.ProductTerms.Value) |> Option.defaultValue [||]
                                 result |> Array.collect (appendUnitToProductTerm nextUnit)
                         sortInternal result' remainingUnits'
                 sortInternal [||] productTerm.Reduce.Value.Units
 
-            static member ConstructNormalOrdered (candidate : S<IxOp<LadderOperatorUnit>>) : LadderOperatorSumExpr<'algebra> option =
+            /// Constructs a normal-ordered version of the given sum expression
+            /// using the combining algebra to apply commutation/anti-commutation relations.
+            static member ConstructNormalOrdered (candidate : S<IxOp<uint32, LadderOperatorUnit>>) : LadderOperatorSumExpr<'algebra> option =
                 let sumExpr = LadderOperatorSumExpr<'algebra>(candidate.Reduce.Value)
                 if sumExpr.AllTermsNormalOrdered then
                     Some sumExpr
                 else
                     sumExpr.ProductTerms.Value
                     |> Array.collect LadderOperatorSumExpr<'algebra>.SortSingleProductTerm
-                    |> (S<IxOp<LadderOperatorUnit>>.Apply >> LadderOperatorSumExpr<'algebra> >> Some)
+                    |> (S<IxOp<uint32, LadderOperatorUnit>>.Apply >> LadderOperatorSumExpr<'algebra> >> Some)
 
-            static member ConstructIndexOrdered (candidate : S<IxOp<LadderOperatorUnit>>) : LadderOperatorSumExpr<'algebra> option =
+            /// Constructs an index-ordered version: first normal-orders, then sorts
+            /// raise operators ascending and lower operators descending by index.
+            static member ConstructIndexOrdered (candidate : S<IxOp<uint32, LadderOperatorUnit>>) : LadderOperatorSumExpr<'algebra> option =
                 let sumExpr = LadderOperatorSumExpr<'algebra>(candidate.Reduce.Value)
                 if sumExpr.AllTermsIndexOrdered then
                     Some sumExpr
                 else if sumExpr.AllTermsNormalOrdered then
                     sumExpr.ProductTerms.Value
-                    |> Array.map (toIndexOrder<'algebra>)
+                    |> Array.map toIndexOrder
                     |> (fun terms -> (sumExpr.Coeff, terms))
-                    |> (S<IxOp<LadderOperatorUnit>>.Apply >> LadderOperatorSumExpr<'algebra> >> Some)
+                    |> (S<IxOp<uint32, LadderOperatorUnit>>.Apply >> LadderOperatorSumExpr<'algebra> >> Some)
                 else
                     sumExpr.Unapply
                     |> LadderOperatorSumExpr<'algebra>.ConstructNormalOrdered

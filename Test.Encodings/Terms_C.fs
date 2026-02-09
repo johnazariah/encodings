@@ -28,8 +28,8 @@ module Terms_C =
     [<InlineData (-2,   0, 'a', "(-2 a)")>]
     [<InlineData ( 42,  1, 'a', "(42i a)")>]
     [<InlineData ( 42, -1, 'a', "(-42i a)")>]
-    [<InlineData ( 41, 10, 'a', "{Coeff = (41, 10);\n Item = 'a';}")>]
-    [<InlineData ( 40, 10, 'a', "{Coeff = (40, 10);\n Item = 'a';}")>]
+    [<InlineData ( 41, 10, 'a', "{Coeff = <41; 10>;\n Item = 'a';}")>]
+    [<InlineData ( 40, 10, 'a', "{Coeff = <40; 10>;\n Item = 'a';}")>]
     [<InlineData (System.Math.PI, -3, 'a', "_ToString_")>]
     let ``C -> string`` (cr, ci, i, expected) =
         let ci = C<_>.Apply(Complex(float cr, float ci), i)
