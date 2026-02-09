@@ -25,6 +25,9 @@ module PauliRegister =
             new (ops : Pauli list, coefficient) =
                 new PauliRegister (ops |> List.toArray, coefficient)
 
+            new (ops : Pauli seq, coefficient) =
+                new PauliRegister (ops |> Seq.toArray, coefficient)
+
             member internal __.Operators = operators
             member internal __.Size = operators.Length
 
