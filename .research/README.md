@@ -33,9 +33,9 @@ cd .. && dotnet build Encodings/Encodings.fsproj
 
 | Paper | Outline | Plan | Draft | Figures | Verification |
 |-------|---------|------|-------|---------|--------------|
-| Tutorial   | ✅ | ✅ | 🔲 | 🔲 | ✅ MatrixVerification, ParityOperator |
-| Software   | ✅ | ✅ | 🔲 | 🔲 | ✅ AnticommutationTest |
-| Emergence  | ✅ | ✅ | 🔲 | 🔲 | ✅ MonotonicityCensus |
+| Tutorial   | ✅ | ✅ | ✅ v0.1 | 🔲 | ✅ MatrixVerification, ParityOperator |
+| Software   | ✅ | ✅ | ✅ v0.1 | 🔲 | ✅ AnticommutationTest |
+| Emergence  | ✅ | ✅ | 🔲 (deferred) | 🔲 | ✅ MonotonicityCensus |
 
 ## Investigation Journal
 

@@ -5,6 +5,71 @@ Entries are reverse-chronological (newest first).
 
 ---
 
+## 2026-02-09 (night) — Paper Drafts v0.1 Written
+
+### Paper 1: "From Molecules to Qubits" (Tutorial, AJP target)
+
+Draft at `paper-tutorial/drafts/draft-v01.md`.
+
+**What's in it:**
+- Full 10-section structure following the PLAN.md
+- Complete pipeline: Schrödinger equation → Born-Oppenheimer → basis sets →
+  second quantization (Fock space, CAR, Hamiltonian) → notation minefield
+  (chemist vs physicist integrals) → spin-orbital expansion → JW encoding
+  (worked out with Majorana operators) → full H₂ 15-term Hamiltonian →
+  verification by exact diagonalisation → what's next (VQE/QPE)
+- All three common errors documented (notation, double-counting, operator ordering)
+- Cross-encoding comparison table (JW, BK, Parity, balanced binary, balanced ternary)
+- Three appendices: integral tables, Pauli algebra reference, (code companion TBD)
+- 11 references
+
+**What's NOT in it yet:**
+- Numerical values need verification against IntegralTables.fsx output (some
+  are approximate in the draft)
+- Figures (none yet — need orbital diagrams, encoding pipeline diagram,
+  weight-vs-n plot, eigenvalue comparison)
+- Appendix C (code companion) is sketched but not written
+- Tone needs a pass — currently too formal in places for AJP audience
+- Need to add more "intuition first" passages per PLAN.md pedagogical principles
+- The "other encodings" section (6.4) is thin — needs worked BK example
+
+**Estimated completeness:** ~60% of final text. Good structural skeleton.
+
+### Paper 2: "Fermion2Qubit" (JOSS, ~1000 words)
+
+Draft at `paper-software/drafts/draft-v01.md` + `paper.bib`.
+
+**What's in it:**
+- JOSS YAML frontmatter (title, tags, authors — placeholder ORCID)
+- Summary (~230 words): two frameworks, 5 encodings, pure functional, 303 tests
+- Statement of Need (~280 words): gap analysis vs OpenFermion/Qiskit/PennyLane,
+  who needs this and why
+- Functionality (~250 words): index-set schemes, tree encodings, data structures,
+  verification suite — with code example
+- Design Principles (~200 words): encodings-as-data, two frameworks, pure functions,
+  discovered constraints (monotonicity)
+- Comparison table: 7-feature comparison with 3 competitors
+- Related Software narrative (~100 words)
+- BibTeX file with 9 references
+
+**What's NOT in it yet:**
+- Author ORCID and affiliation are placeholders
+- Repository not on GitHub yet (all the JOSS checklist items: LICENSE, README,
+  CONTRIBUTING, CITATION.cff, CI, Zenodo DOI)
+- No architecture diagram
+- References section placeholder (needs pandoc compilation)
+- Need to verify word count fits JOSS limits
+
+**Estimated completeness:** ~75% of the paper text. Repository preparation is 0%.
+
+### Decision point
+Paper 1 needs months of iteration — teaching intuition, adding figures,
+verifying numerics. Paper 2 needs repository preparation before submission.
+Neither is close to submission-ready, but both have solid v0.1 skeletons
+to iterate on.
+
+---
+
 ## 2026-02-09 (evening) — Synthesis: The Star-Tree Discovery Explained
 
 ### What we have
