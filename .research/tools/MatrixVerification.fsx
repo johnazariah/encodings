@@ -168,18 +168,28 @@ let eigenvalues (m : CMatrix) : float[] =
         if maxVal < 1e-14 then
             converged <- true
         else
-            let theta =
-                if abs (a.[p, p] - a.[q, q]) < 1e-30 then
-                    Math.PI / 4.0
-                else
-                    0.5 * atan (2.0 * a.[p, q] / (a.[p, p] - a.[q, q]))
-            let c = cos theta
-            let s = sin theta
+            // Classic Jacobi: solve tan(2θ) = 2a_{pq}/(a_{pp} - a_{qq})
+            // Use the stable formula: t = sgn(τ) / (|τ| + √(1 + τ²))
+            // where τ = (a_{qq} - a_{pp}) / (2 a_{pq})
+            let apq = a.[p, q]
             let app = a.[p, p]
             let aqq = a.[q, q]
-            let apq = a.[p, q]
-            a.[p, p] <- c*c*app + s*s*aqq - 2.0*s*c*apq
-            a.[q, q] <- s*s*app + c*c*aqq + 2.0*s*c*apq
+            let (c, s, t) =
+                if abs (app - aqq) < 1e-30 then
+                    // a_{pp} ≈ a_{qq}: θ = π/4
+                    let sq = 1.0 / sqrt 2.0
+                    (sq, (if apq >= 0.0 then sq else -sq), (if apq >= 0.0 then 1.0 else -1.0))
+                else
+                    let tau = (aqq - app) / (2.0 * apq)
+                    let t' =
+                        if tau >= 0.0 then
+                            1.0 / (tau + sqrt(1.0 + tau * tau))
+                        else
+                            -1.0 / (-tau + sqrt(1.0 + tau * tau))
+                    let c' = 1.0 / sqrt(1.0 + t' * t')
+                    (c', t' * c', t')
+            a.[p, p] <- app - t * apq
+            a.[q, q] <- aqq + t * apq
             a.[p, q] <- 0.0
             a.[q, p] <- 0.0
             for r in 0 .. size-1 do

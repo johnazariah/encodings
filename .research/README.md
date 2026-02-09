@@ -31,8 +31,13 @@ cd .. && dotnet build Encodings/Encodings.fsproj
 
 ## Status
 
-| Paper | Outline | Draft | Figures | Verification |
-|-------|---------|-------|---------|--------------|
-| Tutorial   | 🔲 | 🔲 | 🔲 | 🔲 |
-| Software   | 🔲 | 🔲 | 🔲 | 🔲 |
-| Emergence  | 🔲 | 🔲 | 🔲 | 🔲 |
+| Paper | Outline | Plan | Draft | Figures | Verification |
+|-------|---------|------|-------|---------|--------------|
+| Tutorial   | ✅ | ✅ | 🔲 | 🔲 | ✅ MatrixVerification, ParityOperator |
+| Software   | ✅ | ✅ | 🔲 | 🔲 | ✅ AnticommutationTest |
+| Emergence  | ✅ | ✅ | 🔲 | 🔲 | ✅ MonotonicityCensus |
+
+## Investigation Journal
+
+See [JOURNAL.md](JOURNAL.md) for the running log of investigations,
+discoveries, and open questions.
