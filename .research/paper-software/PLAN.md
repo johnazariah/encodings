@@ -7,7 +7,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Title** | Fermion2Qubit: A Composable Functional Framework for Fermion-to-Qubit Encodings in F# |
+| **Title** | FockMap: A Composable Functional Framework for Fermion-to-Qubit Encodings in F# |
 | **Target** | Journal of Open Source Software (JOSS) |
 | **Audience** | Quantum computing researchers and software developers |
 | **Assumed knowledge** | Fermion-to-qubit encodings (JW, BK), basic quantum computing, functional programming concepts |
@@ -121,7 +121,7 @@ JOSS papers start with a short Summary section.
 - Different encodings (JW, BK, Parity, tree-based) trade off Pauli weight,
   circuit depth, and implementability.
 - Existing libraries implement encodings as separate, non-composable transforms.
-- We present Fermion2Qubit, an F# library that unifies all known encodings
+- We present FockMap, an F# library that unifies all known encodings
   under two composable abstractions: index-set schemes and path-based tree
   encodings.
 - Users can define new encodings by supplying a record of three set functions

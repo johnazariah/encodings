@@ -997,6 +997,15 @@ $w(\sigma) = |\{j : P_j \neq I\}|$.
 
 ---
 
+## Acknowledgements
+
+This work is dedicated to Dr. Guang Hao Low, whose insights into
+Bravyi–Kitaev encodings seven years ago inspired the investigation
+that grew into this tutorial.  We thank the anonymous referees
+for their constructive feedback.
+
+---
+
 ## References
 
 [1] R. P. Feynman, "Simulating physics with computers,"

@@ -1,5 +1,5 @@
 ---
-title: 'Fermion2Qubit: A Composable Functional Framework for Fermion-to-Qubit Encodings in F#'
+title: 'FockMap: A Composable Functional Framework for Fermion-to-Qubit Encodings in F#'
 tags:
   - quantum computing
   - quantum chemistry
@@ -31,7 +31,7 @@ circuit depth, and implementational complexity.  Existing libraries
 implement each encoding as a separate, non-composable transform, obscuring
 the shared mathematical structure.
 
-We present `Fermion2Qubit`, an open-source F# library that unifies all
+We present `FockMap`, an open-source F# library that unifies all
 known fermion-to-qubit encodings under two composable abstractions:
 *index-set schemes*, in which an encoding is specified by three
 set-valued functions (`Update`, `Parity`, `Occupation`), and *path-based
@@ -66,7 +66,7 @@ parity tracking, update sets) is duplicated rather than abstracted.  There
 is no mechanism for users to define, compose, or compare custom encodings
 programmatically.
 
-`Fermion2Qubit` addresses this gap.  An encoding is a *value* — a record
+`FockMap` addresses this gap.  An encoding is a *value* — a record
 of three functions — not a class hierarchy.  This design enables:
 
 - **Exploration:** researchers can define and test novel encodings in
@@ -159,7 +159,7 @@ and is explored further in a companion paper [Paper 3].
 
 # Comparison with Related Software
 
-| Feature | OpenFermion | Qiskit Nature | PennyLane | **Fermion2Qubit** |
+| Feature | OpenFermion | Qiskit Nature | PennyLane | **FockMap** |
 |:--------|:-----------:|:------------:|:---------:|:---------:|
 | JW / BK / Parity | ✅ / ✅ / ✅ | ✅ / ✅ / ✅ | ✅ / ✅ / ❌ | ✅ / ✅ / ✅ |
 | Tree encodings | Steiner ext. | ❌ | ❌ | ✅ (binary, ternary) |
@@ -173,12 +173,16 @@ OpenFermion [@mcclean2020] is the most comprehensive existing tool,
 offering extensive support for operator manipulation and circuit synthesis.
 Qiskit Nature [@qiskit2023] integrates tightly with IBM quantum hardware.
 PennyLane [@bergholm2022] excels at differentiable quantum computing.
-`Fermion2Qubit` does not compete on scope; it provides the *framework*
+FockMap does not compete on scope; it provides the *framework*
 abstraction that these libraries lack, enabling systematic exploration and
 comparison of encodings.
 
 # Acknowledgements
 
-[TBD]
+This work is dedicated to Dr. Guang Hao Low, whose insights into
+Bravyi–Kitaev encodings seven years ago inspired the investigation
+that led to this library.  We also thank the F# Software Foundation
+and the .NET open-source community for the language and runtime
+that make this work possible.
 
 # References

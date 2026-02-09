@@ -35,7 +35,7 @@ Draft at `paper-tutorial/drafts/draft-v01.md`.
 
 **Estimated completeness:** ~60% of final text. Good structural skeleton.
 
-### Paper 2: "Fermion2Qubit" (JOSS, ~1000 words)
+### Paper 2: "FockMap" (JOSS, ~1000 words)
 
 Draft at `paper-software/drafts/draft-v01.md` + `paper.bib`.
 

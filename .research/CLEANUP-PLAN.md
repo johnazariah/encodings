@@ -421,6 +421,7 @@ Create comprehensive README with:
 - **Examples** — link to `examples/` folder
 - **Running tests** — `dotnet test` on all 3 platforms
 - **NuGet package** — link to nuget.org listing
+- **Acknowledgements** — dedication to Dr. Guang Hao Low
 - **Citation** — BibTeX block
 - **License** — MIT
 - **Related papers** — links to Paper 1 and Paper 2
@@ -706,7 +707,7 @@ dotnet tool install --global NuGetPackageExplorer  # or use nuget.info
 # Test install in a fresh project
 mkdir /tmp/test-install && cd /tmp/test-install
 dotnet new console -lang F#
-dotnet add package Fermion2Qubit --source /path/to/nupkg
+dotnet add package FockMap --source /path/to/nupkg
 # Write a 3-line script that encodes an operator
 dotnet run
 ```
