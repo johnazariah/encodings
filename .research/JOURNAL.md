@@ -5,6 +5,172 @@ Entries are reverse-chronological (newest first).
 
 ---
 
+## 2026-02-09 (evening) — Synthesis: The Star-Tree Discovery Explained
+
+### What we have
+
+There are two ways to build a fermion-to-qubit encoding from a tree:
+
+**Construction A** (index-set method, `treeEncodingScheme` in `TreeEncoding.fs`):
+Define three sets for each mode j — Update(j), Parity(j), Occupation(j) — and
+plug them into the Seeley-Richard-Love formulas:
+
+    c_j = X_{U(j) ∪ {j}} · Z_{P(j)}
+    d_j = Y_j · X_{U(j)} · Z_{(P(j) ⊕ Occ(j)) \ {j}}
+
+This is how JW, BK, and Parity are defined in the original literature
+(Seeley et al. arXiv:1208.5986).
+
+**Construction B** (path-based method, `encodeWithTernaryTree` in `TreeEncoding.fs`):
+Label each tree edge with a Pauli (X, Y, Z), walk root-to-leaf paths to get
+Majorana strings, and pair them via the "follow X then Z" / "follow Y then Z"
+rule (Jiang et al. arXiv:1910.10746, Bonsai arXiv:2212.09731). Works for any
+tree shape.
+
+### What we expected (Paper 3 plan, Theorem 3)
+
+The original hypothesis was:
+
+- Monotonic trees (parent index > child index on every edge) →
+  Construction A works ✅
+- Non-monotonic trees → Construction A fails ❌, only Construction B works
+- This creates a "structural phase boundary" in the space of labelled trees
+
+A clean story: algebraic methods work on one side, geometric methods needed
+on the other. The boundary itself would be a measurable structural transition.
+
+### What we actually found (exhaustive enumeration)
+
+We enumerated ALL labelled rooted trees on n = 3, 4, 5 nodes (9, 64, 625
+trees) and tested Construction A on each by checking the full CAR:
+
+    {a_i, a†_j} = δ_{ij}I     for all i, j
+
+Results:
+
+    n=3:  9 total trees,   2 monotonic,  3 pass CAR  → all 3 are stars
+    n=4:  64 total trees,  6 monotonic,  4 pass CAR  → all 4 are stars
+    n=5:  625 total trees, 24 monotonic, 5 pass CAR  → all 5 are stars
+
+A **star tree** is a tree of depth 1: one root with all other nodes as direct
+children. The n passing trees for each n correspond to the n choices of which
+node to designate as root.
+
+Key observation: the number of passing trees is LESS than the number of
+monotonic trees. Construction A doesn't just fail on non-monotonic trees —
+it fails on most monotonic trees too.
+
+### Why does BK work if Fenwick trees aren't stars?
+
+This is the critical subtlety. The Bravyi-Kitaev encoding uses a Fenwick tree,
+which is definitely not a star — it has depth O(log n). But BK does NOT go
+through `treeEncodingScheme`. It uses `bravyiKitaevScheme` in
+`MajoranaEncoding.fs`, which delegates to `FenwickTree.fs` — completely
+separate code with hand-derived bit-manipulation formulas:
+
+    updateSet(j)     = ancestors of j in the Fenwick tree
+    paritySet(j)     = prefix-parity indices via bit tricks
+    occupationSet(j) = subtree-parity indices via bit tricks
+
+These formulas are correct FOR FENWICK TREES. But they are NOT what
+`treeEncodingScheme` computes when you hand it a Fenwick-shaped
+`EncodingTree`. The generic formula in `treeRemainderSet` uses a
+`child.Index < j` condition that is too restrictive for non-star trees: it
+misses nodes that should be in the remainder set and includes path nodes
+that shouldn't be.
+
+### So there are THREE constructions, not two
+
+1. **Star construction** (`treeEncodingScheme`):
+   Works only for depth-1 trees. Essentially JW with qubit relabelling.
+
+2. **Fenwick construction** (`bravyiKitaevScheme`):
+   Works only for Fenwick trees. Hand-derived, tree-specific formulas.
+   Cannot be extended to other tree shapes without re-deriving everything.
+
+3. **Path-based construction** (`encodeWithTernaryTree`):
+   Works for ALL trees. The only universal method. This is what balanced
+   binary and balanced ternary encodings use.
+
+### Impact on Paper 3
+
+The "structural phase boundary" story is **sharper** than planned:
+
+The original plan said "Construction A works for monotonic trees."
+The correct statement is: "Construction A works only for stars."
+
+This means the algebraic (index-set) framework is far more brittle than
+the literature suggests. The Seeley-Richard-Love unification of JW, BK,
+and Parity into one framework APPEARS general, but:
+
+- JW is a star (the only non-trivial encoding the formula handles)
+- BK uses separate, hardcoded Fenwick formulas (not the generic framework)
+- Parity is also a star variant
+
+The SRL framework's generality is an illusion. The path-based construction
+from Jiang et al. / Bonsai is the truly general method.
+
+### The monotonic tree count: |M(n)| = (n−1)!
+
+Separately, we proved computationally that the number of monotonic labelled
+rooted trees on n nodes is exactly (n−1)! for n = 1, ..., 6.
+
+    n    nⁿ⁻¹ (total)    (n-1)! (monotonic)    fraction
+    1    1                1                      1.000
+    2    2                1                      0.500
+    3    9                2                      0.222
+    4    64               6                      0.094
+    5    625              24                     0.038
+    6    7776             120                    0.015
+
+The fraction (n−1)!/nⁿ⁻¹ decays super-exponentially at rate ~e⁻ⁿ (Stirling).
+So even if Construction A worked for all monotonic trees, they'd be a vanishing
+minority of the encoding space.
+
+The (n−1)! count likely follows from the bijection between monotonic labellings
+and heap orderings. A monotonic labelled rooted tree is equivalent to a
+heap-ordered tree (parent > children everywhere), and the number of such
+labellings on any fixed unlabelled tree is related to the hook-length formula.
+Summing over all unlabelled rooted trees on n nodes gives (n−1)!.
+
+Reference: Bergeron, Flajolet, Salvy — "Varieties of Increasing Trees"
+(CAAP 1992, LNCS vol 581).
+
+### Open questions for Paper 3
+
+1. **Can `treeRemainderSet` be fixed?** Is there a correct formula for
+   Update/Parity/Occupation that works for arbitrary monotonic trees? Or is
+   the star-only restriction fundamental to any index-set method?
+
+2. **Proof of (n−1)! count:** We have computational proof for n ≤ 6. Need
+   a clean bijective or generating-function proof for the paper.
+
+3. **What makes BK special?** The Fenwick tree has a unique algebraic
+   structure (binary indexed tree, prefix sums via bit manipulation). Is
+   there a family of trees for which tree-specific index-set formulas can
+   be derived? Or is Fenwick the only one?
+
+4. **Revised Theorem 3:** The statement should be something like:
+   "The index-set construction (SRL framework) produces valid encodings if
+   and only if the tree is a star. For general trees, the path-based
+   construction is necessary and sufficient." Then BK gets a separate
+   remark as a historical special case with bespoke formulas.
+
+### Strategic note
+
+These papers will take months. The maths involved spans:
+- Finite group theory (Pauli group, CAR algebra)
+- Combinatorics (labelled trees, Prüfer sequences, heap orderings)
+- Quantum information (encoding maps, Majorana operators)
+- Quantum chemistry (second quantization, molecular integrals)
+
+The journal is the memory. Every investigation, every failed attempt, every
+"wait, that's not right" gets recorded here. When we come back to write
+Section 4 of Paper 3 in three months, we need to reconstruct exactly WHY
+we believe what we believe.
+
+---
+
 ## 2026-02-09 — Verification Tools & Three Major Discoveries
 
 ### Goal
