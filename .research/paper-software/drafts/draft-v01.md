@@ -179,10 +179,10 @@ comparison of encodings.
 
 # Acknowledgements
 
-This work is dedicated to Dr. Guang Hao Low, whose insights into
-Bravyi–Kitaev encodings seven years ago inspired the investigation
-that led to this library.  We also thank the F# Software Foundation
-and the .NET open-source community for the language and runtime
-that make this work possible.
+This work is dedicated to Dr. Guang Hao Low, whose encouragement to
+explore Bravyi-Kitaev encodings seven years ago led to the development
+of this symbolic algebra processing library.  We also thank the F#
+Software Foundation and the .NET open-source community for the language
+and runtime that make this work possible.
 
 # References
