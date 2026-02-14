@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "FockMap: A Composable Framework for Quantum Operator Encodings"
+authors:
+  - family-names: Aziz
+    given-names: John
+version: 0.1.0
+date-released: 2026-02-10
+license: MIT
+repository-code: https://github.com/johnaziz57/FockMap
+keywords:
+  - quantum computing
+  - fermion-to-qubit encoding
+  - Jordan-Wigner
+  - Bravyi-Kitaev
+  - F#
+  - functional programming
+type: software
