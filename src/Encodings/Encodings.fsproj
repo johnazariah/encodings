@@ -1,0 +1,70 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+
+    <!-- Package identity -->
+    <PackageId>FockMap</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>John Aziz</Authors>
+    <Company />
+
+    <!-- Description and discoverability -->
+    <Description>
+      A composable functional framework for encoding quantum operators
+      on Fock space as qubit Pauli operators. Implements Jordan-Wigner,
+      Bravyi-Kitaev, Parity, and tree-based encodings (balanced binary,
+      balanced ternary) as algebraic data types in pure F#. Define
+      custom encodings in 3-5 lines. Fermionic modes now; bosonic
+      modes coming in v0.2.
+    </Description>
+    <PackageTags>quantum;quantum-computing;quantum-chemistry;encoding;jordan-wigner;bravyi-kitaev;fock-space;fsharp;functional-programming</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/johnaziz57/FockMap</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/johnaziz57/FockMap</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+
+    <!-- License -->
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+
+    <!-- Documentation -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <DocumentationFile>bin/$(Configuration)/$(TargetFramework)/Encodings.xml</DocumentationFile>
+
+    <!-- Source Link for debugger source stepping -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <!-- Include README in NuGet package -->
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+  <!-- Source Link -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.*" PrivateAssets="All" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="TypeExtensions.fs" />
+    <Compile Include="Terms.fs" />
+    <Compile Include="IndexedTerms.fs" />
+    <Compile Include="SwapTrackingSort.fs" />
+    <Compile Include="IndexedPauli.fs" />
+    <Compile Include="PauliRegister.fs" />
+    <Compile Include="IndexedLadderOperator.fs" />
+    <Compile Include="CombiningAlgebra.fs" />
+    <Compile Include="LadderOperatorSequence.fs" />
+    <Compile Include="JordanWigner.fs" />
+    <Compile Include="FenwickTree.fs" />
+    <Compile Include="MajoranaEncoding.fs" />
+    <Compile Include="BravyiKitaev.fs" />
+    <Compile Include="TreeEncoding.fs" />
+    <Compile Include="Hamiltonian.fs" />
+  </ItemGroup>
+
+</Project>

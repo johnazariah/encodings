@@ -1,11 +1,33 @@
 ﻿namespace Encodings
 
+/// <summary>
+/// Normal ordering of fermionic operator products.
+/// </summary>
+/// <remarks>
+/// A product of ladder operators a†₂ a₀ a†₁ a₃ is in normal order when all
+/// creation operators (a†) are to the left of all annihilation operators (a).
+///
+/// Reordering requires swapping adjacent operators. Each swap of two fermionic
+/// operators introduces a factor of −1 (from the CAR), and swapping a†ᵢ past aᵢ
+/// (same index) generates a δᵢⱼ term.
+///
+/// The ConstructNormalOrdered function performs this reordering, tracking all signs
+/// and generated terms, producing an S type (sum of products).
+/// </remarks>
 [<AutoOpen>]
 module LadderOperatorSequence =
     open System.Numerics
 
-    /// Sorts the raise and lower operators within a product term into index order
-    /// using a selection sort that tracks sign changes from swaps.
+    /// <summary>
+    /// Sorts the raise and lower operators within a product term into index order.
+    /// </summary>
+    /// <param name="productTerm">The product term containing ladder operators to sort.</param>
+    /// <returns>A new product term with raise operators sorted ascending and lower operators descending by index, with phase adjusted for swaps.</returns>
+    /// <remarks>
+    /// Uses a selection sort that tracks sign changes from swaps. Raise operators
+    /// are sorted in ascending order by index, while lower operators are sorted
+    /// in descending order by index.
+    /// </remarks>
     let toIndexOrder (productTerm : P<IxOp<uint32, LadderOperatorUnit>>) : P<IxOp<uint32, LadderOperatorUnit>> =
         let raiseSort =
             SwapTrackingSort<IxOp<uint32, LadderOperatorUnit>, Complex>(
@@ -39,8 +61,16 @@ module LadderOperatorSequence =
         |> P<IxOp<uint32, LadderOperatorUnit>>.Apply
 
 
+    /// <summary>
     /// A sum expression of ladder operators parameterized by a combining algebra
     /// (e.g., fermionic anti-commutation relations).
+    /// </summary>
+    /// <typeparam name="'algebra">The combining algebra type that defines commutation/anti-commutation relations.</typeparam>
+    /// <remarks>
+    /// This type represents a sum of product terms of indexed ladder operators.
+    /// The algebra parameter determines how operators combine when reordering
+    /// (e.g., fermionic operators anti-commute, generating sign changes).
+    /// </remarks>
     type LadderOperatorSumExpr<'algebra when 'algebra :> ICombiningAlgebra<LadderOperatorUnit> and 'algebra : (new : unit -> 'algebra)>
         private (sumTerm : S<IxOp<uint32, LadderOperatorUnit>>) =
         class
@@ -94,8 +124,17 @@ module LadderOperatorSequence =
                         sortInternal result' remainingUnits'
                 sortInternal [||] productTerm.Reduce.Value.Units
 
-            /// Constructs a normal-ordered version of the given sum expression
-            /// using the combining algebra to apply commutation/anti-commutation relations.
+            /// <summary>
+            /// Constructs a normal-ordered version of the given sum expression.
+            /// </summary>
+            /// <param name="candidate">The sum expression to normal-order.</param>
+            /// <returns>The normal-ordered sum expression, or None if construction fails.</returns>
+            /// <remarks>
+            /// Uses the combining algebra to apply commutation/anti-commutation relations.
+            /// For fermionic operators, each swap of adjacent operators introduces a factor
+            /// of −1, and swapping a†ᵢ past aᵢ generates delta terms. The result has all
+            /// creation operators (a†) to the left of all annihilation operators (a).
+            /// </remarks>
             static member ConstructNormalOrdered (candidate : S<IxOp<uint32, LadderOperatorUnit>>) : LadderOperatorSumExpr<'algebra> option =
                 let sumExpr = LadderOperatorSumExpr<'algebra>(candidate.Reduce.Value)
                 if sumExpr.AllTermsNormalOrdered then
@@ -105,8 +144,16 @@ module LadderOperatorSequence =
                     |> Array.collect LadderOperatorSumExpr<'algebra>.SortSingleProductTerm
                     |> (S<IxOp<uint32, LadderOperatorUnit>>.Apply >> LadderOperatorSumExpr<'algebra> >> Some)
 
-            /// Constructs an index-ordered version: first normal-orders, then sorts
-            /// raise operators ascending and lower operators descending by index.
+            /// <summary>
+            /// Constructs an index-ordered version of the given sum expression.
+            /// </summary>
+            /// <param name="candidate">The sum expression to index-order.</param>
+            /// <returns>The index-ordered sum expression, or None if construction fails.</returns>
+            /// <remarks>
+            /// First normal-orders the expression, then sorts raise operators in ascending
+            /// order by index and lower operators in descending order by index. This
+            /// canonical form is useful for comparing operator expressions.
+            /// </remarks>
             static member ConstructIndexOrdered (candidate : S<IxOp<uint32, LadderOperatorUnit>>) : LadderOperatorSumExpr<'algebra> option =
                 let sumExpr = LadderOperatorSumExpr<'algebra>(candidate.Reduce.Value)
                 if sumExpr.AllTermsIndexOrdered then

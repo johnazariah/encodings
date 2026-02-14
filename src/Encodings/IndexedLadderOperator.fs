@@ -1,9 +1,35 @@
 ﻿namespace Encodings
 
+/// <summary>
+/// Fermionic ladder operators with index tracking and ordering predicates.
+/// </summary>
+/// <remarks>
+/// A LadderOperatorUnit is either Raise j (= a†ⱼ, creation) or Lower j (= aⱼ, annihilation),
+/// where j is the spin-orbital index.
+///
+/// Products of ladder operators must respect normal ordering (all creation operators
+/// to the left of all annihilation operators) and index ordering (within each group,
+/// indices are sorted). The functions isInNormalOrder and isInIndexOrder test these conditions.
+///
+/// Normal ordering is required before encoding: the Jordan-Wigner and other transforms
+/// assume the operator product is in canonical form.
+/// </remarks>
 [<AutoOpen>]
 module IndexedLadderOperator =
     open System.Numerics
 
+    /// <summary>
+    /// Represents the type of a fermionic ladder operator.
+    /// </summary>
+    /// <remarks>
+    /// <para>Ladder operators are fundamental building blocks in second quantization:</para>
+    /// <list type="bullet">
+    /// <item><description><c>Identity</c> - The identity operator (no operation)</description></item>
+    /// <item><description><c>Raise</c> - Creation operator a†, creates a fermion in an orbital</description></item>
+    /// <item><description><c>Lower</c> - Annihilation operator a, removes a fermion from an orbital</description></item>
+    /// </list>
+    /// <para>String representation: "I" for Identity, "u" for Raise (up), "d" for Lower (down).</para>
+    /// </remarks>
     type LadderOperatorUnit =
         | Identity
         | Raise
@@ -31,11 +57,25 @@ module IndexedLadderOperator =
             | (true,  index) -> IxOp<_,_>.Apply(index, Raise)
             | (false, index) -> IxOp<_,_>.Apply(index, Lower)
 
+        /// <summary>
+        /// Creates an indexed ladder operator from a tuple of (operator, index).
+        /// </summary>
+        /// <param name="ladderOperatorUnit">The type of ladder operator (Raise or Lower).</param>
+        /// <param name="index">The spin-orbital index for the operator.</param>
+        /// <returns>An indexed operator combining the operator type and orbital index.</returns>
         static member FromTuple (ladderOperatorUnit, index) =
             IxOp<_,_>.Apply (index, ladderOperatorUnit)
 
-    /// Checks whether a product term's operators are in normal order
-    /// (all Raise operators before all Lower operators).
+    /// <summary>
+    /// Checks whether a product term's operators are in normal order.
+    /// </summary>
+    /// <remarks>
+    /// Normal order requires all creation (Raise) operators to appear before
+    /// all annihilation (Lower) operators: a†ᵢ a†ⱼ ... aₖ aₗ
+    /// This is the canonical form required by Jordan-Wigner and other encodings.
+    /// </remarks>
+    /// <param name="productTerm">The product term to check.</param>
+    /// <returns>True if the term is in normal order; false otherwise.</returns>
     let isInNormalOrder (productTerm : P<IxOp<uint32, LadderOperatorUnit>>) =
         let comparer p c =
             match (p, c) with
@@ -45,8 +85,19 @@ module IndexedLadderOperator =
         |> Seq.map (fun ciu -> ciu.Item.Op)
         |> isOrdered comparer
 
-    /// Checks whether a product term's operators are in index order:
-    /// Raise operators in ascending index, Lower operators in descending index.
+    /// <summary>
+    /// Checks whether a product term's operators are in index order.
+    /// </summary>
+    /// <remarks>
+    /// Index ordering requires:
+    /// <list type="bullet">
+    /// <item><description>Raise (creation) operators have ascending indices: a†ᵢ a†ⱼ where i &lt; j</description></item>
+    /// <item><description>Lower (annihilation) operators have descending indices: aₖ aₗ where k &gt; l</description></item>
+    /// </list>
+    /// Combined with normal ordering, this gives the full canonical form.
+    /// </remarks>
+    /// <param name="productTerm">The product term to check.</param>
+    /// <returns>True if indices are properly ordered; false otherwise.</returns>
     let isInIndexOrder (productTerm : P<IxOp<uint32, LadderOperatorUnit>>) =
         let operators =
             productTerm.Units
@@ -61,6 +112,14 @@ module IndexedLadderOperator =
             |> IxOp<_,_>.IndicesInOrder Descending
         raisingOperatorsAreAscending && loweringOperatorsAreDescending
 
+    /// <summary>
+    /// Represents a product of indexed fermionic ladder operators with a coefficient.
+    /// </summary>
+    /// <remarks>
+    /// <para>A product term represents an expression like c · a†ᵢ a†ⱼ aₖ aₗ where c is a complex coefficient.</para>
+    /// <para>Product terms can be multiplied together and checked for normal/index ordering.</para>
+    /// <para>Example string format: "(1+0i)[u0 u1 d3 d2]" for a†₀ a†₁ a₃ a₂</para>
+    /// </remarks>
     type LadderOperatorProductTerm =
         | LadderProduct of PIxOp<uint32, LadderOperatorUnit>
     with
@@ -101,6 +160,17 @@ module IndexedLadderOperator =
         override this.ToString() =
             this.Unapply.ToString()
 
+    /// <summary>
+    /// Represents a sum of ladder operator product terms.
+    /// </summary>
+    /// <remarks>
+    /// <para>A sum expression represents the sum of multiple product terms:</para>
+    /// <para>c₁ · (product₁) + c₂ · (product₂) + ...</para>
+    /// <para>Sum expressions support addition and multiplication, and can be checked
+    /// to verify all constituent terms are in normal/index order.</para>
+    /// <para>This is the primary type for representing fermionic Hamiltonians
+    /// before encoding to qubit operators.</para>
+    /// </remarks>
     type LadderOperatorSumExpression =
         | LadderSum of SIxOp<uint32, LadderOperatorUnit>
     with
