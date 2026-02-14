@@ -9,6 +9,7 @@
   <ItemGroup>
     <Compile Include="TestUtils.fs" />
     <Compile Include="Complex.fs" />
+    <Compile Include="TypeExtensions.fs" />
     <Compile Include="Terms_C.fs" />
     <Compile Include="Terms_P.fs" />
     <Compile Include="Terms_S.fs" />
@@ -16,6 +17,9 @@
     <Compile Include="Pauli.fs" />
     <Compile Include="PauliRegister.fs" />
     <Compile Include="IndexedOperator.fs" />
+    <Compile Include="IndexedTerms_Extra.fs" />
+    <Compile Include="CombiningAlgebra.fs" />
+    <Compile Include="LadderOperatorSequence.fs" />
     <Compile Include="SwapTrackingSort.fs" />
     <Compile Include="LadderOperatorUnit.fs" />
     <Compile Include="LadderOperatorProductTerm.fs" />

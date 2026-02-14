@@ -13,3 +13,16 @@ module Hamiltonian =
         let actual = hamiltonian.ToString()
         Assert.Equal (expected, actual)
 
+    [<Fact>]
+    let ``Hamiltonian : computeHamiltonianWith matches computeHamiltonian for Jordan-Wigner`` () =
+        let coefficientFactory _ = Some Complex.One
+        let withGeneric = computeHamiltonianWith jordanWignerTerms coefficientFactory 2u
+        let withJw = computeHamiltonian coefficientFactory 2u
+
+        Assert.Equal(withJw.ToString(), withGeneric.ToString())
+
+    [<Fact>]
+    let ``Hamiltonian : missing coefficients produce empty sequence`` () =
+        let hamiltonian = computeHamiltonianWith jordanWignerTerms (fun _ -> None) 3u
+        Assert.Empty(hamiltonian.SummandTerms)
+

@@ -44,3 +44,34 @@ module LadderOperatorSumExpression =
             LadderOperatorSumExpr<FermionicAlgebra>.ConstructNormalOrdered l.Unapply
             |> Option.iter (fun nols -> Assert.Equal (expected, nols.ToString()))
         | None -> Assert.Equal(expected, "")
+
+    [<Fact>]
+    let ``LadderOperatorSumExpression exposes coefficient and product terms`` () =
+        let parsed = LadderOperatorSumExpression.TryCreateFromString "{[(u, 0)]; [(d, 1)]}"
+        Assert.True(parsed.IsSome)
+
+        let expression = parsed.Value
+        Assert.Equal(System.Numerics.Complex.One, expression.Coeff)
+        Assert.Equal(2, expression.ProductTerms.Length)
+
+    [<Fact>]
+    let ``LadderOperatorSumExpression Reduce preserves valid expression`` () =
+        let parsed = LadderOperatorSumExpression.TryCreateFromString "{[(u, 0) | (d, 0)]}"
+        Assert.True(parsed.IsSome)
+
+        let reduced = parsed.Value.Reduce.Value
+        Assert.True(reduced.AllTermsNormalOrdered)
+        Assert.Equal(parsed.Value.ToString(), reduced.ToString())
+
+    [<Fact>]
+    let ``LadderOperatorSumExpression supports addition and multiplication`` () =
+        let left = LadderOperatorSumExpression.TryCreateFromString "{[(u, 0)]}" |> Option.get
+        let right = LadderOperatorSumExpression.TryCreateFromString "{[(d, 1)]}" |> Option.get
+
+        let sum = left + right
+        let product = left * right
+
+        Assert.Contains("(u, 0)", sum.ToString())
+        Assert.Contains("(d, 1)", sum.ToString())
+        Assert.Contains("(u, 0)", product.ToString())
+        Assert.Contains("(d, 1)", product.ToString())

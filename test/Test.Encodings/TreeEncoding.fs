@@ -138,6 +138,39 @@ module TreeEncoding =
         for i in 0..7 do
             Assert.True(Map.containsKey i tree.Nodes, sprintf "Node %d missing" i)
 
+    [<Fact>]
+    let ``Tree helpers expose expected children, descendants, and parity sets`` () =
+        let tree = linearTree 4
+
+        assertSetEqual (set [1]) (treeChildrenSet tree 0)
+        assertSetEqual (set [2; 3]) (treeOccupationSet tree 2)
+        assertSetEqual Set.empty (treeRemainderSet tree 3)
+        assertSetEqual Set.empty (treeParitySet tree 3)
+
+    [<Fact>]
+    let ``treeEncodingScheme delegates to tree index-set helpers`` () =
+        let tree = linearTree 4
+        let scheme = treeEncodingScheme tree
+
+        assertSetEqual (treeUpdateSet tree 3) (scheme.Update 3 4)
+        assertSetEqual (treeParitySet tree 3) (scheme.Parity 3)
+        assertSetEqual (treeOccupationSet tree 3) (scheme.Occupation 3)
+
+    [<Fact>]
+    let ``computeLinks and allLegs produce three links per node and expected leg count`` () =
+        let tree = linearTree 4
+        let links = computeLinks tree
+        let legs = allLegs links
+
+        Assert.Equal(tree.Size * 3, links |> Map.toSeq |> Seq.sumBy (fun (_, ls) -> ls.Length))
+        Assert.Equal((tree.Size * 3) - (tree.Size - 1), legs.Length)
+
+    [<Fact>]
+    let ``Tree constructors reject non-positive sizes`` () =
+        Assert.ThrowsAny<System.Exception>(fun () -> linearTree 0 |> ignore) |> ignore
+        Assert.ThrowsAny<System.Exception>(fun () -> balancedBinaryTree 0 |> ignore) |> ignore
+        Assert.ThrowsAny<System.Exception>(fun () -> balancedTernaryTree 0 |> ignore) |> ignore
+
     // ══════════════════════════════════════════════════
     //  Encoding correctness: single operators (n=2)
     // ══════════════════════════════════════════════════
