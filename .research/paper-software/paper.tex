@@ -48,7 +48,7 @@
 %%--------------------------------------------------------------------
 
 \title{FockMap: A Composable Functional Framework for\\
-  Fermion-to-Qubit Encodings in F\#}
+  Symbolic Fock-Space Operator Algebra and Fermion-to-Qubit Encodings in F\#}
 
 \author[1]{John Azariah\thanks{ORCID: \href{https://orcid.org/0009-0007-9870-1970}{0009-0007-9870-1970}}}
 \affil[1]{University of Technology Sydney}
@@ -89,13 +89,19 @@ error in intermediate steps.  Numerical coefficients are introduced only
 at Hamiltonian assembly.  This design supports transparent correctness
 checks and avoids numerical artefacts common in matrix-first workflows.
 
+In addition to the fermionic canonical anti-commutation workflow,
+\texttt{FockMap} now includes a bosonic canonical commutation algebra
+for symbolic normal ordering of ladder-operator expressions.  This
+extends the same typed expression pipeline to bosonic sectors and
+supports mixed-statistics model assembly in a single representation.
+
 The library is implemented with algebraic data types and pure functions,
 includes a persistent Fenwick tree ADT, and is validated by an extensive
-xUnit + FsCheck test suite (416 passing tests), including property-based
-algebraic invariants and edge-case regression checks.  Current coverage is
-96.55\% line and 87.96\% branch on the core library.  A complete
-H$_2$/STO-3G example is provided and reproduced across all five built-in
-encodings.
+xUnit + FsCheck test suite (309 passing tests), including both
+property-based algebraic checks and targeted edge-case regressions.
+Current coverage is 80.02\% line and 67.43\% branch on the core library.
+A complete H$_2$/STO-3G example is provided and reproduced across all
+five built-in encodings.
 
 %%--------------------------------------------------------------------
 \section*{Statement of Need}
@@ -133,10 +139,17 @@ class hierarchy.  This design enables:
     directly encodes the mathematical specification.
 \end{itemize}
 
+Many contemporary models also require bosonic modes (for example,
+vibrational and photonic degrees of freedom), where canonical
+commutation relations govern symbolic rewriting.  A practical software
+stack therefore needs both fermionic and bosonic ladder-operator
+normal-ordering support before any downstream qubit mapping or
+truncation strategy is applied.
+
 The library serves quantum computing researchers exploring
 encoding-aware circuit synthesis, students learning the algebraic
-structure of encodings, and developers building quantum chemistry
-simulation pipelines who need a correct and composable encoding layer.
+structure of encodings, and developers building simulation pipelines who
+need a correct and composable symbolic operator layer.
 
 %%--------------------------------------------------------------------
 \section*{Functionality}
@@ -195,11 +208,19 @@ The library also includes a persistent \texttt{FenwickTree<'a>}
 (parameterised over any monoid) and a \texttt{Hamiltonian} module for
 constructing molecular Hamiltonians from one-body and two-body integrals.
 
+Normal ordering is parameterized by a combining-algebra interface.
+\texttt{FermionicAlgebra} implements canonical anti-commutation
+relations, while \texttt{BosonicAlgebra} implements canonical
+commutation relations.  This allows both statistics to share the same
+typed expression representation, while preserving distinct rewrite rules
+($a_i a_i^\dagger = 1 - a_i^\dagger a_i$ versus
+$b_i b_i^\dagger = 1 + b_i^\dagger b_i$).
+
 \subsection*{Verification Suite}
 
 The verification strategy combines unit tests, property-based tests, and
-coverage-guided hardening of edge paths.  At submission time, 416 tests pass
-for the software package, with 96.55\% line coverage and 87.96\% branch
+cross-encoding consistency checks.  At submission time, 309 tests pass
+for the software package, with 80.02\% line coverage and 67.43\% branch
 coverage on the core \texttt{Encodings} library.
 
 Tests cover four categories:
@@ -207,6 +228,10 @@ Tests cover four categories:
   \item \textbf{Anti-commutation:}
     $\{a_i, a^\dagger_j\} = \delta_{ij}$ verified symbolically for all
     mode pairs.
+  \item \textbf{Commutation:}
+    $[b_i, b^\dagger_j] = \delta_{ij}$ verified symbolically for bosonic
+    rewrite cases, including same-index identity generation and
+    different-index swap behavior.
   \item \textbf{Number conservation:}
     $a^\dagger_j a_j$ produces diagonal Pauli operators.
   \item \textbf{Cross-encoding agreement:} all five encodings produce
@@ -217,10 +242,9 @@ Tests cover four categories:
     deterministic symbolic normalization.
 \end{itemize}
 
-These checks provide evidence that symbolic transformations are not only
-mathematically correct in the nominal case, but also robust under practical
-usage patterns encountered in research code (custom encodings, parser input,
-and non-canonical operator orderings).
+These checks provide evidence that symbolic rewriting is robust in both
+fermionic and bosonic workflows, including malformed parser inputs,
+non-canonical operator orderings, and same-index rewrite edge cases.
 
 %%--------------------------------------------------------------------
 \section*{Design Principles}
@@ -286,7 +310,8 @@ Typed / functional & --- & --- & --- & \checkmark \\
 Persistent Fenwick tree & --- & --- & --- & \checkmark \\
 \bottomrule
 \end{tabular}
-\caption{Feature comparison with existing fermion-to-qubit libraries.}
+\caption{Feature comparison with existing fermion-to-qubit libraries.
+FockMap additionally provides symbolic bosonic normal ordering.}
 \label{tab:comparison}
 \end{table}
 

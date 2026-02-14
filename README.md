@@ -7,7 +7,7 @@
 ![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)
 
-**A practical F# library for turning fermionic operators into qubit Pauli strings.**
+**A practical F# library for symbolic operator algebra on Fock space and fermion-to-qubit encodings.**
 
 > Learn by doing: pick an encoding, map operators to Pauli strings, and compare results.
 
@@ -129,18 +129,25 @@ let myEncode op j n = encodeOperator myScheme op j n
 - Site: [johnazariah.github.io/encodings](https://johnazariah.github.io/encodings/)
 - Tutorial path: [From Molecules to Qubits](https://johnazariah.github.io/encodings/from-molecules-to-qubits/index.html)
 - Theory: [Why Encodings?](https://johnazariah.github.io/encodings/theory/01-why-encodings.html)
+- Mixed theory chapter: [Mixed Systems](https://johnazariah.github.io/encodings/theory/07-mixed-systems.html)
 - Labs: [Your First Encoding](https://johnazariah.github.io/encodings/labs/01-first-encoding.html)
 - Guides: [Architecture](https://johnazariah.github.io/encodings/guides/architecture.html)
 
 ## How it Works (briefly)
 
-FockMap currently exposes two encoding styles:
+FockMap exposes two fermionic encoding styles:
 - **Index-set encodings** (Jordan-Wigner, Bravyi-Kitaev, Parity)
 - **Tree/path encodings** (balanced binary and ternary trees, plus custom trees)
+
+It also supports **bosonic ladder-operator normal ordering** via canonical commutation relations (CCR), alongside the fermionic CAR workflow.
+
+For models with both statistics, use sector-tagged operators (`fermion`, `boson`) and `constructMixedNormalOrdered` to canonicalize mixed expressions.
 
 If you want the full derivations and internals, jump to the docs:
 - [Architecture guide](https://johnazariah.github.io/encodings/guides/architecture.html)
 - [Type system guide](https://johnazariah.github.io/encodings/guides/type-system.html)
+- [Mixed registers guide](https://johnazariah.github.io/encodings/guides/mixed-registers.html)
+- [Advanced operations guide](https://johnazariah.github.io/encodings/guides/advanced-operations.html)
 
 ## Examples
 
@@ -152,6 +159,10 @@ Runnable F# scripts in the [`examples/`](examples/) directory:
 | [`Compare_Encodings.fsx`](examples/Compare_Encodings.fsx) | Side-by-side Pauli weight comparison across encodings |
 | [`Custom_Encoding.fsx`](examples/Custom_Encoding.fsx) | Build a custom Majorana encoding from index-set functions |
 | [`Custom_Tree.fsx`](examples/Custom_Tree.fsx) | Construct a custom tree and derive an encoding from it |
+| [`Mixed_NormalOrdering.fsx`](examples/Mixed_NormalOrdering.fsx) | Canonical mixed boson+fermion normal ordering with sector blocks |
+| [`Mixed_ElectronPhonon_Toy.fsx`](examples/Mixed_ElectronPhonon_Toy.fsx) | Toy electron-phonon style mixed symbolic workflow |
+| [`Mixed_HybridPipeline.fsx`](examples/Mixed_HybridPipeline.fsx) | Encode fermion sector to Pauli while keeping boson sector symbolic |
+| [`Mixed_HybridCompare.fsx`](examples/Mixed_HybridCompare.fsx) | Compare JW vs BK on extracted fermionic blocks in mixed terms |
 
 Run any example with:
 ```bash

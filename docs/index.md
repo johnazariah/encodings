@@ -1,8 +1,8 @@
 # FockMap
 
-A composable functional framework for encoding quantum operators as qubit Pauli strings.
+A composable functional framework for symbolic operator algebra, including fermionic and bosonic normal ordering, mixed-sector canonicalization, and fermion-to-qubit encodings.
 
-> Map creation and annihilation operators on Fock space to Pauli operators on qubits — using algebraic data types, pure functions, and zero dependencies.
+> Build, normalize, and encode operator expressions on Fock space using algebraic data types, pure functions, and zero dependencies.
 
 ## Install
 
@@ -31,6 +31,7 @@ let pauliBK = bravyiKitaevTerms Raise 2u 4u
 | Tree → encoding pipeline | ❌ | ❌ | **✅** |
 | Type-safe operator algebra | ❌ | ❌ | **✅** |
 | Pure functional, zero mutation | ❌ | ❌ | **✅** |
+| Symbolic CAR + CCR normal ordering | ❌ | Partial | **✅** |
 
 ## Available Encodings
 
@@ -73,7 +74,8 @@ A step-by-step guide using H₂ as a worked example.
 - [Pauli Algebra](theory/03-pauli-algebra.html) — Pauli matrices and strings
 - [Jordan-Wigner](theory/04-jordan-wigner.html) — The classic encoding
 - [Beyond Jordan-Wigner](theory/05-beyond-jordan-wigner.html) — BK, trees, and O(log n) scaling
-- [Bosonic Preview](theory/06-bosonic-preview.html) — Future directions for bosonic modes
+- [Bosonic Operators](theory/06-bosonic-preview.html) — CCR algebra and truncation strategies
+- [Mixed Systems](theory/07-mixed-systems.html) — Canonical sector ordering and hybrid workflows
 
 ### Interactive Labs
 - [First Encoding](labs/01-first-encoding.html) — Encode your first operator (5 min)
@@ -86,4 +88,6 @@ A step-by-step guide using H₂ as a worked example.
 ### Guides
 - [Architecture](guides/architecture.html) — Two-framework design
 - [Type System](guides/type-system.html) — C/P/S algebra explained
+- [Mixed Registers](guides/mixed-registers.html) — Bosonic + fermionic components with runnable examples
+- [Advanced Operations](guides/advanced-operations.html) — Hybrid pipelines, projections, and encoding comparisons
 - [Cross-Platform](guides/cross-platform.html) — .NET 10 and F# on all platforms

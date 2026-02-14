@@ -1,96 +1,93 @@
-# Bosonic Operators (Preview)
+# Bosonic Operators
 
-> **Status:** This feature is planned for FockMap v0.2.0. The content below provides a preview of what's coming.
+FockMap supports both fermionic and bosonic ladder-operator normal ordering. Fermions use canonical anti-commutation relations (CAR), while bosons use canonical commutation relations (CCR).
 
-So far, we've focused entirely on *fermionic* systems: particles that obey the Pauli exclusion principle and require anti-commutation relations. But many quantum systems involve *bosons*—particles like photons and phonons that can pile up arbitrarily in the same state.
+This page introduces the bosonic algebra, how truncation works in practice, and how bosonic and fermionic sectors can be modeled together.
 
-## Bosons vs. Fermions
+## Bosons vs Fermions
 
 The key difference between bosons and fermions lies in their commutation relations:
 
-**Fermions** (anti-commute):
+**Fermions** (CAR):
 $$
 \{a_i, a^\dagger_j\} = a_i a^\dagger_j + a^\dagger_j a_i = \delta_{ij}
 $$
 
-**Bosons** (commute):
+**Bosons** (CCR):
 $$
 [b_i, b^\dagger_j] = b_i b^\dagger_j - b^\dagger_j b_i = \delta_{ij}
 $$
 
-For fermions, each mode holds at most 1 particle (occupation $n_j \in \{0, 1\}$). For bosons, there's no limit—a single mode can hold 0, 1, 2, ... particles.
+For fermions, each mode holds at most one particle (occupation $n_j \in \{0, 1\}$). For bosons, there is no intrinsic upper bound, so a single mode can hold $0,1,2,\ldots$ particles.
 
-This creates a problem for qubit simulation: bosonic Hilbert space is *infinite-dimensional* per mode.
+In qubit simulation, that means bosonic modes require a truncation choice.
 
-## Truncated Fock Space
+## Truncated Bosonic Fock Space
 
-The standard solution is to **truncate** each bosonic mode to at most $d$ particles:
+The standard approach is to truncate each bosonic mode at occupancy cutoff $d$:
 
 $$
 n_j \in \{0, 1, 2, \ldots, d-1\}
 $$
 
-Each mode then requires $\lceil \log_2 d \rceil$ qubits to represent. For $n$ modes with cutoff $d$, the total Hilbert space dimension is $d^n$.
+With this truncation, each bosonic mode is finite-dimensional, with local Hilbert space size $d$. For $n$ bosonic modes, the bosonic sector has dimension $d^n$.
 
-Common choices:
-- $d = 2$: Binary truncation (bosons behave like fermions)
+Common cutoffs:
+- $d = 2$: aggressive truncation (hard-core limit)
 - $d = 4$: Two qubits per mode
-- $d = 8$: Three qubits per mode (common for photonic systems)
+- $d = 8$: Three qubits per mode
 
-## Encoding Strategies
+## Normal Ordering in FockMap
 
-Several strategies exist for mapping truncated bosonic operators to qubits:
-
-### Unary Encoding
-
-The simplest approach uses $d$ qubits per mode in a "one-hot" representation:
-
-$$
-|n\rangle \mapsto |0\rangle^{\otimes n} \otimes |1\rangle \otimes |0\rangle^{\otimes (d-1-n)}
-$$
-
-Bosonic operators become shift operations on this register. Simple to implement, but uses many qubits.
-
-### Gray Code Encoding
-
-A more qubit-efficient approach uses Gray codes. The occupation number $n$ is encoded in $\lceil \log_2 d \rceil$ qubits using a Gray code, where successive values differ by exactly one bit.
-
-This minimizes the Pauli weight of the bosonic ladder operators, similar to how Bravyi-Kitaev minimizes weight for fermions.
-
-### Binary Encoding
-
-Direct binary representation of occupation numbers. Requires fewer qubits than unary, but bosonic operators may have higher Pauli weight.
-
-## Planned API
-
-FockMap v0.2.0 will introduce:
+Bosonic normal ordering in FockMap is exposed via `BosonicLadderOperatorSumExpression` and helper constructors:
 
 ```fsharp
-// Truncated bosonic mode with cutoff d
-type BosonicMode = { Index : int; Cutoff : int }
+open Encodings
 
-// Encoding schemes for bosons
-let unaryBosonicScheme (d : int) : BosonicEncodingScheme
-let grayCodeBosonicScheme (d : int) : BosonicEncodingScheme
-let binaryBosonicScheme (d : int) : BosonicEncodingScheme
+let expr =
+    S.Apply(
+        P.Apply [|
+            IxOp.Apply(0u, Lower)
+            IxOp.Apply(0u, Raise)
+        |])
 
-// Encode bosonic operators
-let encodeBosonicOperator (scheme : BosonicEncodingScheme)
-                          (op : BosonicOperator)
-                          (j : int) (n : int) : PauliRegisterSequence
+let bosonic = constructBosonicNormalOrdered expr
 ```
 
-## Coming in v0.2.0
+The CCR rewrite rule used by `BosonicAlgebra` is:
 
-- Truncated bosonic Fock space representation
-- Unary, Gray code, and binary encodings
-- Creation/annihilation operators $b^\dagger_j$, $b_j$ for bosons
-- Number operator $\hat{n}_j = b^\dagger_j b_j$
-- Mixed fermion-boson systems (e.g., electron-phonon coupling)
-- Documentation and tutorials for bosonic simulation
+$$
+b_i b_i^\dagger = 1 + b_i^\dagger b_i
+$$
 
-Stay tuned for updates, or follow the [GitHub repository](https://github.com/johnazariah/encodings) for development progress.
+For different indices, reordering does not introduce a minus sign:
+
+$$
+b_i b_j^\dagger = b_j^\dagger b_i \quad (i \neq j)
+$$
+
+This differs from the fermionic CAR case, where reordering contributes a sign flip.
+
+## Mixed Bosonic + Fermionic Models
+
+Many applications (for example, electron-phonon models) include both fermionic and bosonic operators. In FockMap, the practical pattern is:
+
+1. Partition indices into bosonic and fermionic sectors.
+2. Build expressions in the shared indexed representation `IxOp<uint32, LadderOperatorUnit>`.
+3. Normal-order each sector with the appropriate algebra (`FermionicAlgebra` or `BosonicAlgebra`).
+4. Encode fermionic terms to Pauli strings with any encoding scheme.
+5. Keep bosonic terms symbolic or apply a separate bosonic truncation/encoding layer.
+
+See the [Mixed Registers guide](../guides/mixed-registers.html) for a full workflow.
+
+## Truncation Encodings (Conceptual)
+
+FockMap's current bosonic support focuses on symbolic CCR normal ordering. If you then map bosonic modes to qubits, common strategies include unary, binary, and Gray-code truncation encodings.
+
+Each strategy trades off qubit count against Pauli weight and circuit complexity. In practice, truncation choices should be made per model and validated against convergence of observables.
 
 ---
 
 **Previous:** [Beyond Jordan-Wigner](05-beyond-jordan-wigner.html) — BK, trees, and O(log n) encodings
+
+**Next:** [Mixed Systems](07-mixed-systems.html) — canonical ordering for boson+fermion models
