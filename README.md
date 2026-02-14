@@ -133,6 +133,12 @@ let myEncode op j n = encodeOperator myScheme op j n
 - Labs: [Your First Encoding](https://johnazariah.github.io/encodings/labs/01-first-encoding.html)
 - Guides: [Architecture](https://johnazariah.github.io/encodings/guides/architecture.html)
 
+Build docs locally (with logo/icon + Mermaid/MathJax runtime injection):
+
+```bash
+./scripts/build-docs.sh
+```
+
 ## How it Works (briefly)
 
 FockMap exposes two fermionic encoding styles:

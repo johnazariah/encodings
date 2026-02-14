@@ -97,6 +97,12 @@ dotnet test --logger "console;verbosity=detailed"
 dotnet test test/Test.Encodings/Test.Encodings.fsproj
 ```
 
+## Building Docs Locally
+
+```bash
+./scripts/build-docs.sh
+```
+
 ## Questions?
 
 If you have questions about contributing, feel free to open an issue for discussion.

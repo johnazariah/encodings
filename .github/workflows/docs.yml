@@ -32,10 +32,7 @@ jobs:
         run: dotnet build --configuration Release
 
       - name: Build documentation
-        run: dotnet fsdocs build --output docs-output --parameters root /encodings/
-
-      - name: Inject MathJax and Mermaid runtime
-        run: python3 scripts/inject_pages_runtime.py
+        run: ./scripts/build-docs.sh
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

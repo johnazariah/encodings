@@ -1,0 +1,40 @@
+/* Project-specific docs overrides */
+
+main p,
+main li {
+    max-width: 80ch;
+}
+
+main table {
+    width: 100%;
+    border-collapse: collapse;
+    display: block;
+    overflow-x: auto;
+}
+
+main th,
+main td {
+    vertical-align: top;
+}
+
+main pre.fssnip,
+main table.pre {
+    margin: var(--spacing-300) 0;
+}
+
+main h2,
+main h3,
+main h4 {
+    margin-top: var(--spacing-500);
+}
+
+main ul,
+main ol {
+    margin: var(--spacing-200) 0 var(--spacing-300);
+    padding-left: var(--spacing-500);
+}
+
+.mermaid {
+    margin: var(--spacing-300) 0;
+    overflow-x: auto;
+}

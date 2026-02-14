@@ -1,5 +1,9 @@
 # FockMap
 
+<p align="center">
+	<img src="content/img/fockmap-logo.svg" alt="FockMap logo" width="520" />
+</p>
+
 A composable functional framework for symbolic operator algebra, including fermionic and bosonic normal ordering, mixed-sector canonicalization, and fermion-to-qubit encodings.
 
 > Build, normalize, and encode operator expressions on Fock space using algebraic data types, pure functions, and zero dependencies.
@@ -9,6 +13,11 @@ A composable functional framework for symbolic operator algebra, including fermi
 ```bash
 dotnet add package FockMap
 ```
+
+## Brand Assets
+
+- [Primary logo (SVG)](content/img/fockmap-logo.svg)
+- [Square icon (SVG)](content/img/fockmap-icon.svg)
 
 ## 30-Second Example
 

@@ -2,8 +2,13 @@
 
 from pathlib import Path
 
-
 RUNTIME_MARKER = "<!-- fockmap-pages-runtime -->"
+
+PLACEHOLDER_REPLACEMENTS = {
+    "{{fsdocs-license-link}}": "https://github.com/johnazariah/encodings/blob/main/LICENSE",
+    "{{fsdocs-release-notes-link}}": "https://github.com/johnazariah/encodings/blob/main/CHANGELOG.md",
+    "{{fsdocs-repository-link}}": "https://github.com/johnazariah/encodings",
+}
 
 RUNTIME_SNIPPET = """\
     <!-- fockmap-pages-runtime -->
@@ -22,16 +27,16 @@ RUNTIME_SNIPPET = """\
       document.addEventListener('DOMContentLoaded', function () {
         if (window.mermaid) {
           mermaid.initialize({ startOnLoad: false, securityLevel: 'loose' });
-          var blocks = document.querySelectorAll('pre > code.language-mermaid');
+          var blocks = document.querySelectorAll('pre > code.language-mermaid, pre > code[lang="mermaid"], table.pre code[lang="mermaid"]');
           blocks.forEach(function (code, index) {
-            var pre = code.parentElement;
-            if (!pre) return;
+            var containerTarget = code.closest('table.pre') || code.parentElement;
+            if (!containerTarget) return;
             var source = code.textContent || '';
             var container = document.createElement('div');
             container.className = 'mermaid';
             container.id = 'mermaid-diagram-' + index;
             container.textContent = source;
-            pre.replaceWith(container);
+            containerTarget.replaceWith(container);
           });
           mermaid.run();
         }
@@ -42,13 +47,23 @@ RUNTIME_SNIPPET = """\
 
 def inject_runtime(html_path: Path) -> bool:
     content = html_path.read_text(encoding="utf-8")
+    changed = False
+
+    for placeholder, value in PLACEHOLDER_REPLACEMENTS.items():
+        if placeholder in content:
+            content = content.replace(placeholder, value)
+            changed = True
 
     if RUNTIME_MARKER in content:
-        return False
+        if changed:
+            html_path.write_text(content, encoding="utf-8")
+        return changed
 
     head_close = content.lower().find("</head>")
     if head_close == -1:
-        return False
+        if changed:
+            html_path.write_text(content, encoding="utf-8")
+        return changed
 
     updated = content[:head_close] + RUNTIME_SNIPPET + "\n" + content[head_close:]
     html_path.write_text(updated, encoding="utf-8")

@@ -1,0 +1,33 @@
+<svg width="1200" height="320" viewBox="0 0 1200 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="28" y1="28" x2="292" y2="292" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1D63B8"/>
+      <stop offset="1" stop-color="#20C6D8"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="74" y1="84" x2="246" y2="236" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#E7FBFF"/>
+      <stop offset="1" stop-color="#DDE8FF"/>
+    </linearGradient>
+    <linearGradient id="word" x1="340" y1="92" x2="1030" y2="228" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1F4FA0"/>
+      <stop offset="1" stop-color="#1A80B8"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="28" y="28" width="264" height="264" rx="66" fill="url(#bg)"/>
+
+  <path d="M112 96V224" stroke="url(#accent)" stroke-width="12" stroke-linecap="round"/>
+  <path d="M208 96V224" stroke="url(#accent)" stroke-width="12" stroke-linecap="round"/>
+  <circle cx="112" cy="160" r="19" fill="#E7FBFF"/>
+  <circle cx="208" cy="160" r="19" fill="#DDE8FF"/>
+  <path d="M131 160H189" stroke="white" stroke-opacity="0.92" stroke-width="8" stroke-linecap="round"/>
+  <path d="M142 119L178 141" stroke="white" stroke-opacity="0.35" stroke-width="6" stroke-linecap="round"/>
+  <path d="M178 179L142 201" stroke="white" stroke-opacity="0.35" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="142" cy="119" r="6" fill="white" fill-opacity="0.75"/>
+  <circle cx="178" cy="141" r="6" fill="white" fill-opacity="0.75"/>
+  <circle cx="178" cy="179" r="6" fill="white" fill-opacity="0.75"/>
+  <circle cx="142" cy="201" r="6" fill="white" fill-opacity="0.75"/>
+
+  <text x="340" y="192" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="120" font-weight="700" letter-spacing="1" fill="url(#word)">FockMap</text>
+  <text x="344" y="244" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="34" font-weight="500" letter-spacing="3" fill="#2A6BA9">ENCODINGS</text>
+</svg>
