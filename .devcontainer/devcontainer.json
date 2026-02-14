@@ -1,0 +1,67 @@
+// FockMap — Fermion-to-Qubit Encoding Library
+// Full-stack development container: .NET 10, Python, LaTeX
+{
+  "name": "FockMap",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        // F# / .NET
+        "Ionide.Ionide-fsharp",
+        "ms-dotnettools.csdevkit",
+        "ms-dotnettools.dotnet-interactive-vscode",
+
+        // Python
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff",
+
+        // LaTeX
+        "James-Yu.latex-workshop",
+
+        // AI
+        "GitHub.copilot",
+        "GitHub.copilot-chat",
+
+        // General
+        "editorconfig.editorconfig"
+      ],
+      "settings": {
+        // F#
+        "FSharp.enableMSBuildProjectGraph": true,
+        "FSharp.inlayHints.parameterNames": true,
+        "FSharp.inlayHints.typeAnnotations": true,
+
+        // Python — use ruff as formatter + linter
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff",
+          "editor.formatOnSave": true,
+          "editor.codeActionsOnSave": {
+            "source.fixAll.ruff": "explicit",
+            "source.organizeImports.ruff": "explicit"
+          }
+        },
+        "python.analysis.typeCheckingMode": "standard",
+        "python.defaultInterpreterPath": "/home/vscode/.venv/bin/python",
+
+        // LaTeX
+        "latex-workshop.latex.recipe.default": "latexmk (lualatex)",
+        "latex-workshop.latex.autoBuild.run": "never",
+
+        // General
+        "files.trimTrailingWhitespace": true,
+        "files.insertFinalNewline": true
+      }
+    }
+  },
+
+  // Install tooling, build and test on first open
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+
+  // Run as non-root (vscode user from base image)
+  "remoteUser": "vscode"
+}
