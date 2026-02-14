@@ -149,7 +149,7 @@ let hamiltonian = computeHamiltonian jordanWigner oneBodyIntegrals twoBodyIntegr
 // → 15 Pauli terms with coefficients matching the table above
 ```
 
-See the [H₂ Molecule lab](../labs/02-h2-molecule.html) for the full executable example.
+See the [H₂ Molecule lab](../labs/02-h2-molecule.fsx) for the full executable example.
 
 The construction is complete; next we validate it by checking spectra and confirming that all encodings preserve the same physics.
 

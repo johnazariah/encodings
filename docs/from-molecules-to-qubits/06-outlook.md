@@ -6,7 +6,7 @@ _In this chapter, you'll connect the Hamiltonian to VQE/QPE workflows and practi
 
 - **What you'll learn:** How the encoded Hamiltonian is used in VQE and QPE, and why encoding choice affects scaling.
 - **Why this matters:** Good encoding choices can be the difference between feasible and impractical circuits.
-- **Try this next:** Jump into the [Compare Encodings lab](../labs/03-compare-encodings.html) and test scaling behavior yourself.
+- **Try this next:** Jump into the [Compare Encodings lab](../labs/03-compare-encodings.fsx) and test scaling behavior yourself.
 
 The 15-term qubit Hamiltonian from [Chapter 4](04-building-hamiltonian.html) is the input to quantum algorithms. Two families of algorithms can extract the ground-state energy:
 
@@ -50,7 +50,7 @@ If you've followed this tutorial from [Chapter 1](01-electronic-structure.html),
 ## Further Reading
 
 - **The encoding framework:** [Beyond Jordan–Wigner](../theory/05-beyond-jordan-wigner.html) — how all encodings are unified under two composable abstractions
-- **Hands-on code:** [Interactive labs](../labs/01-first-encoding.html) — executable F# labs
+- **Hands-on code:** [Interactive labs](../labs/01-first-encoding.fsx) — executable F# labs
 - **The library itself:** [API Reference](../reference/index.html) — all types and functions
 - **The TeX preprint:** A typeset PDF version of this tutorial is available in the [repository](https://github.com/johnazariah/encodings/blob/main/.research/paper-tutorial/paper.pdf)
 

@@ -69,7 +69,7 @@ At $n = 4$, the encodings are too small for the weight advantages of BK and tree
 
 For more details on the encodings and their scaling properties, see [Beyond Jordan–Wigner](../theory/05-beyond-jordan-wigner.html).
 
-The [Compare Encodings](../labs/03-compare-encodings.html) interactive lab reproduces this comparison as executable F# code.
+The [Compare Encodings](../labs/03-compare-encodings.fsx) interactive lab reproduces this comparison as executable F# code.
 
 With validation done, we can now look at how this Hamiltonian feeds directly into practical quantum algorithms.
 
