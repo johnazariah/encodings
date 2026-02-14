@@ -1,6 +1,12 @@
 # Chapter 4: Building the H₂ Qubit Hamiltonian
 
-_This is the payoff. We take the spin-orbital Hamiltonian, apply the Jordan–Wigner encoding, and construct the qubit Hamiltonian term by term._
+_In this chapter, you'll encode the spin-orbital Hamiltonian into a symbolic qubit Hamiltonian, term by term._
+
+## In This Chapter
+
+- **What you'll learn:** How one-body and two-body fermionic terms become a symbolic Pauli-sum Hamiltonian.
+- **Why this matters:** This is the exact object used by VQE/QPE and all downstream simulation workflows.
+- **Try this next:** Go to [Chapter 5 — Checking Our Answer](05-verification.html) to verify the spectrum and compare encodings.
 
 For background on why encoding is necessary (fermions anti-commute, qubits commute), see [Why Encodings?](../theory/01-why-encodings.html). For the Jordan–Wigner transform itself, see [Theory: Jordan–Wigner](../theory/04-jordan-wigner.html).
 
@@ -53,6 +59,55 @@ Encoding each operator under JW:
 
 The product of four Pauli strings, after simplification and coefficient tracking, contributes to $IIII$, $IIIZ$, $IIZI$, and $IIZZ$ terms.
 
+### One Full Symbolic Expansion (Step by Step)
+
+Let's expand the same representative term once, explicitly:
+
+$$
+\frac{1}{2}\langle 0\alpha\,0\beta\mid 0\alpha\,0\beta\rangle\,a_0^\dagger a_1^\dagger a_1 a_0.
+$$
+
+Using Jordan–Wigner,
+
+$$
+a_0^\dagger=\frac{1}{2}(X_0-iY_0),\quad
+a_1^\dagger=\frac{1}{2}Z_0(X_1-iY_1),
+$$
+$$
+a_1=\frac{1}{2}Z_0(X_1+iY_1),\quad
+a_0=\frac{1}{2}(X_0+iY_0).
+$$
+
+So
+
+$$
+a_0^\dagger a_1^\dagger a_1 a_0
+=\frac{1}{16}(X_0-iY_0)\,Z_0(X_1-iY_1)\,Z_0(X_1+iY_1)\,(X_0+iY_0).
+$$
+
+Now simplify in small steps:
+
+1. $Z_0Z_0=I$, so the parity string cancels inside this number-like product.
+2. $(X_1-iY_1)(X_1+iY_1)=2(I-Z_1)$.
+3. $(X_0-iY_0)(X_0+iY_0)=2(I-Z_0)$.
+
+Therefore,
+
+$$
+a_0^\dagger a_1^\dagger a_1 a_0
+=\frac{1}{16}\cdot 2(I-Z_1)\cdot 2(I-Z_0)
+=\frac{1}{4}(I-Z_0-Z_1+Z_0Z_1).
+$$
+
+Multiplying back the integral prefactor gives:
+
+$$
+\frac{1}{2}\langle 0\alpha\,0\beta\mid 0\alpha\,0\beta\rangle\,a_0^\dagger a_1^\dagger a_1 a_0
+=\frac{\langle 0\alpha\,0\beta\mid 0\alpha\,0\beta\rangle}{8}(I-Z_0-Z_1+Z_0Z_1).
+$$
+
+This is exactly the kind of symbolic rewrite FockMap performs repeatedly before combining like terms across the full Hamiltonian.
+
 ## The Complete 15-Term Hamiltonian
 
 After processing all 32 non-zero two-body integrals and combining like terms:
@@ -95,6 +150,8 @@ let hamiltonian = computeHamiltonian jordanWigner oneBodyIntegrals twoBodyIntegr
 ```
 
 See the [H₂ Molecule lab](../labs/02-h2-molecule.html) for the full executable example.
+
+The construction is complete; next we validate it by checking spectra and confirming that all encodings preserve the same physics.
 
 ---
 

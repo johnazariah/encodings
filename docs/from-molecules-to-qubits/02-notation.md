@@ -1,6 +1,12 @@
 # Chapter 2: The Notation Minefield
 
-_Three incompatible notations for two-electron integrals. Getting them wrong silently produces incorrect Hamiltonians._
+_In this chapter, you'll align integral notation so every later coefficient and sign is correct._
+
+## In This Chapter
+
+- **What you'll learn:** How chemist's and physicist's notations differ, and how to convert safely.
+- **Why this matters:** Small index-order mistakes can produce believable-but-wrong Hamiltonians.
+- **Try this next:** Move to [Chapter 3 — From Spatial to Spin-Orbital Integrals](03-spin-orbitals.html) to build the actual spin-orbital tables used in encoding.
 
 This section exists to save the reader weeks of debugging.
 
@@ -54,6 +60,8 @@ $$\hat{H} = \sum_{pq} h_{pq}\, a^\dagger_p a_q + \frac{1}{2}\sum_{pqrs} [pr|qs]\
 > **Error 3:** Writing the operator ordering as $a^\dagger_p a^\dagger_q a_r a_s$ instead of $a^\dagger_p a^\dagger_q a_s a_r$. The $r$ and $s$ are reversed relative to the integral. Getting this wrong flips signs on certain terms.
 
 All three errors produce Hamiltonians that "look right" — they have plausible structure, correct symmetry, and even the right number of terms. But the eigenvalues are wrong. The only reliable way to catch them is to verify against known results (see [Chapter 5: Checking Our Answer](05-verification.html)).
+
+Now that notation is pinned down, we can safely expand the spatial integrals into the spin-orbital form used by the encoding pipeline.
 
 ---
 

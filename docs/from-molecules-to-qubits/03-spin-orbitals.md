@@ -1,6 +1,12 @@
 # Chapter 3: From Spatial to Spin-Orbital Integrals
 
-_Doubling the index space, spin conservation, and a complete integral table for H₂._
+_In this chapter, you'll expand spatial integrals into the spin-orbital form used for encoding._
+
+## In This Chapter
+
+- **What you'll learn:** How to expand spatial-orbital integrals into spin-orbital one-body and two-body terms.
+- **Why this matters:** Encoding operates on spin-orbital ladder operators, so this conversion is mandatory.
+- **Try this next:** Continue to [Chapter 4 — Building the H₂ Qubit Hamiltonian](04-building-hamiltonian.html) to encode term-by-term.
 
 The molecular integrals computed by quantum chemistry codes are in the **spatial orbital** basis (2 orbitals for H₂). But the fermionic operators act on **spin-orbitals** (4 for H₂), because each spatial orbital can hold one electron of each spin.
 
@@ -89,6 +95,8 @@ with $V_{nn} = 0.7151$ Ha.
 | $[01\|10] = [10\|01] = [01\|01] = [10\|10]$ | $0.6975782469$ |
 
 All other elements are zero by symmetry. These integrals are reproduced by the companion code — see the [H₂ Molecule lab](../labs/02-h2-molecule.html).
+
+With the spin-orbital tables ready, we can now do the core step: encode each fermionic term into Pauli strings and assemble the full qubit Hamiltonian.
 
 ---
 

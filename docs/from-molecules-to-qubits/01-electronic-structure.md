@@ -1,6 +1,12 @@
 # Chapter 1: The Electronic Structure Problem
 
-_How do we turn a molecule into a finite-dimensional quantum mechanics problem?_
+_In this chapter, you'll turn the molecular problem into a finite spin-orbital model._
+
+## In This Chapter
+
+- **What you'll learn:** How H₂ goes from a continuous molecular Schrödinger equation to a finite spin-orbital model.
+- **Why this matters:** This is the starting point for every encoding and Hamiltonian step that follows.
+- **Try this next:** Continue to [Chapter 2 — The Notation Minefield](02-notation.html) to avoid common integral-convention mistakes.
 
 ## The Schrödinger Equation for Molecules
 
@@ -99,6 +105,8 @@ For H₂ in STO-3G, the non-zero one-body integrals are:
 | $h_{11}$ | $-0.4719$ | $\sigma_u$ orbital energy |
 
 The off-diagonal elements $h_{01} = h_{10} = 0$ by symmetry.
+
+With the physical model now in place, the next step is to make sure our integral notation is consistent before building any encoded Hamiltonian terms.
 
 ---
 

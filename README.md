@@ -7,23 +7,20 @@
 ![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)
 
-**A composable functional framework for encoding quantum operators on Fock space as qubit Pauli operators.**
+**A practical F# library for turning fermionic operators into qubit Pauli strings.**
 
-> Map creation and annihilation operators to Pauli strings — using algebraic data types, pure functions, and zero dependencies.
+> Learn by doing: pick an encoding, map operators to Pauli strings, and compare results.
 
 ---
 
-## The Problem
+## Why FockMap
 
-Quantum computers operate on **qubits**, but quantum chemistry deals with **electrons** (fermions). Fermions obey anti-commutation relations that qubits don't naturally respect:
+If you're exploring quantum chemistry on qubits, you usually hit this question quickly: **how do I map fermions to Pauli operators?**
 
-$$\{a_i^\dagger, a_j\} = \delta_{ij} I, \quad \{a_i^\dagger, a_j^\dagger\} = 0, \quad \{a_i, a_j\} = 0$$
-
-**Fermion-to-qubit encodings** bridge this gap by mapping fermionic ladder operators ($a_j^\dagger$, $a_j$) to multi-qubit Pauli operators ($X$, $Y$, $Z$, $I$) while preserving the canonical anti-commutation relations (CAR). Different encodings make different tradeoffs between Pauli weight (how many qubits each operator touches) and locality.
-
-This library provides a **unified framework** for five encoding schemes, plus the infrastructure to define custom encodings in a few lines of code.
-
-## Why FockMap?
+FockMap gives you one small, consistent API for that. You can:
+- use built-in encodings (Jordan-Wigner, Bravyi-Kitaev, Parity, tree-based)
+- compare them side-by-side
+- define your own encoding with a few lines of F#
 
 | Feature | OpenFermion | Qiskit Nature | **FockMap** |
 |---------|:-----------:|:------------:|:-----------:|
@@ -34,7 +31,7 @@ This library provides a **unified framework** for five encoding schemes, plus th
 | Symbolic Pauli algebra (no matrices) | ❌ | Partial | **✅** |
 | Runtime dependencies | NumPy, SciPy | Many | **None** |
 
-FockMap works entirely with **symbolic Pauli algebra** — the Pauli group is a finite group, so multiplication is exact. There are no floating-point matrices, no numerical linear algebra, and no approximations. This means you can compute parity operators for $n = 100$ modes in seconds, not hours.
+Internally, the library uses exact symbolic Pauli algebra (not floating-point matrix multiplication), so encoded operator manipulation stays fast and predictable.
 
 ## Available Encodings
 
@@ -46,7 +43,7 @@ FockMap works entirely with **symbolic Pauli algebra** — the Pauli group is a 
 | Balanced Binary Tree | $O(\log_2 n)$ | Path-based | `balancedBinaryTreeTerms` |
 | Balanced Ternary Tree | $O(\log_3 n)$ | Path-based | `ternaryTreeTerms` |
 
-All five encodings produce the same output type (`PauliRegisterSequence`), so encoded Hamiltonians are interoperable regardless of which encoding was used. All five have been verified to produce **identical eigenspectra** for the H₂ molecule to machine precision ($|\Delta\lambda| = 4.44 \times 10^{-16}$).
+All encodings return the same output type (`PauliRegisterSequence`), so you can swap schemes without rewriting downstream code.
 
 ## Installation
 
@@ -62,19 +59,19 @@ dotnet add package FockMap
 git clone https://github.com/johnazariah/encodings.git
 cd encodings
 dotnet build
-dotnet test   # 303 tests
+dotnet test
 ```
 
-### Dev Container (recommended for contributors)
+### Dev Container (for contributors)
 
 This repository includes a full [dev container](https://containers.dev/) configuration with .NET 10, F#, Python, LaTeX, and all required tooling pre-installed. To use it:
 
 1. Install [Docker](https://www.docker.com/) and [VS Code](https://code.visualstudio.com/) with the [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
 2. Clone the repository and open it in VS Code
 3. When prompted, click **"Reopen in Container"** (or run `Dev Containers: Reopen in Container` from the command palette)
-4. The container builds, restores packages, compiles the project, and runs all 303 tests automatically
+4. The container builds, restores packages, compiles the project, and runs tests automatically
 
-Everything is pre-configured — Ionide (F# IDE), Copilot, coverage tools, `fsdocs`, `gh` CLI, and `dotnet-repl`.
+Everything is pre-configured, so you can start coding immediately.
 
 ## Quick Start
 
@@ -109,7 +106,7 @@ let g = Array4D.init 4 4 4 4 (fun i j k l -> (* your integrals *) 0.0)
 let hamiltonian = computeHamiltonianWith jordanWignerTerms h g 4u
 ```
 
-### Define a Custom Encoding in 5 Lines
+### Define a Custom Encoding
 
 ```fsharp
 open Encodings
@@ -120,64 +117,30 @@ let myScheme = treeEncodingScheme myTree
 let myEncode op j n = encodeOperator myScheme op j n
 ```
 
-## Architecture
+## Where to Start
 
-FockMap provides **two complementary encoding frameworks**, each suited to different encoding strategies:
+- New to this topic? Start with [Why Encodings?](https://johnazariah.github.io/encodings/theory/01-why-encodings.html)
+- Want a full worked example? Go to [From Molecules to Qubits](https://johnazariah.github.io/encodings/from-molecules-to-qubits/index.html)
+- Prefer hands-on? Try [Your First Encoding](https://johnazariah.github.io/encodings/labs/01-first-encoding.html)
+- Need API details? Browse [All types and functions](https://johnazariah.github.io/encodings/reference/index.html)
 
-### 1. Index-Set Framework (Seeley-Richard-Love)
+## Documentation
 
-Encodings are defined by three functions over index sets:
+- Site: [johnazariah.github.io/encodings](https://johnazariah.github.io/encodings/)
+- Tutorial path: [From Molecules to Qubits](https://johnazariah.github.io/encodings/from-molecules-to-qubits/index.html)
+- Theory: [Why Encodings?](https://johnazariah.github.io/encodings/theory/01-why-encodings.html)
+- Labs: [Your First Encoding](https://johnazariah.github.io/encodings/labs/01-first-encoding.html)
+- Guides: [Architecture](https://johnazariah.github.io/encodings/guides/architecture.html)
 
-- **Update set** $U(j)$: qubits whose occupation parity changes when mode $j$ is toggled
-- **Parity set** $P(j)$: qubits that store the parity of modes $< j$
-- **Occupation set** $F(j)$: qubits that encode the occupation of mode $j$
+## How it Works (briefly)
 
-These sets plug into the Majorana operators $c_j$ and $d_j$:
+FockMap currently exposes two encoding styles:
+- **Index-set encodings** (Jordan-Wigner, Bravyi-Kitaev, Parity)
+- **Tree/path encodings** (balanced binary and ternary trees, plus custom trees)
 
-$$c_j = X_{U(j) \cup \{j\}} \cdot Z_{P(j)}, \qquad d_j = Y_j \cdot X_{U(j)} \cdot Z_{(P(j) \oplus F(j)) \setminus \{j\}}$$
-
-This framework implements Jordan-Wigner, Bravyi-Kitaev, and Parity.
-
-### 2. Path-Based Framework (Jiang et al.)
-
-Encodings are defined by **tree structures** where:
-- Each leaf corresponds to a fermionic mode
-- Each edge carries a Pauli label ($X$, $Y$, or $Z$)
-- Root-to-leaf paths determine Majorana operator strings
-
-This framework implements balanced binary and balanced ternary tree encodings, and supports **arbitrary custom trees** — any rooted tree you can define produces a valid encoding.
-
-### Type System
-
-The library's operator algebra is built on three generic types:
-
-| Type | Meaning | Example |
-|------|---------|---------|
-| `C<'T>` | Coefficient × term | $0.5 \times a_2^\dagger$ |
-| `P<'T>` | Product of terms | $a_0^\dagger a_1$ (hopping) |
-| `S<'T>` | Sum of products | Full Hamiltonian $H = \sum_{ij} h_{ij} a_i^\dagger a_j + \ldots$ |
-
-These compose with:
-- `LadderOperatorUnit` — `Raise j` ($a_j^\dagger$) or `Lower j` ($a_j$)
-- `PauliRegister` — Multi-qubit Pauli string with phase (e.g., $iXZYI$)
-- `PauliRegisterSequence` — Linear combination of Pauli strings
-
-## Source Modules
-
-| Module | Description |
-|--------|-------------|
-| `Terms.fs` | Generic `C<'T>`, `P<'T>`, `S<'T>` combining algebra |
-| `IndexedTerms.fs` | Indexed terms with operator ordering |
-| `PauliRegister.fs` | Multi-qubit Pauli string with exact symbolic multiplication |
-| `CombiningAlgebra.fs` | Pauli string collection and simplification |
-| `LadderOperatorSequence.fs` | Fermionic operator product manipulation |
-| `JordanWigner.fs` | Jordan-Wigner encoding (direct implementation) |
-| `FenwickTree.fs` | Pure functional Fenwick tree (binary indexed tree) ADT |
-| `MajoranaEncoding.fs` | Generic Majorana encoding framework with index-set schemes |
-| `BravyiKitaev.fs` | Bravyi-Kitaev encoding via Fenwick tree |
-| `TreeEncoding.fs` | Tree-based encodings (index-set and path-based constructions) |
-| `Hamiltonian.fs` | Full Hamiltonian encoding from one/two-electron integrals |
-| `SwapTrackingSort.fs` | Parity-tracking sort for operator reordering |
+If you want the full derivations and internals, jump to the docs:
+- [Architecture guide](https://johnazariah.github.io/encodings/guides/architecture.html)
+- [Type system guide](https://johnazariah.github.io/encodings/guides/type-system.html)
 
 ## Examples
 
@@ -195,35 +158,10 @@ Run any example with:
 dotnet fsi examples/H2_Encoding.fsx
 ```
 
-## Documentation
-
-Full documentation is available at **[johnazariah.github.io/encodings](https://johnazariah.github.io/encodings/)**.
-
-### Theory
-- [Why Encodings?](https://johnazariah.github.io/encodings/theory/01-why-encodings.html) — The problem encodings solve
-- [Second Quantization](https://johnazariah.github.io/encodings/theory/02-second-quantization.html) — Fock space, creation/annihilation operators
-- [Pauli Algebra](https://johnazariah.github.io/encodings/theory/03-pauli-algebra.html) — Pauli matrices and multi-qubit strings
-- [Jordan-Wigner](https://johnazariah.github.io/encodings/theory/04-jordan-wigner.html) — The classic encoding, derived step by step
-- [Beyond Jordan-Wigner](https://johnazariah.github.io/encodings/theory/05-beyond-jordan-wigner.html) — BK, trees, and $O(\log n)$ scaling
-- [Bosonic Preview](https://johnazariah.github.io/encodings/theory/06-bosonic-preview.html) — Future extensions to bosonic modes
-
-### Labs (literate F# scripts)
-- [Your First Encoding](https://johnazariah.github.io/encodings/labs/01-first-encoding.html) — Encode an operator in 5 minutes
-- [H₂ Molecule](https://johnazariah.github.io/encodings/labs/02-h2-molecule.html) — Full molecular Hamiltonian walkthrough
-- [Compare Encodings](https://johnazariah.github.io/encodings/labs/03-compare-encodings.html) — Side-by-side weight analysis
-- [Custom Encoding](https://johnazariah.github.io/encodings/labs/04-custom-encoding.html) — Define your own scheme
-- [Custom Tree](https://johnazariah.github.io/encodings/labs/05-custom-tree.html) — Build tree-based encodings
-- [Scaling Analysis](https://johnazariah.github.io/encodings/labs/06-scaling.html) — Pauli weight scaling with system size
-
-### Guides
-- [Architecture](https://johnazariah.github.io/encodings/guides/architecture.html) — Two-framework design explained
-- [Type System](https://johnazariah.github.io/encodings/guides/type-system.html) — The C/P/S algebra in depth
-- [Cross-Platform](https://johnazariah.github.io/encodings/guides/cross-platform.html) — Running on Windows, macOS, and Linux
-
 ## Testing
 
 ```bash
-# Run all 303 tests
+# Run all tests
 dotnet test
 
 # With detailed output
@@ -233,19 +171,15 @@ dotnet test --logger "console;verbosity=detailed"
 dotnet test --collect:"XPlat Code Coverage"
 ```
 
-The test suite includes:
-- **Unit tests** for every encoding scheme and every algebraic operation
-- **Property-based tests** via [FsCheck](https://fscheck.github.io/FsCheck/) for Pauli algebra laws
-- **Cross-encoding verification**: all 5 encodings produce identical eigenspectra for H₂
-- **CAR verification**: canonical anti-commutation relations checked symbolically
+The test suite covers encoding behavior, Pauli algebra laws, and cross-encoding consistency checks.
 
-Current coverage: **78% line / 66% branch** across 303 tests.
+Coverage and test counts are tracked in CI.
 
 ## Cross-Platform
 
 This library runs on **Windows**, **macOS**, and **Linux** via [.NET 10](https://dotnet.microsoft.com/) (LTS), Microsoft's open-source, cross-platform runtime. It is written in [F#](https://fsharp.org/), a functional-first language that is fully open-source under the [F# Software Foundation](https://foundation.fsharp.org/) and the [.NET Foundation](https://dotnetfoundation.org/).
 
-No platform-specific code. No native dependencies. No runtime downloads beyond the .NET SDK.
+No platform-specific code and no native dependencies beyond the .NET SDK.
 
 ## Citation
 

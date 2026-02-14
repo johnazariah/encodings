@@ -117,6 +117,22 @@ $$
 i \cdot i = -1, \quad (-1) \cdot (-1) = 1, \quad i \cdot (-i) = 1
 $$
 
+## What "Symbolic" Means in This Library
+
+In FockMap, symbolic calculation means we manipulate operators as **structured algebraic objects** (Pauli strings + exact coefficients), not as dense matrices, during construction.
+
+Concretely, the workflow is:
+
+1. Keep each term as coefficient $\times$ Pauli signature (for example, $-\tfrac{i}{2}\,ZZYI$)
+2. Multiply strings qubit-by-qubit using the Pauli table (exact phase updates)
+3. Canonicalize and combine like signatures by summing coefficients
+4. Convert to matrices only when needed for numerical tasks (for example, diagonalisation)
+
+Why this helps:
+- **Exact phase/sign handling** during algebraic rewrites
+- **No floating-point drift** while simplifying symbolic expressions
+- **Sparse-friendly manipulation** when many matrix elements would be zero
+
 ## Weight of a Pauli String
 
 The **weight** of a Pauli string is the number of non-identity terms:

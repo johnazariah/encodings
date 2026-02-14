@@ -1,8 +1,21 @@
 # Chapter 5: Checking Our Answer
 
-_Exact diagonalisation, the eigenspectrum, and cross-encoding comparison confirm the Hamiltonian is correct._
+_In this chapter, you'll verify the Hamiltonian numerically and confirm equivalence across encodings._
+
+## In This Chapter
+
+- **What you'll learn:** How to validate the encoded Hamiltonian numerically and check encoding invariance.
+- **Why this matters:** Verification is how you catch subtle sign/index bugs before running larger studies.
+- **Try this next:** Continue to [Chapter 6 — What Comes Next](06-outlook.html) to connect this model to VQE/QPE workflows.
 
 ## Exact Diagonalisation
+
+Before diagonalising, it's helpful to separate two workflows:
+
+- **Symbolic workflow (used to build the Hamiltonian):** keep operators as exact Pauli strings with exact phase/sign bookkeeping and combine like terms algebraically.
+- **Matrix workflow (used here for validation):** convert the final symbolic Pauli sum into a matrix and compute eigenvalues.
+
+In other words: symbolic form is ideal for constructing and simplifying the model; matrix form is ideal for spectrum checks and numerical validation.
 
 To verify the qubit Hamiltonian, we construct its $16 \times 16$ matrix representation. Each Pauli string $\sigma_\alpha$ corresponds to a known matrix (the tensor product of its single-qubit Pauli matrices). The full Hamiltonian matrix is:
 
@@ -57,6 +70,8 @@ At $n = 4$, the encodings are too small for the weight advantages of BK and tree
 For more details on the encodings and their scaling properties, see [Beyond Jordan–Wigner](../theory/05-beyond-jordan-wigner.html).
 
 The [Compare Encodings](../labs/03-compare-encodings.html) interactive lab reproduces this comparison as executable F# code.
+
+With validation done, we can now look at how this Hamiltonian feeds directly into practical quantum algorithms.
 
 ---
 

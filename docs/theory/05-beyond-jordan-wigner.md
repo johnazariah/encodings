@@ -276,7 +276,15 @@ In a *balanced* tree, every path from root to leaf has length $O(\log n)$. Since
 
 The formal construction works as follows. Each node in a ternary tree has three descending links, labeled X, Y, and Z. If a link connects to a child node, it's an *edge*. If a link terminates without a child, it's a *leg*.
 
-For $n$ fermionic modes, we need $2n$ Majorana operators (two per mode: $c_j$ and $d_j$). A tree on $n$ nodes has exactly $2n$ legs (each node contributes 3 links, and $n-1$ are consumed by edges connecting nodes, leaving $3n - 2(n-1) = n + 2$ ... actually the exact count depends on tree structure).
+For $n$ fermionic modes, we need $2n$ Majorana operators (two per mode: $c_j$ and $d_j$).
+
+In the ternary-tree construction used here, each node has three labeled descending links (X, Y, Z). Counting link endpoints gives:
+
+$$
+	ext{number of legs} = 3n - 2(n-1) = n+2.
+$$
+
+The algorithm then defines two designated leg-derived strings per node (via the $s_x$ and $s_y$ paths), providing the required $2n$ Majorana strings for the encoding map.
 
 The key algorithm:
 

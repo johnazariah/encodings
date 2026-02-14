@@ -14,6 +14,20 @@ Molecule → Basis Set → Integrals → Second Quantization → Spin-Orbitals �
 
 Each stage involves notation choices, sign conventions, and index manipulations that the research literature compresses into a few lines. This tutorial makes **every step explicit**.
 
+## Representation Map (What Object Are We Using?)
+
+One common source of confusion is switching between representations without saying so. Here is the object type at each stage:
+
+| Stage | Object you work with | Typical form |
+|:--|:--|:--|
+| Molecular model | Orbital basis + geometry | STO-3G, bond length, spin-orbital indexing |
+| Electronic structure data | Integral tables | $h_{pq}$ and $\langle pq|rs\rangle$ |
+| Fermionic Hamiltonian | Ladder-operator expression | $\sum h_{pq}a_p^\dagger a_q + \frac{1}{2}\sum \langle pq|rs\rangle a_p^\dagger a_q^\dagger a_s a_r$ |
+| Encoded Hamiltonian | Symbolic Pauli sum | $\sum_\alpha c_\alpha P_\alpha$ |
+| Verification only | Dense/sparse matrix | $2^n \times 2^n$ matrix diagonalisation |
+
+Practical rule of thumb: stay in the **symbolic Pauli-sum form** for construction and simplification, and switch to a matrix only when you explicitly want eigenvalues/eigenvectors.
+
 ## Chapters
 
 | # | Chapter | What you'll learn |

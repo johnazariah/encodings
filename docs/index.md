@@ -49,17 +49,16 @@ Written in [F#](https://fsharp.org/), fully open-source under the [F# Software F
 
 ## Learn More
 
-- **Complete tutorial:** [From Molecules to Qubits](from-molecules-to-qubits/index.html) — the full pipeline, H₂ worked example
-- **New to encodings?** Start with [Why Encodings?](theory/01-why-encodings.html)
-- **Want to try it?** Jump to [Your First Encoding](labs/01-first-encoding.html)
-- **Full walkthrough:** [Encoding the H₂ Molecule](labs/02-h2-molecule.html)
+- **Start here:** [From Molecules to Qubits](from-molecules-to-qubits/index.html) — complete H₂ pipeline
+- **Theory first:** [Why Encodings?](theory/01-why-encodings.html)
+- **Hands-on first:** [Your First Encoding](labs/01-first-encoding.html)
 - **Library internals:** [Architecture Guide](guides/architecture.html)
 - **API Reference:** [All types and functions](reference/index.html)
 
-## Quick Links
+## Explore the Docs
 
 ### From Molecules to Qubits
-A complete step-by-step guide using H₂ as a worked example — every integral, every sign, every coefficient.
+A step-by-step guide using H₂ as a worked example.
 - [Overview](from-molecules-to-qubits/index.html) — The complete pipeline at a glance
 - [The Electronic Structure Problem](from-molecules-to-qubits/01-electronic-structure.html) — Born–Oppenheimer, basis sets, configurations
 - [The Notation Minefield](from-molecules-to-qubits/02-notation.html) — Chemist's vs. physicist's integrals
@@ -74,6 +73,7 @@ A complete step-by-step guide using H₂ as a worked example — every integral,
 - [Pauli Algebra](theory/03-pauli-algebra.html) — Pauli matrices and strings
 - [Jordan-Wigner](theory/04-jordan-wigner.html) — The classic encoding
 - [Beyond Jordan-Wigner](theory/05-beyond-jordan-wigner.html) — BK, trees, and O(log n) scaling
+- [Bosonic Preview](theory/06-bosonic-preview.html) — Future directions for bosonic modes
 
 ### Interactive Labs
 - [First Encoding](labs/01-first-encoding.html) — Encode your first operator (5 min)
@@ -81,6 +81,7 @@ A complete step-by-step guide using H₂ as a worked example — every integral,
 - [Compare Encodings](labs/03-compare-encodings.html) — Side-by-side comparison
 - [Custom Encoding](labs/04-custom-encoding.html) — Define your own scheme
 - [Custom Tree](labs/05-custom-tree.html) — Build tree-based encodings
+- [Scaling Analysis](labs/06-scaling.html) — Pauli weight scaling with system size
 
 ### Guides
 - [Architecture](guides/architecture.html) — Two-framework design
