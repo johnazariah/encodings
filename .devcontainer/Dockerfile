@@ -20,7 +20,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         # LaTeX (full for papers targeting AJP, PRA, JOSS)
         texlive-full \
         # Utilities
-        git curl ca-certificates sudo locales gpg \
+        git curl ca-certificates sudo locales gpg jq \
         # Build tools
         build-essential \
     && locale-gen en_US.UTF-8 \

@@ -97,9 +97,9 @@ supports mixed-statistics model assembly in a single representation.
 
 The library is implemented with algebraic data types and pure functions,
 includes a persistent Fenwick tree ADT, and is validated by an extensive
-xUnit + FsCheck test suite (309 passing tests), including both
+xUnit + FsCheck test suite (427 passing tests), including both
 property-based algebraic checks and targeted edge-case regressions.
-Current coverage is 80.02\% line and 67.43\% branch on the core library.
+Current coverage is 96.51\% line and 86.94\% branch on the core library.
 A complete H$_2$/STO-3G example is provided and reproduced across all
 five built-in encodings.
 
@@ -219,11 +219,11 @@ $b_i b_i^\dagger = 1 + b_i^\dagger b_i$).
 \subsection*{Verification Suite}
 
 The verification strategy combines unit tests, property-based tests, and
-cross-encoding consistency checks.  At submission time, 309 tests pass
-for the software package, with 80.02\% line coverage and 67.43\% branch
+cross-encoding consistency checks.  At submission time, 427 tests pass
+for the software package, with 96.51\% line coverage and 86.94\% branch
 coverage on the core \texttt{Encodings} library.
 
-Tests cover four categories:
+Tests cover five categories:
 \begin{itemize}
   \item \textbf{Anti-commutation:}
     $\{a_i, a^\dagger_j\} = \delta_{ij}$ verified symbolically for all
