@@ -61,6 +61,7 @@
     <Compile Include="CombiningAlgebra.fs" />
     <Compile Include="LadderOperatorSequence.fs" />
     <Compile Include="Bosonic.fs" />
+    <Compile Include="MixedSystems.fs" />
     <Compile Include="JordanWigner.fs" />
     <Compile Include="FenwickTree.fs" />
     <Compile Include="MajoranaEncoding.fs" />

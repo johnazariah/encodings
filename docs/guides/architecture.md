@@ -220,7 +220,13 @@ This separation keeps symbolic rewriting independent from downstream qubit encod
 
 ## Mixed Bosonic + Fermionic Workflows
 
-For mixed models, use disjoint mode-index ranges and normalize each sector with its own algebra before combining terms in the final Hamiltonian expression.
+For mixed models, use sector-tagged operators (`ParticleSector` + `SectorLadderOperatorUnit`) and canonicalize with `constructMixedNormalOrdered`.
+
+The mixed normalizer explicitly:
+
+1. block-orders terms with fermions on the left and bosons on the right,
+2. applies CAR in the fermionic block,
+3. applies CCR in the bosonic block.
 
 The detailed recipe is in the [Mixed Registers guide](mixed-registers.html).
 

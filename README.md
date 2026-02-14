@@ -140,7 +140,7 @@ FockMap exposes two fermionic encoding styles:
 
 It also supports **bosonic ladder-operator normal ordering** via canonical commutation relations (CCR), alongside the fermionic CAR workflow.
 
-For models with both statistics, use a mixed register pattern with sector-specific normal ordering (documented below).
+For models with both statistics, use sector-tagged operators (`fermion`, `boson`) and `constructMixedNormalOrdered` to canonicalize mixed expressions.
 
 If you want the full derivations and internals, jump to the docs:
 - [Architecture guide](https://johnazariah.github.io/encodings/guides/architecture.html)

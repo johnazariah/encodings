@@ -21,6 +21,7 @@
     <Compile Include="CombiningAlgebra.fs" />
     <Compile Include="LadderOperatorSequence.fs" />
     <Compile Include="Bosonic.fs" />
+    <Compile Include="MixedSystems.fs" />
     <Compile Include="SwapTrackingSort.fs" />
     <Compile Include="LadderOperatorUnit.fs" />
     <Compile Include="LadderOperatorProductTerm.fs" />

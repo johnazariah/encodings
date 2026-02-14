@@ -272,11 +272,18 @@ The type parameter naturally changes from fermionic to Pauli as operators flow t
 
 ### Mixed Bosonic + Fermionic Registers
 
-Mixed models are typically represented by partitioning mode indices into sectors and applying sector-specific normal ordering:
+Mixed models now use explicit sector tags and a mixed normalizer:
 
 ```fsharp
-let fermionic = LadderOperatorSumExpr<FermionicAlgebra>.ConstructNormalOrdered exprF
-let bosonic   = LadderOperatorSumExpr<BosonicAlgebra>.ConstructNormalOrdered exprB
+let expr : S<IxOp<uint32, SectorLadderOperatorUnit>> =
+    P.Apply [|
+        fermion Lower 3u
+        boson Raise 100u
+        fermion Raise 1u
+    |]
+    |> S.Apply
+
+let canonical = constructMixedNormalOrdered expr
 ```
 
-Then encode fermionic terms with `jordanWignerTerms`/`bravyiKitaevTerms`/tree encodings, while keeping bosonic terms symbolic or passing them through a truncation layer. See [Mixed Registers](mixed-registers.html) for a full workflow.
+`constructMixedNormalOrdered` first enforces sector block order (fermions left, bosons right), then applies CAR/CCR rules within each block. Then encode fermionic terms with `jordanWignerTerms`/`bravyiKitaevTerms`/tree encodings, while keeping bosonic terms symbolic or passing them through a truncation layer. See [Mixed Registers](mixed-registers.html) for a full workflow.

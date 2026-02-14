@@ -1,17 +1,42 @@
 # Mixed Bosonic and Fermionic Registers
 
-Many physical models combine fermions and bosons in one Hamiltonian (for example, electrons coupled to vibrational or photonic modes). This guide describes how to model those systems in FockMap using a shared indexed representation and algebra-specific normal ordering.
+Many physical models combine fermions and bosons in one Hamiltonian (for example, electrons coupled to vibrational or photonic modes). This guide describes how to model those systems in FockMap using explicit sector-tagged operators and mixed normal ordering.
 
 ## Core Idea
 
-FockMap uses one operator container type:
+FockMap now provides sector-aware ladder units:
 
-- `IxOp<uint32, LadderOperatorUnit>` for indexed creation/annihilation operators.
+- `ParticleSector = Fermionic | Bosonic`
+- `SectorLadderOperatorUnit`
+- `IxOp<uint32, SectorLadderOperatorUnit>`
 
-The difference between fermionic and bosonic behavior is not in the operator token itself, but in the combining algebra used during normal ordering:
+Helper constructors make sector intent explicit:
+
+- `fermion : LadderOperatorUnit -> uint32 -> IxOp<uint32, SectorLadderOperatorUnit>`
+- `boson : LadderOperatorUnit -> uint32 -> IxOp<uint32, SectorLadderOperatorUnit>`
+
+Mixed canonicalization is handled by:
+
+- `constructMixedNormalOrdered : S<IxOp<uint32, SectorLadderOperatorUnit>> -> ...`
+
+Internally, the mixed normalizer uses the same combining algebras:
 
 - `FermionicAlgebra` applies CAR rewrites.
 - `BosonicAlgebra` applies CCR rewrites.
+
+## Canonical Block Rule
+
+For independent sectors, cross-sector commutators are zero, so fermionic and bosonic operators can be reordered without sign:
+
+$$
+[a_i, b_j] = [a_i, b_j^\dagger] = [a_i^\dagger, b_j] = [a_i^\dagger, b_j^\dagger] = 0
+$$
+
+FockMap's canonical mixed form is therefore:
+
+1. all fermionic operators on the left,
+2. all bosonic operators on the right,
+3. normal-order each sector with its own algebra.
 
 ## Partitioning a Register
 
@@ -24,9 +49,9 @@ Using disjoint index ranges keeps sector logic explicit and prevents accidental 
 
 ## Workflow Pattern
 
-1. Build candidate terms in the shared indexed representation.
-2. Split terms into fermionic, bosonic, and coupling contributions.
-3. Normal-order each contribution with the correct algebra.
+1. Build candidate terms with sector-tagged operators.
+2. Apply `constructMixedNormalOrdered` to each expression.
+3. The normalizer block-orders by sector, then applies CAR/CCR per sector.
 4. Encode fermionic contributions to Pauli strings with your chosen encoding scheme.
 5. Keep bosonic contributions symbolic or pass them to a separate truncation/encoding stage.
 
@@ -36,29 +61,20 @@ Using disjoint index ranges keeps sector logic explicit and prevents accidental 
 open Encodings
 open System.Numerics
 
-let isFermion i = i < 100u
-let isBoson i = i >= 100u
-
-let make op i = C.Apply(IxOp.Apply(i, op))
-
 // Example coupling-like candidate: a†_1 a_2 b†_100 b_100
-let couplingCandidate : S<IxOp<uint32, LadderOperatorUnit>> =
+let couplingCandidate : S<IxOp<uint32, SectorLadderOperatorUnit>> =
     P.Apply [|
-        IxOp.Apply(1u, Raise)
-        IxOp.Apply(2u, Lower)
-        IxOp.Apply(100u, Raise)
-        IxOp.Apply(100u, Lower)
+        fermion Raise 1u
+        fermion Lower 2u
+        boson Raise 100u
+        boson Lower 100u
     |]
     |> S.Apply
 
-let normalOrderFermionic (s : S<IxOp<uint32, LadderOperatorUnit>>) =
-    LadderOperatorSumExpr<FermionicAlgebra>.ConstructNormalOrdered s
-
-let normalOrderBosonic (s : S<IxOp<uint32, LadderOperatorUnit>>) =
-    constructBosonicNormalOrdered s
+let canonical = constructMixedNormalOrdered couplingCandidate
 ```
 
-In production code, you typically project each product term into sector-specific sub-products before normal ordering.
+Use `isSectorBlockOrdered` / `toSectorBlockOrder` if you need block-order checks independently of full normal ordering.
 
 ## Coupling Terms
 
@@ -66,7 +82,7 @@ For couplings like $g\,n_f n_b$:
 
 - write the fermionic number factor using fermionic operators,
 - write the bosonic number factor using bosonic operators,
-- normalize each sector under its own algebra,
+- normalize in mixed canonical form (fermion block + boson block),
 - combine at the coefficient/Hamiltonian-assembly level.
 
 This keeps CAR and CCR semantics explicit and avoids hidden sign mistakes.

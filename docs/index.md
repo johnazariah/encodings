@@ -1,6 +1,6 @@
 # FockMap
 
-A composable functional framework for symbolic operator algebra, including fermionic and bosonic normal ordering and fermion-to-qubit encodings.
+A composable functional framework for symbolic operator algebra, including fermionic and bosonic normal ordering, mixed-sector canonicalization, and fermion-to-qubit encodings.
 
 > Build, normalize, and encode operator expressions on Fock space using algebraic data types, pure functions, and zero dependencies.
 
