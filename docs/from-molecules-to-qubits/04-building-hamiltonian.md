@@ -13,7 +13,7 @@ For background on why encoding is necessary (fermions anti-commute, qubits commu
 ## The Recipe
 
 1. For each non-zero one-body integral $h_{pq}$: encode $a^\dagger_p$ and $a_q$ as Pauli strings, multiply them, multiply by $h_{pq}$.
-2. For each non-zero two-body integral $\langle pq|rs\rangle$: encode all four ladder operators, multiply the four Pauli strings, multiply by $\frac{1}{2}\langle pq|rs\rangle$.
+2. For each non-zero two-body integral $\langle pq \mid rs\rangle$: encode all four ladder operators, multiply the four Pauli strings, multiply by $\frac{1}{2}\langle pq \mid rs\rangle$.
 3. Sum all terms, collecting Pauli strings with the same signature and adding their coefficients.
 4. Add $V_{nn} \cdot IIII$ (nuclear repulsion as a constant offset).
 
@@ -47,7 +47,7 @@ Substituting $h_{00} = h_{11} = -1.2563$ and $h_{22} = h_{33} = -0.4719$:
 
 The two-body terms are more involved. Consider one representative term:
 
-$$\frac{1}{2}\langle 0\alpha\, 0\beta | 0\alpha\, 0\beta\rangle\, a^\dagger_0 a^\dagger_1 a_1 a_0$$
+$$\frac{1}{2}\langle 0\alpha\, 0\beta \mid 0\alpha\, 0\beta\rangle\, a^\dagger_0 a^\dagger_1 a_1 a_0$$
 
 This describes two electrons in $\sigma_g$ (one spin-up, one spin-down) repelling each other.
 

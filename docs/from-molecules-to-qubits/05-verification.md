@@ -39,9 +39,9 @@ $$E_0^\text{total} = E_0^\text{el} + V_{nn} = -1.8573 + 0.7151 = -1.1422 \text{ 
 
 ## Comparison with Known Results
 
-The **Hartree–Fock** energy (single determinant $|1100\rangle$) is:
+The **Hartree–Fock** energy (single determinant $\lvert1100\rangle$) is:
 
-$$E_\text{HF} = 2h_{00} + [00|00] = 2(-1.2563) + 0.6745 = -1.8382 \text{ Ha (electronic)}$$
+$$E_\text{HF} = 2h_{00} + [00 \mid 00] = 2(-1.2563) + 0.6745 = -1.8382 \text{ Ha (electronic)}$$
 
 The **Full CI** correlation energy is:
 
@@ -65,7 +65,7 @@ The same Hamiltonian encoded under all five transforms:
 
 At $n = 4$, the encodings are too small for the weight advantages of BK and tree encodings to manifest. At $n = 16$ (8 spatial orbitals), the max single-operator weight would be 16 for JW but only 5 for BK and 4 for balanced ternary — a significant reduction.
 
-**All five encodings produce the same eigenspectrum** to machine precision ($|\Delta\lambda| < 5 \times 10^{-16}$), confirming that the encoding is a unitary change of basis that preserves the physics exactly.
+**All five encodings produce the same eigenspectrum** to machine precision ($\lvert\Delta\lambda\rvert < 5 \times 10^{-16}$), confirming that the encoding is a unitary change of basis that preserves the physics exactly.
 
 For more details on the encodings and their scaling properties, see [Beyond Jordan–Wigner](../theory/05-beyond-jordan-wigner.html).
 

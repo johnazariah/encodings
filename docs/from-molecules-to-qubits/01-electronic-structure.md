@@ -22,7 +22,7 @@ $$
 
 For H₂, this means two protons ($A$ and $B$, separated by distance $R$) and two electrons (1 and 2). The Hamiltonian is a function of six electronic coordinates plus the internuclear distance $R$.
 
-For the hydrogen *atom* (one electron, one proton), this equation can be solved analytically — giving the familiar $1s$, $2s$, $2p$, … orbitals. For two electrons, exact analytical solution is already impossible. The electron–electron repulsion term $e^2/|\mathbf{r}_1 - \mathbf{r}_2|$ couples the two electrons, making the equation non-separable.
+For the hydrogen *atom* (one electron, one proton), this equation can be solved analytically — giving the familiar $1s$, $2s$, $2p$, … orbitals. For two electrons, exact analytical solution is already impossible. The electron–electron repulsion term $e^2/\lvert \mathbf{r}_1 - \mathbf{r}_2 \rvert$ couples the two electrons, making the equation non-separable.
 
 ## The Born–Oppenheimer Approximation
 
@@ -64,7 +64,7 @@ $$\sigma_g = \frac{1s_A + 1s_B}{\sqrt{2(1+S)}} \qquad \text{(bonding)}$$
 
 $$\sigma_u = \frac{1s_A - 1s_B}{\sqrt{2(1-S)}} \qquad \text{(antibonding)}$$
 
-where $S = \langle 1s_A | 1s_B \rangle$ is the overlap integral. The bonding orbital $\sigma_g$ has lower energy (electron density concentrated between the nuclei), while the antibonding orbital $\sigma_u$ has a node at the midpoint.
+where $S = \langle 1s_A \mid 1s_B \rangle$ is the overlap integral. The bonding orbital $\sigma_g$ has lower energy (electron density concentrated between the nuclei), while the antibonding orbital $\sigma_u$ has a node at the midpoint.
 
 With 2 molecular orbitals and 2 spin states ($\alpha$ = spin-up, $\beta$ = spin-down), we have $2 \times 2 = 4$ **spin-orbitals**.
 
@@ -81,9 +81,9 @@ Two electrons distributed among 4 spin-orbitals can be arranged in $\binom{4}{2}
 | $\|0101\rangle$ | $\sigma_{g\beta}\, \sigma_{u\beta}$ | One in each, same spin |
 | $\|0011\rangle$ | $\sigma_{u\alpha}\, \sigma_{u\beta}$ | Both in antibonding orbital |
 
-The **exact** ground state of H₂ is a superposition of these six configurations. The Hartree–Fock approximation uses only the first ($|1100\rangle$), capturing about 99% of the energy. The remaining 1% — the **correlation energy** — is what makes quantum simulation valuable.
+The **exact** ground state of H₂ is a superposition of these six configurations. The Hartree–Fock approximation uses only the first ($\lvert1100\rangle$), capturing about 99% of the energy. The remaining 1% — the **correlation energy** — is what makes quantum simulation valuable.
 
-> **Key observation:** These occupation vectors $|n_0 n_1 n_2 n_3\rangle$ look exactly like qubit computational basis states $|q_0 q_1 q_2 q_3\rangle$. This is not a coincidence — it is why quantum simulation of chemistry works. But the correspondence is not as simple as setting qubit $j$ = occupation of orbital $j$, because fermions and qubits obey different algebraic rules (see [Why Encodings?](../theory/01-why-encodings.html)).
+> **Key observation:** These occupation vectors $\lvert n_0 n_1 n_2 n_3\rangle$ look exactly like qubit computational basis states $\lvert q_0 q_1 q_2 q_3\rangle$. This is not a coincidence — it is why quantum simulation of chemistry works. But the correspondence is not as simple as setting qubit $j$ = occupation of orbital $j$, because fermions and qubits obey different algebraic rules (see [Why Encodings?](../theory/01-why-encodings.html)).
 
 ## Second Quantization
 
@@ -93,9 +93,9 @@ For a detailed treatment, see [Theory: Second Quantization](../theory/02-second-
 
 The key result: the electronic Hamiltonian becomes
 
-$$\hat{H} = \sum_{pq} h_{pq}\, a^\dagger_p a_q + \frac{1}{2}\sum_{pqrs} \langle pq|rs\rangle\, a^\dagger_p a^\dagger_q a_s a_r$$
+$$\hat{H} = \sum_{pq} h_{pq}\, a^\dagger_p a_q + \frac{1}{2}\sum_{pqrs} \langle pq \mid rs\rangle\, a^\dagger_p a^\dagger_q a_s a_r$$
 
-where $h_{pq}$ are one-body integrals (kinetic energy + electron–nucleus attraction) and $\langle pq|rs\rangle$ are two-body integrals (electron–electron repulsion) in physicist's notation.
+where $h_{pq}$ are one-body integrals (kinetic energy + electron–nucleus attraction) and $\langle pq \mid rs\rangle$ are two-body integrals (electron–electron repulsion) in physicist's notation.
 
 For H₂ in STO-3G, the non-zero one-body integrals are:
 

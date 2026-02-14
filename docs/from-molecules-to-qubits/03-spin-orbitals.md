@@ -48,11 +48,11 @@ For H₂, this gives 4 non-zero entries — all diagonal:
 
 The spin-orbital two-body integral in physicist's notation is:
 
-$$\langle pq|rs\rangle_\text{spin} = \left[\frac{p}{2}\frac{r}{2}\bigg|\frac{q}{2}\frac{s}{2}\right]_\text{spatial} \times \delta(\sigma_p, \sigma_r) \times \delta(\sigma_q, \sigma_s)$$
+$$\langle pq \mid rs\rangle_\text{spin} = \left[\frac{p}{2}\frac{r}{2}\bigg\mid\frac{q}{2}\frac{s}{2}\right]_\text{spatial} \times \delta(\sigma_p, \sigma_r) \times \delta(\sigma_q, \sigma_s)$$
 
 Both electrons must independently conserve spin: electron 1 (indices $p, r$) keeps its spin, and electron 2 (indices $q, s$) keeps its spin.
 
-This generates more non-zero integrals than one might expect, because **cross-spin** terms are allowed. For example, $\langle 0\alpha\, 1\beta | 0\alpha\, 1\beta\rangle$ is non-zero: electron 1 stays spin-$\alpha$ and electron 2 stays spin-$\beta$.
+This generates more non-zero integrals than one might expect, because **cross-spin** terms are allowed. For example, $\langle 0\alpha\, 1\beta \mid 0\alpha\, 1\beta\rangle$ is non-zero: electron 1 stays spin-$\alpha$ and electron 2 stays spin-$\beta$.
 
 > **Common error:** If you include only same-spin blocks ($\alpha\alpha$ and $\beta\beta$) and omit the cross-spin blocks ($\alpha\beta$ and $\beta\alpha$), your Hamiltonian will contain only Z-type (diagonal) Pauli terms and no XX/YY excitation terms. The eigenvalues will be wrong. This was our actual first-implementation bug.
 
@@ -62,7 +62,7 @@ For H₂, there are 32 non-zero spin-orbital two-body integrals (before symmetry
 
 Combining one-body (4 terms) and two-body (32 terms, with $\frac{1}{2}$ prefactor), plus the nuclear repulsion constant:
 
-$$\hat{H} = V_{nn}\cdot\hat{I} + \sum_{pq} h^\text{spin}_{pq}\, a^\dagger_p a_q + \frac{1}{2}\sum_{pqrs} \langle pq|rs\rangle_\text{spin}\, a^\dagger_p a^\dagger_q a_s a_r$$
+$$\hat{H} = V_{nn}\cdot\hat{I} + \sum_{pq} h^\text{spin}_{pq}\, a^\dagger_p a_q + \frac{1}{2}\sum_{pqrs} \langle pq \mid rs\rangle_\text{spin}\, a^\dagger_p a^\dagger_q a_s a_r$$
 
 with $V_{nn} = 0.7151$ Ha.
 
@@ -85,7 +85,7 @@ with $V_{nn} = 0.7151$ Ha.
 | $p = 0$ | $-1.2563390730$ | $0$ |
 | $p = 1$ | $0$ | $-0.4718960244$ |
 
-### Spatial Two-Body Integrals $[pq|rs]$ (Ha)
+### Spatial Two-Body Integrals $[pq \mid rs]$ (Ha)
 
 | Integral | Value |
 |:---:|:---:|

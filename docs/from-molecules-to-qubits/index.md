@@ -21,8 +21,8 @@ One common source of confusion is switching between representations without sayi
 | Stage | Object you work with | Typical form |
 |:--|:--|:--|
 | Molecular model | Orbital basis + geometry | STO-3G, bond length, spin-orbital indexing |
-| Electronic structure data | Integral tables | $h_{pq}$ and $\langle pq|rs\rangle$ |
-| Fermionic Hamiltonian | Ladder-operator expression | $\sum h_{pq}a_p^\dagger a_q + \frac{1}{2}\sum \langle pq|rs\rangle a_p^\dagger a_q^\dagger a_s a_r$ |
+| Electronic structure data | Integral tables | $h_{pq}$ and $\langle pq \mid rs\rangle$ |
+| Fermionic Hamiltonian | Ladder-operator expression | $\sum h_{pq}a_p^\dagger a_q + \frac{1}{2}\sum \langle pq \mid rs\rangle a_p^\dagger a_q^\dagger a_s a_r$ |
 | Encoded Hamiltonian | Symbolic Pauli sum | $\sum_\alpha c_\alpha P_\alpha$ |
 | Verification only | Dense/sparse matrix | $2^n \times 2^n$ matrix diagonalisation |
 

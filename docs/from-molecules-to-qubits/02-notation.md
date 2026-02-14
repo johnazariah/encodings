@@ -14,15 +14,15 @@ This section exists to save the reader weeks of debugging.
 
 Chemist's notation (Mulliken notation, charge-density notation) groups indices by **spatial coordinate**:
 
-$$[pq|rs] = \iint \phi_p^*(\mathbf{r}_1)\phi_q(\mathbf{r}_1)\, \frac{1}{r_{12}}\, \phi_r^*(\mathbf{r}_2)\phi_s(\mathbf{r}_2)\, d\mathbf{r}_1\, d\mathbf{r}_2$$
+$$[pq \mid rs] = \iint \phi_p^*(\mathbf{r}_1)\phi_q(\mathbf{r}_1)\, \frac{1}{r_{12}}\, \phi_r^*(\mathbf{r}_2)\phi_s(\mathbf{r}_2)\, d\mathbf{r}_1\, d\mathbf{r}_2$$
 
-The bracket $[pq|$ refers to electron 1 (at $\mathbf{r}_1$), and $|rs]$ refers to electron 2. Within each bracket, the first index is the complex conjugate (bra) and the second is the ket.
+The bracket $[pq\mid$ refers to electron 1 (at $\mathbf{r}_1$), and $\mid rs]$ refers to electron 2. Within each bracket, the first index is the complex conjugate (bra) and the second is the ket.
 
 ## Physicist's Notation
 
 Physicist's notation (Dirac notation — confusingly, not the same as bra-ket notation for states) groups indices by **particle**:
 
-$$\langle pq|rs\rangle = \iint \phi_p^*(\mathbf{r}_1)\phi_q^*(\mathbf{r}_2)\, \frac{1}{r_{12}}\, \phi_r(\mathbf{r}_1)\phi_s(\mathbf{r}_2)\, d\mathbf{r}_1\, d\mathbf{r}_2$$
+$$\langle pq \mid rs\rangle = \iint \phi_p^*(\mathbf{r}_1)\phi_q^*(\mathbf{r}_2)\, \frac{1}{r_{12}}\, \phi_r(\mathbf{r}_1)\phi_s(\mathbf{r}_2)\, d\mathbf{r}_1\, d\mathbf{r}_2$$
 
 Here $p$ and $r$ belong to electron 1, while $q$ and $s$ belong to electron 2. Convention: bra indices on the left ($p, q$), ket indices on the right ($r, s$).
 
@@ -30,30 +30,30 @@ Here $p$ and $r$ belong to electron 1, while $q$ and $s$ belong to electron 2. C
 
 Comparing the two definitions:
 
-$$\boxed{\langle pq|rs\rangle_\text{physicist} = [pr|qs]_\text{chemist}}$$
+$$\boxed{\langle pq \mid rs\rangle_\text{physicist} = [pr \mid qs]_\text{chemist}}$$
 
 The indices get **shuffled**: the physicist's bra-ket pairs $(p, r)$ and $(q, s)$ become the chemist's coordinate pairs, but the positions within each bracket change.
 
 For H₂, this means:
-- $\langle 00|11\rangle = [01|01]$ — these are *different integrals* with different values!
-- $[00|11]$ is the Coulomb integral $J_{01}$ (density–density repulsion)
-- $\langle 00|11\rangle = [01|01]$ is an exchange-type integral
+- $\langle 00 \mid 11\rangle = [01 \mid 01]$ — these are *different integrals* with different values!
+- $[00 \mid 11]$ is the Coulomb integral $J_{01}$ (density–density repulsion)
+- $\langle 00 \mid 11\rangle = [01 \mid 01]$ is an exchange-type integral
 
 ## Which Notation for the Hamiltonian?
 
 The second-quantized Hamiltonian uses **physicist's** notation:
 
-$$\hat{H} = \sum_{pq} h_{pq}\, a^\dagger_p a_q + \frac{1}{2}\sum_{pqrs} \langle pq|rs\rangle\, a^\dagger_p a^\dagger_q a_s a_r$$
+$$\hat{H} = \sum_{pq} h_{pq}\, a^\dagger_p a_q + \frac{1}{2}\sum_{pqrs} \langle pq \mid rs\rangle\, a^\dagger_p a^\dagger_q a_s a_r$$
 
 If you have integrals in chemist's notation (which most quantum chemistry codes output), you must convert before plugging into this formula.
 
 Equivalently, the Hamiltonian in chemist's notation is:
 
-$$\hat{H} = \sum_{pq} h_{pq}\, a^\dagger_p a_q + \frac{1}{2}\sum_{pqrs} [pr|qs]\, a^\dagger_p a^\dagger_q a_s a_r$$
+$$\hat{H} = \sum_{pq} h_{pq}\, a^\dagger_p a_q + \frac{1}{2}\sum_{pqrs} [pr \mid qs]\, a^\dagger_p a^\dagger_q a_s a_r$$
 
 ## Common Errors
 
-> **Error 1:** Using chemist's integrals $[pq|rs]$ directly in the physicist's formula (or vice versa). This permutes the indices and gives wrong coefficients.
+> **Error 1:** Using chemist's integrals $[pq \mid rs]$ directly in the physicist's formula (or vice versa). This permutes the indices and gives wrong coefficients.
 >
 > **Error 2:** Forgetting the $\frac{1}{2}$ prefactor on the two-body term. This double-counts electron–electron interactions.
 >

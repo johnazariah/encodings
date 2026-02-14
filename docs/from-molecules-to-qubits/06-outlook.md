@@ -12,7 +12,7 @@ The 15-term qubit Hamiltonian from [Chapter 4](04-building-hamiltonian.html) is 
 
 ## Variational Quantum Eigensolver (VQE)
 
-VQE prepares a parameterised quantum state $|\psi(\boldsymbol{\theta})\rangle$, measures $\langle\psi|\hat{H}|\psi\rangle$ by separately measuring each Pauli term, and uses a classical optimiser to minimise the energy over $\boldsymbol{\theta}$.
+VQE prepares a parameterised quantum state $\lvert\psi(\boldsymbol{\theta})\rangle$, measures $\langle\psi \mid\hat{H}\mid \psi\rangle$ by separately measuring each Pauli term, and uses a classical optimiser to minimise the energy over $\boldsymbol{\theta}$.
 
 VQE is designed for **near-term noisy quantum hardware**: the circuits are short and the measurement overhead is manageable for small molecules. Experiments have already demonstrated VQE for H₂ and small molecules on real quantum computers.
 

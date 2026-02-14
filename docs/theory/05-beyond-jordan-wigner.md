@@ -123,7 +123,7 @@ For $n = 8$ modes (0-indexed), here are the index sets:
 | 6 | {7} | {5} | {6} |
 | 7 | {} | {5, 6} | {0, 1, 2, 3, 4, 5, 6, 7} |
 
-Notice that $|U(j)| \leq \lfloor \log_2 n \rfloor$ and $|P(j)| \leq \lfloor \log_2 n \rfloor$. This is why Bravyi-Kitaev achieves $O(\log n)$ weight.
+Notice that $\lvert U(j)\rvert \leq \lfloor \log_2 n \rfloor$ and $\lvert P(j)\rvert \leq \lfloor \log_2 n \rfloor$. This is why Bravyi-Kitaev achieves $O(\log n)$ weight.
 
 ## The Majorana Framework
 
@@ -193,7 +193,7 @@ let jordanWignerScheme : EncodingScheme =
 - **Parity:** All modes $0, 1, \ldots, j-1$—hence the Z-chain
 - **Occupation:** Just $\{j\}$—qubit $j$ directly encodes mode $j$
 
-The Z-chain is $|P(j)| = j$, which grows linearly—confirming our earlier analysis.
+The Z-chain is $\lvert P(j)\rvert = j$, which grows linearly—confirming our earlier analysis.
 
 ## Bravyi-Kitaev as an Encoding Scheme
 
@@ -206,7 +206,7 @@ let bravyiKitaevScheme : EncodingScheme =
       Occupation = occupationSet }
 ```
 
-The Fenwick tree structure guarantees that $|U(j)| \leq \log_2 n$ and $|P(j)| \leq \log_2 n$, giving $O(\log n)$ Pauli weight.
+The Fenwick tree structure guarantees that $\lvert U(j)\rvert \leq \log_2 n$ and $\lvert P(j)\rvert \leq \log_2 n$, giving $O(\log n)$ Pauli weight.
 
 ## The Parity Encoding
 
