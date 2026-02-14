@@ -1,5 +1,3 @@
-# FockMap
-
 <p align="center">
 	<img src="content/img/fockmap-logo.svg" alt="FockMap logo" width="520" />
 </p>
