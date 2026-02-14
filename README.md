@@ -157,6 +157,8 @@ Runnable F# scripts in the [`examples/`](examples/) directory:
 | [`Compare_Encodings.fsx`](examples/Compare_Encodings.fsx) | Side-by-side Pauli weight comparison across encodings |
 | [`Custom_Encoding.fsx`](examples/Custom_Encoding.fsx) | Build a custom Majorana encoding from index-set functions |
 | [`Custom_Tree.fsx`](examples/Custom_Tree.fsx) | Construct a custom tree and derive an encoding from it |
+| [`Mixed_NormalOrdering.fsx`](examples/Mixed_NormalOrdering.fsx) | Canonical mixed boson+fermion normal ordering with sector blocks |
+| [`Mixed_ElectronPhonon_Toy.fsx`](examples/Mixed_ElectronPhonon_Toy.fsx) | Toy electron-phonon style mixed symbolic workflow |
 
 Run any example with:
 ```bash

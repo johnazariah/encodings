@@ -76,6 +76,57 @@ let canonical = constructMixedNormalOrdered couplingCandidate
 
 Use `isSectorBlockOrdered` / `toSectorBlockOrder` if you need block-order checks independently of full normal ordering.
 
+## Worked Patterns
+
+### Pattern 1: Bring bosons right, fermions left
+
+```fsharp
+let scrambled : S<IxOp<uint32, SectorLadderOperatorUnit>> =
+    P.Apply [|
+        boson Lower 100u
+        fermion Lower 3u
+        boson Raise 100u
+        fermion Raise 1u
+    |] |> S.Apply
+
+let canonical = constructMixedNormalOrdered scrambled
+```
+
+This applies the block rule first (fermions on the left, bosons on the right), then normal-orders within each block.
+
+### Pattern 2: Same-index identity terms in both sectors
+
+```fsharp
+let sameIndex : S<IxOp<uint32, SectorLadderOperatorUnit>> =
+    P.Apply [|
+        fermion Lower 5u
+        fermion Raise 5u
+        boson Lower 200u
+        boson Raise 200u
+    |] |> S.Apply
+
+let canonical2 = constructMixedNormalOrdered sameIndex
+```
+
+You get CAR and CCR identity contributions in one pass:
+
+- fermionic: $a_i a_i^\dagger = 1 - a_i^\dagger a_i$
+- bosonic: $b_i b_i^\dagger = 1 + b_i^\dagger b_i$
+
+## Runnable Scripts
+
+Repository examples include:
+
+- `examples/Mixed_NormalOrdering.fsx`
+- `examples/Mixed_ElectronPhonon_Toy.fsx`
+
+Run with:
+
+```bash
+dotnet fsi examples/Mixed_NormalOrdering.fsx
+dotnet fsi examples/Mixed_ElectronPhonon_Toy.fsx
+```
+
 ## Coupling Terms
 
 For couplings like $g\,n_f n_b$:

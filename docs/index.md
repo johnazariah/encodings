@@ -87,5 +87,5 @@ A step-by-step guide using H₂ as a worked example.
 ### Guides
 - [Architecture](guides/architecture.html) — Two-framework design
 - [Type System](guides/type-system.html) — C/P/S algebra explained
-- [Mixed Registers](guides/mixed-registers.html) — Bosonic + fermionic components in one model
+- [Mixed Registers](guides/mixed-registers.html) — Bosonic + fermionic components with runnable examples
 - [Cross-Platform](guides/cross-platform.html) — .NET 10 and F# on all platforms
