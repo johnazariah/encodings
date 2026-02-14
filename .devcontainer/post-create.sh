@@ -18,5 +18,5 @@ dotnet test Encodings.sln --no-build --verbosity normal
 
 echo ""
 echo "══════════════════════════════════════════════"
-echo "  ✓ Ready. 303 tests should be green above."
+echo "  ✓ Ready. ALL tests need to be green above."
 echo "══════════════════════════════════════════════"
