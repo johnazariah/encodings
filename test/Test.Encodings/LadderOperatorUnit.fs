@@ -24,3 +24,17 @@ module LadderOperatorUnit =
 
         let expected = sprintf "(%s, %u)" (if isRaisingOperator then "u" else "d") index
         Assert.Equal (expected, actual.ToString())
+
+    [<Theory>]
+    [<InlineData("I", true)>]
+    [<InlineData("u", true)>]
+    [<InlineData("d", true)>]
+    [<InlineData("x", false)>]
+    let ``Apply parses known ladder operator symbols`` (input : string, shouldSucceed : bool) =
+        let parsed = LadderOperatorUnit.Apply input
+        Assert.Equal(shouldSucceed, parsed.IsSome)
+
+    [<Fact>]
+    let ``FromTuple keeps operator and index`` () =
+        let actual = LadderOperatorUnit.FromTuple (Lower, 9u)
+        Assert.Equal("(d, 9)", actual.ToString())

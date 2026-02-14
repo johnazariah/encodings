@@ -38,6 +38,15 @@ module TypeExtensions =
 
     [<Theory>]
     [<InlineData(0.0, 0.0, true)>]
+    [<InlineData(2.0, -3.0, true)>]
+    [<InlineData(System.Double.PositiveInfinity, 0.0, false)>]
+    [<InlineData(0.0, System.Double.NaN, false)>]
+    let ``IsFinite identifies finite components`` (realPart : float, imaginaryPart : float, expected : bool) =
+        let value = Complex(realPart, imaginaryPart)
+        Assert.Equal(expected, Complex.IsFinite value)
+
+    [<Theory>]
+    [<InlineData(0.0, 0.0, true)>]
     [<InlineData(2.0, 0.0, false)>]
     [<InlineData(0.0, -3.0, false)>]
     [<InlineData(System.Double.PositiveInfinity, 0.0, true)>]
@@ -77,6 +86,8 @@ module TypeExtensions =
                 Complex.ImaginaryOne, "( i) "
                 -Complex.ImaginaryOne, "(-i) "
                 Complex(2.5, 0.0), "2.5 "
+                Complex(0.0, 2.5), "(2.5 i) "
+                Complex(1.0, 1.0), "<1; 1>"
             ]
 
         for (value, expected) in cases do
@@ -92,6 +103,9 @@ module TypeExtensions =
                 -Complex.ImaginaryOne, " - i "
                 Complex(2.5, 0.0), " + 2.5 "
                 Complex(-2.5, 0.0), " - 2.5 "
+                Complex(0.0, 2.5), " + (2.5 i) "
+                Complex(0.0, -2.5), " - (2.5 i) "
+                Complex(1.0, 1.0), " + <1; 1>"
             ]
 
         for (value, expected) in cases do

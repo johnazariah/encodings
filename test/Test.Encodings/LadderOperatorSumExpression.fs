@@ -75,3 +75,24 @@ module LadderOperatorSumExpression =
         Assert.Contains("(d, 1)", sum.ToString())
         Assert.Contains("(u, 0)", product.ToString())
         Assert.Contains("(d, 1)", product.ToString())
+
+    [<Fact>]
+    let ``LadderOperatorSumExpression can be non-normal but index-ordered`` () =
+        let expr = LadderOperatorSumExpression.TryCreateFromString "{[(d, 1) | (u, 0)]}" |> Option.get
+
+        Assert.False(expr.AllTermsNormalOrdered)
+        Assert.True(expr.AllTermsIndexOrdered)
+
+    [<Fact>]
+    let ``LadderOperatorSumExpression detects out-of-index-order raises`` () =
+        let expr = LadderOperatorSumExpression.TryCreateFromString "{[(u, 2) | (u, 0)]}" |> Option.get
+
+        Assert.True(expr.AllTermsNormalOrdered)
+        Assert.False(expr.AllTermsIndexOrdered)
+
+    [<Fact>]
+    let ``LadderOperatorSumExpression detects normal and index-ordered terms`` () =
+        let expr = LadderOperatorSumExpression.TryCreateFromString "{[(u, 0) | (u, 2) | (d, 3) | (d, 1)]}" |> Option.get
+
+        Assert.True(expr.AllTermsNormalOrdered)
+        Assert.True(expr.AllTermsIndexOrdered)

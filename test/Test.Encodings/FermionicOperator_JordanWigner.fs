@@ -45,3 +45,13 @@ module FermionicOperator_JordanWigner =
         let num = cre * anh
         let actual = num.ToString()
         Assert.Equal(expected, actual)
+
+    [<Fact>]
+    let ``Identity operator returns empty sequence``() =
+        let actual = jordanWignerTerms Identity 1u 4u
+        Assert.Empty(actual.SummandTerms)
+
+    [<Fact>]
+    let ``Out-of-range index returns empty sequence``() =
+        let actual = jordanWignerTerms Raise 4u 4u
+        Assert.Empty(actual.SummandTerms)

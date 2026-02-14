@@ -49,3 +49,33 @@ module Pauli =
         let actual   = Z * X
         Assert.Equal (expected, actual)
         Assert.Equal (actual, expected)
+
+    [<Theory>]
+    [<InlineData("I", true)>]
+    [<InlineData("X", true)>]
+    [<InlineData("Y", true)>]
+    [<InlineData("Z", true)>]
+    [<InlineData("Q", false)>]
+    let ``Apply parses valid Pauli labels`` (input : string, shouldSucceed : bool) =
+        let parsed = Pauli.Apply input
+        Assert.Equal(shouldSucceed, parsed.IsSome)
+
+    [<Theory>]
+    [<InlineData('I', true)>]
+    [<InlineData('X', true)>]
+    [<InlineData('Y', true)>]
+    [<InlineData('Z', true)>]
+    [<InlineData('q', false)>]
+    let ``FromChar parses valid Pauli labels`` (input : char, shouldSucceed : bool) =
+        let parsed = Pauli.FromChar input
+        Assert.Equal(shouldSucceed, parsed.IsSome)
+
+    [<Fact>]
+    let ``Pauli multiplication table is closed and complete`` () =
+        let all = [| I; X; Y; Z |]
+
+        for left in all do
+            for right in all do
+                let (op, phase) = left * right
+                Assert.Contains(op, all)
+                Assert.Contains(phase, [| P1; M1; Pi; Mi |])
