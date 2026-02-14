@@ -1,0 +1,8 @@
+<Project>
+  <PropertyGroup>
+    <Version>0.1.0</Version>
+    <RepositoryUrl>https://github.com/johnazariah/encodings</RepositoryUrl>
+    <FsDocsLicenseLink>https://github.com/johnazariah/encodings/blob/main/LICENSE</FsDocsLicenseLink>
+    <FsDocsReleaseNotesLink>https://github.com/johnazariah/encodings/blob/main/CHANGELOG.md</FsDocsReleaseNotesLink>
+  </PropertyGroup>
+</Project>

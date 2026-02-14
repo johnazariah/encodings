@@ -2,47 +2,16 @@
 
 from pathlib import Path
 
-RUNTIME_MARKER = "<!-- fockmap-pages-runtime -->"
-
 PLACEHOLDER_REPLACEMENTS = {
     "{{fsdocs-license-link}}": "https://github.com/johnazariah/encodings/blob/main/LICENSE",
     "{{fsdocs-release-notes-link}}": "https://github.com/johnazariah/encodings/blob/main/CHANGELOG.md",
     "{{fsdocs-repository-link}}": "https://github.com/johnazariah/encodings",
 }
 
-RUNTIME_SNIPPET = """\
-    <!-- fockmap-pages-runtime -->
-    <script>
-      window.MathJax = {
-        tex: {
-          inlineMath: [['$', '$'], ['\\(', '\\)']],
-          displayMath: [['$$', '$$'], ['\\[', '\\]']],
-          processEscapes: true
-        }
-      };
-    </script>
-    <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-    <script>
-      document.addEventListener('DOMContentLoaded', function () {
-        if (window.mermaid) {
-          mermaid.initialize({ startOnLoad: false, securityLevel: 'loose' });
-          var blocks = document.querySelectorAll('pre > code.language-mermaid, pre > code[lang="mermaid"], table.pre code[lang="mermaid"]');
-          blocks.forEach(function (code, index) {
-            var containerTarget = code.closest('table.pre') || code.parentElement;
-            if (!containerTarget) return;
-            var source = code.textContent || '';
-            var container = document.createElement('div');
-            container.className = 'mermaid';
-            container.id = 'mermaid-diagram-' + index;
-            container.textContent = source;
-            containerTarget.replaceWith(container);
-          });
-          mermaid.run();
-        }
-      });
-    </script>
-"""
+ASSET_REPLACEMENTS = {
+  '/encodings/img/logo.png': '/encodings/content/img/fockmap-logo.svg',
+  '/encodings/img/favicon.ico': '/encodings/content/img/fockmap-icon.svg',
+}
 
 
 def inject_runtime(html_path: Path) -> bool:
@@ -54,20 +23,15 @@ def inject_runtime(html_path: Path) -> bool:
             content = content.replace(placeholder, value)
             changed = True
 
-    if RUNTIME_MARKER in content:
-        if changed:
-            html_path.write_text(content, encoding="utf-8")
-        return changed
+    for original, replacement in ASSET_REPLACEMENTS.items():
+      if original in content:
+        content = content.replace(original, replacement)
+        changed = True
 
-    head_close = content.lower().find("</head>")
-    if head_close == -1:
-        if changed:
-            html_path.write_text(content, encoding="utf-8")
-        return changed
+    if changed:
+      html_path.write_text(content, encoding="utf-8")
 
-    updated = content[:head_close] + RUNTIME_SNIPPET + "\n" + content[head_close:]
-    html_path.write_text(updated, encoding="utf-8")
-    return True
+    return changed
 
 
 def main() -> None:
@@ -80,7 +44,7 @@ def main() -> None:
         if inject_runtime(html_file):
             changed += 1
 
-    print(f"Injected runtime into {changed} HTML files")
+    print(f"Post-processed {changed} HTML files")
 
 
 if __name__ == "__main__":
