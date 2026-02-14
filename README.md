@@ -118,7 +118,7 @@ If you use this library in your research, please cite:
 
 ```bibtex
 @software{fockmap2026,
-  author = {Aziz, John},
+  author = {Azariah, John},
   title = {FockMap: A Composable Framework for Quantum Operator Encodings},
   year = {2026},
   url = {https://github.com/johnazariah/encodings}
