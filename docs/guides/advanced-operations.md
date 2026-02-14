@@ -63,7 +63,30 @@ For advanced workflows, add tests for:
 - hybrid projections (fermion extraction + boson preservation),
 - encoding-agnostic conservation checks on the fermion block.
 
-## 6) Related Documentation
+## 6) Decision Tree: Which Workflow to Use?
+
+Use this quick decision tree:
+
+1. Do you have bosonic operators in the model?
+	- **No** → Use the standard fermionic pipeline and encode directly.
+	- **Yes** → Continue.
+
+2. Do you need bosonic qubit encoding right now?
+	- **No** → Use the **hybrid pipeline**:
+	  - canonicalize mixed terms,
+	  - encode fermionic blocks,
+	  - keep bosonic blocks symbolic.
+	- **Yes** → Use mixed canonicalization first, then apply your chosen bosonic truncation/encoding strategy.
+
+3. Are you selecting among fermionic encodings (JW/BK/tree)?
+	- **Yes** → Run **encoding comparison on extracted fermion blocks** (`Mixed_HybridCompare.fsx`).
+	- **No** → Use your fixed encoder and focus on model-level validation.
+
+4. Are observables sensitive to bosonic occupancy cutoff?
+	- **Yes** → perform cutoff-convergence checks before trusting encoded results.
+	- **No/unknown** → start with conservative cutoff scans anyway.
+
+## 7) Related Documentation
 
 - [Mixed Registers](mixed-registers.html)
 - [Architecture](architecture.html)

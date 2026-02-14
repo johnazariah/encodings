@@ -129,6 +129,7 @@ let myEncode op j n = encodeOperator myScheme op j n
 - Site: [johnazariah.github.io/encodings](https://johnazariah.github.io/encodings/)
 - Tutorial path: [From Molecules to Qubits](https://johnazariah.github.io/encodings/from-molecules-to-qubits/index.html)
 - Theory: [Why Encodings?](https://johnazariah.github.io/encodings/theory/01-why-encodings.html)
+- Mixed theory chapter: [Mixed Systems](https://johnazariah.github.io/encodings/theory/07-mixed-systems.html)
 - Labs: [Your First Encoding](https://johnazariah.github.io/encodings/labs/01-first-encoding.html)
 - Guides: [Architecture](https://johnazariah.github.io/encodings/guides/architecture.html)
 

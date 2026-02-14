@@ -90,4 +90,4 @@ Each strategy trades off qubit count against Pauli weight and circuit complexity
 
 **Previous:** [Beyond Jordan-Wigner](05-beyond-jordan-wigner.html) — BK, trees, and O(log n) encodings
 
-**Next:** [Architecture Guide](../guides/architecture.html) — how FockMap composes algebras and encodings
+**Next:** [Mixed Systems](07-mixed-systems.html) — canonical ordering for boson+fermion models

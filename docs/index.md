@@ -75,6 +75,7 @@ A step-by-step guide using H₂ as a worked example.
 - [Jordan-Wigner](theory/04-jordan-wigner.html) — The classic encoding
 - [Beyond Jordan-Wigner](theory/05-beyond-jordan-wigner.html) — BK, trees, and O(log n) scaling
 - [Bosonic Operators](theory/06-bosonic-preview.html) — CCR algebra and truncation strategies
+- [Mixed Systems](theory/07-mixed-systems.html) — Canonical sector ordering and hybrid workflows
 
 ### Interactive Labs
 - [First Encoding](labs/01-first-encoding.html) — Encode your first operator (5 min)
