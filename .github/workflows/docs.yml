@@ -32,7 +32,7 @@ jobs:
         run: dotnet build --configuration Release
 
       - name: Build documentation
-        run: dotnet fsdocs build --output docs-output --parameters root /FockMap/
+        run: dotnet fsdocs build --output docs-output --parameters root /encodings/
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

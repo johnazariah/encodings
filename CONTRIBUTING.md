@@ -4,7 +4,7 @@ Thank you for your interest in contributing to FockMap! This document provides g
 
 ## How to Report Bugs
 
-If you find a bug, please report it by [opening a GitHub issue](https://github.com/johnazariah/FockMap/issues/new). Include:
+If you find a bug, please report it by [opening a GitHub issue](https://github.com/johnazariah/encodings/issues/new). Include:
 
 - A clear, descriptive title
 - Steps to reproduce the issue
@@ -16,7 +16,7 @@ If you find a bug, please report it by [opening a GitHub issue](https://github.c
 
 Feature requests are welcome! To propose a new feature:
 
-1. Check existing [issues](https://github.com/johnazariah/FockMap/issues) to see if it's already proposed
+1. Check existing [issues](https://github.com/johnazariah/encodings/issues) to see if it's already proposed
 2. Open a new issue with the "feature request" label
 3. Describe the feature and its use case
 4. Explain why this feature would be useful to others

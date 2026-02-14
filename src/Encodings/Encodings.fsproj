@@ -20,8 +20,8 @@
     </Description>
     <PackageTags>quantum;quantum-computing;quantum-chemistry;encoding;jordan-wigner;bravyi-kitaev;fock-space;fsharp;functional-programming</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageProjectUrl>https://github.com/johnazariah/FockMap</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/johnazariah/FockMap</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/johnazariah/encodings</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/johnazariah/encodings</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
 
     <!-- License -->

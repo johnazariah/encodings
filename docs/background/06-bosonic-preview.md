@@ -89,7 +89,7 @@ let encodeBosonicOperator (scheme : BosonicEncodingScheme)
 - Mixed fermion-boson systems (e.g., electron-phonon coupling)
 - Documentation and tutorials for bosonic simulation
 
-Stay tuned for updates, or follow the [GitHub repository](https://github.com/fockmap/fockmap) for development progress.
+Stay tuned for updates, or follow the [GitHub repository](https://github.com/johnazariah/encodings) for development progress.
 
 ---
 
