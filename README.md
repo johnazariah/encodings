@@ -1,7 +1,7 @@
 # FockMap
 
-[![CI](https://github.com/johnaziz57/FockMap/actions/workflows/ci.yml/badge.svg)](https://github.com/johnaziz57/FockMap/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/johnaziz57/FockMap/graph/badge.svg)](https://codecov.io/gh/johnaziz57/FockMap)
+[![CI](https://github.com/johnazariah/FockMap/actions/workflows/ci.yml/badge.svg)](https://github.com/johnazariah/FockMap/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/johnazariah/FockMap/graph/badge.svg)](https://codecov.io/gh/johnazariah/FockMap)
 [![NuGet](https://img.shields.io/nuget/v/FockMap.svg)](https://www.nuget.org/packages/FockMap)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![.NET 8](https://img.shields.io/badge/.NET-8.0-512BD4)
@@ -32,7 +32,7 @@ dotnet add package FockMap
 ### From source
 
 ```bash
-git clone https://github.com/johnaziz57/FockMap.git
+git clone https://github.com/johnazariah/FockMap.git
 cd FockMap
 dotnet build
 dotnet test
@@ -108,7 +108,7 @@ Tests cover all encoding schemes with both unit tests and property-based tests (
 
 ## Documentation
 
-- **[API Reference](https://johnaziz57.github.io/FockMap/)** — Full documentation with mathematical notation
+- **[API Reference](https://johnazariah.github.io/FockMap/)** — Full documentation with mathematical notation
 - **Background Theory** — Educational content on fermion-to-qubit encodings
 - **Tutorials** — Literate F# scripts with worked examples
 
@@ -121,7 +121,7 @@ If you use this library in your research, please cite:
   author = {Aziz, John},
   title = {FockMap: A Composable Framework for Quantum Operator Encodings},
   year = {2026},
-  url = {https://github.com/johnaziz57/FockMap}
+  url = {https://github.com/johnazariah/FockMap}
 }
 ```
 

@@ -6,7 +6,7 @@
     <!-- Package identity -->
     <PackageId>FockMap</PackageId>
     <Version>0.1.0</Version>
-    <Authors>John Aziz</Authors>
+    <Authors>John Azariah</Authors>
     <Company />
 
     <!-- Description and discoverability -->
@@ -20,8 +20,8 @@
     </Description>
     <PackageTags>quantum;quantum-computing;quantum-chemistry;encoding;jordan-wigner;bravyi-kitaev;fock-space;fsharp;functional-programming</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageProjectUrl>https://github.com/johnaziz57/FockMap</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/johnaziz57/FockMap</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/johnazariah/FockMap</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/johnazariah/FockMap</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
 
     <!-- License -->

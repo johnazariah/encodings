@@ -7,11 +7,11 @@ tags:
   - F#
   - functional programming
 authors:
-  - name: John Googleplex Aziz
-    orcid: 0000-0000-0000-0000
+  - name: John Azariah
+    orcid: 0009-0007-9870-1970
     affiliation: 1
 affiliations:
-  - name: TBD
+  - name: University of Technology, Sydney
     index: 1
 date: 2024
 bibliography: paper.bib

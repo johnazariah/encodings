@@ -1156,7 +1156,7 @@ compile order).  It needs full NuGet packaging metadata so that
     <!-- Package identity -->
     <PackageId>FockMap</PackageId>  <!-- or chosen name -->
     <Version>0.1.0</Version>
-    <Authors>John Aziz</Authors>
+    <Authors>John Azariah</Authors>
     <Company />
 
     <!-- Description and discoverability -->
