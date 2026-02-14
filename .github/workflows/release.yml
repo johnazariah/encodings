@@ -46,11 +46,24 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
+      - name: Install LaTeX toolchain
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends latexmk texlive-latex-extra texlive-fonts-recommended texlive-science
+
       - name: Build
         run: dotnet build --configuration Release
 
       - name: Pack NuGet package
         run: dotnet pack src/Encodings/Encodings.fsproj --configuration Release --no-build -o nupkg
+
+      - name: Build papers (PDF)
+        run: |
+          make -C .research clean
+          make -C .research all
+
+      - name: Copy release PDFs with unique names
+        run: |
+          cp .research/paper-software/fockmap-joss.pdf .research/fockmap-joss.pdf
+          cp .research/paper-tutorial/fockmap-tutorial.pdf .research/fockmap-tutorial.pdf
 
       - name: Publish to NuGet
         run: dotnet nuget push nupkg/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
@@ -58,4 +71,7 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: nupkg/*.nupkg
+          files: |
+            nupkg/*.nupkg
+            .research/fockmap-joss.pdf
+            .research/fockmap-tutorial.pdf
