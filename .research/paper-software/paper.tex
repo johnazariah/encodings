@@ -62,36 +62,37 @@
 %%--------------------------------------------------------------------
 \section*{Summary}
 
-Simulating fermionic systems on quantum computers requires mapping
-fermionic creation and annihilation operators to qubit (Pauli) operators
---- the fermion-to-qubit encoding problem.  Different encodings
-(Jordan--Wigner, Bravyi--Kitaev, Parity, tree-based) trade off Pauli
-weight, circuit depth, and implementational complexity.  Existing
-libraries implement each encoding as a separate, non-composable
-transform, obscuring the shared mathematical structure.
+Simulating fermionic systems on quantum hardware requires a mapping
+from fermionic ladder operators to qubit Pauli operators.  This
+fermion-to-qubit encoding step strongly influences Pauli weight,
+measurement cost, and circuit depth.  Although widely used encodings
+(Jordan--Wigner, Bravyi--Kitaev, Parity, and tree-based variants) share
+substantial algebraic structure, they are often implemented in existing
+software as isolated transformations rather than as instances of a
+common formal interface.
 
-We present \texttt{FockMap}, an open-source F\# library that unifies all
-known fermion-to-qubit encodings under two composable abstractions:
-\emph{index-set schemes}, in which an encoding is specified by three
-set-valued functions (\texttt{Update}, \texttt{Parity},
-\texttt{Occupation}), and \emph{path-based tree encodings}, in which any
-rooted labelled tree automatically induces a valid encoding.  The
-index-set framework captures Jordan--Wigner, Bravyi--Kitaev, and Parity
-in 3--5 lines each; the path-based framework handles arbitrary tree
-topologies including balanced binary and balanced ternary trees that
-achieve provably optimal $O(\log n)$ Pauli weight.
+\texttt{FockMap} is an open-source F\# library that formalizes this
+shared structure through two composable abstractions: \emph{index-set
+schemes}, defined by three set-valued functions (\texttt{Update},
+\texttt{Parity}, \texttt{Occupation}), and \emph{path-based tree
+encodings}, in which any rooted labelled tree induces a valid
+encoding.  The index-set abstraction expresses Jordan--Wigner,
+Bravyi--Kitaev, and Parity in 3--5 lines each, while the path-based
+abstraction supports arbitrary tree topologies, including balanced
+binary and balanced ternary trees with optimal $O(\log n)$ asymptotic
+Pauli weight.
 
-Crucially, the entire operator pipeline is \emph{symbolic}: Pauli
-strings are multiplied exactly using an algebraic phase-tracking
-rule---no matrices are instantiated and no floating-point arithmetic
-occurs until the final Hamiltonian coefficients are assembled.  This
-makes correctness verifiable by inspection and eliminates an entire
-class of numerical-precision bugs that plague matrix-based approaches.
+The operator-processing pipeline is implemented symbolically: Pauli
+strings are multiplied exactly with algebraic phase tracking, without
+constructing operator matrices and without introducing floating-point
+error in intermediate steps.  Numerical coefficients are introduced only
+at Hamiltonian assembly.  This design supports transparent correctness
+checks and avoids numerical artefacts common in matrix-first workflows.
 
-The library is built entirely from algebraic data types and pure
-functions, features a persistent Fenwick tree ADT, includes 303 unit
-and property-based tests, and provides a running example encoding the
-complete H$_2$ STO-3G Hamiltonian across all five built-in encodings.
+The library is implemented with algebraic data types and pure functions,
+includes a persistent Fenwick tree ADT, and is validated by 303 unit and
+property-based tests.  A complete H$_2$/STO-3G example is provided and
+reproduced across all five built-in encodings.
 
 %%--------------------------------------------------------------------
 \section*{Statement of Need}
@@ -105,8 +106,8 @@ The choice of encoding determines the Pauli weight of each operator (and
 hence circuit depth), the number of measurement terms, and ultimately
 whether a simulation is feasible on a given device.
 
-Current tools for this step --- OpenFermion \citep{mcclean2020}, Qiskit
-Nature \citep{qiskit2023}, and PennyLane \citep{bergholm2022} ---
+Current tools for this step, OpenFermion \citep{mcclean2020}, Qiskit
+Nature \citep{qiskit2023}, and PennyLane \citep{bergholm2022},
 implement each encoding as a monolithic function mapping
 \texttt{FermionOperator} $\to$ \texttt{QubitOperator}.  Adding a new
 encoding requires writing hundreds of lines of bespoke code.  The
@@ -115,18 +116,18 @@ parity tracking, update sets) is duplicated rather than abstracted.
 There is no mechanism for users to define, compose, or compare custom
 encodings programmatically.
 
-\texttt{FockMap} addresses this gap.  An encoding is a \emph{value} ---
-a record of three functions --- not a class hierarchy.  This design
-enables:
+\texttt{FockMap} addresses this gap by representing an encoding as a
+\emph{value} (a record of three functions) rather than as an opaque
+class hierarchy.  This design enables:
 
 \begin{itemize}
   \item \textbf{Exploration:} researchers can define and test novel
     encodings in 3--5 lines of code.
   \item \textbf{Comparison:} all encodings share the same verification
     pipeline (anti-commutation tests, eigenspectrum comparison).
-  \item \textbf{Pedagogy:} the code \emph{is} the mathematics --- an
-    \texttt{EncodingScheme} is the literal definition from the
-    literature, not an opaque implementation of it.
+  \item \textbf{Pedagogy:} the implementation remains close to the
+    formal definitions in the literature; an \texttt{EncodingScheme}
+    directly encodes the mathematical specification.
 \end{itemize}
 
 The library serves quantum computing researchers exploring
@@ -176,7 +177,7 @@ represents a Pauli string (e.g.\ $XZIY$) together with an exact
 \texttt{Phase} drawn from $\{+1, -1, +i, -i\}$.  Multiplying two Pauli
 registers applies the single-qubit multiplication table
 ($X \cdot Y = iZ$, etc.)  position-wise and accumulates the phase
-algebraically---no $2^n \times 2^n$ matrices are ever constructed.
+algebraically; no $2^n \times 2^n$ matrices are ever constructed.
 The resulting \texttt{PauliRegisterSequence} (a weighted sum of Pauli
 strings) is the symbolic representation of an encoded operator.
 
@@ -239,7 +240,7 @@ and no side effects in its core modules.
 \paragraph{Discovered constraints.}
 Implementation and testing revealed that the index-set framework's
 monotonicity requirement (ancestor indices must exceed descendant
-indices) is satisfied only by star-shaped trees --- a structural
+indices) is satisfied only by star-shaped trees, a structural
 constraint not previously documented in the literature.  This discovery
 motivated the path-based framework as a universal alternative and is
 explored further in a companion paper.
@@ -284,11 +285,11 @@ lack, enabling systematic exploration and comparison of encodings.
 %%--------------------------------------------------------------------
 \section*{Acknowledgements}
 
-This work is dedicated to Dr.\ Guang Hao Low, whose encouragement to
-explore Bravyi--Kitaev encodings seven years ago led to the development
-of this symbolic algebra processing library.  We also thank the F\#
+This work is dedicated to Dr.\ Guang Hao Low, whose early encouragement
+to study Bravyi--Kitaev encodings motivated the development of this
+symbolic algebra framework.  The author also acknowledges the F\#
 Software Foundation and the .NET open-source community for the language
-and runtime that make this work possible.
+and runtime ecosystem supporting this work.
 
 %%--------------------------------------------------------------------
 \bibliography{paper}

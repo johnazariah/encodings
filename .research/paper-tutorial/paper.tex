@@ -28,7 +28,7 @@
   Encoding for Quantum Chemistry Simulation}
 
 \author{John Azariah}
-\email{john.azariah@example.com}
+\email{john.azariah@student.uts.edu.au}
 \affiliation{University of Technology Sydney}
 
 \date{\today}
@@ -37,21 +37,21 @@
 \begin{abstract}
 Simulating molecules on quantum computers requires translating the
 fermionic operators of quantum chemistry into the qubit operators of
-quantum hardware.  This translation---the fermion-to-qubit
-encoding---is a critical step that determines the structure, cost, and
+quantum hardware.  This translation, the fermion-to-qubit
+encoding, is a critical step that determines the structure, cost, and
 feasibility of the resulting quantum algorithm.  Despite its importance,
 no single pedagogical reference covers the complete pipeline from
 molecular integrals to qubit Hamiltonian with every step made explicit.
 
-This paper fills that gap.  Using the hydrogen molecule (H$_2$) in the
-STO-3G basis as a running example, we walk through each stage: the
-Born--Oppenheimer approximation, basis sets, second quantization, the
-notation conventions that trip up every newcomer, the spin-orbital
-expansion, and finally the encoding itself.  We compute every integral,
-every operator product, and every Pauli coefficient by hand, arriving at
-the 15-term qubit Hamiltonian that a quantum computer would actually
-measure.  We then verify the result by exact diagonalisation, recovering
-the known ground-state energy.
+This article provides that reference.  Using the hydrogen molecule
+(H$_2$) in the STO-3G basis as a running example, we develop each stage
+in sequence: the Born--Oppenheimer approximation, basis-set
+discretization, second quantization, notation conversion, spin-orbital
+expansion, and fermion-to-qubit encoding.  We derive every integral,
+operator product, and Pauli coefficient explicitly, obtaining the
+15-term qubit Hamiltonian measured in practical quantum algorithms.  We
+then validate the construction by exact diagonalization and recover the
+known ground-state energy.
 
 We cover the Jordan--Wigner transform in full detail and survey four
 alternatives (Bravyi--Kitaev, Parity, balanced binary tree, balanced
@@ -66,22 +66,19 @@ every calculation in this paper.
 \section{Introduction}
 \label{sec:introduction}
 
-What is the ground-state energy of the hydrogen molecule?
+Determining the ground-state energy of the hydrogen molecule is a
+canonical benchmark problem in molecular quantum mechanics.  For H$_2$,
+the electronic Schr\"odinger equation can be solved to high accuracy on
+classical hardware; at an equilibrium bond length of approximately
+0.74~\AA, the total energy is about $-1.17$~Hartree (relative to
+separated nuclei and electrons).
 
-The question sounds simple.  Two protons, two electrons, the Coulomb
-force between them---undergraduate physics.  And indeed, for H$_2$ we
-can solve the electronic Schr\"odinger equation to high accuracy on a
-classical computer.  The answer, at the equilibrium bond length of
-0.74~\AA, is about $-1.17$~Hartree (relative to fully separated atoms
-and electrons).
-
-But the question becomes hard---exponentially hard---as molecules grow.
-For caffeine (C$_8$H$_{10}$N$_4$O$_2$, 102 electrons), exact solution
-of the Schr\"odinger equation requires manipulating a wavefunction that
-lives in a Hilbert space whose dimension scales as the number of
-possible electron configurations, which itself grows combinatorially
-with the number of orbitals.  Classical computers cannot store or
-diagonalise these matrices for all but the smallest systems.
+The problem becomes difficult, and eventually intractable, as molecular
+size increases.  For caffeine (C$_8$H$_{10}$N$_4$O$_2$, 102 electrons),
+an exact solution of the Schr\"odinger equation requires manipulating a
+wavefunction in a Hilbert space whose dimension grows combinatorially
+with the number of orbitals.  Classical hardware cannot store or
+diagonalize matrices of that size except for very small systems.
 
 In 1982, Richard Feynman observed that quantum systems might be
 efficiently simulated by other quantum systems~\cite{feynman1982}.
@@ -92,7 +89,7 @@ quantum computer, we could in principle determine molecular energies,
 reaction rates, and material properties that are inaccessible to
 classical computation.
 
-Today, quantum simulation of chemistry is a reality---at least for
+Today, quantum simulation of chemistry is a reality, at least for
 small molecules.  Experiments have computed the ground-state energy of
 H$_2$~\cite{omalley2016}, LiH~\cite{kandala2017}, and
 BeH$_2$~\cite{kandala2019} on quantum hardware, using variational
@@ -104,35 +101,35 @@ on qubits,'' there is a pipeline of transformations that every quantum
 chemistry simulation must pass through:
 
 \begin{enumerate}
-  \item \textbf{Choose a molecule and a basis set}---reduce the
+  \item \textbf{Choose a molecule and a basis set} to reduce the
     continuous electronic wavefunction to a finite-dimensional problem.
-  \item \textbf{Compute molecular integrals}---the matrix elements of
+  \item \textbf{Compute molecular integrals}, namely the matrix elements of
     the electronic Hamiltonian in the chosen basis.
-  \item \textbf{Write the Hamiltonian in second quantization}---express
+  \item \textbf{Write the Hamiltonian in second quantization} to express
     the physics in terms of creation and annihilation operators.
-  \item \textbf{Convert from spatial to spin-orbital integrals}---account
+  \item \textbf{Convert from spatial to spin-orbital integrals} to account
     for electron spin, doubling the index space.
-  \item \textbf{Encode fermionic operators as qubit operators}---the
+  \item \textbf{Encode fermionic operators as qubit operators} through the
     fermion-to-qubit transform, which is the central topic of this paper.
-  \item \textbf{Run a quantum algorithm}---VQE, QPE, or other methods.
+  \item \textbf{Run a quantum algorithm} via VQE, QPE, or related methods.
 \end{enumerate}
 
-Each of these steps involves notation choices, sign conventions, and
-index manipulations that the research literature tends to compress into
-a few lines.  A reader coming from a quantum mechanics course, armed
-with the Schr\"odinger equation and the hydrogen atom, faces a
-formidable barrier: textbooks on quantum chemistry~\cite{szabo1996,
-helgaker2000} assume familiarity with second quantization; textbooks on
-quantum computing~\cite{nielsen2010} do not cover chemistry; and
-research papers on quantum simulation~\cite{omalley2016,whitfield2011}
-compress the entire pipeline into two or three pages of dense notation.
+Each stage involves notation choices, sign conventions, and index
+manipulations that are often compressed to a few lines in the research
+literature.  A reader with standard quantum mechanics preparation
+(Schr\"odinger equation and hydrogen atom) still encounters a substantial
+barrier: quantum chemistry texts~\cite{szabo1996,helgaker2000} typically
+assume prior familiarity with second quantization; quantum computing
+texts~\cite{nielsen2010} rarely treat chemistry in detail; and research
+papers on quantum simulation~\cite{omalley2016,whitfield2011} often
+present the full pipeline in only a few pages of dense notation.
 
-This paper is the single reference that a motivated student needs.  We
-execute every step of the pipeline for H$_2$, showing every matrix
-element, every sign, every index.  Where notation conventions differ
-between chemistry and physics---and they differ in ways that silently
-introduce errors---we lay out the conversions explicitly and flag the
-traps.
+This paper is designed as a single, self-contained reference for that
+transition.  We execute each stage of the pipeline for H$_2$, with
+explicit matrix elements, index mappings, and sign conventions.
+Where conventions differ between chemistry and physics, we provide the
+corresponding translation rules explicitly and identify common failure
+modes.
 
 By the end, the reader will:
 \begin{itemize}
@@ -141,7 +138,7 @@ By the end, the reader will:
   \item Be able to construct the Jordan--Wigner encoding by hand for any
     number of modes.
   \item Have computed the complete 15-term qubit Hamiltonian for H$_2$
-    and verified it by diagonalisation.
+    and verified it by diagonalization.
   \item Know what alternatives to Jordan--Wigner exist and why they
     matter for larger molecules.
 \end{itemize}
@@ -181,7 +178,7 @@ electronic coordinates (three per electron) plus the internuclear
 distance $R$.
 
 For the hydrogen atom (one electron, one proton), this Schr\"odinger
-equation can be solved analytically---the result is the familiar $1s$,
+equation can be solved analytically; the result is the familiar $1s$,
 $2s$, $2p$, \ldots\ orbitals.  For two electrons, exact analytical
 solution is already impossible.  The electron--electron repulsion term
 $e^2/|\mathbf{r}_1 - \mathbf{r}_2|$ couples the two electrons, making
@@ -204,7 +201,7 @@ The result is the \emph{electronic Hamiltonian}:
 \end{equation}
 which depends on the nuclear positions only through the electron--nucleus
 attraction term.  The nuclear--nuclear repulsion $V_{nn} = Z_A Z_B e^2 / R$
-is just a constant for fixed $R$---it shifts every energy eigenvalue by
+is just a constant for fixed $R$; it shifts every energy eigenvalue by
 the same amount.
 
 For H$_2$ at the equilibrium bond length $R = 0.7414$~\AA\ (= 1.401~Bohr):
@@ -218,7 +215,7 @@ From here on, we fix $R$ and solve the electronic problem.
 
 The electronic Hamiltonian $\hat{H}_\text{el}$ acts on wavefunctions of
 $3N$ continuous variables.  To make the problem finite-dimensional, we
-expand the molecular orbitals in a finite set of known functions---the
+expand the molecular orbitals in a finite set of known functions, the
 \emph{basis set}.
 
 The idea is analogous to Fourier series: approximate a function by
@@ -237,7 +234,7 @@ the product of two Gaussians is another Gaussian.
 \paragraph{STO-3G.}
 The ``Slater-Type Orbital, 3 Gaussians'' basis set approximates each
 atomic orbital by 3 Gaussian functions.  It is the smallest meaningful
-basis set---the absolute minimum needed to describe molecular bonding.
+basis set, the absolute minimum needed to describe molecular bonding.
 For hydrogen, STO-3G provides one basis function per atom: the $1s$
 orbital.
 
@@ -292,8 +289,8 @@ $\ket{0011}$ & $\sigma_{u\alpha}\, \sigma_{u\beta}$
 The \emph{exact} ground state of H$_2$ is a superposition of these six
 configurations.  The Hartree--Fock approximation uses only the first
 ($\ket{1100}$, the single-determinant ground state), which captures
-about 99\% of the energy.  The remaining 1\%---the \emph{correlation
-energy}---is what makes quantum simulation valuable.
+about 99\% of the energy.  The remaining 1\%, the \emph{correlation
+energy}, is what makes quantum simulation valuable.
 
 \emph{Key observation:}  These occupation vectors
 $\ket{n_0 n_1 n_2 n_3}$ look exactly like qubit computational basis
@@ -307,7 +304,7 @@ different algebraic rules.
 \section{Second Quantization}
 \label{sec:second-quantization}
 
-\subsection{Why can't we just use wavefunctions?}
+\subsection{Limitations of first-quantized wavefunction methods}
 
 Electrons are fermions: the wavefunction must be antisymmetric under
 exchange of any two electrons.  For two electrons,
@@ -315,7 +312,7 @@ exchange of any two electrons.  For two electrons,
 \Psi(\mathbf{r}_1, \mathbf{r}_2) = -\Psi(\mathbf{r}_2, \mathbf{r}_1)
 \end{equation}
 
-The standard way to enforce this is the Slater determinant---a
+The standard way to enforce this is the Slater determinant, a
 determinant of single-particle orbitals:
 \begin{equation}
 \Psi(\mathbf{r}_1, \mathbf{r}_2) = \frac{1}{\sqrt{2}}
@@ -325,11 +322,12 @@ determinant of single-particle orbitals:
 \end{vmatrix}
 \end{equation}
 
-For 2 electrons this is a $2 \times 2$ determinant with 2 terms---manageable.
-But for $N$ electrons, it is an $N \times N$ determinant with $N!$ terms.
-For 10 electrons, that is 3,628,800 terms.  For caffeine (102 electrons),
-it is $102! \approx 10^{162}$ terms.  And the exact wavefunction is not
-a single Slater determinant but a linear combination of many.
+For two electrons this determinant contains only two terms.  For $N$
+electrons, however, antisymmetrization scales factorially, and the
+exact many-electron state is generally a superposition of many Slater
+determinants.  This rapid combinatorial growth motivates a formulation
+in which antisymmetry is handled algebraically rather than by explicit
+expansion in coordinate space.
 
 Second quantization solves this bookkeeping problem by encoding the
 antisymmetry into the \emph{operators} rather than the
@@ -346,8 +344,8 @@ the occupation number vector:
 \ket{n_0\, n_1\, n_2\, \ldots\, n_{K-1}} \qquad n_j \in \{0, 1\}
 \end{equation}
 where $K$ is the number of spin-orbitals and $n_j = 1$ means orbital $j$
-is occupied.  (Fermions can have at most one particle per orbital---the
-Pauli exclusion principle.)
+is occupied.  (Fermions can have at most one particle per orbital, by
+the Pauli exclusion principle.)
 
 The \emph{Fock space} is the vector space spanned by all $2^K$ such
 occupation vectors.  For H$_2$ with $K = 4$, Fock space has dimension
@@ -381,15 +379,15 @@ orbitals with index less than $j$.  This factor is the source of
 \paragraph{Worked examples} (4 spin-orbitals):
 
 \begin{itemize}
-\item $a^\dagger_0 \ket{0000} = \ket{1000}$---no occupied orbitals
+\item $a^\dagger_0 \ket{0000} = \ket{1000}$: no occupied orbitals
   before index~0, so the sign is $(-1)^0 = +1$.
 
-\item $a^\dagger_1 \ket{1000} = -\ket{1100}$---one occupied orbital
+\item $a^\dagger_1 \ket{1000} = -\ket{1100}$: one occupied orbital
   (index~0) before index~1, so the sign is $(-1)^1 = -1$.
 
-\item $a^\dagger_0 \ket{1000} = 0$---orbital 0 is already occupied.
+\item $a^\dagger_0 \ket{1000} = 0$: orbital 0 is already occupied.
 
-\item $a_1 \ket{1100} = -\ket{1000}$---remove orbital~1; one occupied
+\item $a_1 \ket{1100} = -\ket{1000}$: remove orbital~1; one occupied
   orbital before it gives the minus sign.
 \end{itemize}
 
@@ -399,7 +397,7 @@ occupation of orbital $j$:
 \hat{n}_j \,\ket{\ldots\, 1_j\, \ldots} &= \ket{\ldots\, 1_j\, \ldots} \\
 \hat{n}_j \,\ket{\ldots\, 0_j\, \ldots} &= 0
 \end{align}
-Its eigenvalue is $n_j$---the occupation number itself.
+Its eigenvalue is $n_j$, the occupation number itself.
 
 \subsection{The canonical anti-commutation relations}
 
@@ -460,10 +458,10 @@ repulsion:
        {|\mathbf{r}_1 - \mathbf{r}_2|}\,
   d\mathbf{r}_1\, d\mathbf{r}_2
 \end{equation}
-(This is physicist's notation---more on this in Sec.~\ref{sec:notation}.)
+(This is physicist's notation; more on this in Sec.~\ref{sec:notation}.)
 
 \emph{Warning:}  The operator ordering in the two-body term is
-$a^\dagger_p a^\dagger_q a_s a_r$---note that $a_s$ comes before
+$a^\dagger_p a^\dagger_q a_s a_r$; note that $a_s$ comes before
 $a_r$.  This ``reversed'' order relative to the integral indices comes
 from normal ordering (all creation operators to the left of all
 annihilation operators).  Getting this wrong flips signs.
@@ -488,14 +486,13 @@ The off-diagonal elements $h_{01} = h_{10} = 0$ because $\sigma_g$ and
 $\sigma_u$ have different symmetry.
 
 %%====================================================================
-\section{The Notation Minefield}
+\section{Notation Conventions and Conversion}
 \label{sec:notation}
 
-There are at least three incompatible notations for two-electron
-integrals in common use.  They differ in the ordering of indices.  Using
-the wrong conversion between them silently produces incorrect
-Hamiltonians with plausible-looking but wrong coefficients.  This
-section exists to save the reader weeks of debugging.
+Multiple index-ordering conventions for two-electron integrals are in
+common use.  Substituting one convention into formulas written in
+another can produce numerically plausible but incorrect Hamiltonians.
+This section makes the required conversions explicit.
 
 \subsection{Chemist's notation}
 
@@ -515,7 +512,7 @@ the complex conjugate (bra) and the second is the ket.
 
 \subsection{Physicist's notation}
 
-Physicist's notation (also called Dirac notation---confusingly, not the
+Physicist's notation (also called Dirac notation; confusingly, not the
 same as bra-ket notation for states) groups indices by \emph{particle}:
 \begin{equation}
 \langle pq|rs\rangle = \iint
@@ -548,7 +545,7 @@ uses \emph{physicist's} notation.  If you have integrals in chemist's
 notation (which most quantum chemistry codes output), you must convert
 before plugging into this formula.
 
-\emph{Common errors:}
+\emph{Frequent implementation errors:}
 \begin{enumerate}
 \item Using chemist's integrals $[pq|rs]$ directly in the physicist's
   formula (or vice versa).  This permutes the indices and gives wrong
@@ -609,7 +606,7 @@ In words: the integral equals the spatial integral if the spins match,
 and zero otherwise.  An electron cannot change its spin through one-body
 interactions (in the non-relativistic limit).
 
-For H$_2$, this gives 4 non-zero entries---all diagonal:
+For H$_2$, this gives 4 non-zero entries, all diagonal:
 
 \begin{table}[h]
 \centering
@@ -686,34 +683,35 @@ Qubit operators (Paulis) anti-commute \emph{on the same qubit} but
 [X_i, Z_j] &= 0 \quad\text{(different qubits: commute)}
 \end{align}
 
-This mismatch is the entire encoding problem.
+This algebraic mismatch defines the encoding problem.
 
-\subsection{The obvious (wrong) mapping}
+\subsection{Naive mapping and its failure}
 
 The qubit raising and lowering operators
 $\sigma^\pm_j = (X_j \mp iY_j)/2$ satisfy
-$\{\sigma^-_j, \sigma^+_j\} = I$ on qubit $j$---exactly like
+$\{\sigma^-_j, \sigma^+_j\} = I$ on qubit $j$, exactly like
 $\{a_j, a^\dagger_j\} = 1$.  So the tempting mapping is:
 \begin{equation}
 a^\dagger_j \stackrel{?}{\mapsto} \sigma^+_j
   = \frac{X_j - iY_j}{2}
 \end{equation}
 
-But check the cross-mode anticommutator:
+Consider the cross-mode anticommutator:
 \begin{equation}
 \{a_0, a^\dagger_1\} = 0 \quad\text{(fermions: must vanish)}
 \end{equation}
 
 Since $\sigma^-_0$ and $\sigma^+_1$ act on \emph{different} qubits,
-they \emph{commute} rather than anti-commute.  The anti-commutator
-gives $2\sigma^-_0\, \sigma^+_1 \neq 0$---the encoding is wrong.
+they commute rather than anti-commute.  Consequently,
+$\{\sigma^-_0,\sigma^+_1\}=2\sigma^-_0\sigma^+_1\neq 0$, so this
+mapping does not preserve the fermionic algebra.
 
 \subsection{The Jordan--Wigner transform}
 
 Jordan and Wigner (1928)~\cite{jordanwigner1928} found the fix: insert
 a chain of $Z$ operators on all lower-index qubits.  Since $Z$ has
 eigenvalues $\pm 1$ depending on the qubit's state, this chain tracks
-the \emph{parity} of all preceding occupations---exactly the sign
+the \emph{parity} of all preceding occupations, exactly the sign
 factor $(-1)^{\sum_{k<j} n_k}$ that appears in the creation operator's
 definition.
 
@@ -753,7 +751,7 @@ The ladder operators follow from
 $a^\dagger_j = \frac{1}{2}(c_j - id_j)$ and
 $a_j = \frac{1}{2}(c_j + id_j)$.
 
-\paragraph{Why it works.}
+\paragraph{Algebraic mechanism.}
 Consider $\{c_0, c_1\}$:
 \begin{align}
 c_0 c_1 &= (XIII)(ZXII) = -YXII \\
@@ -763,11 +761,11 @@ The anti-commutator $c_0 c_1 + c_1 c_0 = 0$.  The key is that $X_0$
 and $Z_0$ anti-commute (they are different non-identity Paulis on the
 same qubit), generating the crucial minus sign.
 
-\paragraph{The cost.}
+\paragraph{Asymptotic cost.}
 The $Z$-chain grows with $j$.  Operator $c_{n-1}$ acts on \emph{all}
-$n$ qubits---its Pauli weight is $n$.  This $O(n)$ scaling makes
-Jordan--Wigner expensive for large molecules, motivating the alternative
-encodings discussed in the next subsection.
+$n$ qubits; its Pauli weight is $n$.  This $O(n)$ scaling increases
+circuit depth for larger active spaces, motivating alternative
+encodings with logarithmic Pauli-weight growth.
 
 \subsection{Beyond Jordan--Wigner}
 
@@ -905,7 +903,7 @@ has \textbf{15 Pauli terms}:
 
 The $Z$-only terms (rows 2--11) represent classical electrostatic
 interactions: Coulomb repulsion and orbital energies.  The
-$XXYY$-type terms (rows 12--15) represent \emph{quantum exchange}---a
+$XXYY$-type terms (rows 12--15) represent \emph{quantum exchange}, a
 fundamentally non-classical effect arising from the indistinguishability
 of electrons.
 
@@ -933,7 +931,7 @@ Balanced Ternary  & 15 & 4 & 2.40 & $-1.0704$ \\
 \end{table}
 
 All encodings produce the same number of terms with the same identity
-coefficient---as they must, since the identity coefficient equals
+coefficient, as expected, since the identity coefficient equals
 $\text{Tr}(\hat{H})/2^n$, which is invariant under any unitary change
 of basis.
 
@@ -941,7 +939,7 @@ of basis.
 \section{Checking Our Answer}
 \label{sec:checking}
 
-\subsection{Exact diagonalisation}
+\subsection{Exact diagonalization}
 
 To verify the qubit Hamiltonian, we construct its $16 \times 16$ matrix
 representation.  Each Pauli string $\sigma_\alpha$ corresponds to a
@@ -998,8 +996,8 @@ E_\text{corr} = E_\text{FCI} - E_\text{HF}
               \approx -12.0\text{~kcal/mol}
 \end{equation}
 
-This correlation energy---about 1\% of the total energy but
-${\sim}12$~kcal/mol---is precisely what makes quantum simulation
+This correlation energy, about 1\% of the total energy but
+${\sim}12$~kcal/mol, is precisely what makes quantum simulation
 valuable.  It captures the effect of electron--electron correlation that
 the single-determinant Hartree--Fock approximation misses.
 
@@ -1008,7 +1006,7 @@ All five encodings produce the same eigenspectrum to machine precision
 is a unitary change of basis that preserves the physics exactly.
 
 %%====================================================================
-\section{What Comes Next}
+\section{Algorithmic Implications}
 \label{sec:outlook}
 
 The qubit Hamiltonian from Sec.~\ref{sec:building} is the input to
@@ -1019,7 +1017,7 @@ ground-state energy:
 Prepares a parameterised quantum state
 $\ket{\psi(\boldsymbol{\theta})}$, measures
 $\bra{\psi}\hat{H}\ket{\psi}$ by separately measuring each Pauli term,
-and uses a classical optimiser to minimise the energy over
+and uses a classical optimizer to minimize the energy over
 $\boldsymbol{\theta}$~\cite{peruzzo2014,omalley2016}.  VQE is designed
 for near-term noisy quantum hardware.
 
@@ -1029,14 +1027,14 @@ ancilla register to extract eigenvalues
 directly~\cite{nielsen2010}.  QPE requires fault-tolerant hardware but
 provides exponential speedup for large systems.
 
-The choice of encoding directly affects the scaling:
+The encoding choice directly affects algorithmic resource scaling:
 \begin{itemize}
 \item Each Pauli term must be measured separately, so more terms = more
   shots.
 \item Higher Pauli weight = deeper CNOT ladders = more gate errors.
 \item The ternary tree encoding's $O(\log_3 n)$ weight scaling means
   that for 100 modes, the deepest circuits are roughly 5 CNOTs instead
-  of JW's 100---a difference that may determine whether the simulation
+  of JW's 100, a difference that may determine whether the simulation
   is feasible on early fault-tolerant hardware~\cite{reiher2017}.
 \end{itemize}
 
@@ -1061,19 +1059,20 @@ every step made explicit:
 \item The Jordan--Wigner (or other) encoding maps fermionic operators to
   Pauli strings, producing a qubit Hamiltonian that a quantum computer
   can measure.
-\item Exact diagonalisation of the resulting 15-term Hamiltonian
+\item Exact diagonalization of the resulting 15-term Hamiltonian
   recovers the known ground-state energy, confirming the encoding's
   correctness.
 \end{enumerate}
 
-Along the way, we have flagged the notation traps (chemist's vs.\
-physicist's integrals, operator ordering), documented the common errors
-(missing cross-spin terms, wrong index conversions), and provided a
-companion codebase that reproduces every numerical result.
+In addition, we have documented key notation transitions (chemist's vs.\
+physicist's integrals and operator ordering), highlighted recurrent
+implementation errors (including omitted cross-spin contributions and
+incorrect index conversion), and provided a companion codebase that
+reproduces all numerical results.
 
 For those interested in \emph{why} each encoding has the structure it
-does---why the tree shape determines everything and what this reveals
-about the relationship between fermionic and qubit descriptions---we
+does, why the tree shape determines everything, and what this reveals
+about the relationship between fermionic and qubit descriptions, we
 refer to our companion paper.
 
 %%====================================================================
