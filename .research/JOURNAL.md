@@ -5,6 +5,175 @@ Entries are reverse-chronological (newest first).
 
 ---
 
+## 2026-02-14 — Repository Cleanup, Documentation & Release Infrastructure
+
+### Context
+
+Executed the full 9-phase cleanup plan (`cleanup-dotnet-repo.md`) to prepare
+the repository for JOSS submission and public release. The library is being
+published as **FockMap** (NuGet PackageId), in the repository
+`github.com/johnazariah/encodings`.
+
+### Phase 1: Project structure reorganisation
+
+Moved from flat layout to canonical .NET solution structure:
+
+```
+src/Encodings/          ← library (15 source files)
+test/Test.Encodings/    ← tests (19 test files, 303 tests)
+examples/               ← runnable .fsx scripts
+docs/                   ← fsdocs site source
+scripts/                ← automation
+.github/workflows/      ← CI/CD
+.github/prompts/        ← Copilot prompt files
+```
+
+Added `Encodings.sln` at root. Both projects build and test clean on .NET 8.0.
+
+### Phase 2: XML documentation
+
+Added comprehensive `///` XML doc comments to all 15 source files. Every public
+type, module, and function now has structured documentation with `<summary>`,
+`<param>`, `<returns>`, `<remarks>`, and `<example>` tags where appropriate.
+`GenerateDocumentationFile` enabled in `.fsproj`.
+
+### Phase 3: Dead code removal
+
+- Removed empty `Tests.fs` from test project
+- Cleaned commented-out code across source files
+
+### Phase 4: Repository root files
+
+Created:
+- **README.md** — badges (CI, codecov, NuGet, license, platform), feature
+  overview, quick start, API summary, encoding comparison table, citation
+- **LICENSE** — MIT
+- **CONTRIBUTING.md** — development setup, coding standards, PR process
+- **CITATION.cff** — CFF format with ORCID, version, DOI placeholder
+- **.editorconfig** — F# formatting conventions
+
+### Phase 5: Example scripts
+
+Created 4 runnable examples in `examples/`:
+
+| Script | Purpose |
+|--------|---------|
+| H2_Encoding.fsx | Encode H₂ Hamiltonian with all 5 encodings |
+| Compare_Encodings.fsx | Side-by-side Pauli weight comparison |
+| Custom_Encoding.fsx | Build a custom Majorana encoding |
+| Custom_Tree.fsx | Construct and use a custom tree encoding |
+
+All verified working with `dotnet fsi`.
+
+### Phase 6: GitHub Pages documentation site
+
+Built a full documentation site using `fsdocs` (16 pages):
+
+**Background** (6 pages):
+- Second Quantization, Pauli Algebra, Jordan-Wigner, Bravyi-Kitaev,
+  Fenwick Trees, Tree Encodings
+
+**Tutorials** (6 literate .fsx scripts):
+- Getting Started, Encoding Hamiltonians, Comparing Encodings,
+  Custom Encodings, Tree-Based Encodings, Advanced Symbolic Algebra
+
+**Guides** (3 pages):
+- API Reference, Performance Tips, Extending the Library
+
+Verified with `dotnet fsdocs build` — all HTML generates cleanly.
+Site configured for GitHub Pages at `/encodings/` root.
+
+### Phase 7: NuGet package metadata
+
+Configured `Encodings.fsproj` with full NuGet metadata:
+- `PackageId`: FockMap
+- `Version`: 0.1.0
+- `Authors`: John Azariah
+- `PackageLicenseExpression`: MIT
+- `RepositoryUrl`: github.com/johnazariah/encodings
+- Source Link enabled, symbols included
+- `PackageReadmeFile` and `PackageIcon` configured
+
+### Phase 8: CI/CD workflows
+
+Created three GitHub Actions workflows:
+
+**ci.yml** — Continuous Integration:
+- Triggers on every push/PR
+- Linux-only (cost optimisation — no macOS/Windows on every commit)
+- Runs `dotnet build` + `dotnet test` with code coverage via coverlet
+- Uploads coverage to Codecov
+
+**release.yml** — Release pipeline:
+- Triggers on `v*` tag push
+- Multi-platform test matrix (Linux, Windows, macOS) with `fail-fast: true`
+- Packs NuGet package, publishes to nuget.org
+- Creates GitHub Release with `.nupkg` artifact
+
+**docs.yml** — Documentation:
+- Triggers on push to `main`
+- Builds fsdocs site, deploys to GitHub Pages
+
+### Phase 9: Test coverage
+
+Added `coverlet.collector` to test project. Current coverage:
+- **78% line coverage** (303/303 tests passing)
+- **66% branch coverage**
+- Codecov badge in README (needs `CODECOV_TOKEN` secret)
+
+### Release infrastructure
+
+Created three levels of release automation:
+
+1. **`scripts/release.sh`** — Interactive bash script:
+   - Analyzes conventional commits since last tag
+   - Proposes PATCH/MINOR/MAJOR based on commit types
+   - Updates `.fsproj` version, generates `CHANGELOG.md`, updates `CITATION.cff`
+   - Commits, tags, pushes, monitors CI via `gh run watch`
+   - Supports `--dry-run` mode
+
+2. **`.github/workflows/release-dispatch.yml`** — GitHub Actions workflow:
+   - `workflow_dispatch` trigger from UI or `gh workflow run`
+   - Same logic as local script but runs entirely server-side
+   - Accepts bump type input: auto, patch, minor, major
+   - Pushes tag to trigger `release.yml` pipeline
+
+3. **`.github/prompts/release.prompt.md`** — Copilot prompt:
+   - Reusable prompt file for Copilot Chat (`#release`)
+   - Step-by-step instructions for the full release flow
+   - Includes confirmation gate before making changes
+
+### Author & metadata corrections
+
+- Family name: Azariah (not Aziz)
+- ORCID: 0009-0007-9870-1970
+- GitHub: johnazariah
+- Repository URL: github.com/johnazariah/encodings (not FockMap)
+- Updated across all files: README, CITATION.cff, .fsproj, workflows, docs
+
+### Naming decision
+
+- **Repository**: `encodings` (current, unchanged)
+- **NuGet package**: `FockMap` (covers future bosonic modes, not just fermionic)
+- **`[<AutoOpen>]`**: Kept as-is; documented but deferred to JOSS reviewer feedback
+
+### Statistics
+
+- 92 files changed, 11,004 insertions, 1,221 deletions
+- 303 tests passing
+- 32 commits in branch `johnaz/review`
+- PR #1 opened against `main`
+
+### What's next
+
+- Merge PR #1 (squash into `main`)
+- Set up Codecov token and NuGet API key in GitHub Secrets
+- First release: `v0.1.0`
+- Continue Paper 1 (Tutorial) and Paper 2 (JOSS) iterations
+- Address `[<AutoOpen>]` based on reviewer feedback
+
+---
+
 ## 2026-02-09 (night) — Paper Drafts v0.1 Written
 
 ### Paper 1: "From Molecules to Qubits" (Tutorial, AJP target)
