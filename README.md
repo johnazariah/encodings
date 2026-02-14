@@ -146,6 +146,7 @@ If you want the full derivations and internals, jump to the docs:
 - [Architecture guide](https://johnazariah.github.io/encodings/guides/architecture.html)
 - [Type system guide](https://johnazariah.github.io/encodings/guides/type-system.html)
 - [Mixed registers guide](https://johnazariah.github.io/encodings/guides/mixed-registers.html)
+- [Advanced operations guide](https://johnazariah.github.io/encodings/guides/advanced-operations.html)
 
 ## Examples
 
@@ -160,6 +161,7 @@ Runnable F# scripts in the [`examples/`](examples/) directory:
 | [`Mixed_NormalOrdering.fsx`](examples/Mixed_NormalOrdering.fsx) | Canonical mixed boson+fermion normal ordering with sector blocks |
 | [`Mixed_ElectronPhonon_Toy.fsx`](examples/Mixed_ElectronPhonon_Toy.fsx) | Toy electron-phonon style mixed symbolic workflow |
 | [`Mixed_HybridPipeline.fsx`](examples/Mixed_HybridPipeline.fsx) | Encode fermion sector to Pauli while keeping boson sector symbolic |
+| [`Mixed_HybridCompare.fsx`](examples/Mixed_HybridCompare.fsx) | Compare JW vs BK on extracted fermionic blocks in mixed terms |
 
 Run any example with:
 ```bash

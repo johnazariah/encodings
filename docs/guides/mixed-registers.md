@@ -153,4 +153,5 @@ This keeps CAR and CCR semantics explicit and avoids hidden sign mistakes.
 
 - [Architecture](architecture.html)
 - [Type System](type-system.html)
+- [Advanced Operations](advanced-operations.html)
 - [Bosonic Operators](../theory/06-bosonic-preview.html)
