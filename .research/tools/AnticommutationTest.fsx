@@ -9,7 +9,7 @@
 /// Also demonstrates the FAILURE of the index-set construction on
 /// non-monotonic trees (balanced binary and ternary trees).
 
-#r "../../src/Encodings/bin/Debug/net8.0/Encodings.dll"
+#r "../../src/Encodings/bin/Debug/net10.0/Encodings.dll"
 
 open System
 open System.Numerics

@@ -44,7 +44,7 @@ let pauliBK = bravyiKitaevTerms Raise 2u 4u
 
 ## Cross-Platform
 
-Runs on **Windows**, **macOS**, and **Linux** via [.NET 8](https://dotnet.microsoft.com/).
+Runs on **Windows**, **macOS**, and **Linux** via [.NET 10](https://dotnet.microsoft.com/) (LTS).
 Written in [F#](https://fsharp.org/), fully open-source under the [F# Software Foundation](https://foundation.fsharp.org/) and the [.NET Foundation](https://dotnetfoundation.org/).
 
 ## Learn More
@@ -74,4 +74,4 @@ Written in [F#](https://fsharp.org/), fully open-source under the [F# Software F
 ### Guides
 - [Architecture](guides/architecture.html) — Two-framework design
 - [Type System](guides/type-system.html) — C/P/S algebra explained
-- [Cross-Platform](guides/cross-platform.html) — .NET 8 and F# on all platforms
+- [Cross-Platform](guides/cross-platform.html) — .NET 10 and F# on all platforms

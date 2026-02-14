@@ -4,7 +4,7 @@
 [![codecov](https://codecov.io/gh/johnazariah/encodings/graph/badge.svg)](https://codecov.io/gh/johnazariah/encodings)
 [![NuGet](https://img.shields.io/nuget/v/FockMap.svg)](https://www.nuget.org/packages/FockMap)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-![.NET 8](https://img.shields.io/badge/.NET-8.0-512BD4)
+![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)
 
 **A composable functional framework for encoding quantum operators on Fock space as qubit Pauli operators.**
@@ -64,6 +64,17 @@ cd encodings
 dotnet build
 dotnet test   # 303 tests
 ```
+
+### Dev Container (recommended for contributors)
+
+This repository includes a full [dev container](https://containers.dev/) configuration with .NET 10, F#, Python, LaTeX, and all required tooling pre-installed. To use it:
+
+1. Install [Docker](https://www.docker.com/) and [VS Code](https://code.visualstudio.com/) with the [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
+2. Clone the repository and open it in VS Code
+3. When prompted, click **"Reopen in Container"** (or run `Dev Containers: Reopen in Container` from the command palette)
+4. The container builds, restores packages, compiles the project, and runs all 303 tests automatically
+
+Everything is pre-configured — Ionide (F# IDE), Copilot, coverage tools, `fsdocs`, `gh` CLI, and `dotnet-repl`.
 
 ## Quick Start
 
@@ -232,7 +243,7 @@ Current coverage: **78% line / 66% branch** across 303 tests.
 
 ## Cross-Platform
 
-This library runs on **Windows**, **macOS**, and **Linux** via [.NET 8](https://dotnet.microsoft.com/), Microsoft's open-source, cross-platform runtime. It is written in [F#](https://fsharp.org/), a functional-first language that is fully open-source under the [F# Software Foundation](https://foundation.fsharp.org/) and the [.NET Foundation](https://dotnetfoundation.org/).
+This library runs on **Windows**, **macOS**, and **Linux** via [.NET 10](https://dotnet.microsoft.com/) (LTS), Microsoft's open-source, cross-platform runtime. It is written in [F#](https://fsharp.org/), a functional-first language that is fully open-source under the [F# Software Foundation](https://foundation.fsharp.org/) and the [.NET Foundation](https://dotnetfoundation.org/).
 
 No platform-specific code. No native dependencies. No runtime downloads beyond the .NET SDK.
 

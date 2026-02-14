@@ -1,6 +1,6 @@
 # Research Investigation Journal
 
-Living record of investigations, discoveries, dead ends, and open questions.  
+Living record of investigations, discoveries, dead ends, and open questions.
 Entries are reverse-chronological (newest first).
 
 ---
