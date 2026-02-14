@@ -47,7 +47,7 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Install LaTeX toolchain
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends latexmk texlive-latex-extra texlive-fonts-recommended texlive-science
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends latexmk texlive-latex-extra texlive-fonts-recommended texlive-science texlive-publishers
 
       - name: Build
         run: dotnet build --configuration Release
