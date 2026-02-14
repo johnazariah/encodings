@@ -230,4 +230,6 @@ tls-secret.*.yaml
 
 docs/**/*.html
 docs/**/*.pdf
+!docs/_layouts/
+!docs/_layouts/*.html
 

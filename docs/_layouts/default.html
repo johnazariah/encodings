@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ page.title | default: site.title }}</title>
+    <link rel="icon" href="{{ '/content/img/fockmap-icon.svg' | relative_url }}" type="image/svg+xml" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.8.1/github-markdown.min.css" />
+    <style>
+      body { margin: 0; background: #f6f8fa; }
+      .shell { max-width: 980px; margin: 0 auto; padding: 24px; }
+      .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+      .brand img { height: 42px; }
+      .markdown-body { box-sizing: border-box; min-width: 200px; max-width: 980px; margin: 0 auto; padding: 24px; background: #fff; border-radius: 8px; }
+      @media (max-width: 767px) { .markdown-body { padding: 16px; } .shell { padding: 12px; } }
+      .mermaid { overflow-x: auto; }
+    </style>
+    <script>
+      window.MathJax = {
+        tex: {
+          inlineMath: [['$', '$'], ['\\(', '\\)']],
+          displayMath: [['$$', '$$'], ['\\[', '\\]']],
+          processEscapes: true
+        }
+      };
+    </script>
+    <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        if (!window.mermaid) return;
+        mermaid.initialize({ startOnLoad: false, securityLevel: 'loose' });
+        var blocks = document.querySelectorAll('pre > code.language-mermaid');
+        blocks.forEach(function (code, index) {
+          var pre = code.parentElement;
+          if (!pre) return;
+          var container = document.createElement('div');
+          container.className = 'mermaid';
+          container.id = 'mermaid-diagram-' + index;
+          container.textContent = code.textContent || '';
+          pre.replaceWith(container);
+        });
+        mermaid.run();
+      });
+    </script>
+  </head>
+  <body>
+    <div class="shell">
+      <a class="brand" href="{{ '/' | relative_url }}">
+        <img src="{{ '/content/img/fockmap-logo.svg' | relative_url }}" alt="FockMap" />
+      </a>
+      <article class="markdown-body">
+        {{ content }}
+      </article>
+    </div>
+  </body>
+</html>

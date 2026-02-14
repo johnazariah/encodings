@@ -1,0 +1,23 @@
+title: FockMap
+description: Symbolic operator algebra and fermion-to-qubit encodings
+url: https://johnazariah.github.io
+baseurl: /encodings
+markdown: kramdown
+kramdown:
+  input: GFM
+  math_engine: mathjax
+plugins:
+  - jekyll-optional-front-matter
+defaults:
+  - scope:
+      path: ""
+      type: pages
+    values:
+      layout: default
+  - scope:
+      path: reference
+      type: pages
+    values:
+      layout: null
+exclude:
+  - "*.fsx"

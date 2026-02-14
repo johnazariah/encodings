@@ -31,13 +31,22 @@ jobs:
       - name: Build
         run: dotnet build --configuration Release
 
-      - name: Build documentation
-        run: ./scripts/build-docs.sh
+      - name: Prepare site (Markdown + API reference)
+        run: ./scripts/prepare-pages-site.sh
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Build with Jekyll (native Pages markdown)
+        uses: actions/jekyll-build-pages@v1
+        with:
+          source: ./docs
+          destination: ./_site
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: docs-output
+          path: ./_site
 
       - name: Deploy to GitHub Pages
         id: deployment
