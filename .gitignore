@@ -29,6 +29,9 @@ bld/
 [Oo]bj/
 README.pdf
 
+# Generated documentation
+docs-output/
+
 # Roslyn cache directories
 *.ide/
 
