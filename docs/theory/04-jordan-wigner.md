@@ -62,7 +62,7 @@ $$
 a^\dagger_j \mapsto \frac{1}{2}\left(X_j - iY_j\right) \prod_{k=0}^{j-1} Z_k
 $$
 
-Using the identities $\frac{1}{2}(X + iY) = |0\rangle\langle 1|$ (lowering) and $\frac{1}{2}(X - iY) = |1\rangle\langle 0|$ (raising), we see the local action on qubit $j$ matches the fermionic action on mode $j$—but the Z-chain provides the global context needed for anti-commutation.
+Using the identities $\frac{1}{2}(X + iY) = \lvert0\rangle\langle 1 \rvert$ (lowering) and $\frac{1}{2}(X - iY) = \lvert1\rangle\langle 0 \rvert$ (raising), we see the local action on qubit $j$ matches the fermionic action on mode $j$—but the Z-chain provides the global context needed for anti-commutation.
 
 ## Why the Z-Chain Works: Tracking Parity
 
@@ -90,7 +90,7 @@ No minus sign appears. To encode fermions on qubits, we must artificially inject
 
 ### Z Operators Provide the Sign
 
-The Z operator eigenvalues are $\pm 1$, corresponding to $|0\rangle$ and $|1\rangle$. When a Z operator encounters an occupied qubit ($|1\rangle$), it contributes a factor of $-1$.
+The Z operator eigenvalues are $\pm 1$, corresponding to $\lvert0\rangle$ and $\lvert1\rangle$. When a Z operator encounters an occupied qubit ($\lvert1\rangle$), it contributes a factor of $-1$.
 
 The Z-chain $Z_{j-1} \cdots Z_0$ computes the **parity** of modes $0$ through $j-1$:
 
@@ -192,7 +192,7 @@ For mode $j$ in an $n$-mode system:
 
 Recall that implementing a Pauli rotation $e^{-i\theta P}$ requires $O(\text{weight}(P))$ CNOT gates. With Jordan-Wigner:
 
-- A hopping term $a^\dagger_i a_j + a^\dagger_j a_i$ produces Pauli strings with weight $O(|i - j|)$.
+- A hopping term $a^\dagger_i a_j + a^\dagger_j a_i$ produces Pauli strings with weight $O(\lvert i - j\rvert)$.
 - For molecular Hamiltonians, terms coupling distant orbitals can have weight approaching $n$.
 - The total CNOT count for simulating a single Trotter step scales as $O(n \cdot M)$, where $M$ is the number of Hamiltonian terms.
 

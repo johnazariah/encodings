@@ -18,9 +18,9 @@ $$
 Each matrix has a physical interpretation:
 
 - **$I$ (Identity)**: Does nothing—leaves the qubit unchanged.
-- **$X$ (Bit-flip)**: Swaps $|0\rangle \leftrightarrow |1\rangle$, analogous to a classical NOT gate.
-- **$Y$ (Bit and phase flip)**: Combines a bit-flip with a phase flip, exchanging $|0\rangle \leftrightarrow i|1\rangle$ and $|1\rangle \leftrightarrow -i|0\rangle$.
-- **$Z$ (Phase-flip)**: Leaves $|0\rangle$ unchanged but maps $|1\rangle \mapsto -|1\rangle$.
+- **$X$ (Bit-flip)**: Swaps $\lvert0\rangle \leftrightarrow \lvert1\rangle$, analogous to a classical NOT gate.
+- **$Y$ (Bit and phase flip)**: Combines a bit-flip with a phase flip, exchanging $\lvert0\rangle \leftrightarrow i\lvert1\rangle$ and $\lvert1\rangle \leftrightarrow -i\lvert0\rangle$.
+- **$Z$ (Phase-flip)**: Leaves $\lvert0\rangle$ unchanged but maps $\lvert1\rangle \mapsto -\lvert1\rangle$.
 
 All three non-identity Paulis are Hermitian ($P = P^\dagger$) and unitary ($PP^\dagger = I$). Since they equal their own inverse, each Pauli squares to the identity:
 

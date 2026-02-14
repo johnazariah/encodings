@@ -39,7 +39,7 @@ We fix a set of single-particle orbitals $\{\phi_0, \phi_1, \ldots, \phi_{n-1}\}
 
 An **occupation number vector** specifies the occupancy of each orbital:
 
-$$|n_0, n_1, n_2, \ldots, n_{n-1}\rangle$$
+$$\lvert n_0, n_1, n_2, \ldots, n_{n-1}\rangle$$
 
 where $n_j \in \{0, 1\}$ for fermions (due to the Pauli exclusion principle: at most one fermion per orbital state).
 
@@ -63,7 +63,7 @@ $$\mathcal{F} = \mathcal{F}^{(0)} \oplus \mathcal{F}^{(1)} \oplus \mathcal{F}^{(
 
 where $\mathcal{F}^{(N)}$ contains all states with exactly $N$ particles. The dimension of Fock space for $n$ orbitals is $2^n$ (each orbital is occupied or not).
 
-The **vacuum state** $|0\rangle \equiv |0, 0, \ldots, 0\rangle$ has no particles. It's not "nothing"—it's the unique state where all orbitals are empty.
+The **vacuum state** $\lvert0\rangle \equiv \lvert0, 0, \ldots, 0\rangle$ has no particles. It's not "nothing"—it's the unique state where all orbitals are empty.
 
 ## Creation and Annihilation Operators
 
@@ -73,11 +73,11 @@ The power of second quantization comes from **operators** that add or remove par
 
 The **creation operator** $a_j^\dagger$ adds a particle to orbital $j$:
 
-$$a_j^\dagger |n_0, \ldots, n_{j-1}, 0, n_{j+1}, \ldots\rangle = (-1)^{\sum_{k<j} n_k} |n_0, \ldots, n_{j-1}, 1, n_{j+1}, \ldots\rangle$$
+$$a_j^\dagger \lvert n_0, \ldots, n_{j-1}, 0, n_{j+1}, \ldots\rangle = (-1)^{\sum_{k<j} n_k} \lvert n_0, \ldots, n_{j-1}, 1, n_{j+1}, \ldots\rangle$$
 
 If orbital $j$ is already occupied, the result is zero (Pauli exclusion):
 
-$$a_j^\dagger |n_0, \ldots, n_{j-1}, 1, n_{j+1}, \ldots\rangle = 0$$
+$$a_j^\dagger \lvert n_0, \ldots, n_{j-1}, 1, n_{j+1}, \ldots\rangle = 0$$
 
 The factor $(-1)^{\sum_{k<j} n_k}$ is the **fermionic sign**: it counts the number of occupied orbitals with index less than $j$. This sign encodes the antisymmetry under particle exchange.
 
@@ -85,11 +85,11 @@ The factor $(-1)^{\sum_{k<j} n_k}$ is the **fermionic sign**: it counts the numb
 
 The **annihilation operator** $a_j$ removes a particle from orbital $j$:
 
-$$a_j |n_0, \ldots, n_{j-1}, 1, n_{j+1}, \ldots\rangle = (-1)^{\sum_{k<j} n_k} |n_0, \ldots, n_{j-1}, 0, n_{j+1}, \ldots\rangle$$
+$$a_j \lvert n_0, \ldots, n_{j-1}, 1, n_{j+1}, \ldots\rangle = (-1)^{\sum_{k<j} n_k} \lvert n_0, \ldots, n_{j-1}, 0, n_{j+1}, \ldots\rangle$$
 
 If orbital $j$ is empty, the result is zero:
 
-$$a_j |n_0, \ldots, n_{j-1}, 0, n_{j+1}, \ldots\rangle = 0$$
+$$a_j \lvert n_0, \ldots, n_{j-1}, 0, n_{j+1}, \ldots\rangle = 0$$
 
 The annihilation operator is the Hermitian conjugate of the creation operator: $a_j = (a_j^\dagger)^\dagger$.
 
@@ -99,9 +99,9 @@ Let's trace through concrete examples with 4 orbitals.
 
 **Example 1: Creating in an empty system**
 
-Start with $|0, 1, 0, 0\rangle$ (one electron in orbital 1). Apply $a_2^\dagger$:
+Start with $\lvert0, 1, 0, 0\rangle$ (one electron in orbital 1). Apply $a_2^\dagger$:
 
-$$a_2^\dagger |0, 1, 0, 0\rangle = (-1)^{n_0 + n_1} |0, 1, 1, 0\rangle = (-1)^{0 + 1} |0, 1, 1, 0\rangle = -|0, 1, 1, 0\rangle$$
+$$a_2^\dagger \lvert0, 1, 0, 0\rangle = (-1)^{n_0 + n_1} \lvert0, 1, 1, 0\rangle = (-1)^{0 + 1} \lvert0, 1, 1, 0\rangle = -\lvert0, 1, 1, 0\rangle$$
 
 The minus sign appears because we pass over one occupied orbital (orbital 1).
 
@@ -109,21 +109,21 @@ The minus sign appears because we pass over one occupied orbital (orbital 1).
 
 Create two particles starting from vacuum:
 
-$$a_1^\dagger a_0^\dagger |0, 0, 0, 0\rangle$$
+$$a_1^\dagger a_0^\dagger \lvert0, 0, 0, 0\rangle$$
 
-First: $a_0^\dagger |0, 0, 0, 0\rangle = (-1)^0 |1, 0, 0, 0\rangle = |1, 0, 0, 0\rangle$
+First: $a_0^\dagger \lvert0, 0, 0, 0\rangle = (-1)^0 \lvert1, 0, 0, 0\rangle = \lvert1, 0, 0, 0\rangle$
 
-Then: $a_1^\dagger |1, 0, 0, 0\rangle = (-1)^1 |1, 1, 0, 0\rangle = -|1, 1, 0, 0\rangle$
+Then: $a_1^\dagger \lvert1, 0, 0, 0\rangle = (-1)^1 \lvert1, 1, 0, 0\rangle = -\lvert1, 1, 0, 0\rangle$
 
 Now try the opposite order:
 
-$$a_0^\dagger a_1^\dagger |0, 0, 0, 0\rangle$$
+$$a_0^\dagger a_1^\dagger \lvert0, 0, 0, 0\rangle$$
 
-First: $a_1^\dagger |0, 0, 0, 0\rangle = (-1)^0 |0, 1, 0, 0\rangle = |0, 1, 0, 0\rangle$
+First: $a_1^\dagger \lvert0, 0, 0, 0\rangle = (-1)^0 \lvert0, 1, 0, 0\rangle = \lvert0, 1, 0, 0\rangle$
 
-Then: $a_0^\dagger |0, 1, 0, 0\rangle = (-1)^0 |1, 1, 0, 0\rangle = |1, 1, 0, 0\rangle$
+Then: $a_0^\dagger \lvert0, 1, 0, 0\rangle = (-1)^0 \lvert1, 1, 0, 0\rangle = \lvert1, 1, 0, 0\rangle$
 
-We get: $a_1^\dagger a_0^\dagger |0, 0, 0, 0\rangle = -|1, 1, 0, 0\rangle$ and $a_0^\dagger a_1^\dagger |0, 0, 0, 0\rangle = +|1, 1, 0, 0\rangle$.
+We get: $a_1^\dagger a_0^\dagger \lvert0, 0, 0, 0\rangle = -\lvert1, 1, 0, 0\rangle$ and $a_0^\dagger a_1^\dagger \lvert0, 0, 0, 0\rangle = +\lvert1, 1, 0, 0\rangle$.
 
 Therefore: $a_1^\dagger a_0^\dagger = -a_0^\dagger a_1^\dagger$, or equivalently, $\{a_0^\dagger, a_1^\dagger\} = 0$.
 
@@ -133,15 +133,15 @@ The examples above hint at a general pattern. The **canonical anticommutation re
 
 ### Relation 1: $\{a_i, a_j^\dagger\} = \delta_{ij}$
 
-For $i = j$: Consider any state $|\psi\rangle$. We have:
+For $i = j$: Consider any state $\lvert\psi\rangle$. We have:
 
-$$a_j a_j^\dagger |\psi\rangle + a_j^\dagger a_j |\psi\rangle$$
+$$a_j a_j^\dagger \lvert\psi\rangle + a_j^\dagger a_j \lvert\psi\rangle$$
 
-If orbital $j$ is empty in $|\psi\rangle$: $a_j^\dagger a_j |\psi\rangle = 0$ (can't destroy what isn't there), but $a_j a_j^\dagger |\psi\rangle = a_j |\text{state with } j \text{ occupied}\rangle = |\psi\rangle$.
+If orbital $j$ is empty in $\lvert\psi\rangle$: $a_j^\dagger a_j \lvert\psi\rangle = 0$ (can't destroy what isn't there), but $a_j a_j^\dagger \lvert\psi\rangle = a_j \lvert\text{state with } j \text{ occupied}\rangle = \lvert\psi\rangle$.
 
-If orbital $j$ is occupied in $|\psi\rangle$: $a_j a_j^\dagger |\psi\rangle = 0$ (can't create where it's full), but $a_j^\dagger a_j |\psi\rangle = a_j^\dagger |\text{state with } j \text{ empty}\rangle = |\psi\rangle$.
+If orbital $j$ is occupied in $\lvert\psi\rangle$: $a_j a_j^\dagger \lvert\psi\rangle = 0$ (can't create where it's full), but $a_j^\dagger a_j \lvert\psi\rangle = a_j^\dagger \lvert\text{state with } j \text{ empty}\rangle = \lvert\psi\rangle$.
 
-Either way: $(a_j a_j^\dagger + a_j^\dagger a_j)|\psi\rangle = |\psi\rangle$, so $\{a_j, a_j^\dagger\} = I$.
+Either way: $(a_j a_j^\dagger + a_j^\dagger a_j)\lvert\psi\rangle = \lvert\psi\rangle$, so $\{a_j, a_j^\dagger\} = I$.
 
 For $i \neq j$: The creation and annihilation operators act on different orbitals. The fermionic signs from passing occupied orbitals cause the two terms to cancel. Following the logic of our worked examples, $\{a_i, a_j^\dagger\} = 0$.
 
@@ -161,7 +161,7 @@ $$\hat{n}_j = a_j^\dagger a_j$$
 
 It has eigenvalue 0 on states where orbital $j$ is empty, and eigenvalue 1 where it's occupied:
 
-$$\hat{n}_j |n_0, \ldots, n_j, \ldots\rangle = n_j |n_0, \ldots, n_j, \ldots\rangle$$
+$$\hat{n}_j \lvert n_0, \ldots, n_j, \ldots\rangle = n_j \lvert n_0, \ldots, n_j, \ldots\rangle$$
 
 The **total number operator** is $\hat{N} = \sum_j \hat{n}_j$.
 
@@ -183,7 +183,7 @@ The **one-body terms** $h_{pq} \, a_p^\dagger a_q$ represent:
 - External potentials (e.g., nuclear attraction)
 - Single-particle hopping between orbitals
 
-The coefficient $h_{pq} = \langle \phi_p | \hat{h} | \phi_q \rangle$ is a matrix element of the one-body Hamiltonian in the orbital basis.
+The coefficient $h_{pq} = \langle \phi_p \mid \hat{h} \mid \phi_q \rangle$ is a matrix element of the one-body Hamiltonian in the orbital basis.
 
 The **two-body terms** $h_{pqrs} \, a_p^\dagger a_q^\dagger a_r a_s$ represent:
 - Electron-electron Coulomb repulsion
