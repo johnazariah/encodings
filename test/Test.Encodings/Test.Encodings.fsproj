@@ -1,0 +1,46 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="TestUtils.fs" />
+    <Compile Include="Complex.fs" />
+    <Compile Include="Terms_C.fs" />
+    <Compile Include="Terms_P.fs" />
+    <Compile Include="Terms_S.fs" />
+    <Compile Include="Phase.fs" />
+    <Compile Include="Pauli.fs" />
+    <Compile Include="PauliRegister.fs" />
+    <Compile Include="IndexedOperator.fs" />
+    <Compile Include="SwapTrackingSort.fs" />
+    <Compile Include="LadderOperatorUnit.fs" />
+    <Compile Include="LadderOperatorProductTerm.fs" />
+    <Compile Include="LadderOperatorSumExpression.fs" />
+    <Compile Include="FermionicOperator_JordanWigner.fs" />
+    <Compile Include="FenwickTree.fs" />
+    <Compile Include="BravyiKitaev.fs" />
+    <Compile Include="Parity.fs" />
+    <Compile Include="TreeEncoding.fs" />
+    <Compile Include="Hamiltonian.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.4">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="FsCheck.Xunit" Version="2.16.6" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
+    <PackageReference Include="xunit" Version="2.7.0" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.7" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Encodings\Encodings.fsproj" />
+  </ItemGroup>
+
+</Project>

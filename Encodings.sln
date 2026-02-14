@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.28917.181
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Encodings", "Encodings\Encodings.fsproj", "{FE7CC87C-1B35-433E-9343-A419316E8417}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Encodings", "src\Encodings\Encodings.fsproj", "{FE7CC87C-1B35-433E-9343-A419316E8417}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Test.Encodings", "Test.Encodings\Test.Encodings.fsproj", "{99E3FCE7-AC53-4547-9C3D-0D56E0DE612A}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Test.Encodings", "test\Test.Encodings\Test.Encodings.fsproj", "{99E3FCE7-AC53-4547-9C3D-0D56E0DE612A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

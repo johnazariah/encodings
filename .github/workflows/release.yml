@@ -1,0 +1,77 @@
+name: Release
+
+# Multi-platform validation before release.
+# Tests on Windows, macOS, Linux to ensure cross-platform correctness.
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  # Test on all platforms before releasing
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Build
+        run: dotnet build --configuration Release
+
+      - name: Test
+        run: dotnet test --configuration Release
+
+  # Only publish after all platforms pass
+  publish:
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install LaTeX toolchain
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends latexmk texlive-latex-extra texlive-fonts-recommended texlive-science
+
+      - name: Build
+        run: dotnet build --configuration Release
+
+      - name: Pack NuGet package
+        run: dotnet pack src/Encodings/Encodings.fsproj --configuration Release --no-build -o nupkg
+
+      - name: Build papers (PDF)
+        run: |
+          make -C .research clean
+          make -C .research all
+
+      - name: Copy release PDFs with unique names
+        run: |
+          cp .research/paper-software/fockmap-joss.pdf .research/fockmap-joss.pdf
+          cp .research/paper-tutorial/fockmap-tutorial.pdf .research/fockmap-tutorial.pdf
+
+      - name: Publish to NuGet
+        run: dotnet nuget push nupkg/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            nupkg/*.nupkg
+            .research/fockmap-joss.pdf
+            .research/fockmap-tutorial.pdf
