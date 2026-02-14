@@ -114,7 +114,8 @@ module TypeExtensions =
 
     [<Fact>]
     let ``Generated TypeExtensions static members are invocable`` () =
-        let moduleType = Assembly.LoadFrom("/workspaces/encodings/src/Encodings/bin/Debug/net10.0/Encodings.dll").GetType("Encodings.TypeExtensions")
+        let moduleType = typeof<C<int>>.Assembly.GetType("Encodings.TypeExtensions")
+        Assert.NotNull(moduleType)
 
         let isFiniteMethod = moduleType.GetMethod("Complex.get_IsFinite", BindingFlags.Public ||| BindingFlags.Static)
         Assert.NotNull(isFiniteMethod)
