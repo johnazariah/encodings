@@ -59,3 +59,30 @@ module Bosonic =
             BosonicLadderOperatorSumExpression.ConstructNormalOrdered expression.Unapply
             |> Option.iter (fun ordered -> Assert.Equal(expected, ordered.ToString()))
         | None -> Assert.Equal(expected, "")
+
+    [<Fact>]
+    let ``constructBosonicNormalOrdered helper is callable`` () =
+        let candidate =
+            P<IxOp<uint32, LadderOperatorUnit>>.Apply [|
+                IxOp<uint32, LadderOperatorUnit>.Apply(1u, Lower)
+                IxOp<uint32, LadderOperatorUnit>.Apply(1u, Raise)
+            |]
+            |> S<IxOp<uint32, LadderOperatorUnit>>.Apply
+
+        let ordered = constructBosonicNormalOrdered candidate
+        Assert.True(ordered.IsSome)
+
+    [<Fact>]
+    let ``constructBosonicIndexOrdered helper sorts indices within groups`` () =
+        let candidate =
+            P<IxOp<uint32, LadderOperatorUnit>>.Apply [|
+                IxOp<uint32, LadderOperatorUnit>.Apply(2u, Raise)
+                IxOp<uint32, LadderOperatorUnit>.Apply(1u, Raise)
+                IxOp<uint32, LadderOperatorUnit>.Apply(3u, Lower)
+                IxOp<uint32, LadderOperatorUnit>.Apply(0u, Lower)
+            |]
+            |> S<IxOp<uint32, LadderOperatorUnit>>.Apply
+
+        let ordered = constructBosonicIndexOrdered candidate
+        Assert.True(ordered.IsSome)
+        Assert.True(ordered.Value.AllTermsIndexOrdered)

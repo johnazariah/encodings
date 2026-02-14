@@ -73,3 +73,54 @@ module MixedSystems =
         reduced
         |> Array.iter (fun t ->
             Assert.True(isSectorBlockOrdered t))
+
+    [<Fact>]
+    let ``Sector block ordering detects invalid boson-before-fermion sequence`` () =
+        let invalidOrder =
+            mkProduct
+                [|
+                    boson Raise 20u
+                    fermion Lower 2u
+                |]
+
+        Assert.False(isSectorBlockOrdered invalidOrder)
+
+    [<Fact>]
+    let ``Mixed normal ordering handles fermion-only candidate`` () =
+        let fermionOnly =
+            mkProduct
+                [|
+                    fermion Lower 3u
+                    fermion Raise 1u
+                |]
+            |> S<IxOp<uint32, SectorLadderOperatorUnit>>.Apply
+
+        let ordered = constructMixedNormalOrdered fermionOnly
+        let terms = ordered.Value.ProductTerms.Value |> Array.map (fun t -> t.Reduce.Value)
+
+        Assert.NotEmpty(terms)
+        terms
+        |> Array.iter (fun t ->
+            Assert.True(isSectorBlockOrdered t)
+            let bosonCount = t.Units |> Array.filter (fun c -> c.Item.Op.Sector = Bosonic) |> Array.length
+            Assert.True(bosonCount = 0 || t.Units |> Array.exists (fun c -> c.Item.Op.Operator = Identity)))
+
+    [<Fact>]
+    let ``Mixed normal ordering handles boson-only candidate`` () =
+        let bosonOnly =
+            mkProduct
+                [|
+                    boson Lower 8u
+                    boson Raise 8u
+                |]
+            |> S<IxOp<uint32, SectorLadderOperatorUnit>>.Apply
+
+        let ordered = constructMixedNormalOrdered bosonOnly
+        let terms = ordered.Value.ProductTerms.Value |> Array.map (fun t -> t.Reduce.Value)
+
+        Assert.Equal(2, terms.Length)
+        terms
+        |> Array.iter (fun t ->
+            Assert.True(isSectorBlockOrdered t)
+            let fermionCount = t.Units |> Array.filter (fun c -> c.Item.Op.Sector = Fermionic) |> Array.length
+            Assert.True(fermionCount = 0 || t.Units |> Array.exists (fun c -> c.Item.Op.Operator = Identity)))
