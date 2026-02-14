@@ -50,6 +50,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="AssemblyInfo.fs" />
     <Compile Include="TypeExtensions.fs" />
     <Compile Include="Terms.fs" />
     <Compile Include="IndexedTerms.fs" />

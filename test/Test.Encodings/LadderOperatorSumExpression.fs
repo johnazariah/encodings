@@ -96,3 +96,35 @@ module LadderOperatorSumExpression =
 
         Assert.True(expr.AllTermsNormalOrdered)
         Assert.True(expr.AllTermsIndexOrdered)
+
+    [<Fact>]
+    let ``ApplyFromProductTerms builds sum expression from wrapped terms`` () =
+        let left =
+            LadderOperatorProductTerm.TryCreateFromString "[(u, 0)]"
+            |> Option.get
+        let right =
+            LadderOperatorProductTerm.TryCreateFromString "[(d, 1)]"
+            |> Option.get
+
+        let sum = LadderOperatorSumExpression.ApplyFromProductTerms [| left; right |]
+
+        Assert.Equal(2, sum.ProductTerms.Length)
+        Assert.Contains("(u, 0)", sum.ToString())
+        Assert.Contains("(d, 1)", sum.ToString())
+
+    [<Fact>]
+    let ``ApplyFromPTerms builds sum expression from raw product terms`` () =
+        let left =
+            LadderOperatorProductTerm.TryCreateFromString "[(u, 2)]"
+            |> Option.get
+            |> fun pt -> pt.Unapply
+        let right =
+            LadderOperatorProductTerm.TryCreateFromString "[(d, 0)]"
+            |> Option.get
+            |> fun pt -> pt.Unapply
+
+        let sum = LadderOperatorSumExpression.ApplyFromPTerms [| left; right |]
+
+        Assert.Equal(2, sum.ProductTerms.Length)
+        Assert.Contains("(u, 2)", sum.ToString())
+        Assert.Contains("(d, 0)", sum.ToString())
