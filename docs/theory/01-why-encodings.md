@@ -4,7 +4,7 @@ Quantum simulation of molecular systems is one of the most promising application
 
 ## The Language Barrier: Qubits vs. Fermions
 
-Quantum computers are built from **qubits**—two-level quantum systems that can exist in superpositions of $|0\rangle$ and $|1\rangle$. The mathematics governing qubits is elegant: operators acting on different qubits commute with each other. If $X_i$ and $Z_j$ act on qubits $i$ and $j$ respectively, then:
+Quantum computers are built from **qubits**—two-level quantum systems that can exist in superpositions of $\lvert0\rangle$ and $\lvert1\rangle$. The mathematics governing qubits is elegant: operators acting on different qubits commute with each other. If $X_i$ and $Z_j$ act on qubits $i$ and $j$ respectively, then:
 
 $$X_i Z_j = Z_j X_i \quad \text{(for } i \neq j \text{)}$$
 
@@ -26,16 +26,16 @@ Notice the critical difference: qubits commute; fermions anticommute. This algeb
 
 The most intuitive approach is to map each orbital directly to a qubit:
 
-- Orbital $j$ occupied → qubit $j$ in state $|1\rangle$
-- Orbital $j$ empty → qubit $j$ in state $|0\rangle$
+- Orbital $j$ occupied → qubit $j$ in state $\lvert1\rangle$
+- Orbital $j$ empty → qubit $j$ in state $\lvert0\rangle$
 
 For single-orbital operations, we might try:
 
-$$a_j^\dagger \stackrel{?}{\mapsto} |1\rangle\langle 0|_j = \frac{1}{2}(X_j - iY_j) \equiv \sigma_j^+$$
+$$a_j^\dagger \stackrel{?}{\mapsto} \lvert1\rangle\langle 0 \rvert_j = \frac{1}{2}(X_j - iY_j) \equiv \sigma_j^+$$
 
-$$a_j \stackrel{?}{\mapsto} |0\rangle\langle 1|_j = \frac{1}{2}(X_j + iY_j) \equiv \sigma_j^-$$
+$$a_j \stackrel{?}{\mapsto} \lvert0\rangle\langle 1 \rvert_j = \frac{1}{2}(X_j + iY_j) \equiv \sigma_j^-$$
 
-These are the standard raising and lowering operators for a single two-level system. They correctly handle the local physics: $\sigma^+$ takes $|0\rangle$ to $|1\rangle$ (creates a particle), $\sigma^-$ takes $|1\rangle$ to $|0\rangle$ (destroys one), and double creation/annihilation gives zero.
+These are the standard raising and lowering operators for a single two-level system. They correctly handle the local physics: $\sigma^+$ takes $\lvert0\rangle$ to $\lvert1\rangle$ (creates a particle), $\sigma^-$ takes $\lvert1\rangle$ to $\lvert0\rangle$ (destroys one), and double creation/annihilation gives zero.
 
 **The problem emerges when we consider two different orbitals.** Let's check the anticommutator for $i \neq j$:
 
@@ -83,7 +83,7 @@ $$a_j^\dagger \mapsto \left(\prod_{k < j} Z_k\right) \sigma_j^+$$
 
 $$a_j \mapsto \left(\prod_{k < j} Z_k\right) \sigma_j^-$$
 
-The string of $Z$ operators acts as a "memory" of the fermionic sign. Each $Z_k$ contributes a factor of $+1$ if qubit $k$ is in $|0\rangle$ (empty orbital) or $-1$ if in $|1\rangle$ (occupied orbital). This accumulated sign exactly compensates for the missing anticommutation.
+The string of $Z$ operators acts as a "memory" of the fermionic sign. Each $Z_k$ contributes a factor of $+1$ if qubit $k$ is in $\lvert0\rangle$ (empty orbital) or $-1$ if in $\lvert1\rangle$ (occupied orbital). This accumulated sign exactly compensates for the missing anticommutation.
 
 Let's verify for $i < j$:
 
