@@ -90,9 +90,12 @@ at Hamiltonian assembly.  This design supports transparent correctness
 checks and avoids numerical artefacts common in matrix-first workflows.
 
 The library is implemented with algebraic data types and pure functions,
-includes a persistent Fenwick tree ADT, and is validated by 303 unit and
-property-based tests.  A complete H$_2$/STO-3G example is provided and
-reproduced across all five built-in encodings.
+includes a persistent Fenwick tree ADT, and is validated by an extensive
+xUnit + FsCheck test suite (416 passing tests), including property-based
+algebraic invariants and edge-case regression checks.  Current coverage is
+96.55\% line and 87.96\% branch on the core library.  A complete
+H$_2$/STO-3G example is provided and reproduced across all five built-in
+encodings.
 
 %%--------------------------------------------------------------------
 \section*{Statement of Need}
@@ -194,7 +197,12 @@ constructing molecular Hamiltonians from one-body and two-body integrals.
 
 \subsection*{Verification Suite}
 
-All 303 tests pass across three categories:
+The verification strategy combines unit tests, property-based tests, and
+coverage-guided hardening of edge paths.  At submission time, 416 tests pass
+for the software package, with 96.55\% line coverage and 87.96\% branch
+coverage on the core \texttt{Encodings} library.
+
+Tests cover four categories:
 \begin{itemize}
   \item \textbf{Anti-commutation:}
     $\{a_i, a^\dagger_j\} = \delta_{ij}$ verified symbolically for all
@@ -204,7 +212,15 @@ All 303 tests pass across three categories:
   \item \textbf{Cross-encoding agreement:} all five encodings produce
     isospectral Hamiltonians for H$_2$ (eigenvalue agreement to
     $5 \times 10^{-16}$).
+  \item \textbf{Parser and ordering robustness:} malformed input handling,
+    normal/index-order canonicalization, and swap-tracking edge branches for
+    deterministic symbolic normalization.
 \end{itemize}
+
+These checks provide evidence that symbolic transformations are not only
+mathematically correct in the nominal case, but also robust under practical
+usage patterns encountered in research code (custom encodings, parser input,
+and non-canonical operator orderings).
 
 %%--------------------------------------------------------------------
 \section*{Design Principles}
