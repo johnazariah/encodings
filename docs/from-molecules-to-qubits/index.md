@@ -4,7 +4,7 @@ _A complete, step-by-step guide to fermion-to-qubit encoding for quantum chemist
 
 This tutorial walks through the **entire pipeline** from a molecular Schrödinger equation to a qubit Hamiltonian, using the hydrogen molecule (H₂) as a running example. Every integral, every sign, every coefficient is computed explicitly.
 
-> **Prerequisites:** Linear algebra, introductory quantum mechanics (wavefunctions, the hydrogen atom), and basic chemistry (orbitals, bonds). No prior knowledge of second quantization, Fock space, or quantum computing is assumed — but we provide pointers to our [Background](../background/01-why-encodings.html) pages for those topics.
+> **Prerequisites:** Linear algebra, introductory quantum mechanics (wavefunctions, the hydrogen atom), and basic chemistry (orbitals, bonds). No prior knowledge of second quantization, Fock space, or quantum computing is assumed — but we provide pointers to our [Theory](../theory/01-why-encodings.html) pages for those topics.
 
 ## The Pipeline
 
@@ -29,10 +29,10 @@ Each stage involves notation choices, sign conventions, and index manipulations 
 
 The theory behind each stage is covered in our Background pages:
 
-- **Second quantization** → [Background: Second Quantization](../background/02-second-quantization.html)
-- **Pauli algebra** → [Background: Pauli Algebra](../background/03-pauli-algebra.html)
-- **Jordan–Wigner transform** → [Background: Jordan–Wigner](../background/04-jordan-wigner.html)
-- **Alternative encodings** → [Background: Beyond Jordan–Wigner](../background/05-beyond-jordan-wigner.html)
+- **Second quantization** → [Theory: Second Quantization](../theory/02-second-quantization.html)
+- **Pauli algebra** → [Theory: Pauli Algebra](../theory/03-pauli-algebra.html)
+- **Jordan–Wigner transform** → [Theory: Jordan–Wigner](../theory/04-jordan-wigner.html)
+- **Alternative encodings** → [Theory: Beyond Jordan–Wigner](../theory/05-beyond-jordan-wigner.html)
 
 ## Companion Code
 

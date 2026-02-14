@@ -77,13 +77,13 @@ Two electrons distributed among 4 spin-orbitals can be arranged in $\binom{4}{2}
 
 The **exact** ground state of H₂ is a superposition of these six configurations. The Hartree–Fock approximation uses only the first ($|1100\rangle$), capturing about 99% of the energy. The remaining 1% — the **correlation energy** — is what makes quantum simulation valuable.
 
-> **Key observation:** These occupation vectors $|n_0 n_1 n_2 n_3\rangle$ look exactly like qubit computational basis states $|q_0 q_1 q_2 q_3\rangle$. This is not a coincidence — it is why quantum simulation of chemistry works. But the correspondence is not as simple as setting qubit $j$ = occupation of orbital $j$, because fermions and qubits obey different algebraic rules (see [Why Encodings?](../background/01-why-encodings.html)).
+> **Key observation:** These occupation vectors $|n_0 n_1 n_2 n_3\rangle$ look exactly like qubit computational basis states $|q_0 q_1 q_2 q_3\rangle$. This is not a coincidence — it is why quantum simulation of chemistry works. But the correspondence is not as simple as setting qubit $j$ = occupation of orbital $j$, because fermions and qubits obey different algebraic rules (see [Why Encodings?](../theory/01-why-encodings.html)).
 
 ## Second Quantization
 
 Rather than tracking individual electrons, second quantization tracks which **orbitals** are occupied. The antisymmetry of the wavefunction (which would require $N!$ terms in a Slater determinant) is absorbed into the **operators**.
 
-For a detailed treatment, see [Background: Second Quantization](../background/02-second-quantization.html).
+For a detailed treatment, see [Theory: Second Quantization](../theory/02-second-quantization.html).
 
 The key result: the electronic Hamiltonian becomes
 

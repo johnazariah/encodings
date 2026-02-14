@@ -2,7 +2,7 @@
 
 _This is the payoff. We take the spin-orbital Hamiltonian, apply the Jordan–Wigner encoding, and construct the qubit Hamiltonian term by term._
 
-For background on why encoding is necessary (fermions anti-commute, qubits commute), see [Why Encodings?](../background/01-why-encodings.html). For the Jordan–Wigner transform itself, see [Background: Jordan–Wigner](../background/04-jordan-wigner.html).
+For background on why encoding is necessary (fermions anti-commute, qubits commute), see [Why Encodings?](../theory/01-why-encodings.html). For the Jordan–Wigner transform itself, see [Theory: Jordan–Wigner](../theory/04-jordan-wigner.html).
 
 ## The Recipe
 

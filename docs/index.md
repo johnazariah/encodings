@@ -49,8 +49,8 @@ Written in [F#](https://fsharp.org/), fully open-source under the [F# Software F
 
 ## Learn More
 
-- **Complete tutorial:** [From Molecules to Qubits](tutorials/index.html) — the full pipeline, H₂ worked example
-- **New to encodings?** Start with [Why Encodings?](background/01-why-encodings.html)
+- **Complete tutorial:** [From Molecules to Qubits](from-molecules-to-qubits/index.html) — the full pipeline, H₂ worked example
+- **New to encodings?** Start with [Why Encodings?](theory/01-why-encodings.html)
 - **Want to try it?** Jump to [Your First Encoding](labs/01-first-encoding.html)
 - **Full walkthrough:** [Encoding the H₂ Molecule](labs/02-h2-molecule.html)
 - **Library internals:** [Architecture Guide](guides/architecture.html)
@@ -58,22 +58,22 @@ Written in [F#](https://fsharp.org/), fully open-source under the [F# Software F
 
 ## Quick Links
 
-### From Molecules to Qubits (Tutorial)
+### From Molecules to Qubits
 A complete step-by-step guide using H₂ as a worked example — every integral, every sign, every coefficient.
-- [Overview](tutorials/index.html) — The complete pipeline at a glance
-- [The Electronic Structure Problem](tutorials/01-electronic-structure.html) — Born–Oppenheimer, basis sets, configurations
-- [The Notation Minefield](tutorials/02-notation.html) — Chemist's vs. physicist's integrals
-- [Spatial to Spin-Orbital Integrals](tutorials/03-spin-orbitals.html) — Doubling the index space
-- [Building the H₂ Hamiltonian](tutorials/04-building-hamiltonian.html) — The 15-term qubit Hamiltonian
-- [Checking Our Answer](tutorials/05-verification.html) — Diagonalisation and cross-encoding comparison
-- [What Comes Next](tutorials/06-outlook.html) — VQE, QPE, and scaling
+- [Overview](from-molecules-to-qubits/index.html) — The complete pipeline at a glance
+- [The Electronic Structure Problem](from-molecules-to-qubits/01-electronic-structure.html) — Born–Oppenheimer, basis sets, configurations
+- [The Notation Minefield](from-molecules-to-qubits/02-notation.html) — Chemist's vs. physicist's integrals
+- [Spatial to Spin-Orbital Integrals](from-molecules-to-qubits/03-spin-orbitals.html) — Doubling the index space
+- [Building the H₂ Hamiltonian](from-molecules-to-qubits/04-building-hamiltonian.html) — The 15-term qubit Hamiltonian
+- [Checking Our Answer](from-molecules-to-qubits/05-verification.html) — Diagonalisation and cross-encoding comparison
+- [What Comes Next](from-molecules-to-qubits/06-outlook.html) — VQE, QPE, and scaling
 
-### Background & Theory
-- [Why Encodings?](background/01-why-encodings.html) — The problem encodings solve
-- [Second Quantization](background/02-second-quantization.html) — Fock space, creation/annihilation operators
-- [Pauli Algebra](background/03-pauli-algebra.html) — Pauli matrices and strings
-- [Jordan-Wigner](background/04-jordan-wigner.html) — The classic encoding
-- [Beyond Jordan-Wigner](background/05-beyond-jordan-wigner.html) — BK, trees, and O(log n) scaling
+### Theory
+- [Why Encodings?](theory/01-why-encodings.html) — The problem encodings solve
+- [Second Quantization](theory/02-second-quantization.html) — Fock space, creation/annihilation operators
+- [Pauli Algebra](theory/03-pauli-algebra.html) — Pauli matrices and strings
+- [Jordan-Wigner](theory/04-jordan-wigner.html) — The classic encoding
+- [Beyond Jordan-Wigner](theory/05-beyond-jordan-wigner.html) — BK, trees, and O(log n) scaling
 
 ### Interactive Labs
 - [First Encoding](labs/01-first-encoding.html) — Encode your first operator (5 min)

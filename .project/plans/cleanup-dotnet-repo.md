@@ -823,7 +823,7 @@ docs/
 │
 ├── index.md                          # Landing page (see 9.5)
 │
-├── background/                       # Educational content
+├── theory/                           # Mathematical foundations
 │   ├── 01-why-encodings.md           # The encoding problem: why it exists
 │   ├── 02-second-quantization.md     # Fock space, creation/annihilation, CAR
 │   ├── 03-pauli-algebra.md           # Pauli matrices, strings, multiplication
@@ -911,9 +911,9 @@ Written in [F#](https://fsharp.org/), fully open-source under the
 
 ## Learn More
 
-- **New to encodings?** Start with [Why Encodings?](background/01-why-encodings.html)
-- **Want to try it?** Jump to [Your First Encoding](tutorials/01-first-encoding.html)
-- **Full walkthrough:** [Encoding the H₂ Molecule](tutorials/02-h2-molecule.html)
+- **New to encodings?** Start with [Why Encodings?](theory/01-why-encodings.html)
+- **Want to try it?** Jump to [Your First Encoding](labs/01-first-encoding.html)
+- **Full walkthrough:** [Encoding the H₂ Molecule](labs/02-h2-molecule.html)
 - **Library internals:** [Architecture Guide](guides/architecture.html)
 - **API Reference:** [All types and functions](reference/index.html)
 ```

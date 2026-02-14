@@ -54,7 +54,7 @@ At $n = 4$, the encodings are too small for the weight advantages of BK and tree
 
 **All five encodings produce the same eigenspectrum** to machine precision ($|\Delta\lambda| < 5 \times 10^{-16}$), confirming that the encoding is a unitary change of basis that preserves the physics exactly.
 
-For more details on the encodings and their scaling properties, see [Beyond Jordan–Wigner](../background/05-beyond-jordan-wigner.html).
+For more details on the encodings and their scaling properties, see [Beyond Jordan–Wigner](../theory/05-beyond-jordan-wigner.html).
 
 The [Compare Encodings](../labs/03-compare-encodings.html) interactive lab reproduces this comparison as executable F# code.
 

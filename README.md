@@ -199,13 +199,13 @@ dotnet fsi examples/H2_Encoding.fsx
 
 Full documentation is available at **[johnazariah.github.io/encodings](https://johnazariah.github.io/encodings/)**.
 
-### Background & Theory
-- [Why Encodings?](https://johnazariah.github.io/encodings/background/01-why-encodings.html) — The problem encodings solve
-- [Second Quantization](https://johnazariah.github.io/encodings/background/02-second-quantization.html) — Fock space, creation/annihilation operators
-- [Pauli Algebra](https://johnazariah.github.io/encodings/background/03-pauli-algebra.html) — Pauli matrices and multi-qubit strings
-- [Jordan-Wigner](https://johnazariah.github.io/encodings/background/04-jordan-wigner.html) — The classic encoding, derived step by step
-- [Beyond Jordan-Wigner](https://johnazariah.github.io/encodings/background/05-beyond-jordan-wigner.html) — BK, trees, and $O(\log n)$ scaling
-- [Bosonic Preview](https://johnazariah.github.io/encodings/background/06-bosonic-preview.html) — Future extensions to bosonic modes
+### Theory
+- [Why Encodings?](https://johnazariah.github.io/encodings/theory/01-why-encodings.html) — The problem encodings solve
+- [Second Quantization](https://johnazariah.github.io/encodings/theory/02-second-quantization.html) — Fock space, creation/annihilation operators
+- [Pauli Algebra](https://johnazariah.github.io/encodings/theory/03-pauli-algebra.html) — Pauli matrices and multi-qubit strings
+- [Jordan-Wigner](https://johnazariah.github.io/encodings/theory/04-jordan-wigner.html) — The classic encoding, derived step by step
+- [Beyond Jordan-Wigner](https://johnazariah.github.io/encodings/theory/05-beyond-jordan-wigner.html) — BK, trees, and $O(\log n)$ scaling
+- [Bosonic Preview](https://johnazariah.github.io/encodings/theory/06-bosonic-preview.html) — Future extensions to bosonic modes
 
 ### Labs (literate F# scripts)
 - [Your First Encoding](https://johnazariah.github.io/encodings/labs/01-first-encoding.html) — Encode an operator in 5 minutes

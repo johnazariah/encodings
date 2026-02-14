@@ -43,7 +43,7 @@ If you've followed this tutorial from [Chapter 1](01-electronic-structure.html),
 
 ## Further Reading
 
-- **The encoding framework:** [Beyond Jordan–Wigner](../background/05-beyond-jordan-wigner.html) — how all encodings are unified under two composable abstractions
+- **The encoding framework:** [Beyond Jordan–Wigner](../theory/05-beyond-jordan-wigner.html) — how all encodings are unified under two composable abstractions
 - **Hands-on code:** [Interactive labs](../labs/01-first-encoding.html) — executable F# labs
 - **The library itself:** [API Reference](../reference/index.html) — all types and functions
 - **The TeX preprint:** A typeset PDF version of this tutorial is available in the [repository](https://github.com/johnazariah/encodings/blob/main/.research/paper-tutorial/paper.pdf)
