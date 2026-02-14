@@ -7,7 +7,7 @@
 ![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)
 
-**A practical F# library for operator algebra on Fock space and fermion-to-qubit encodings.**
+**A practical F# library for symbolic operator algebra on Fock space and fermion-to-qubit encodings.**
 
 > Learn by doing: pick an encoding, map operators to Pauli strings, and compare results.
 
@@ -134,15 +134,18 @@ let myEncode op j n = encodeOperator myScheme op j n
 
 ## How it Works (briefly)
 
-FockMap currently exposes two fermionic encoding styles:
+FockMap exposes two fermionic encoding styles:
 - **Index-set encodings** (Jordan-Wigner, Bravyi-Kitaev, Parity)
 - **Tree/path encodings** (balanced binary and ternary trees, plus custom trees)
 
-It also supports **bosonic ladder-operator normal ordering** via canonical commutation relations (CCR), alongside the existing fermionic CAR workflow.
+It also supports **bosonic ladder-operator normal ordering** via canonical commutation relations (CCR), alongside the fermionic CAR workflow.
+
+For models with both statistics, use a mixed register pattern with sector-specific normal ordering (documented below).
 
 If you want the full derivations and internals, jump to the docs:
 - [Architecture guide](https://johnazariah.github.io/encodings/guides/architecture.html)
 - [Type system guide](https://johnazariah.github.io/encodings/guides/type-system.html)
+- [Mixed registers guide](https://johnazariah.github.io/encodings/guides/mixed-registers.html)
 
 ## Examples
 

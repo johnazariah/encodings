@@ -1,6 +1,6 @@
 # FockMap Architecture Guide
 
-FockMap provides two distinct frameworks for mapping fermionic operators to qubit Pauli strings. This guide explains why both exist, how they work, and when to use each.
+FockMap combines symbolic ladder-operator algebra with fermion-to-qubit encoding frameworks. This guide explains how normal ordering and encoding layers fit together, and how bosonic and fermionic workflows coexist.
 
 ## The Two-Framework Design
 
@@ -11,6 +11,11 @@ FockMap implements fermion-to-qubit encodings using two complementary approaches
 
 Both frameworks ultimately produce the same output type: `PauliRegisterSequence`, representing a sum of Pauli strings with complex coefficients. The key difference lies in **which tree structures each framework can correctly encode**.
 
+Normal ordering is handled separately by a pluggable algebra layer:
+
+- `FermionicAlgebra` for CAR
+- `BosonicAlgebra` for CCR
+
 ### Why Two Frameworks?
 
 The fundamental reason is the **monotonicity constraint**. The index-set approach from Havlíček et al. (arXiv:1701.07072) derives Update, Parity, and Occupation sets from tree structure. However, these derivations assume a critical property: **all ancestors of node j have index greater than j**.
@@ -19,7 +24,7 @@ This property holds for Fenwick trees (used in Bravyi-Kitaev) and linear chains 
 
 ## Index-Set Framework
 
-The index-set framework parameterizes encodings through three functions that map a mode index to sets of qubit indices:
+The index-set framework parameterizes encodings through three functions that map a fermionic mode index to sets of qubit indices:
 
 ```fsharp
 type EncodingScheme =
@@ -160,7 +165,7 @@ The complete pipeline from fermionic operators to a qubit Hamiltonian follows th
            ▼
 ┌─────────────────────┐
 │ Normal Ordering     │  ← Put a† operators before a operators
-│ (FermionicAlgebra)  │    Generate terms from anti-commutation
+│ (CAR or CCR Algebra)│    Generate terms from commutation rules
 └──────────┬──────────┘
            │
            ▼
@@ -203,6 +208,21 @@ The complete pipeline from fermionic operators to a qubit Hamiltonian follows th
 │ H = Σ hᵢⱼ a†ᵢaⱼ + … │    Combine like terms
 └─────────────────────┘
 ```
+
+## Algebra Layer: CAR and CCR
+
+FockMap uses a shared term structure (`S<IxOp<uint32, LadderOperatorUnit>>`) and swaps in algebra semantics through `ICombiningAlgebra`.
+
+- `FermionicAlgebra` implements CAR rewrites, including sign changes and identity terms from $a_i a_i^\dagger = 1 - a_i^\dagger a_i$.
+- `BosonicAlgebra` implements CCR rewrites, including no-sign swaps and identity terms from $b_i b_i^\dagger = 1 + b_i^\dagger b_i$.
+
+This separation keeps symbolic rewriting independent from downstream qubit encoding.
+
+## Mixed Bosonic + Fermionic Workflows
+
+For mixed models, use disjoint mode-index ranges and normalize each sector with its own algebra before combining terms in the final Hamiltonian expression.
+
+The detailed recipe is in the [Mixed Registers guide](mixed-registers.html).
 
 ## Choosing a Framework
 
