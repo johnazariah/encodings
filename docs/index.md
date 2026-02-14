@@ -49,6 +49,7 @@ Written in [F#](https://fsharp.org/), fully open-source under the [F# Software F
 
 ## Learn More
 
+- **Complete tutorial:** [From Molecules to Qubits](tutorial/index.html) — the full pipeline, H₂ worked example
 - **New to encodings?** Start with [Why Encodings?](background/01-why-encodings.html)
 - **Want to try it?** Jump to [Your First Encoding](tutorials/01-first-encoding.html)
 - **Full walkthrough:** [Encoding the H₂ Molecule](tutorials/02-h2-molecule.html)
@@ -57,6 +58,16 @@ Written in [F#](https://fsharp.org/), fully open-source under the [F# Software F
 
 ## Quick Links
 
+### From Molecules to Qubits (Tutorial)
+A complete step-by-step guide using H₂ as a worked example — every integral, every sign, every coefficient.
+- [Overview](tutorial/index.html) — The complete pipeline at a glance
+- [The Electronic Structure Problem](tutorial/01-electronic-structure.html) — Born–Oppenheimer, basis sets, configurations
+- [The Notation Minefield](tutorial/02-notation.html) — Chemist's vs. physicist's integrals
+- [Spatial to Spin-Orbital Integrals](tutorial/03-spin-orbitals.html) — Doubling the index space
+- [Building the H₂ Hamiltonian](tutorial/04-building-hamiltonian.html) — The 15-term qubit Hamiltonian
+- [Checking Our Answer](tutorial/05-verification.html) — Diagonalisation and cross-encoding comparison
+- [What Comes Next](tutorial/06-outlook.html) — VQE, QPE, and scaling
+
 ### Background & Theory
 - [Why Encodings?](background/01-why-encodings.html) — The problem encodings solve
 - [Second Quantization](background/02-second-quantization.html) — Fock space, creation/annihilation operators
@@ -64,7 +75,7 @@ Written in [F#](https://fsharp.org/), fully open-source under the [F# Software F
 - [Jordan-Wigner](background/04-jordan-wigner.html) — The classic encoding
 - [Beyond Jordan-Wigner](background/05-beyond-jordan-wigner.html) — BK, trees, and O(log n) scaling
 
-### Tutorials
+### Interactive Tutorials
 - [First Encoding](tutorials/01-first-encoding.html) — Encode your first operator (5 min)
 - [H₂ Molecule](tutorials/02-h2-molecule.html) — Full molecular Hamiltonian
 - [Compare Encodings](tutorials/03-compare-encodings.html) — Side-by-side comparison

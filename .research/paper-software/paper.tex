@@ -1,0 +1,264 @@
+% FockMap — JOSS Paper
+% Compiled with: latexmk -pdf paper.tex
+\documentclass[10pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{natbib}
+\usepackage{authblk}
+\usepackage{geometry}
+\usepackage{fancyvrb}
+\usepackage{listings}
+
+\geometry{margin=1in}
+\bibliographystyle{unsrtnat}
+
+% Code listing style for F#
+\lstdefinelanguage{FSharp}{
+  morekeywords={let,in,if,then,else,match,with,type,of,open,module,fun,rec,mutable,new,true,false,set},
+  sensitive=true,
+  morecomment=[l]{//},
+  morecomment=[s]{(*}{*)},
+  morestring=[b]",
+}
+\lstset{
+  language=FSharp,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\bfseries\color{blue!70!black},
+  commentstyle=\itshape\color{green!50!black},
+  stringstyle=\color{red!60!black},
+  frame=single,
+  breaklines=true,
+  columns=fullflexible,
+}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!70!black,
+  citecolor=green!50!black,
+  urlcolor=blue!60!black,
+}
+
+%%--------------------------------------------------------------------
+
+\title{FockMap: A Composable Functional Framework for\\
+  Fermion-to-Qubit Encodings in F\#}
+
+\author[1]{John Azariah\thanks{ORCID: \href{https://orcid.org/0009-0007-9870-1970}{0009-0007-9870-1970}}}
+\affil[1]{University of Technology Sydney}
+
+\date{February 2026}
+
+%%--------------------------------------------------------------------
+\begin{document}
+\maketitle
+
+%%--------------------------------------------------------------------
+\section*{Summary}
+
+Simulating fermionic systems on quantum computers requires mapping
+fermionic creation and annihilation operators to qubit (Pauli) operators
+--- the fermion-to-qubit encoding problem.  Different encodings
+(Jordan--Wigner, Bravyi--Kitaev, Parity, tree-based) trade off Pauli
+weight, circuit depth, and implementational complexity.  Existing
+libraries implement each encoding as a separate, non-composable
+transform, obscuring the shared mathematical structure.
+
+We present \texttt{FockMap}, an open-source F\# library that unifies all
+known fermion-to-qubit encodings under two composable abstractions:
+\emph{index-set schemes}, in which an encoding is specified by three
+set-valued functions (\texttt{Update}, \texttt{Parity},
+\texttt{Occupation}), and \emph{path-based tree encodings}, in which any
+rooted labelled tree automatically induces a valid encoding.  The
+index-set framework captures Jordan--Wigner, Bravyi--Kitaev, and Parity
+in 3--5 lines each; the path-based framework handles arbitrary tree
+topologies including balanced binary and balanced ternary trees that
+achieve provably optimal $O(\log n)$ Pauli weight.
+
+The library is built entirely from algebraic data types and pure
+functions, features a persistent Fenwick tree ADT, includes 303 unit
+and property-based tests, and provides a running example encoding the
+complete H$_2$ STO-3G Hamiltonian across all five built-in encodings.
+
+%%--------------------------------------------------------------------
+\section*{Statement of Need}
+
+Quantum simulation of molecular electronic structure is widely regarded
+as one of the most promising near-term applications of quantum computing
+\citep{feynman1982,aspuruguzik2005}.  Between the molecular Hamiltonian
+in second quantization and the measurements performed on quantum
+hardware lies a critical middleware step: the fermion-to-qubit encoding.
+The choice of encoding determines the Pauli weight of each operator (and
+hence circuit depth), the number of measurement terms, and ultimately
+whether a simulation is feasible on a given device.
+
+Current tools for this step --- OpenFermion \citep{mcclean2020}, Qiskit
+Nature \citep{qiskit2023}, and PennyLane \citep{bergholm2022} ---
+implement each encoding as a monolithic function mapping
+\texttt{FermionOperator} $\to$ \texttt{QubitOperator}.  Adding a new
+encoding requires writing hundreds of lines of bespoke code.  The
+mathematical structure shared across encodings (Majorana decomposition,
+parity tracking, update sets) is duplicated rather than abstracted.
+There is no mechanism for users to define, compose, or compare custom
+encodings programmatically.
+
+\texttt{FockMap} addresses this gap.  An encoding is a \emph{value} ---
+a record of three functions --- not a class hierarchy.  This design
+enables:
+
+\begin{itemize}
+  \item \textbf{Exploration:} researchers can define and test novel
+    encodings in 3--5 lines of code.
+  \item \textbf{Comparison:} all encodings share the same verification
+    pipeline (anti-commutation tests, eigenspectrum comparison).
+  \item \textbf{Pedagogy:} the code \emph{is} the mathematics --- an
+    \texttt{EncodingScheme} is the literal definition from the
+    literature, not an opaque implementation of it.
+\end{itemize}
+
+The library serves quantum computing researchers exploring
+encoding-aware circuit synthesis, students learning the algebraic
+structure of encodings, and developers building quantum chemistry
+simulation pipelines who need a correct and composable encoding layer.
+
+%%--------------------------------------------------------------------
+\section*{Functionality}
+
+\subsection*{Encoding Schemes (Index-Set Framework)}
+
+The \texttt{EncodingScheme} record type captures the three index-set
+functions that define a fermion-to-qubit encoding.  Three concrete
+schemes are provided: \texttt{jordanWignerScheme},
+\texttt{bravyiKitaevScheme}, and \texttt{parityScheme}.  User-defined
+schemes are first-class values of the same type:
+
+\begin{lstlisting}
+let myScheme : EncodingScheme =
+    { Update     = fun j n -> set [ j + 1 .. n - 1 ]
+      Parity     = fun j   -> if j > 0 then Set.singleton (j - 1)
+                               else Set.empty
+      Occupation  = fun j   -> if j > 0 then set [j-1; j]
+                               else Set.singleton j }
+\end{lstlisting}
+
+The framework automatically constructs Majorana operators $c_j$ and
+$d_j$ from these three functions, then derives ladder operators
+$a^\dagger_j$ and $a_j$ by linear combination.
+
+\subsection*{Tree Encodings (Path-Based Framework)}
+
+Any rooted labelled tree defines a fermion-to-qubit encoding.  The
+library provides \texttt{balancedBinaryTree} and
+\texttt{balancedTernaryTree} constructors; users can build arbitrary
+trees from \texttt{TreeNode} values.  The path-based encoding function
+traverses the tree to construct Majorana operators without requiring the
+index-set monotonicity constraint, making it strictly more general than
+the index-set framework.
+
+\subsection*{Data Structures and Algebra}
+
+The library includes: a persistent \texttt{FenwickTree<'a>}
+(parameterised over any monoid); immutable \texttt{PauliRegister} and
+\texttt{PauliRegisterSequence} types with exact symbolic multiplication
+(including phase tracking); and a \texttt{Hamiltonian} module for
+constructing molecular Hamiltonians from one-body and two-body integrals.
+
+\subsection*{Verification Suite}
+
+All 303 tests pass across three categories:
+\begin{itemize}
+  \item \textbf{Anti-commutation:}
+    $\{a_i, a^\dagger_j\} = \delta_{ij}$ verified symbolically for all
+    mode pairs.
+  \item \textbf{Number conservation:}
+    $a^\dagger_j a_j$ produces diagonal Pauli operators.
+  \item \textbf{Cross-encoding agreement:} all five encodings produce
+    isospectral Hamiltonians for H$_2$ (eigenvalue agreement to
+    $5 \times 10^{-16}$).
+\end{itemize}
+
+%%--------------------------------------------------------------------
+\section*{Design Principles}
+
+\paragraph{Encodings as data.}
+An \texttt{EncodingScheme} is a value, not a class hierarchy.
+Jordan--Wigner, Bravyi--Kitaev, and Parity are different values of the
+same type.  This enables algebraic reasoning: one can ask whether two
+schemes agree on a given mode without running a full encoding.
+
+\paragraph{Two complementary frameworks.}
+The index-set framework (\texttt{MajoranaEncoding.fs}) is fast and
+algebraically transparent but requires a monotonicity condition on
+ancestor indices.  The path-based framework (\texttt{TreeEncoding.fs})
+works for \emph{any} tree topology.  Both produce the same output type
+(\texttt{PauliRegisterSequence}), so downstream code is
+encoding-agnostic.
+
+\paragraph{Pure functions, no mutation.}
+All data structures are immutable: persistent Fenwick trees, recursive
+tree ADTs, and Pauli register sequences.  The library has zero mutation
+and no side effects in its core modules.
+
+\paragraph{Discovered constraints.}
+Implementation and testing revealed that the index-set framework's
+monotonicity requirement (ancestor indices must exceed descendant
+indices) is satisfied only by star-shaped trees --- a structural
+constraint not previously documented in the literature.  This discovery
+motivated the path-based framework as a universal alternative and is
+explored further in a companion paper.
+
+%%--------------------------------------------------------------------
+\section*{Comparison with Related Software}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+\textbf{Feature} & \textbf{OpenFermion} & \textbf{Qiskit Nature}
+  & \textbf{PennyLane} & \textbf{FockMap} \\
+\midrule
+JW / BK / Parity
+  & \checkmark/\checkmark/\checkmark
+  & \checkmark/\checkmark/\checkmark
+  & \checkmark/\checkmark/---
+  & \checkmark/\checkmark/\checkmark \\
+Tree encodings & Steiner ext. & --- & --- & Binary, Ternary \\
+User-defined encodings & --- & --- & --- & \checkmark \\
+User-defined trees & --- & --- & --- & \checkmark \\
+Generic encoding abstraction & --- & --- & --- & \checkmark \\
+Typed / functional & --- & --- & --- & \checkmark \\
+Persistent Fenwick tree & --- & --- & --- & \checkmark \\
+\bottomrule
+\end{tabular}
+\caption{Feature comparison with existing fermion-to-qubit libraries.}
+\label{tab:comparison}
+\end{table}
+
+OpenFermion \citep{mcclean2020} is the most comprehensive existing tool,
+offering extensive support for operator manipulation and circuit
+synthesis.  Qiskit Nature \citep{qiskit2023} integrates tightly with IBM
+quantum hardware.  PennyLane \citep{bergholm2022} excels at
+differentiable quantum computing.  \texttt{FockMap} does not compete on
+scope; it provides the \emph{framework} abstraction that these libraries
+lack, enabling systematic exploration and comparison of encodings.
+
+%%--------------------------------------------------------------------
+\section*{Acknowledgements}
+
+This work is dedicated to Dr.\ Guang Hao Low, whose encouragement to
+explore Bravyi--Kitaev encodings seven years ago led to the development
+of this symbolic algebra processing library.  We also thank the F\#
+Software Foundation and the .NET open-source community for the language
+and runtime that make this work possible.
+
+%%--------------------------------------------------------------------
+\bibliography{paper}
+
+\end{document}
