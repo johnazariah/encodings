@@ -81,6 +81,13 @@ in 3--5 lines each; the path-based framework handles arbitrary tree
 topologies including balanced binary and balanced ternary trees that
 achieve provably optimal $O(\log n)$ Pauli weight.
 
+Crucially, the entire operator pipeline is \emph{symbolic}: Pauli
+strings are multiplied exactly using an algebraic phase-tracking
+rule---no matrices are instantiated and no floating-point arithmetic
+occurs until the final Hamiltonian coefficients are assembled.  This
+makes correctness verifiable by inspection and eliminates an entire
+class of numerical-precision bugs that plague matrix-based approaches.
+
 The library is built entirely from algebraic data types and pure
 functions, features a persistent Fenwick tree ADT, includes 303 unit
 and property-based tests, and provides a running example encoding the
@@ -161,12 +168,27 @@ traverses the tree to construct Majorana operators without requiring the
 index-set monotonicity constraint, making it strictly more general than
 the index-set framework.
 
-\subsection*{Data Structures and Algebra}
+\subsection*{Symbolic Algebra Engine}
 
-The library includes: a persistent \texttt{FenwickTree<'a>}
-(parameterised over any monoid); immutable \texttt{PauliRegister} and
-\texttt{PauliRegisterSequence} types with exact symbolic multiplication
-(including phase tracking); and a \texttt{Hamiltonian} module for
+A distinguishing feature of \texttt{FockMap} is that operator
+multiplication is entirely symbolic.  The \texttt{PauliRegister} type
+represents a Pauli string (e.g.\ $XZIY$) together with an exact
+\texttt{Phase} drawn from $\{+1, -1, +i, -i\}$.  Multiplying two Pauli
+registers applies the single-qubit multiplication table
+($X \cdot Y = iZ$, etc.)  position-wise and accumulates the phase
+algebraically---no $2^n \times 2^n$ matrices are ever constructed.
+The resulting \texttt{PauliRegisterSequence} (a weighted sum of Pauli
+strings) is the symbolic representation of an encoded operator.
+
+This design means that encoding a ladder operator on 100 modes produces
+a compact list of Pauli strings, not a $2^{100} \times 2^{100}$ sparse
+matrix.  Correctness can be verified symbolically: the anti-commutation
+tests in the verification suite check $\{a_i, a^\dagger_j\} =
+\delta_{ij}$ by Pauli string cancellation, not by matrix eigenvalue
+comparison.
+
+The library also includes a persistent \texttt{FenwickTree<'a>}
+(parameterised over any monoid) and a \texttt{Hamiltonian} module for
 constructing molecular Hamiltonians from one-body and two-body integrals.
 
 \subsection*{Verification Suite}
@@ -199,6 +221,15 @@ ancestor indices.  The path-based framework (\texttt{TreeEncoding.fs})
 works for \emph{any} tree topology.  Both produce the same output type
 (\texttt{PauliRegisterSequence}), so downstream code is
 encoding-agnostic.
+
+\paragraph{Symbolic over numerical.}
+Existing libraries represent operators as sparse matrices or coefficient
+dictionaries indexed by opaque integer keys.  \texttt{FockMap}
+represents them as typed Pauli strings with exact algebraic phases.
+This makes the intermediate representation human-readable, composable,
+and free of floating-point error accumulation.  Numerical coefficients
+enter only at the Hamiltonian assembly stage, where they multiply
+symbolic Pauli terms.
 
 \paragraph{Pure functions, no mutation.}
 All data structures are immutable: persistent Fenwick trees, recursive
@@ -233,6 +264,7 @@ Tree encodings & Steiner ext. & --- & --- & Binary, Ternary \\
 User-defined encodings & --- & --- & --- & \checkmark \\
 User-defined trees & --- & --- & --- & \checkmark \\
 Generic encoding abstraction & --- & --- & --- & \checkmark \\
+Symbolic Pauli algebra & --- & --- & --- & \checkmark \\
 Typed / functional & --- & --- & --- & \checkmark \\
 Persistent Fenwick tree & --- & --- & --- & \checkmark \\
 \bottomrule
