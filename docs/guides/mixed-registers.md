@@ -119,13 +119,17 @@ Repository examples include:
 
 - `examples/Mixed_NormalOrdering.fsx`
 - `examples/Mixed_ElectronPhonon_Toy.fsx`
+- `examples/Mixed_HybridPipeline.fsx`
 
 Run with:
 
 ```bash
 dotnet fsi examples/Mixed_NormalOrdering.fsx
 dotnet fsi examples/Mixed_ElectronPhonon_Toy.fsx
+dotnet fsi examples/Mixed_HybridPipeline.fsx
 ```
+
+`Mixed_HybridPipeline.fsx` shows the common production pattern: canonicalize a mixed term, encode only the fermionic block to `PauliRegisterSequence`, and keep the bosonic block symbolic for a separate truncation layer.
 
 ## Coupling Terms
 

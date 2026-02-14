@@ -159,6 +159,7 @@ Runnable F# scripts in the [`examples/`](examples/) directory:
 | [`Custom_Tree.fsx`](examples/Custom_Tree.fsx) | Construct a custom tree and derive an encoding from it |
 | [`Mixed_NormalOrdering.fsx`](examples/Mixed_NormalOrdering.fsx) | Canonical mixed boson+fermion normal ordering with sector blocks |
 | [`Mixed_ElectronPhonon_Toy.fsx`](examples/Mixed_ElectronPhonon_Toy.fsx) | Toy electron-phonon style mixed symbolic workflow |
+| [`Mixed_HybridPipeline.fsx`](examples/Mixed_HybridPipeline.fsx) | Encode fermion sector to Pauli while keeping boson sector symbolic |
 
 Run any example with:
 ```bash
