@@ -94,6 +94,16 @@ module LadderOperatorProductTerm =
 
         Assert.Equal(System.Numerics.Complex.One, reduced.Coeff)
         Assert.Equal(2, reduced.Units.Length)
+
+    [<Fact>]
+    let ``LadderOperatorProductTerm detects normal ordering`` () =
+        let term = LadderOperatorProductTerm.FromTuples [| (Raise, 0u); (Raise, 2u); (Lower, 3u) |]
+        Assert.True(term.IsInNormalOrder)
+
+    [<Fact>]
+    let ``LadderOperatorProductTerm detects non-normal ordering`` () =
+        let term = LadderOperatorProductTerm.FromTuples [| (Lower, 1u); (Raise, 0u) |]
+        Assert.False(term.IsInNormalOrder)
     //let ``FromString creates a round-trippable ladder operator``(input : string, expected : string) =
     //    match LadderOperatorProductTerm.TryCreateFromString input with
     //    | Some l -> Assert.Equal(expected, l.ToString())

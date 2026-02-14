@@ -134,3 +134,20 @@ module Terms_S =
 
         Assert.True(parsed.IsSome)
         Assert.Equal(input, parsed.Value.ToString())
+
+    [<Fact>]
+    let ``S TryCreateFromString returns None for null input`` () =
+        let parser (value : string) =
+            match System.Int32.TryParse value with
+            | true, parsed -> Some parsed
+            | false, _ -> None
+
+        let parsed = S<int>.TryCreateFromString parser null
+        Assert.True(parsed.IsNone)
+
+    [<Fact>]
+    let ``S TryCreateFromString drops terms when parser throws`` () =
+        let parser (_ : string) = failwith "boom"
+        let parsed = S<int>.TryCreateFromString parser "{[1]; [2]}"
+        Assert.True(parsed.IsSome)
+        Assert.Equal("{}", parsed.Value.ToString())

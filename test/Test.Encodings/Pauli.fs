@@ -79,3 +79,10 @@ module Pauli =
                 let (op, phase) = left * right
                 Assert.Contains(op, all)
                 Assert.Contains(phase, [| P1; M1; Pi; Mi |])
+
+    [<Fact>]
+    let ``Pauli ToString formats all operators`` () =
+        Assert.Equal("I", I.ToString())
+        Assert.Equal("X", X.ToString())
+        Assert.Equal("Y", Y.ToString())
+        Assert.Equal("Z", Z.ToString())

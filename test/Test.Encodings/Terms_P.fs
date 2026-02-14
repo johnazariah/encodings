@@ -102,3 +102,19 @@ module Terms_P =
         Assert.Equal (units.Length, actual.Units.Length)
         Assert.True  (units.Length >= actual.Reduce.Value.Units.Length)
         verifyReduced actual.Reduce.Value |> Assert.True
+
+    [<Fact>]
+    let ``P TryCreateFromString returns None for null input`` () =
+        let parser (value : string) =
+            match System.Int32.TryParse value with
+            | true, parsed -> Some parsed
+            | false, _ -> None
+
+        let parsed = P<int>.TryCreateFromString parser null
+        Assert.True(parsed.IsNone)
+
+    [<Fact>]
+    let ``P TryCreateFromString returns None when parser throws`` () =
+        let parser (_ : string) = failwith "boom"
+        let parsed = P<int>.TryCreateFromString parser "[1|2]"
+        Assert.True(parsed.IsNone)

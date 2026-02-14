@@ -7,6 +7,7 @@ module TypeExtensions =
     open FsCheck.Xunit
     open System
     open System.Numerics
+    open System.Reflection
 
     [<Property>]
     let ``uncurry applies curried functions correctly`` (leftValue : int) (rightValue : int) =
@@ -110,3 +111,28 @@ module TypeExtensions =
 
         for (value, expected) in cases do
             Assert.Equal(expected, value.ToPhaseConjunction)
+
+    [<Fact>]
+    let ``Generated TypeExtensions static members are invocable`` () =
+        let moduleType = Assembly.LoadFrom("/workspaces/encodings/src/Encodings/bin/Debug/net10.0/Encodings.dll").GetType("Encodings.TypeExtensions")
+
+        let isFiniteMethod = moduleType.GetMethod("Complex.get_IsFinite", BindingFlags.Public ||| BindingFlags.Static)
+        Assert.NotNull(isFiniteMethod)
+
+        let finite = isFiniteMethod.Invoke(null, [| box (Complex(1.0, 2.0)) |]) :?> bool
+        let nonFinite = isFiniteMethod.Invoke(null, [| box (Complex(Double.NaN, 0.0)) |]) :?> bool
+
+        Assert.True(finite)
+        Assert.False(nonFinite)
+
+        let mapKeys = moduleType.GetMethod("Map`2.get_Keys", BindingFlags.Public ||| BindingFlags.Static).MakeGenericMethod([| typeof<string>; typeof<int> |])
+        let mapValues = moduleType.GetMethod("Map`2.get_Values", BindingFlags.Public ||| BindingFlags.Static).MakeGenericMethod([| typeof<string>; typeof<int> |])
+        Assert.NotNull(mapKeys)
+        Assert.NotNull(mapValues)
+
+        let map = Map.ofList [ ("b", 2); ("a", 1) ]
+        let keys = mapKeys.Invoke(null, [| box map |]) :?> string[]
+        let values = mapValues.Invoke(null, [| box map |]) :?> int[]
+
+        Assert.Equal<string>([| "a"; "b" |], keys)
+        Assert.Equal<int>([| 1; 2 |], values)

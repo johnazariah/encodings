@@ -78,3 +78,27 @@ module LadderOperatorSequence =
         Assert.True(ordered.IsSome)
         Assert.True(ordered.Value.AllTermsNormalOrdered)
         Assert.True(ordered.Value.AllTermsIndexOrdered)
+
+    [<Fact>]
+    let ``TryCreateFromString parses valid ladder sum expression`` () =
+        let parsed = LadderOperatorSumExpr<FermionicAlgebra>.TryCreateFromString "{[(u, 0)]; [(d, 1)]}"
+        Assert.True(parsed.IsSome)
+
+    [<Fact>]
+    let ``TryCreateFromString maps invalid units to empty expression`` () =
+        let parsed = LadderOperatorSumExpr<FermionicAlgebra>.TryCreateFromString "{[(x, 0)]}"
+        Assert.True(parsed.IsSome)
+        Assert.Equal("{[]}", parsed.Value.ToString())
+
+    [<Fact>]
+    let ``LadderOperatorSumExpr plus and times operators produce expressions`` () =
+        let left = LadderOperatorSumExpr<FermionicAlgebra>.TryCreateFromString "{[(u, 0)]}" |> Option.get
+        let right = LadderOperatorSumExpr<FermionicAlgebra>.TryCreateFromString "{[(d, 1)]}" |> Option.get
+
+        let sum = left + right
+        let product = left * right
+
+        Assert.Contains("(u, 0)", sum.ToString())
+        Assert.Contains("(d, 1)", sum.ToString())
+        Assert.Contains("(u, 0)", product.ToString())
+        Assert.Contains("(d, 1)", product.ToString())
