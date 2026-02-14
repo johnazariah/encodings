@@ -1,6 +1,6 @@
 # Repository Cleanup & Documentation Plan
 
-Prepared 2026-02-09 based on full codebase audit.  
+Prepared 2026-02-09 based on full codebase audit.
 Updated 2026-02-09 to include NuGet packaging, GitHub Pages, and
 cross-platform messaging.
 
