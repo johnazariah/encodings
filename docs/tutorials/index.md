@@ -38,8 +38,8 @@ The theory behind each stage is covered in our Background pages:
 
 Every numerical result in this tutorial is reproduced by the FockMap library. See the interactive tutorials:
 
-- [Encoding the H₂ Molecule](../tutorials/02-h2-molecule.html) — the complete calculation as executable F#
-- [Compare Encodings](../tutorials/03-compare-encodings.html) — side-by-side cross-encoding comparison
+- [Encoding the H₂ Molecule](../labs/02-h2-molecule.html) — the complete calculation as executable F#
+- [Compare Encodings](../labs/03-compare-encodings.html) — side-by-side cross-encoding comparison
 
 ## PDF Version
 

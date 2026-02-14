@@ -831,7 +831,7 @@ docs/
 │   ├── 05-beyond-jordan-wigner.md    # BK, Parity, trees — and WHY
 │   └── 06-bosonic-preview.md         # Roadmap: bosonic modes (placeholder)
 │
-├── tutorials/                        # Literate F# scripts (.fsx)
+├── labs/                             # Literate F# scripts (.fsx)
 │   ├── 01-first-encoding.fsx         # Encode a single operator (5 min)
 │   ├── 02-h2-molecule.fsx            # Full H₂ pipeline (30 min)
 │   ├── 03-compare-encodings.fsx      # All 5 encodings side-by-side

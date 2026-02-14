@@ -49,10 +49,10 @@ Written in [F#](https://fsharp.org/), fully open-source under the [F# Software F
 
 ## Learn More
 
-- **Complete tutorial:** [From Molecules to Qubits](tutorial/index.html) — the full pipeline, H₂ worked example
+- **Complete tutorial:** [From Molecules to Qubits](tutorials/index.html) — the full pipeline, H₂ worked example
 - **New to encodings?** Start with [Why Encodings?](background/01-why-encodings.html)
-- **Want to try it?** Jump to [Your First Encoding](tutorials/01-first-encoding.html)
-- **Full walkthrough:** [Encoding the H₂ Molecule](tutorials/02-h2-molecule.html)
+- **Want to try it?** Jump to [Your First Encoding](labs/01-first-encoding.html)
+- **Full walkthrough:** [Encoding the H₂ Molecule](labs/02-h2-molecule.html)
 - **Library internals:** [Architecture Guide](guides/architecture.html)
 - **API Reference:** [All types and functions](reference/index.html)
 
@@ -60,13 +60,13 @@ Written in [F#](https://fsharp.org/), fully open-source under the [F# Software F
 
 ### From Molecules to Qubits (Tutorial)
 A complete step-by-step guide using H₂ as a worked example — every integral, every sign, every coefficient.
-- [Overview](tutorial/index.html) — The complete pipeline at a glance
-- [The Electronic Structure Problem](tutorial/01-electronic-structure.html) — Born–Oppenheimer, basis sets, configurations
-- [The Notation Minefield](tutorial/02-notation.html) — Chemist's vs. physicist's integrals
-- [Spatial to Spin-Orbital Integrals](tutorial/03-spin-orbitals.html) — Doubling the index space
-- [Building the H₂ Hamiltonian](tutorial/04-building-hamiltonian.html) — The 15-term qubit Hamiltonian
-- [Checking Our Answer](tutorial/05-verification.html) — Diagonalisation and cross-encoding comparison
-- [What Comes Next](tutorial/06-outlook.html) — VQE, QPE, and scaling
+- [Overview](tutorials/index.html) — The complete pipeline at a glance
+- [The Electronic Structure Problem](tutorials/01-electronic-structure.html) — Born–Oppenheimer, basis sets, configurations
+- [The Notation Minefield](tutorials/02-notation.html) — Chemist's vs. physicist's integrals
+- [Spatial to Spin-Orbital Integrals](tutorials/03-spin-orbitals.html) — Doubling the index space
+- [Building the H₂ Hamiltonian](tutorials/04-building-hamiltonian.html) — The 15-term qubit Hamiltonian
+- [Checking Our Answer](tutorials/05-verification.html) — Diagonalisation and cross-encoding comparison
+- [What Comes Next](tutorials/06-outlook.html) — VQE, QPE, and scaling
 
 ### Background & Theory
 - [Why Encodings?](background/01-why-encodings.html) — The problem encodings solve
@@ -75,12 +75,12 @@ A complete step-by-step guide using H₂ as a worked example — every integral,
 - [Jordan-Wigner](background/04-jordan-wigner.html) — The classic encoding
 - [Beyond Jordan-Wigner](background/05-beyond-jordan-wigner.html) — BK, trees, and O(log n) scaling
 
-### Interactive Tutorials
-- [First Encoding](tutorials/01-first-encoding.html) — Encode your first operator (5 min)
-- [H₂ Molecule](tutorials/02-h2-molecule.html) — Full molecular Hamiltonian
-- [Compare Encodings](tutorials/03-compare-encodings.html) — Side-by-side comparison
-- [Custom Encoding](tutorials/04-custom-encoding.html) — Define your own scheme
-- [Custom Tree](tutorials/05-custom-tree.html) — Build tree-based encodings
+### Interactive Labs
+- [First Encoding](labs/01-first-encoding.html) — Encode your first operator (5 min)
+- [H₂ Molecule](labs/02-h2-molecule.html) — Full molecular Hamiltonian
+- [Compare Encodings](labs/03-compare-encodings.html) — Side-by-side comparison
+- [Custom Encoding](labs/04-custom-encoding.html) — Define your own scheme
+- [Custom Tree](labs/05-custom-tree.html) — Build tree-based encodings
 
 ### Guides
 - [Architecture](guides/architecture.html) — Two-framework design

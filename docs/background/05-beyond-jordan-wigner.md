@@ -455,7 +455,7 @@ We've seen how the Jordan-Wigner encoding's $O(n)$ weight limitation can be over
 4. **Tree-based encodings** generalize further: every tree defines an encoding
 5. **Balanced ternary trees** achieve the optimal $O(\log_3 n)$ weight
 
-The next step is implementing these encodings for your own systems. See the [tutorials](../tutorials/) for hands-on examples, or explore the [API reference](../reference/) for all available functions.
+The next step is implementing these encodings for your own systems. See the [labs](../labs/) for hands-on examples, or explore the [API reference](../reference/) for all available functions.
 
 ---
 

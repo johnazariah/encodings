@@ -94,7 +94,7 @@ let hamiltonian = computeHamiltonian jordanWigner oneBodyIntegrals twoBodyIntegr
 // → 15 Pauli terms with coefficients matching the table above
 ```
 
-See the [H₂ Molecule tutorial](../tutorials/02-h2-molecule.html) for the full executable example.
+See the [H₂ Molecule lab](../labs/02-h2-molecule.html) for the full executable example.
 
 ---
 

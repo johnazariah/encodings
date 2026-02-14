@@ -207,13 +207,13 @@ Full documentation is available at **[johnazariah.github.io/encodings](https://j
 - [Beyond Jordan-Wigner](https://johnazariah.github.io/encodings/background/05-beyond-jordan-wigner.html) — BK, trees, and $O(\log n)$ scaling
 - [Bosonic Preview](https://johnazariah.github.io/encodings/background/06-bosonic-preview.html) — Future extensions to bosonic modes
 
-### Tutorials (literate F# scripts)
-- [Your First Encoding](https://johnazariah.github.io/encodings/tutorials/01-first-encoding.html) — Encode an operator in 5 minutes
-- [H₂ Molecule](https://johnazariah.github.io/encodings/tutorials/02-h2-molecule.html) — Full molecular Hamiltonian walkthrough
-- [Compare Encodings](https://johnazariah.github.io/encodings/tutorials/03-compare-encodings.html) — Side-by-side weight analysis
-- [Custom Encoding](https://johnazariah.github.io/encodings/tutorials/04-custom-encoding.html) — Define your own scheme
-- [Custom Tree](https://johnazariah.github.io/encodings/tutorials/05-custom-tree.html) — Build tree-based encodings
-- [Scaling Analysis](https://johnazariah.github.io/encodings/tutorials/06-scaling.html) — Pauli weight scaling with system size
+### Labs (literate F# scripts)
+- [Your First Encoding](https://johnazariah.github.io/encodings/labs/01-first-encoding.html) — Encode an operator in 5 minutes
+- [H₂ Molecule](https://johnazariah.github.io/encodings/labs/02-h2-molecule.html) — Full molecular Hamiltonian walkthrough
+- [Compare Encodings](https://johnazariah.github.io/encodings/labs/03-compare-encodings.html) — Side-by-side weight analysis
+- [Custom Encoding](https://johnazariah.github.io/encodings/labs/04-custom-encoding.html) — Define your own scheme
+- [Custom Tree](https://johnazariah.github.io/encodings/labs/05-custom-tree.html) — Build tree-based encodings
+- [Scaling Analysis](https://johnazariah.github.io/encodings/labs/06-scaling.html) — Pauli weight scaling with system size
 
 ### Guides
 - [Architecture](https://johnazariah.github.io/encodings/guides/architecture.html) — Two-framework design explained

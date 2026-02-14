@@ -88,7 +88,7 @@ with $V_{nn} = 0.7151$ Ha.
 | $[00\|11] = [11\|00]$ | $0.6636340479$ |
 | $[01\|10] = [10\|01] = [01\|01] = [10\|10]$ | $0.6975782469$ |
 
-All other elements are zero by symmetry. These integrals are reproduced by the companion code — see the [H₂ Molecule tutorial](../tutorials/02-h2-molecule.html).
+All other elements are zero by symmetry. These integrals are reproduced by the companion code — see the [H₂ Molecule lab](../labs/02-h2-molecule.html).
 
 ---
 
