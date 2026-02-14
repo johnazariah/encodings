@@ -80,6 +80,34 @@ module LadderOperatorSequence =
         Assert.True(ordered.Value.AllTermsIndexOrdered)
 
     [<Fact>]
+    let ``ConstructIndexOrdered returns unchanged expression when already index ordered`` () =
+        let candidate = parseSumExpression "{[(u, 0) | (u, 2) | (d, 3) | (d, 1)]}"
+        Assert.True(candidate.IsSome)
+
+        let ordered = LadderOperatorSumExpr<FermionicAlgebra>.ConstructIndexOrdered candidate.Value
+
+        Assert.True(ordered.IsSome)
+        Assert.Equal(candidate.Value.ToString(), ordered.Value.ToString())
+
+    [<Fact>]
+    let ``ConstructNormalOrdered handles empty expression`` () =
+        let candidate = parseSumExpression "{[]}"
+        Assert.True(candidate.IsSome)
+
+        let normalOrdered = LadderOperatorSumExpr<FermionicAlgebra>.ConstructNormalOrdered candidate.Value
+
+        Assert.True(normalOrdered.IsSome)
+        Assert.Equal("{}", normalOrdered.Value.ToString())
+
+    [<Fact>]
+    let ``toIndexOrder keeps empty product term stable`` () =
+        let term = P<IxOp<uint32, LadderOperatorUnit>>.Apply([||] : IxOp<uint32, LadderOperatorUnit> [])
+        let sorted = toIndexOrder term
+
+        Assert.Empty(sorted.Units)
+        Assert.Equal(term.Coeff, sorted.Coeff)
+
+    [<Fact>]
     let ``TryCreateFromString parses valid ladder sum expression`` () =
         let parsed = LadderOperatorSumExpr<FermionicAlgebra>.TryCreateFromString "{[(u, 0)]; [(d, 1)]}"
         Assert.True(parsed.IsSome)

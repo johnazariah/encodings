@@ -86,3 +86,24 @@ module SwapTrackingSort =
         let isSorted = isInAscendingOrder sorted
         Assert.True(isSorted)
         Assert.Equal(expected.[0], actual)
+
+    [<Fact>]
+    let ``IsSorted returns false for unsorted array`` () =
+        let candidate = [| 2; 1; 3 |]
+        Assert.False(ascendingSort.IsSorted candidate)
+
+    [<Fact>]
+    let ``Sort preserves initial phase when already sorted`` () =
+        let input = [| 1; 2; 3; 4 |]
+        let (sorted, phase) = ascendingSort.Sort 7 input
+
+        Assert.Equal<int[]>(input, sorted)
+        Assert.Equal(7, phase)
+
+    [<Fact>]
+    let ``Sort handles minimum at end and beginning branches`` () =
+        let input = [| 3; 2; 1 |]
+        let (sorted, phase) = ascendingSort.Sort 0 input
+
+        Assert.Equal<int[]>([| 1; 2; 3 |], sorted)
+        Assert.Equal(3, phase)
