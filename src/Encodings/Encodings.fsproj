@@ -15,8 +15,8 @@
       on Fock space as qubit Pauli operators. Implements Jordan-Wigner,
       Bravyi-Kitaev, Parity, and tree-based encodings (balanced binary,
       balanced ternary) as algebraic data types in pure F#. Define
-      custom encodings in 3-5 lines. Fermionic modes now; bosonic
-      modes coming in v0.2.
+      custom encodings in 3-5 lines. Supports fermionic encodings and
+      bosonic normal-ordering algebra.
     </Description>
     <PackageTags>quantum;quantum-computing;quantum-chemistry;encoding;jordan-wigner;bravyi-kitaev;fock-space;fsharp;functional-programming</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
@@ -60,6 +60,7 @@
     <Compile Include="IndexedLadderOperator.fs" />
     <Compile Include="CombiningAlgebra.fs" />
     <Compile Include="LadderOperatorSequence.fs" />
+    <Compile Include="Bosonic.fs" />
     <Compile Include="JordanWigner.fs" />
     <Compile Include="FenwickTree.fs" />
     <Compile Include="MajoranaEncoding.fs" />

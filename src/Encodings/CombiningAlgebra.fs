@@ -114,3 +114,62 @@ module CombiningAlgebra =
                             |] |> P<IxOp<uint32, LadderOperatorUnit>>.Apply
                         [| term.Reduce.Value |]
         end
+
+    /// <summary>
+    /// Implementation of ICombiningAlgebra for bosonic operators using
+    /// canonical commutation relations (CCR).
+    /// </summary>
+    /// <remarks>
+    /// <para>Bosons obey the canonical commutation relations:</para>
+    /// <list type="bullet">
+    /// <item><description>[aᵢ, a†ⱼ] = aᵢ a†ⱼ - a†ⱼ aᵢ = δᵢⱼ</description></item>
+    /// <item><description>[aᵢ, aⱼ] = 0</description></item>
+    /// <item><description>[a†ᵢ, a†ⱼ] = 0</description></item>
+    /// </list>
+    /// <para>When swapping aᵢ past a†ⱼ during normal ordering:</para>
+    /// <list type="bullet">
+    /// <item><description>If i ≠ j: aᵢ a†ⱼ = a†ⱼ aᵢ (no sign change)</description></item>
+    /// <item><description>If i = j: aᵢ a†ᵢ = 1 + a†ᵢ aᵢ (identity term plus reordered term)</description></item>
+    /// </list>
+    /// </remarks>
+    type BosonicAlgebra () =
+        class
+            interface ICombiningAlgebra<LadderOperatorUnit> with
+                member __.Combine productTerm nextUnit =
+                    let nUnits = productTerm.Units.Length
+                    let prefix =
+                        if nUnits > 2 then
+                            productTerm.Units.[0..(nUnits - 2)]
+                        else
+                            [| C<_>.Apply { IxOp.Op = Identity; IxOp.Index = 0u } |]
+                    let lastUnit = productTerm.Units.[nUnits - 1]
+                    match (lastUnit.Item.Op, nextUnit.Item.Op) with
+                    | Lower, Raise ->
+                        if lastUnit.Item.Index <> nextUnit.Item.Index then
+                            let term =
+                                [|
+                                    yield! prefix
+                                    yield nextUnit
+                                    yield lastUnit
+                                |] |> P<IxOp<uint32, LadderOperatorUnit>>.Apply
+                            [| term.Reduce.Value |]
+                        else
+                            let leadingTerm =
+                                [|
+                                    yield! prefix
+                                |] |> P<IxOp<uint32, LadderOperatorUnit>>.Apply
+                            let trailingTerm =
+                                [|
+                                    yield! prefix
+                                    yield nextUnit
+                                    yield lastUnit
+                                |] |> P<IxOp<uint32, LadderOperatorUnit>>.Apply
+                            [| leadingTerm.Reduce.Value; trailingTerm.Reduce.Value |]
+                    | _, _ ->
+                        let term =
+                            [|
+                                yield! productTerm.Units
+                                yield nextUnit
+                            |] |> P<IxOp<uint32, LadderOperatorUnit>>.Apply
+                        [| term.Reduce.Value |]
+        end
