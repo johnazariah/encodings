@@ -64,6 +64,7 @@ jobs:
         run: |
           cp .research/paper-software/fockmap-joss.pdf .research/fockmap-joss.pdf
           cp .research/paper-tutorial/fockmap-tutorial.pdf .research/fockmap-tutorial.pdf
+          cp .research/paper-cookbook/fockmap-cookbook.pdf .research/fockmap-cookbook.pdf
 
       - name: Publish to NuGet
         run: dotnet nuget push nupkg/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
@@ -75,3 +76,4 @@ jobs:
             nupkg/*.nupkg
             .research/fockmap-joss.pdf
             .research/fockmap-tutorial.pdf
+            .research/fockmap-cookbook.pdf
