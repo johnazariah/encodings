@@ -4,6 +4,30 @@ All notable changes to FockMap will be documented in this file.
 
 ## [0.3.1] - 2026-02-15
 
+## [0.4.0] - 2026-02-15
+
+### ✨ Features
+
+- feat: add bosonic-to-qubit encodings (Unary, Binary, Gray)
+
+### 🐛 Bug Fixes
+
+- fix(docs): change .fsx links to .html across all doc pages
+- fix(docs): remove stale .fsdocs/cache and pass --clean to fsdocs
+- fix(docs): also build Debug so fsdocs can resolve assembly references
+- fix(docs): use Release configuration for fsdocs build
+- fix(ci): skip duplicate NuGet push, remove nuget ref from cookbook ch01
+
+### 📚 Documentation
+
+- docs(paper): convert JOSS paper from LaTeX to Markdown format
+- docs: add bosonic encoding cookbook chapter (ch.14) and release checklist
+- docs(paper): update JOSS paper with bosonic-to-qubit encodings (497 tests)
+- docs: update test register with 70 bosonic encoding tests (497 total)
+- docs: add plain-English test register (.project/test-register.md)
+
+
+
 ### 🔧 Maintenance
 
 - chore: standardise on .NET 8 LTS, fix API reference generation
