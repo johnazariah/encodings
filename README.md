@@ -7,9 +7,9 @@
 ![.NET 8](https://img.shields.io/badge/.NET-8.0%20LTS-512BD4)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)
 
-**A practical F# library for symbolic operator algebra on Fock space and fermion-to-qubit encodings.**
+**A practical F# library for symbolic operator algebra on Fock space — fermionic and bosonic — with fermion-to-qubit encodings.**
 
-> Learn by doing: pick an encoding, map operators to Pauli strings, and compare results.
+> Learn by doing: pick an encoding, map operators to Pauli strings, and compare results. Supports both fermionic (CAR) and bosonic (CCR) statistics, including mixed fermion–boson systems.
 
 📖 **New here?** Read the [Visual Guide to Fermion-to-Qubit Encodings](https://johnazariah.github.io/encodings/guides/visual-encodings.html) — a diagram-rich introduction for scientists who know chemistry but not quantum computing.
 
@@ -19,21 +19,24 @@
 
 ## Why FockMap
 
-If you're exploring quantum chemistry on qubits, you usually hit this question quickly: **how do I map fermions to Pauli operators?**
+If you're exploring quantum chemistry on qubits, you usually hit this question quickly: **how do I map fermions to Pauli operators?** And increasingly: **what about phonons and other bosonic modes?**
 
-FockMap gives you one small, consistent API for that. You can:
+FockMap gives you one small, consistent API for both. You can:
 - use built-in encodings (Jordan-Wigner, Bravyi-Kitaev, Parity, tree-based)
 - compare them side-by-side
 - define your own encoding with a few lines of F#
+- work with bosonic (CCR) operators and mixed fermion–boson systems
 
-| Feature | OpenFermion | Qiskit Nature | **FockMap** |
-|---------|:-----------:|:------------:|:-----------:|
-| Define a new encoding | ~200 lines Python | Not supported | **3–5 lines F#** |
-| Tree → encoding pipeline | ❌ | ❌ | **✅** |
-| Type-safe operator algebra | ❌ | ❌ | **✅** |
-| Pure functional, zero mutation | ❌ | ❌ | **✅** |
-| Symbolic Pauli algebra (no matrices) | ❌ | Partial | **✅** |
-| Runtime dependencies | NumPy, SciPy | Many | **None** |
+| Feature | OpenFermion | Qiskit Nature | PennyLane | **FockMap** |
+|---------|:-----------:|:------------:|:---------:|:-----------:|
+| Define a new encoding | ~200 lines Python | Not supported | Not supported | **3–5 lines F#** |
+| Tree → encoding pipeline | ❌ | ❌ | ❌ | **✅** |
+| Bosonic operator algebra (CCR) | ❌ | ❌ | ✅ | **✅** |
+| Mixed fermion–boson normal ordering | ❌ | ❌ | ❌ | **✅** |
+| Type-safe operator algebra | ❌ | ❌ | ❌ | **✅** |
+| Pure functional, zero mutation | ❌ | ❌ | ❌ | **✅** |
+| Symbolic Pauli algebra (no matrices) | ❌ | Partial | ✅ | **✅** |
+| Runtime dependencies | NumPy, SciPy | Many | NumPy, autograd, … | **None** |
 
 Internally, the library uses exact symbolic Pauli algebra (not floating-point matrix multiplication), so encoded operator manipulation stays fast and predictable.
 
