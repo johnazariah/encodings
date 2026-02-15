@@ -1,6 +1,6 @@
 # Research Papers — Fermion-to-Qubit Encodings
 
-Three papers exploring the structure, pedagogy, and emergent properties of
+Four papers exploring the structure, pedagogy, and emergent properties of
 fermion-to-qubit encodings for quantum simulation.
 
 ## Papers
@@ -9,6 +9,7 @@ fermion-to-qubit encodings for quantum simulation.
 |---|-----------|-------|--------|
 | 1 | `paper-tutorial/` | From Molecules to Qubits: A Complete Guide to Quantum Chemistry Simulation | AJP / Quantum (pedagogical) |
 | 2 | `paper-software/` | Algebraic Encodings: A Typed Functional Framework for Fermion-to-Qubit Mappings | JOSS / SoftwareX |
+| 2b | `paper-cookbook/` | FockMap Library Cookbook: A Progressive Tutorial for Symbolic Fock-Space Operator Algebra | Companion to Paper 2 (arXiv / JOSS supplement) |
 | 3 | `paper-emergence/` | Emergent Structure in Fermion-to-Qubit Encodings: Trees, Locality, and the Geometry of Representation | PRA / PRResearch / Quantum |
 
 ## Shared Resources
@@ -35,6 +36,7 @@ cd .. && dotnet build Encodings/Encodings.fsproj
 |-------|---------|------|-------|---------|--------------|
 | Tutorial   | ✅ | ✅ | ✅ v0.1 | 🔲 | ✅ MatrixVerification, ParityOperator |
 | Software   | ✅ | ✅ | ✅ v0.1 | 🔲 | ✅ AnticommutationTest |
+| Cookbook    | — | — | ✅ v0.1 | — | — (shares Software verification) |
 | Emergence  | ✅ | ✅ | 🔲 (deferred) | 🔲 | ✅ MonotonicityCensus |
 
 ## Investigation Journal

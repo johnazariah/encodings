@@ -1,0 +1,778 @@
+% FockMap Library Cookbook — Companion Reference
+% Compiled with: latexmk -pdf paper.tex
+\documentclass[10pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{natbib}
+\usepackage{authblk}
+\usepackage{geometry}
+\usepackage{fancyvrb}
+\usepackage{listings}
+\usepackage{enumitem}
+\usepackage{tocloft}
+
+\geometry{margin=1in}
+\bibliographystyle{unsrtnat}
+
+% Code listing style for F#
+\lstdefinelanguage{FSharp}{
+  morekeywords={let,in,if,then,else,match,with,type,of,open,module,fun,rec,
+    mutable,new,true,false,set,for,do,to,abstract,member,interface,end,
+    and,printfn,Some,None,Array,Map,Seq},
+  sensitive=true,
+  morecomment=[l]{//},
+  morecomment=[s]{(*}{*)},
+  morestring=[b]",
+}
+\lstset{
+  language=FSharp,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\bfseries\color{blue!70!black},
+  commentstyle=\itshape\color{green!50!black},
+  stringstyle=\color{red!60!black},
+  frame=single,
+  breaklines=true,
+  columns=fullflexible,
+  aboveskip=0.8em,
+  belowskip=0.6em,
+}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!70!black,
+  citecolor=green!50!black,
+  urlcolor=blue!60!black,
+}
+
+%%--------------------------------------------------------------------
+
+\title{FockMap Library Cookbook:\\
+  A Progressive Tutorial for Symbolic Fock-Space\\
+  Operator Algebra and Fermion-to-Qubit Encodings in F\#}
+
+\author[1]{John Azariah\thanks{ORCID:
+  \href{https://orcid.org/0009-0007-9870-1970}{0009-0007-9870-1970}}}
+\affil[1]{University of Technology Sydney}
+
+\date{February 2026}
+
+%%--------------------------------------------------------------------
+\begin{document}
+\maketitle
+
+%%--------------------------------------------------------------------
+\begin{abstract}
+This document is the companion walkthrough for the FockMap
+library~\cite{fockmap2026}, a composable functional framework for
+symbolic operator algebra and fermion-to-qubit encodings.  Organized as
+13 progressive chapters, it covers every public type, function, and
+workflow in the library: from single-qubit Pauli operators through the
+three-level algebraic hierarchy (\texttt{C}/\texttt{P}/\texttt{S}),
+indexed operators, creation and annihilation, fermionic and bosonic
+normal ordering, five built-in encodings, custom encoding schemes,
+tree-based encoding via Fenwick and balanced trees, full Hamiltonian
+construction, and mixed bosonic--fermionic systems.  Each chapter
+introduces concepts through worked F\# code examples that the reader
+can execute directly.  The final chapter ties everything together with
+a capstone script that encodes the H$_2$ molecule under three encodings
+and compares Pauli weight and term count.
+
+This document is also available as hosted Markdown documentation at
+the repository website.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+%%====================================================================
+\section{Hello, Qubit}\label{ch:hello}
+
+Everything in quantum computing eventually becomes a \textbf{Pauli
+operator}.  These are $2\times 2$ matrices that act on a single qubit:
+%
+\begin{equation}
+I = \begin{pmatrix}1&0\\0&1\end{pmatrix},\quad
+X = \begin{pmatrix}0&1\\1&0\end{pmatrix},\quad
+Y = \begin{pmatrix}0&{-i}\\i&0\end{pmatrix},\quad
+Z = \begin{pmatrix}1&0\\0&{-1}\end{pmatrix}
+\end{equation}
+
+In FockMap they are a simple discriminated union:
+
+\begin{lstlisting}
+#r "nuget: FockMap"
+open Encodings
+open System.Numerics
+
+let identity = I
+let bitFlip  = X
+let combined = Y
+let phase    = Z
+\end{lstlisting}
+
+Multiplying two Paulis always yields another Pauli \emph{times a phase}.
+The algebra is exact---no floating point involved:
+
+\begin{lstlisting}
+let (result, phase) = X * Y
+// result = Z,  phase = Pi    because XY = iZ
+
+let (result2, _) = Y * X
+// result2 = Z, phase = Mi    because YX = -iZ  (anti-commutation!)
+
+let (result3, _) = X * X
+// result3 = I, phase = P1    every Pauli squares to identity
+\end{lstlisting}
+
+Notice that $X \cdot Y \neq Y \cdot X$---they differ by a sign.  This
+is the \textbf{anti-commutation} property, fundamental to quantum
+mechanics.
+
+\subsection{Phases without floating point}
+
+The four phase values $\{+1, -1, +i, -i\}$ live in their own type:
+
+\begin{lstlisting}
+// Phase is a discriminated union: P1 (+1), M1 (-1), Pi (+i), Mi (-i)
+Pi * Pi      // M1    because i * i = -1
+M1 * Mi      // Pi    because (-1) * (-i) = +i
+P1 * M1      // M1    the identity doesn't change anything
+\end{lstlisting}
+
+When you need to fold a phase into a complex number:
+
+\begin{lstlisting}
+let c = Complex(2.0, 0.0)
+Pi.FoldIntoGlobalPhase c     // Complex(0.0, 2.0)
+M1.FoldIntoGlobalPhase c     // Complex(-2.0, 0.0)
+\end{lstlisting}
+
+\textbf{Key insight:} FockMap tracks phases symbolically using
+\texttt{Phase} and only converts to floating-point \texttt{Complex} at
+the boundaries.  This eliminates the rounding errors that plague na\"ive
+Pauli algebra implementations.
+
+
+%%====================================================================
+\section{Building Expressions: The C\,/\,P\,/\,S Hierarchy}\label{ch:cps}
+
+Real quantum operators are \textbf{sums of products} of operators, each
+with a coefficient.  FockMap represents this with three nested types:
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{Type} & \textbf{Role} & \textbf{Analogy} \\
+\midrule
+\texttt{C<'T>} & Coefficient $\times$ single operator & A letter with emphasis \\
+\texttt{P<'T>} & Product of operators & A word (ordered sequence) \\
+\texttt{S<'T>} & Sum of products & A sentence \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+These types are \textbf{generic}---they work with any operator type.
+
+\subsection{C --- a single weighted operator}
+
+\begin{lstlisting}
+let one_x = C<Pauli>.Apply X              // 1 * X
+let half_y = C<Pauli>.Apply(Complex(0.5, 0.0), Y)
+\end{lstlisting}
+
+\subsection{P --- an ordered product (tensor product)}
+
+\begin{lstlisting}
+let xy = one_x * half_y
+// P<Pauli> with Coeff = 0.5, Units = [X; Y]
+
+let xzy = P<Pauli>.Apply [| X; Z; Y |]
+// 1 * (X (x) Z (x) Y)
+
+let scaled = xzy.ScaleCoefficient(Complex(3.0, 0.0))
+// 3 * (X (x) Z (x) Y)
+\end{lstlisting}
+
+Reduction normalises internal coefficients into the single overall
+coefficient:
+
+\begin{lstlisting}
+let mixed = P<Pauli>.Apply(Complex(2.0, 0.0), [| half_y; one_x |])
+let clean = mixed.Reduce.Value
+// Coeff = 1.0, Units = [Y; X]
+\end{lstlisting}
+
+\subsection{S --- a sum of products (the Hamiltonian shape)}
+
+\begin{lstlisting}
+let s1 = S<Pauli>.Apply(P<Pauli>.Apply [| X; Z |])
+let s2 = S<Pauli>.Apply(P<Pauli>.Apply [| Y; I |])
+
+let hamiltonian = s1 + s2
+let doubled = s1 + s1    // 2*(X (x) Z)
+\end{lstlisting}
+
+\texttt{S<'T>} stores its terms in a \texttt{Map<string, P<'T>>}, keyed
+by string representation.  Like terms combine automatically: this is
+what makes \texttt{s1 + s1} produce $2 \cdot (X \otimes Z)$ instead of
+two separate entries.
+
+\subsection{Coefficient hygiene and zero propagation}
+
+Every level has a \texttt{Reduce} method that replaces \texttt{NaN} and
+infinity with zero, preventing numerical corruption from propagating.
+A product containing any zero-coefficient unit becomes the zero product
+eagerly, so downstream code never wastes time on trivial terms.
+
+
+%%====================================================================
+\section{Operators on Specific Qubits}\label{ch:ixop}
+
+The \texttt{IxOp} type tags each operator with a mode index:
+
+\begin{lstlisting}
+let x0 = IxOp<uint32, Pauli>.Apply(0u, X)   // "X on qubit 0"
+let z3 = IxOp<uint32, Pauli>.Apply(3u, Z)   // "Z on qubit 3"
+\end{lstlisting}
+
+\subsection{Parsing from strings}
+
+\begin{lstlisting}
+let parsed = Pauli.FromString "(X, 2)"
+
+let term = PIxOp<uint32, Pauli>.TryCreateFromString
+               Pauli.Apply "[(X, 0)|(Z, 3)]"
+
+let expr = SIxOp<uint32, Pauli>.TryCreateFromString
+               Pauli.Apply "{[(X, 0)|(Z, 1)]; [(Y, 0)|(I, 1)]}"
+\end{lstlisting}
+
+The format uses \texttt{[...|...]} for products and \texttt{\{...;~...\}}
+for sums.  You pass a parser function for the underlying operator type.
+
+
+%%====================================================================
+\section{Creation and Annihilation}\label{ch:ladder}
+
+Quantum chemistry works with \textbf{ladder operators}: creation
+($a^\dagger$) and annihilation ($a$):
+
+\begin{lstlisting}
+let create  = Raise     // a+
+let destroy = Lower     // a
+let nothing = Identity  // I
+\end{lstlisting}
+
+\subsection{Indexed ladder operators}
+
+\begin{lstlisting}
+let adag2 = LadderOperatorUnit.FromUnit(true, 2u)   // a+_2
+let a1    = LadderOperatorUnit.FromUnit(false, 1u)   // a_1
+\end{lstlisting}
+
+\subsection{Product terms}
+
+A typical quantum chemistry term: $a^\dagger_0 a^\dagger_1 a_1 a_0$:
+
+\begin{lstlisting}
+let twoBody = LadderOperatorProductTerm.FromUnits [|
+    (true,  0u); (true,  1u); (false, 1u); (false, 0u)
+|]
+
+twoBody.IsInNormalOrder    // true
+twoBody.IsInIndexOrder     // true
+\end{lstlisting}
+
+
+%%====================================================================
+\section{Normal Ordering: Making Physics Legal}\label{ch:normal}
+
+The central problem: we must put operator expressions in \textbf{normal
+order}---all creation operators before all annihilation operators.
+
+Fermions obey the canonical anti-commutation relations (CAR):
+%
+\begin{equation}
+\{a_i, a^\dagger_j\} = a_i a^\dagger_j + a^\dagger_j a_i = \delta_{ij}
+\end{equation}
+
+\begin{lstlisting}
+let disordered =
+    P<IxOp<uint32, LadderOperatorUnit>>.Apply [|
+        LadderOperatorUnit.FromUnit(false, 0u)   // a_0
+        LadderOperatorUnit.FromUnit(true, 1u)     // a+_1
+    |]
+    |> S<IxOp<uint32, LadderOperatorUnit>>.Apply
+
+let ordered =
+    LadderOperatorSumExpr<FermionicAlgebra>.ConstructNormalOrdered
+        disordered
+// Result: -1 * a+_1 a_0  (sign flipped!)
+\end{lstlisting}
+
+Same-index operators generate an identity term:
+%
+\begin{equation}
+a_0 a^\dagger_0 = \delta_{00} - a^\dagger_0 a_0 = 1 - a^\dagger_0 a_0
+\end{equation}
+
+\subsection{The algebra is pluggable}
+
+Commutation relations live behind an interface:
+
+\begin{lstlisting}
+type ICombiningAlgebra<'op> =
+    abstract Combine :
+        P<IxOp<uint32,'op>>
+            -> C<IxOp<uint32,'op>>
+            -> P<IxOp<uint32,'op>>[]
+\end{lstlisting}
+
+\begin{center}
+\begin{tabular}{llll}
+\toprule
+\textbf{Algebra} & \textbf{Class} & \textbf{Physics} & \textbf{Key behaviour} \\
+\midrule
+Fermionic & \texttt{FermionicAlgebra} & Electrons & Swap $\Rightarrow$ sign flip \\
+Bosonic   & \texttt{BosonicAlgebra}   & Photons, phonons & Swap $\Rightarrow$ no sign \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Bosonic normal ordering}
+
+Compare $b_0 b^\dagger_0$ under bosonic algebra:
+
+\begin{lstlisting}
+let bosonicResult = constructBosonicNormalOrdered bosonicExpr
+// Result: 1 + b+_0 b_0   (PLUS sign --- bosons commute)
+\end{lstlisting}
+
+Fermionic: $a_0 a^\dagger_0 = 1 - a^\dagger_0 a_0$.
+Bosonic: $b_0 b^\dagger_0 = 1 + b^\dagger_0 b_0$.
+That single sign difference distinguishes matter from light.
+
+
+%%====================================================================
+\section{Your First Encoding}\label{ch:first}
+
+The problem: quantum computers have qubits, but chemistry uses fermions.
+We need a mapping.
+
+\subsection{Jordan--Wigner}
+
+The simplest encoding~\cite{jordanwigner1928} inserts a chain of $Z$
+operators on all preceding qubits:
+
+\begin{lstlisting}
+let result = jordanWignerTerms Raise 2u 4u
+
+for term in result.DistributeCoefficient.SummandTerms do
+    printfn "%s %s" term.PhasePrefix term.Signature
+//  0.5 ZZXI
+// -0.5i ZZYI
+\end{lstlisting}
+
+The result is $a^\dagger_2 = \tfrac{1}{2}(ZZXI) -
+\tfrac{i}{2}(ZZYI)$.
+
+\subsection{The Z-chain problem}
+
+The Pauli weight grows \textbf{linearly}---$O(n)$.  For 100 qubits the
+last operator touches all 100 qubits.
+
+
+%%====================================================================
+\section{Five Encodings, One Interface}\label{ch:five}
+
+Every encoding function has the same type signature:
+
+\begin{lstlisting}
+type EncoderFn =
+    LadderOperatorUnit -> uint32 -> uint32
+        -> PauliRegisterSequence
+\end{lstlisting}
+
+This makes them drop-in replacements:
+
+\begin{lstlisting}
+let jw  = jordanWignerTerms       Raise mode n   // O(n)
+let bk  = bravyiKitaevTerms       Raise mode n   // O(log n)
+let par = parityTerms             Raise mode n   // O(n)
+let bt  = balancedBinaryTreeTerms Raise mode n   // O(log n)
+let tt  = ternaryTreeTerms        Raise mode n   // O(log_3 n)
+\end{lstlisting}
+
+\subsection{PauliRegister and PauliRegisterSequence}
+
+Every encoding returns a \texttt{PauliRegisterSequence}---a sum of
+\texttt{PauliRegister} terms:
+
+\begin{lstlisting}
+let reg = PauliRegister("ZZXI", Complex.One)
+reg.Signature       // "ZZXI"
+reg.Coefficient     // Complex(1.0, 0.0)
+reg.[0]             // Some Z
+\end{lstlisting}
+
+
+%%====================================================================
+\section{How Encodings Work Under the Hood}\label{ch:internals}
+
+\subsection{Majorana decomposition}
+
+A ladder operator is split into two Majorana operators:
+%
+\begin{align}
+a^\dagger_j &= \tfrac{1}{2}(c_j - i\,d_j), &
+a_j &= \tfrac{1}{2}(c_j + i\,d_j)
+\end{align}
+
+The Majorana operators are built from three index sets:
+%
+\begin{align}
+c_j &= X_{U(j) \cup \{j\}} \cdot Z_{P(j)} \\
+d_j &= Y_j \cdot X_{U(j)} \cdot Z_{(P(j) \oplus \text{Occ}(j)) \setminus \{j\}}
+\end{align}
+
+\subsection{The EncodingScheme record}
+
+\begin{lstlisting}
+type EncodingScheme =
+    { Update     : int -> int -> Set<int>    // U(j, n)
+      Parity     : int -> Set<int>           // P(j)
+      Occupation : int -> Set<int> }         // Occ(j)
+\end{lstlisting}
+
+\subsection{Custom encoding in 5 lines}
+
+\begin{lstlisting}
+let myJW : EncodingScheme =
+    { Update     = fun _ _ -> Set.empty
+      Parity     = fun j   -> set [ for k in 0 .. j-1 -> k ]
+      Occupation = fun j   -> set [j] }
+
+let myResult = encodeOperator myJW Raise 2u 4u
+// Identical to jordanWignerTerms Raise 2u 4u!
+\end{lstlisting}
+
+Compare that to the $\sim$200 lines needed in other
+frameworks~\cite{mcclean2020}.
+
+\subsection{Inspecting Majorana assignments}
+
+\begin{lstlisting}
+let cAssign = cMajorana jordanWignerScheme 2 4
+// [(0, Z); (1, Z); (2, X)]
+
+let dAssign = dMajorana jordanWignerScheme 2 4
+// [(0, Z); (1, Z); (2, Y)]
+
+let cReg = pauliOfAssignments 4 cAssign Complex.One
+// PauliRegister("ZZXI", 1.0)
+\end{lstlisting}
+
+
+%%====================================================================
+\section{Trees and Fenwick Trees}\label{ch:trees}
+
+\subsection{Why trees?}
+
+The Z-chain in Jordan--Wigner grows linearly because it uses a linear
+data structure.  A \textbf{tree} shares parity information, cutting
+depth to $O(\log n)$.
+
+\subsection{Fenwick Trees}
+
+The Bravyi--Kitaev encoding~\cite{bravyikitaev2002,seeley2012} is built
+on a Fenwick tree.  FockMap provides a purely functional implementation:
+
+\begin{lstlisting}
+let tree = FenwickTree.ofArray (^^^) 0 occupations
+
+FenwickTree.prefixQuery tree 3
+FenwickTree.pointQuery tree 5
+let tree' = FenwickTree.update tree 2 0
+\end{lstlisting}
+
+\subsection{Encoding trees}
+
+\begin{lstlisting}
+let linear  = linearTree 8            // Jordan-Wigner
+let binary  = balancedBinaryTree 8     // O(log_2 n)
+let ternary = balancedTernaryTree 8    // O(log_3 n)
+\end{lstlisting}
+
+\subsection{Two frameworks}
+
+\textbf{Framework 1} (index sets, Fenwick-compatible):
+\begin{lstlisting}
+let scheme = treeEncodingScheme (balancedBinaryTree 8)
+encodeOperator scheme Raise 2u 8u
+\end{lstlisting}
+
+\textbf{Framework 2} (path-based, any ternary
+tree)~\cite{jiang2020}:
+\begin{lstlisting}
+let result = encodeWithTernaryTree tree Raise 2u 8u
+\end{lstlisting}
+
+
+%%====================================================================
+\section{Building a Real Hamiltonian}\label{ch:hamiltonian}
+
+The electronic Hamiltonian in second quantization:
+%
+\begin{equation}
+H = \sum_{pq} h_{pq}\, a^\dagger_p a_q
+  + \tfrac{1}{2} \sum_{pqrs} \langle pq|rs\rangle\,
+    a^\dagger_p a^\dagger_q a_s a_r
+\end{equation}
+
+\subsection{Step 1 --- Define integrals}
+
+For H$_2$ in STO-3G (4 spin-orbitals):
+
+\begin{lstlisting}
+let nModes = 4u
+let oneBody = Map [
+    ("00", Complex(-1.2563, 0.0))
+    ("11", Complex(-1.2563, 0.0))
+    ("22", Complex(-0.4719, 0.0))
+    ("33", Complex(-0.4719, 0.0))
+]
+\end{lstlisting}
+
+\subsection{Step 2 --- Coefficient lookup}
+
+\begin{lstlisting}
+let lookup (key : string) =
+    match key.Length with
+    | 2 -> oneBody |> Map.tryFind key
+    | 4 -> twoBody |> Map.tryFind key
+    | _ -> None
+\end{lstlisting}
+
+\subsection{Step 3 --- Compute}
+
+\begin{lstlisting}
+let hamiltonian = computeHamiltonian lookup nModes
+\end{lstlisting}
+
+\subsection{Step 4 --- Swap the encoding}
+
+\begin{lstlisting}
+let hBK = computeHamiltonianWith bravyiKitaevTerms lookup nModes
+let hTT = computeHamiltonianWith ternaryTreeTerms  lookup nModes
+\end{lstlisting}
+
+All three Hamiltonians have the same eigenvalues.
+
+
+%%====================================================================
+\section{Mixed Bosonic--Fermionic Systems}\label{ch:mixed}
+
+Some models combine fermions and bosons (e.g.\ electron--phonon
+coupling).
+
+\subsection{Sector tagging}
+
+\begin{lstlisting}
+let f0_up   = fermion Raise 0u    // f+_0
+let b1_down = boson Lower 1u     // b_1
+\end{lstlisting}
+
+\subsection{Canonical block order}
+
+Cross-sector commutators are zero:
+%
+\begin{equation}
+[a_i, b_j] = [a_i, b_j^\dagger]
+           = [a_i^\dagger, b_j]
+           = [a_i^\dagger, b_j^\dagger] = 0
+\end{equation}
+
+The canonical form places all fermionic operators left and bosonic
+operators right.
+
+\subsection{Full mixed normal ordering}
+
+\texttt{constructMixedNormalOrdered} performs three steps:
+\begin{enumerate}[nosep]
+  \item Sector ordering (fermions left, bosons right; no sign change).
+  \item Fermionic normal ordering (CAR; sign flips).
+  \item Bosonic normal ordering (CCR; no sign flips).
+\end{enumerate}
+
+\begin{lstlisting}
+let result = constructMixedNormalOrdered messyExpr
+\end{lstlisting}
+
+\subsection{Decision guide}
+
+\begin{enumerate}[nosep]
+  \item No bosons? Standard fermionic path.
+  \item Bosons but no qubit mapping yet? Hybrid pipeline.
+  \item Choosing an encoding? Compare on extracted fermion blocks.
+  \item Cutoff-sensitive? Convergence checks first.
+\end{enumerate}
+
+\subsection{Common failure modes}
+
+\begin{center}
+\small
+\begin{tabular}{lll}
+\toprule
+\textbf{Symptom} & \textbf{Cause} & \textbf{Fix} \\
+\midrule
+Unexpected sign flips & Cross-sector/fermionic confusion & Canonicalise first \\
+Non-deterministic shape & No block rule & \texttt{constructMixedNormalOrdered} \\
+Bloated encoding & Identity placeholders & Drop identities first \\
+Hard-to-debug modes & Implicit sectoring & Explicit constructors \\
+Unstable bosonic results & Cutoff too low & Sweep and compare \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+
+%%====================================================================
+\section{The Utility Belt}\label{ch:utils}
+
+\subsection{Complex number extensions}
+
+\begin{lstlisting}
+let c = Complex(1.0, 2.0)
+c.IsFinite; c.IsNonZero; c.TimesI; c.Reduce
+
+Complex.SwapSignMultiple 3 Complex.One    // -1
+Complex.SwapSignMultiple 4 Complex.One    // +1
+\end{lstlisting}
+
+\subsection{Map extensions}
+
+\begin{lstlisting}
+let m = Map [ ("a", 1); ("b", 2) ]
+m.Keys; m.Values
+\end{lstlisting}
+
+\subsection{Currying utilities}
+
+\begin{lstlisting}
+let addTupled = uncurry add      // (int * int) -> int
+let addCurried = curry addTupled // int -> int -> int
+\end{lstlisting}
+
+
+%%====================================================================
+\section{Grand Finale: Three Encodings, One Molecule}\label{ch:finale}
+
+This script ties every chapter together, encoding H$_2$ with three
+different encodings and comparing the results:
+
+\begin{lstlisting}
+open Encodings
+open System.Numerics
+
+let nModes = 4u
+
+let integrals = Map [
+    ("00", Complex(-1.2563, 0.0))
+    ("11", Complex(-1.2563, 0.0))
+    ("22", Complex(-0.4719, 0.0))
+    ("33", Complex(-0.4719, 0.0))
+    (* two-body integrals omitted for brevity *)
+]
+
+let lookup key =
+    match (key : string).Length with
+    | 2 | 4 -> integrals |> Map.tryFind key
+    | _ -> None
+
+let encoders = [
+    ("Jordan-Wigner",  jordanWignerTerms)
+    ("Bravyi-Kitaev",  bravyiKitaevTerms)
+    ("Ternary Tree",   ternaryTreeTerms)
+]
+
+for (name, encoder) in encoders do
+    let ham = computeHamiltonianWith encoder lookup nModes
+    let terms = ham.DistributeCoefficient.SummandTerms
+    let avgWeight =
+        terms
+        |> Array.averageBy (fun t ->
+            t.Signature
+            |> Seq.filter (fun c -> c <> 'I')
+            |> Seq.length |> float)
+    printfn "%s: %d terms, avg weight %.2f"
+        name terms.Length avgWeight
+\end{lstlisting}
+
+All three Hamiltonians have the same eigenvalues---they represent
+identical physics.  The differences in term count and Pauli weight
+affect measurement cost on real quantum hardware.
+
+
+%%====================================================================
+\section*{Quick Reference}\label{sec:quickref}
+
+\subsection*{Encoding functions}
+
+\begin{center}
+\begin{tabular}{lcl}
+\toprule
+\textbf{Function} & \textbf{Scaling} & \textbf{Best for} \\
+\midrule
+\texttt{jordanWignerTerms} & $O(n)$ & Small systems \\
+\texttt{bravyiKitaevTerms} & $O(\log_2 n)$ & General purpose \\
+\texttt{parityTerms} & $O(n)$ & Parity-natural basis \\
+\texttt{balancedBinaryTreeTerms} & $O(\log_2 n)$ & Binary tree \\
+\texttt{ternaryTreeTerms} & $O(\log_3 n)$ & Best asymptotic \\
+\texttt{encodeOperator} & Varies & Custom scheme \\
+\texttt{encodeWithTernaryTree} & Varies & Custom tree \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection*{Type cheat sheet}
+
+\begin{center}
+\small
+\begin{tabular}{ll}
+\toprule
+\textbf{Type} & \textbf{Represents} \\
+\midrule
+\texttt{Pauli} & $I$, $X$, $Y$, $Z$ \\
+\texttt{Phase} & Exact phase: $+1$, $-1$, $+i$, $-i$ \\
+\texttt{C<'T>} & Coefficient $\times$ operator \\
+\texttt{P<'T>} & Ordered product \\
+\texttt{S<'T>} & Sum of products \\
+\texttt{IxOp<'idx,'op>} & Indexed operator \\
+\texttt{LadderOperatorUnit} & $a^\dagger$ / $a$ / $I$ \\
+\texttt{PauliRegister} & Pauli string + coefficient \\
+\texttt{PauliRegisterSequence} & Sum of Pauli strings \\
+\texttt{EncodingScheme} & Three index-set functions \\
+\texttt{EncodingTree} & Tree shape \\
+\texttt{FenwickTree<'a>} & Immutable binary indexed tree \\
+\texttt{SectorLadderOperatorUnit} & Sector-tagged ladder op \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+
+%%--------------------------------------------------------------------
+\section*{Acknowledgements}
+
+This work is dedicated to Dr.\ Guang Hao Low, whose encouragement to
+study Bravyi--Kitaev encodings motivated the development of this
+framework.
+
+%%--------------------------------------------------------------------
+\bibliography{paper}
+\end{document}

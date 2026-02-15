@@ -1,0 +1,46 @@
+\contentsline {section}{\numberline {1}Hello, Qubit}{3}{section.1}%
+\contentsline {subsection}{\numberline {1.1}Phases without floating point}{3}{subsection.1.1}%
+\contentsline {section}{\numberline {2}Building Expressions: The C\,/\,P\,/\,S Hierarchy}{3}{section.2}%
+\contentsline {subsection}{\numberline {2.1}C --- a single weighted operator}{4}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}P --- an ordered product (tensor product)}{4}{subsection.2.2}%
+\contentsline {subsection}{\numberline {2.3}S --- a sum of products (the Hamiltonian shape)}{4}{subsection.2.3}%
+\contentsline {subsection}{\numberline {2.4}Coefficient hygiene and zero propagation}{4}{subsection.2.4}%
+\contentsline {section}{\numberline {3}Operators on Specific Qubits}{4}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Parsing from strings}{4}{subsection.3.1}%
+\contentsline {section}{\numberline {4}Creation and Annihilation}{5}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Indexed ladder operators}{5}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Product terms}{5}{subsection.4.2}%
+\contentsline {section}{\numberline {5}Normal Ordering: Making Physics Legal}{5}{section.5}%
+\contentsline {subsection}{\numberline {5.1}The algebra is pluggable}{5}{subsection.5.1}%
+\contentsline {subsection}{\numberline {5.2}Bosonic normal ordering}{6}{subsection.5.2}%
+\contentsline {section}{\numberline {6}Your First Encoding}{6}{section.6}%
+\contentsline {subsection}{\numberline {6.1}Jordan--Wigner}{6}{subsection.6.1}%
+\contentsline {subsection}{\numberline {6.2}The Z-chain problem}{6}{subsection.6.2}%
+\contentsline {section}{\numberline {7}Five Encodings, One Interface}{6}{section.7}%
+\contentsline {subsection}{\numberline {7.1}PauliRegister and PauliRegisterSequence}{7}{subsection.7.1}%
+\contentsline {section}{\numberline {8}How Encodings Work Under the Hood}{7}{section.8}%
+\contentsline {subsection}{\numberline {8.1}Majorana decomposition}{7}{subsection.8.1}%
+\contentsline {subsection}{\numberline {8.2}The EncodingScheme record}{7}{subsection.8.2}%
+\contentsline {subsection}{\numberline {8.3}Custom encoding in 5 lines}{7}{subsection.8.3}%
+\contentsline {subsection}{\numberline {8.4}Inspecting Majorana assignments}{7}{subsection.8.4}%
+\contentsline {section}{\numberline {9}Trees and Fenwick Trees}{7}{section.9}%
+\contentsline {subsection}{\numberline {9.1}Why trees?}{7}{subsection.9.1}%
+\contentsline {subsection}{\numberline {9.2}Fenwick Trees}{8}{subsection.9.2}%
+\contentsline {subsection}{\numberline {9.3}Encoding trees}{8}{subsection.9.3}%
+\contentsline {subsection}{\numberline {9.4}Two frameworks}{8}{subsection.9.4}%
+\contentsline {section}{\numberline {10}Building a Real Hamiltonian}{8}{section.10}%
+\contentsline {subsection}{\numberline {10.1}Step 1 --- Define integrals}{8}{subsection.10.1}%
+\contentsline {subsection}{\numberline {10.2}Step 2 --- Coefficient lookup}{8}{subsection.10.2}%
+\contentsline {subsection}{\numberline {10.3}Step 3 --- Compute}{9}{subsection.10.3}%
+\contentsline {subsection}{\numberline {10.4}Step 4 --- Swap the encoding}{9}{subsection.10.4}%
+\contentsline {section}{\numberline {11}Mixed Bosonic--Fermionic Systems}{9}{section.11}%
+\contentsline {subsection}{\numberline {11.1}Sector tagging}{9}{subsection.11.1}%
+\contentsline {subsection}{\numberline {11.2}Canonical block order}{9}{subsection.11.2}%
+\contentsline {subsection}{\numberline {11.3}Full mixed normal ordering}{9}{subsection.11.3}%
+\contentsline {subsection}{\numberline {11.4}Decision guide}{9}{subsection.11.4}%
+\contentsline {subsection}{\numberline {11.5}Common failure modes}{9}{subsection.11.5}%
+\contentsline {section}{\numberline {12}The Utility Belt}{10}{section.12}%
+\contentsline {subsection}{\numberline {12.1}Complex number extensions}{10}{subsection.12.1}%
+\contentsline {subsection}{\numberline {12.2}Map extensions}{10}{subsection.12.2}%
+\contentsline {subsection}{\numberline {12.3}Currying utilities}{10}{subsection.12.3}%
+\contentsline {section}{\numberline {13}Grand Finale: Three Encodings, One Molecule}{10}{section.13}%
