@@ -2,6 +2,14 @@
 
 All notable changes to FockMap will be documented in this file.
 
+## [0.3.1] - 2026-02-15
+
+### 🔧 Maintenance
+
+- chore: standardise on .NET 8 LTS, fix API reference generation
+- docs: restore [0.1.0] changelog entry, add README check to release prompt
+- docs(readme): add cookbook links, remove dead guide references
+
 ## [0.3.0] - 2026-02-15
 
 ### 📚 Documentation

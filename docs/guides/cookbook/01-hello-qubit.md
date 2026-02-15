@@ -11,7 +11,8 @@ Z = \begin{pmatrix}1&0\\0&{-1}\end{pmatrix}$$
 In FockMap they're a simple discriminated union. Let's start a script and play with them:
 
 ```fsharp
-#r "nuget: FockMap"
+// If working from a clone:  #r "src/Encodings/bin/Debug/net8.0/Encodings.dll"
+// If using the NuGet package: #r "nuget: FockMap"
 open Encodings
 open System.Numerics
 
