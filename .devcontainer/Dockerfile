@@ -1,5 +1,5 @@
 # FockMap Development Container
-# Pre-built image: .NET 10 (LTS), Python 3.13, uv, ruff, pyright, fsdocs, LaTeX
+# Pre-built image: .NET 10 + 8.0, Python 3.13, uv, ruff, pyright, fsdocs, LaTeX
 #
 # Multi-arch: builds for linux/amd64 (Windows/Podman) + linux/arm64 (Mac/OrbStack)
 #
@@ -8,7 +8,7 @@
 #
 # Or just open in VS Code / OrbStack — devcontainer.json points here automatically.
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0-noble AS base
+FROM mcr.microsoft.com/dotnet/sdk:10.0-preview-noble AS base
 
 # ── Avoid interactive prompts ───────────────────────────────────
 ENV DEBIAN_FRONTEND=noninteractive
@@ -20,7 +20,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         # LaTeX (full for papers targeting AJP, PRA, JOSS)
         texlive-full \
         # Utilities
-        git curl ca-certificates sudo locales gpg jq \
+        git curl ca-certificates sudo locales gpg \
         # Build tools
         build-essential \
     && locale-gen en_US.UTF-8 \
@@ -41,6 +41,9 @@ RUN curl -sL https://aka.ms/InstallAzureCLIDeb | bash
 
 # ── Azure Developer CLI (azd) ──────────────────────────────────
 RUN curl -fsSL https://aka.ms/install-azd.sh | bash
+
+# ── .NET 8.0 SDK (side-by-side for current TargetFramework) ────
+COPY --from=mcr.microsoft.com/dotnet/sdk:8.0 /usr/share/dotnet /usr/share/dotnet
 
 # ── Non-root user (vscode, matches devcontainer convention) ─────
 # Handle case where GID/UID 1000 may already exist in base image

@@ -233,3 +233,16 @@ docs/**/*.pdf
 !docs/_layouts/
 !docs/_layouts/*.html
 
+# LaTeX build artifacts (papers are rebuilt by CI)
+.research/**/*.aux
+.research/**/*.bbl
+.research/**/*.blg
+.research/**/*.fdb_latexmk
+.research/**/*.fls
+.research/**/*.log
+.research/**/*.out
+.research/**/*.synctex.gz
+.research/**/paperNotes.bib
+.research/**/fockmap-*.pdf
+
+.fake
