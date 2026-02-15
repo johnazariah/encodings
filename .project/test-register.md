@@ -1,6 +1,6 @@
 # Test Register
 
-> **427 tests** | 0 skipped | xUnit + FsCheck (property-based)
+> **497 tests** | 0 skipped | xUnit + FsCheck (property-based)
 >
 > Last verified: 2026-02-15 against `v0.3.1`
 
@@ -443,6 +443,95 @@ Balanced binary and ternary tree encodings, plus cross-encoding validation.
 
 ---
 
+## 12. Bosonic-to-Qubit Encodings — `BosonicEncoding.fs` (70 tests)
+
+Maps truncated bosonic ladder operators (b†, b) to qubit Pauli strings
+via three encoding strategies: Unary (one-hot), Standard Binary, and
+Gray Code. Reference: Sawaya et al., arXiv:1909.05820.
+
+### 12.1 Helper Functions (10 tests)
+
+| # | What is tested | Style |
+|---|----------------|-------|
+| 1 | `ceilLog2` returns correct ⌈log₂ d⌉ for d = 1, 2, 3, 4, 5, 8, 9, 16 | Theory (8 cases) |
+| 2 | `grayCodeBasisMap` produces correct Gray code for n = 0–7 | Theory (8 cases) |
+
+### 12.2 Matrix Construction (4 tests)
+
+| # | What is tested | Style |
+|---|----------------|-------|
+| 1 | `bosonicCreationMatrix` d=2 has (b†)₁₀ = 1 and all other entries zero | Fact |
+| 2 | `bosonicCreationMatrix` d=4 has √1, √2, √3 on the sub-diagonal | Fact |
+| 3 | `bosonicAnnihilationMatrix` equals the transpose of creation matrix for d = 2, 3, 4, 8 | Fact |
+| 4 | `bosonicNumberMatrix` d=4 is diag(0, 1, 2, 3) with all off-diagonals zero | Fact |
+
+### 12.3 Pauli Decomposition Infrastructure (4 tests)
+
+| # | What is tested | Style |
+|---|----------------|-------|
+| 1 | `allPauliStrings` q=1 enumerates exactly 4 strings | Fact |
+| 2 | `allPauliStrings` q=2 enumerates exactly 16 strings | Fact |
+| 3 | `decomposeIntoPaulis` of the 2×2 identity gives coefficient-1 I term | Fact |
+| 4 | `decomposeIntoPaulis` of σ⁺ gives ½X and −½iY | Fact |
+
+### 12.4 Edge Cases — All Encodings (9 tests)
+
+| # | What is tested | Style |
+|---|----------------|-------|
+| 1 | Identity operator returns empty sequence (unary, binary, Gray) | Theory (3 cases) |
+| 2 | d=1 (trivial Fock space) returns empty sequence (unary, binary, Gray) | Theory (3 cases) |
+| 3 | Mode index out of range returns empty sequence (unary, binary, Gray) | Theory (3 cases) |
+
+### 12.5 Unary Encoding (7 tests)
+
+| # | What is tested | Style |
+|---|----------------|-------|
+| 1 | d=2 creation has exactly 4 weight-2 terms with correct coefficients (XX, YY, XY, YX) | Fact |
+| 2 | d=2 annihilation has conjugate signs vs creation | Fact |
+| 3 | d=2 creation and annihilation XY coefficients are negatives of each other | Fact |
+| 4 | d=3 creation has 8 terms (4 per transition), all weight ≤ 2 | Fact |
+| 5 | d=3 second transition (1→2) scaled by √2/4 | Fact |
+| 6 | Two modes d=2: mode 0 acts on qubits 0-1, mode 1 on qubits 2-3 (register width = 4) | Fact |
+| 7 | Max Pauli weight is ≤ 2 for d = 2, 3, 4, 5 | Theory (4 cases) |
+
+### 12.6 Binary Encoding (8 tests)
+
+| # | What is tested | Style |
+|---|----------------|-------|
+| 1 | d=2 creation equals σ⁺ = ½X − ½iY | Fact |
+| 2 | d=2 annihilation equals σ⁻ = ½X + ½iY | Fact |
+| 3 | d=4 uses 2 qubits per mode | Fact |
+| 4 | d=4 creation has multiple terms with max weight ≤ 2 | Fact |
+| 5 | Max Pauli weight is ≤ ⌈log₂ d⌉ for d = 2, 4, 8 | Theory (3 cases) |
+| 6 | d=2 b†b product gives the number operator ½I − ½Z | Fact |
+| 7 | Two modes d=2 have disjoint qubit support | Fact |
+| 8 | `binaryQubitsPerMode` equals ⌈log₂ d⌉ for d = 2, 3, 4, 8 | Theory (4 cases) |
+
+### 12.7 Gray Code Encoding (5 tests)
+
+| # | What is tested | Style |
+|---|----------------|-------|
+| 1 | d=2 matches binary (Gray code is trivial at d=2) | Fact |
+| 2 | d=4 creation uses same number of qubits as binary | Fact |
+| 3 | d=4 differs from binary d=4 (different basis mapping produces different coefficients) | Fact |
+| 4 | Max Pauli weight is ≤ ⌈log₂ d⌉ for d = 2, 4, 8 | Theory (3 cases) |
+
+### 12.8 Term Counts and Qubit Counts (6 tests)
+
+| # | What is tested | Style |
+|---|----------------|-------|
+| 1 | Unary term count is 4(d−1) for d = 2, 3, 4 | Theory (3 cases) |
+| 2 | `unaryQubitsPerMode` equals d for d = 2, 4, 8 | Theory (3 cases) |
+
+### 12.9 Embedding and Roundtrip (3 tests)
+
+| # | What is tested | Style |
+|---|----------------|-------|
+| 1 | `embedMatrix` with identity mapping preserves the matrix | Fact |
+| 2 | `embedMatrix` with Gray mapping for d=4 rearranges entries correctly (verified element-by-element) | Fact |
+
+---
+
 ## Coverage Summary by Area
 
 | Area | Tests | Technique | Confidence |
@@ -462,12 +551,14 @@ Balanced binary and ternary tree encodings, plus cross-encoding validation.
 | Tree-based encodings | 26 | Fact + Theory + anti-commutation + cross-encoding | **High** — includes CAR verification and weight bounds |
 | Hamiltonian construction | 3 | Theory + cross-validation | **Medium** — covers core path; could add BK/Parity Hamiltonians |
 | Mixed systems (fermion + boson) | 5 | Fact-based | **Medium** — covers canonical paths; larger mixed expressions untested |
+| Bosonic-to-qubit encodings | 70 | Theory + Fact + cross-encoding | **High** — matrix construction, Pauli decomposition, weight bounds, multi-mode embedding, number-operator roundtrip |
 
 ### What is *not* tested
 
 - **Performance / scaling**: No benchmarks or regression tests for execution time.
 - **Large-n anti-commutation for BK and Parity**: Anti-commutation relations are verified for tree encodings but not for Bravyi-Kitaev or Parity at n > 2.
 - **Hamiltonian with real integrals**: The Hamiltonian builder is tested with unit coefficients only, not with physically meaningful H₂ integrals.
-- **Bosonic encoding to Pauli strings**: Bosonic algebra is tested at the ladder-operator level; there is no bosonic ↔ qubit encoding.
+- **Bosonic anti-commutation verification**: Bosonic encodings are tested for correct Pauli decomposition and weight bounds, but [b, b†] = I is not verified at the Pauli level for all encodings.
+- **Large-cutoff bosonic convergence**: Truncation encodings are tested up to d = 8; convergence behaviour at large d is not benchmarked.
 - **Error messages / diagnostics**: Invalid-input tests verify `None`/empty returns but do not check specific error text.
 - **Serialisation round-trips at encoding level**: String parsing is tested for ladder operators and Pauli registers, but not for full encoding pipelines.
