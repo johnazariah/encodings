@@ -79,19 +79,30 @@ In `CITATION.cff`, update:
 - `version:` to the new version
 - `date-released:` to today's date (YYYY-MM-DD)
 
-### Step 6: Commit, tag, and push
+### Step 6: Verify README freshness
+
+Before committing, review `README.md` for accuracy:
+
+1. **Dead links**: Check that every docs link points to a page that still exists (e.g., guides that were merged or deleted).
+2. **New content**: If new documentation tiers were added (cookbook chapters, theory pages, labs), make sure they appear in the "Where to Start" and "Documentation" sections.
+3. **Feature table**: If the feature comparison table or "Available Encodings" table is out of date, update it.
+4. **Examples table**: Verify that all scripts listed in the "Examples" section still exist in `examples/`.
+
+If any changes are needed, edit `README.md` and include it in the release commit.
+
+### Step 7: Commit, tag, and push
 
 Run these commands in sequence:
 
 ```bash
-git add src/Encodings/Encodings.fsproj CHANGELOG.md CITATION.cff
+git add src/Encodings/Encodings.fsproj CHANGELOG.md CITATION.cff README.md
 git commit -m "chore(release): vX.Y.Z"
 git tag -a "vX.Y.Z" -m "Release vX.Y.Z"
 git push origin HEAD
 git push origin "vX.Y.Z"
 ```
 
-### Step 7: Monitor CI
+### Step 8: Monitor CI
 
 After pushing the tag, monitor the release workflow:
 

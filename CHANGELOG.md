@@ -49,3 +49,7 @@ All notable changes to FockMap will be documented in this file.
 ### 🔧 Maintenance
 
 - Refactor complete - all existing tests pass!
+
+## [0.1.0] - 2026-02-14
+
+Initial release.
