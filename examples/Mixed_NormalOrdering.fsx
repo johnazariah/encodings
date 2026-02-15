@@ -3,7 +3,7 @@
 // Demonstrates canonical block ordering (fermions left, bosons right)
 // and sector-specific CAR/CCR rewrites via constructMixedNormalOrdered.
 
-#r "../src/Encodings/bin/Debug/net10.0/Encodings.dll"
+#r "../src/Encodings/bin/Debug/net8.0/Encodings.dll"
 
 open Encodings
 

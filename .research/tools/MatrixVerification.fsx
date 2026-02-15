@@ -7,7 +7,7 @@
 /// Also verifies against the exact FCI eigenvalues obtained by directly
 /// diagonalising the fermionic Hamiltonian in the occupation-number basis.
 
-#r "../../src/Encodings/bin/Debug/net10.0/Encodings.dll"
+#r "../../src/Encodings/bin/Debug/net8.0/Encodings.dll"
 
 open System
 open System.Numerics

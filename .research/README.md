@@ -23,7 +23,7 @@ fermion-to-qubit encodings for quantum simulation.
 
 ## Dependencies
 
-All scripts reference the compiled library at `../Encodings/bin/Debug/net10.0/Encodings.dll`.
+All scripts reference the compiled library at `../Encodings/bin/Debug/net8.0/Encodings.dll`.
 Build the library first:
 
 ```bash

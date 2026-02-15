@@ -5,7 +5,7 @@
 //   2) fermionic subsectors are encoded to Pauli strings,
 //   3) bosonic subsectors remain symbolic for separate truncation/encoding.
 
-#r "../src/Encodings/bin/Debug/net10.0/Encodings.dll"
+#r "../src/Encodings/bin/Debug/net8.0/Encodings.dll"
 
 open System.Numerics
 open Encodings

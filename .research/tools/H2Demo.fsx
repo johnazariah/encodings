@@ -15,7 +15,7 @@
 ///   Seeley, Richard, Love — arXiv:1208.5986 (integral coefficients)
 ///   OpenFermion hydrogen_integration_test.py (cross-validation)
 
-#r "Encodings/bin/Debug/net10.0/Encodings.dll"
+#r "Encodings/bin/Debug/net8.0/Encodings.dll"
 
 open System
 open System.Numerics

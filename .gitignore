@@ -31,6 +31,7 @@ README.pdf
 
 # Generated documentation
 docs-output/
+api-output/
 
 # Roslyn cache directories
 *.ide/
@@ -230,6 +231,9 @@ tls-secret.*.yaml
 
 docs/**/*.html
 docs/**/*.pdf
+docs/content/fsdocs-default.css
+docs/content/fsdocs-*.js
+docs/content/img/github-pages-settings.png
 !docs/_layouts/
 !docs/_layouts/*.html
 

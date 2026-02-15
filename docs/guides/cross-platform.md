@@ -1,12 +1,12 @@
 # Cross-Platform Installation Guide
 
-FockMap runs on .NET 10 (LTS), Microsoft's open-source, cross-platform runtime. This guide covers installation on Windows, macOS, and Linux, plus container-based workflows.
+FockMap runs on .NET 8 (LTS), Microsoft's open-source, cross-platform runtime. This guide covers installation on Windows, macOS, and Linux, plus container-based workflows.
 
 ## About the Platform
 
-### .NET 10
+### .NET 8
 
-.NET 10 is Microsoft's Long-Term Support (LTS) release of the unified .NET platform. Key characteristics:
+.NET 8 is Microsoft's Long-Term Support (LTS) release of the unified .NET platform. Key characteristics:
 
 - **Open source**: MIT licensed, developed on GitHub
 - **Cross-platform**: Native support for Windows, macOS, and Linux
@@ -37,13 +37,13 @@ FockMap is written in F#, a functional-first language on .NET:
 ```powershell
 # Download from https://dotnet.microsoft.com/download
 # Or use winget:
-winget install Microsoft.DotNet.SDK.10
+winget install Microsoft.DotNet.SDK.8
 ```
 
 Verify installation:
 ```powershell
 dotnet --version
-# Should output: 10.0.x
+# Should output: 8.0.x
 ```
 
 ### macOS
@@ -63,7 +63,7 @@ brew install dotnet-sdk
 **Verification:**
 ```bash
 dotnet --version
-# Should output: 10.0.x
+# Should output: 8.0.x
 ```
 
 **Note for Apple Silicon (M1/M2/M3):** The .NET SDK provides native ARM64 builds. Homebrew automatically selects the correct architecture.
@@ -80,19 +80,19 @@ rm packages-microsoft-prod.deb
 
 # Install SDK
 sudo apt-get update
-sudo apt-get install -y dotnet-sdk-10.0
+sudo apt-get install -y dotnet-sdk-8.0
 ```
 
 **Fedora/RHEL (dnf)**
 
 ```bash
-sudo dnf install dotnet-sdk-10.0
+sudo dnf install dotnet-sdk-8.0
 ```
 
 **Snap (distribution-agnostic)**
 
 ```bash
-sudo snap install dotnet-sdk --classic --channel=10.0
+sudo snap install dotnet-sdk --classic --channel=8.0
 ```
 
 **Verification:**
@@ -105,7 +105,7 @@ dotnet --version
 For reproducible builds and CI/CD, use Microsoft's official .NET SDK image:
 
 ```dockerfile
-FROM mcr.microsoft.com/dotnet/sdk:10.0
+FROM mcr.microsoft.com/dotnet/sdk:8.0
 
 WORKDIR /app
 COPY . .
@@ -114,16 +114,16 @@ RUN dotnet build -c Release
 
 **Interactive development:**
 ```bash
-docker run -it --rm -v $(pwd):/app -w /app mcr.microsoft.com/dotnet/sdk:10.0 bash
+docker run -it --rm -v $(pwd):/app -w /app mcr.microsoft.com/dotnet/sdk:8.0 bash
 ```
 
 **Available image variants:**
 
 | Image | Size | Use Case |
 |-------|------|----------|
-| `mcr.microsoft.com/dotnet/sdk:10.0` | ~800MB | Full SDK for building |
-| `mcr.microsoft.com/dotnet/runtime:10.0` | ~200MB | Running compiled apps |
-| `mcr.microsoft.com/dotnet/sdk:10.0-alpine` | ~500MB | Smaller builds, musl libc |
+| `mcr.microsoft.com/dotnet/sdk:8.0` | ~800MB | Full SDK for building |
+| `mcr.microsoft.com/dotnet/runtime:8.0` | ~200MB | Running compiled apps |
+| `mcr.microsoft.com/dotnet/sdk:8.0-alpine` | ~500MB | Smaller builds, musl libc |
 
 ## Building FockMap
 
@@ -145,7 +145,7 @@ dotnet build -c Release
 
 ## Performance Considerations
 
-.NET 10 uses a tiered JIT (Just-In-Time) compiler that optimizes code progressively:
+.NET 8 uses a tiered JIT (Just-In-Time) compiler that optimizes code progressively:
 
 1. **Tier 0**: Fast initial compilation, minimal optimization
 2. **Tier 1**: Recompiles hot paths with full optimizations

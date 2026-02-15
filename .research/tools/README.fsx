@@ -7,7 +7,7 @@
 ///   4. EncodingSpace.fsx       — random tree generation, monotonicity census
 ///   5. FigureData.fsx          — data generation for paper figures
 
-#r "../../src/Encodings/bin/Debug/net10.0/Encodings.dll"
+#r "../../src/Encodings/bin/Debug/net8.0/Encodings.dll"
 
 // This file is a placeholder. Each tool will be a separate .fsx script.
 // Run `dotnet build ../../Encodings/Encodings.fsproj` before using any tool.

@@ -15,7 +15,7 @@
 ///   Binary Tree    :  O(log n) max weight
 ///   Ternary Tree   :  O(log₃n) max weight — optimal!
 
-#r "Encodings/bin/Debug/net10.0/Encodings.dll"
+#r "Encodings/bin/Debug/net8.0/Encodings.dll"
 
 open System
 open System.Diagnostics

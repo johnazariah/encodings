@@ -37,7 +37,7 @@ module SwapTrackingSort =
     /// <example>
     /// <code>
     /// // Create a sort that counts total swaps
-    /// let swapCounter = SwapTrackingSort((<=), 0, fun pos count -> count + pos)
+    /// let swapCounter = SwapTrackingSort((&lt;=), 0, fun pos count -&gt; count + pos)
     /// let (sorted, totalSwaps) = swapCounter.Sort 0 [| 3; 1; 2 |]
     /// // sorted = [| 1; 2; 3 |], totalSwaps = 2
     /// </code>

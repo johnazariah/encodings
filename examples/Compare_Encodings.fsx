@@ -10,7 +10,7 @@
 ///
 /// We encode a single creation operator a†₂ on 8 modes and compare results.
 
-#r "../src/Encodings/bin/Debug/net10.0/Encodings.dll"
+#r "../src/Encodings/bin/Debug/net8.0/Encodings.dll"
 
 open Encodings
 
