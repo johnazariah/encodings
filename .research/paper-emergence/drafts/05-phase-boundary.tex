@@ -1,0 +1,123 @@
+% drafts/05-phase-boundary.tex — The Structural Phase Boundary
+%
+% Target length: ~3 pages (two-column PRA)
+% Subsections: 5.1 Monotonicity, 5.2 Theorem 3, 5.3 Failure mode,
+%              5.4 Phase diagram, 5.5 Universality classes
+
+%%====================================================================
+\subsection{The monotonicity property}
+\label{sec:pb-mono}
+
+\begin{definition}[Index-monotonic tree]
+\label{def:monotonic}
+A labelled rooted tree $T$ on $[n]$ is \emph{index-monotonic} if for
+every vertex $v$ and every ancestor $u$ of $v$,
+$\mathrm{label}(u) > \mathrm{label}(v)$.
+\end{definition}
+
+Equivalently, on every root-to-leaf path the labels strictly decrease.
+The Fenwick tree is always index-monotonic; a balanced binary search
+tree on $n = 8$ vertices is not (the root, labelled~4, has a child
+labelled~6).
+
+%%====================================================================
+\subsection{The monotonicity constraint}
+\label{sec:pb-theorem}
+
+\begin{theorem}[Monotonicity constraint]
+\label{thm:monotonicity}
+Construction~A (the index-set method, \cref{sec:te-indexset}) produces
+Majorana operators satisfying the CAR if and only if the tree $T$ is
+index-monotonic.
+\end{theorem}
+
+\begin{proof}[Proof of necessity]
+Suppose $T$ is non-monotonic: there exists a node~$j$ with an
+ancestor~$a$ such that $a < j$.  In the computation of $\Rset{j}$,
+node~$a$ contributes children with index $< j$ that lie on the
+root-to-$j$ path.  This contaminates the $Z$~assignments in
+$d_j$~\eqref{eq:dj-indexset}: the set
+$(\Pset{j} \oplus \Occ{j}) \setminus \{j\}$ acquires nodes that also
+appear in $\Uset{k}$ for some other mode~$k$, causing
+$\acomm{d_j}{d_k} \neq 0$.
+
+\textit{Explicit counterexample.}  Consider the balanced ternary tree
+on $n = 8$ nodes.  Node~7 has parent~6, violating monotonicity
+($6 < 7$).  A direct computation (detailed in
+\cref{app:monotonicity-counterexample}) shows
+$\acomm{d_6}{d_7} \neq 0$.
+\end{proof}
+
+\begin{proof}[Proof of sufficiency (sketch)]
+If every ancestor of~$j$ has label $> j$, then $\Rset{j}$ contains
+only nodes in sibling subtrees disjoint from the root-to-$j$ path.
+The $Z$~assignments in $c_j$ and $d_j$ act on non-overlapping qubit
+subsets for distinct modes, and anticommutation follows from the
+orthogonality of these subsets.  A complete proof by induction on tree
+depth is given in \cref{app:weight-proof}.
+\end{proof}
+
+%%====================================================================
+\subsection{The failure mode}
+\label{sec:pb-failure}
+
+When monotonicity fails, the encoding breaks in a specific and
+detectable way:
+\begin{enumerate}
+  \item The remainder set $\Rset{j}$ ``leaks'' onto the root-to-$j$
+        path.
+  \item The $Z$~assignments in $d_j$ interfere with those in $c_k$ for
+        other modes.
+  \item The anticommutation relation $\acomm{c_i}{d_j} = 0$
+        ($i \neq j$) is violated.
+  \item The encoded Hamiltonian has a \emph{wrong} eigenspectrum.
+\end{enumerate}
+
+This provides a computational diagnostic.  Given any tree and
+Construction~A, one computes
+\begin{equation}
+  D(T) = \max_{i \neq j} \|\acomm{\an{i}}{\ad{j}}\|.
+\end{equation}
+If $D(T) = 0$ the CAR is satisfied; if $D(T) > 0$ the tree is
+non-monotonic and only Construction~B may be used.
+
+%%====================================================================
+\subsection{The phase diagram}
+\label{sec:pb-phase}
+
+The space of labelled rooted trees on $[n]$ has cardinality $n^{n-1}$.
+Let $M(n)$ denote the number of index-monotonic trees.
+
+\begin{conjecture}
+\label{conj:monotonic-fraction}
+$|M(n)| / n^{n-1} \to 0$ as $n \to \infty$.  Specifically,
+$|M(n)| / n^{n-1} = O(c^n / n!)$ for some constant $c$.
+\end{conjecture}
+
+As the system size grows, the fraction of encodings accessible to the
+algebraic construction vanishes.  The ``generic'' encoding requires the
+geometric (path-based) method.
+
+% TODO: Figure — monotonic fraction vs. n from exhaustive enumeration
+% (n = 2..6) and random sampling (n = 7..20).
+
+%%====================================================================
+\subsection{Two universality classes}
+\label{sec:pb-classes}
+
+The monotonicity boundary partitions encodings into two universality
+classes:
+\begin{description}
+  \item[Algebraic (monotonic):] Compact index-set formulas,
+    $O(\log n)$ per-operator computation via bit-twiddling.
+    Fenwick tree (BK) is the canonical member.
+  \item[Geometric (non-monotonic):] Explicit tree traversal required;
+    more structural freedom, fewer constraints.
+    Balanced ternary tree (optimal weight) lives here.
+\end{description}
+
+The path-based construction is \emph{universal} — it works in both
+classes — but the index-set construction provides computational
+shortcuts when monotonicity holds.  The geometric class may be viewed as
+the ``disordered phase'' of the encoding space: fewer structural
+constraints, richer phenomenology, but no compact algebraic shortcut.

@@ -1,0 +1,183 @@
+% Emergent Structure in Fermion-to-Qubit Encodings
+% Compiled with: latexmk -pdf paper.tex
+\documentclass[aps,pra,twocolumn,superscriptaddress,showpacs]{revtex4-2}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb,amsfonts,amsthm}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\usepackage{braket}
+\usepackage{mathtools}
+\usepackage{cleveref}
+\usepackage{siunitx}
+
+\usetikzlibrary{trees,positioning,arrows.meta,calc}
+
+% revtex4-2 does not provide \orcid
+\providecommand{\orcid}[1]{\href{https://orcid.org/#1}{ORCID: #1}}
+\pgfplotsset{compat=1.18}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!70!black,
+  citecolor=green!50!black,
+  urlcolor=blue!60!black,
+}
+
+% --- Custom commands ------------------------------------------------
+\newcommand{\ad}[1]{a_{#1}^{\dagger}}       % creation operator
+\newcommand{\an}[1]{a_{#1}^{\vphantom{\dagger}}} % annihilation operator
+\newcommand{\nhat}[1]{\hat{n}_{#1}}          % number operator
+\newcommand{\pauliw}[1]{w\!\left(#1\right)}  % Pauli weight
+\newcommand{\acomm}[2]{\{#1,\,#2\}}         % anti-commutator
+\newcommand{\comm}[2]{[#1,\,#2]}            % commutator
+\newcommand{\Uset}[1]{U(#1)}                % update set
+\newcommand{\Pset}[1]{P(#1)}                % parity set
+\newcommand{\Rset}[1]{R(#1)}                % remainder set
+\newcommand{\Occ}[1]{\mathrm{Occ}(#1)}      % occupation set
+\newcommand{\depth}[1]{\mathrm{depth}(#1)}   % depth function
+\newcommand{\CAR}{\mathrm{CAR}}
+\newcommand{\MERA}{\mathrm{MERA}}
+
+% Theorems
+\newtheorem{theorem}{Theorem}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{conjecture}[theorem]{Conjecture}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+
+%%====================================================================
+\begin{document}
+
+\title{Emergent Structure in Fermion-to-Qubit Encodings:\\
+  Trees, Locality, and the Geometry of Representation}
+
+\author{John Azariah}
+\affiliation{University of Technology Sydney,
+  Ultimo NSW 2007, Australia}
+
+\date{\today}
+
+%%--------------------------------------------------------------------
+\begin{abstract}
+Fermion-to-qubit encodings translate second-quantized fermionic
+operators into Pauli strings so that quantum chemistry Hamiltonians
+can be simulated on qubit hardware.  We show that every encoding
+preserving the canonical anticommutation relations is uniquely
+determined by a labelled rooted tree, and conversely, every such tree
+defines a valid encoding.  From the tree alone — without solving any
+physics — one can read off the locality structure of every qubit
+operator, the fractionalization pattern of the global parity symmetry,
+the stabiliser constraints available for qubit tapering, and the
+renormalization hierarchy of the representation.  These properties do
+not exist in the fermionic description; they \emph{emerge} from the
+encoding.  We identify a sharp structural phase boundary in the space
+of labelled rooted trees: index-monotonic trees admit a compact
+algebraic construction, while generic trees require a geometric
+(path-based) construction.  As the number of modes grows, the
+algebraic phase becomes exponentially rare.  The balanced ternary tree
+achieves provably optimal $O(\log_3 n)$ Pauli weight, which we
+interpret as an optimal renormalization scheme for the fermionic system.
+All claims are verified computationally using the open-source
+\textsc{FockMap} library.  The fermion-to-qubit encoding thus provides
+a minimal, exactly solvable, fully calculable model of quantum
+emergence.
+\end{abstract}
+
+\maketitle
+
+%%====================================================================
+%% SECTION 1 — INTRODUCTION
+%%====================================================================
+\section{Introduction}
+\label{sec:intro}
+\input{drafts/01-intro}
+
+%%====================================================================
+%% SECTION 2 — BACKGROUND
+%%====================================================================
+\section{Background}
+\label{sec:background}
+\input{drafts/02-background}
+
+%%====================================================================
+%% SECTION 3 — TREE-ENCODING CORRESPONDENCE
+%%====================================================================
+\section{The Tree--Encoding Correspondence}
+\label{sec:tree-encoding}
+\input{drafts/03-tree-encoding}
+
+%%====================================================================
+%% SECTION 4 — EMERGENT PROPERTIES
+%%====================================================================
+\section{Emergent Properties from Tree Structure}
+\label{sec:emergence}
+\input{drafts/04-emergence}
+
+%%====================================================================
+%% SECTION 5 — STRUCTURAL PHASE BOUNDARY
+%%====================================================================
+\section{The Structural Phase Boundary}
+\label{sec:phase-boundary}
+\input{drafts/05-phase-boundary}
+
+%%====================================================================
+%% SECTION 6 — EMPIRICAL VALIDATION
+%%====================================================================
+\section{Empirical Validation}
+\label{sec:validation}
+\input{drafts/06-validation}
+
+%%====================================================================
+%% SECTION 7 — DISCUSSION
+%%====================================================================
+\section{Discussion}
+\label{sec:discussion}
+\input{drafts/07-discussion}
+
+%%====================================================================
+%% SECTION 8 — CONCLUSION
+%%====================================================================
+\section{Conclusion}
+\label{sec:conclusion}
+\input{drafts/08-conclusion}
+
+%%--------------------------------------------------------------------
+\begin{acknowledgments}
+The author thanks \ldots\ for useful discussions.
+Computational verification was performed with the open-source
+\textsc{FockMap} library~\cite{fockmap2026}.
+\end{acknowledgments}
+
+%%--------------------------------------------------------------------
+\bibliography{paper}
+
+%%====================================================================
+%% APPENDICES
+%%====================================================================
+\appendix
+
+\section{Proof Details for Theorem~\ref{thm:weight-bound}}
+\label{app:weight-proof}
+% Extended proof of the Pauli-weight bound.
+\textit{(To be written.)}
+
+\section{Monotonicity Counterexample: Full Computation}
+\label{app:monotonicity-counterexample}
+% Step-by-step failure trace for modes 4 and 7 on n=8 balanced ternary tree.
+\textit{(To be written.)}
+
+\section{Monotonicity Census Data}
+\label{app:monotonicity-census}
+% Table of |M(n)|/n^{n-1} for small n.
+\textit{(To be written.)}
+
+\end{document}

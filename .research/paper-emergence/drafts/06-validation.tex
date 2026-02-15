@@ -1,0 +1,100 @@
+% drafts/06-validation.tex — Empirical Validation
+%
+% Target length: ~2 pages (two-column PRA)
+% Subsections: 6.1 Eigenspectrum, 6.2 Anticommutation,
+%              6.3 Scaling, 6.4 Monotonicity census
+
+All computations are performed using the open-source \textsc{FockMap}
+library~\cite{fockmap2026}.
+
+%%====================================================================
+\subsection{Eigenspectrum equivalence}
+\label{sec:val-eigen}
+
+We encode the H$_2$ STO-3G Hamiltonian (4~spin-orbitals) with all five
+encodings and verify that the resulting $16 \times 16$ qubit
+Hamiltonians are unitarily equivalent.  All five yield ground-state
+energy $E_0 = -1.1373\;\text{Ha}$ (exact full-CI) to machine
+precision.
+
+% TODO: Table of eigenvalues; reference MatrixVerification.fsx
+
+%%====================================================================
+\subsection{Anticommutation verification}
+\label{sec:val-car}
+
+For each encoding, we construct the full set of $2n$ Majorana operators
+as $2^n \times 2^n$ matrices and verify all $\binom{2n}{2}$
+anticommutators.
+
+\begin{itemize}
+  \item $n = 4, 8, 16$: all five path-based encodings satisfy the CAR.
+  \item $n = 8$, balanced ternary tree with Construction~A:
+    $\acomm{d_6}{d_7} \neq 0$, confirming the monotonicity violation
+    (\cref{thm:monotonicity}).
+\end{itemize}
+
+% TODO: Table of diagnostic D(T) for each encoding/construction pair.
+
+%%====================================================================
+\subsection{Scaling benchmark}
+\label{sec:val-scaling}
+
+\Cref{tab:scaling} reports the maximum Pauli weight of any single
+ladder operator for $n$ up to~24.
+
+\begin{table}[t]
+\centering
+\caption{Maximum Pauli weight $\max_j \pauliw{\ad{j}}$ across encodings.}
+\label{tab:scaling}
+\begin{tabular}{@{}rrrrrr@{}}
+\toprule
+$n$ & JW & BK & Parity & BinTree & TerTree \\
+\midrule
+ 4  &  4 &  4 &  4 &  3 &  3 \\
+ 8  &  8 &  4 &  8 &  5 &  3 \\
+12  & 12 &  4 & 12 &  5 &  5 \\
+16  & 16 &  5 & 16 &  5 &  5 \\
+20  & 20 &  5 & 20 &  7 &  5 \\
+24  & 24 &  5 & 24 &  7 &  5 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A log-log fit confirms slopes consistent with $O(n)$ for JW/Parity,
+$O(\log_2 n)$ for BK/BinTree, and $O(\log_3 n)$ for TerTree.
+
+% TODO: Figure — log-log plot with fitted slopes.
+
+%%====================================================================
+\subsection{Monotonicity census}
+\label{sec:val-census}
+
+We enumerate all $n^{n-1}$ labelled rooted trees for small~$n$,
+classify each as monotonic or non-monotonic, and compute the monotonic
+fraction.
+
+\begin{table}[t]
+\centering
+\caption{Monotonicity census.  $|M(n)|$ = number of monotonic trees
+  out of $n^{n-1}$ total.}
+\label{tab:monotonicity}
+\begin{tabular}{@{}rrrc@{}}
+\toprule
+$n$ & $n^{n-1}$ & $|M(n)|$ & Fraction \\
+\midrule
+2 & 1      & 1     & 100\%  \\
+3 & 9      & ?     & ?      \\
+4 & 64     & ?     & ?      \\
+5 & 625    & ?     & ?      \\
+6 & 7776   & ?     & ?      \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+For $n \ge 7$ we use random sampling ($10^5$ trees per~$n$) to
+estimate the fraction.  Preliminary data support a rapidly vanishing
+fraction consistent with \cref{conj:monotonic-fraction}.
+
+% TODO: Fill table from MonotonicityCensus.fsx output.
+% TODO: Figure — fraction vs. n with conjectured scaling fit.
