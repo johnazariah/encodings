@@ -25,7 +25,7 @@ making this analysis crucial for choosing the right encoding.
 | Ternary Tree      | O(log₃ n)    | O(log n)      |
 *)
 
-#r "../../src/Encodings/bin/Debug/net8.0/Encodings.dll"
+#r "../../src/Encodings/bin/Release/net8.0/Encodings.dll"
 
 open Encodings
 open System

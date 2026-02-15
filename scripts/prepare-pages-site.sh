@@ -10,7 +10,9 @@ rm -rf api-output docs/reference
 dotnet build src/Encodings/Encodings.fsproj --configuration Release
 
 # Generate API reference docs
-dotnet fsdocs build --output api-output --parameters \
+dotnet fsdocs build --output api-output \
+  --properties Configuration=Release \
+  --parameters \
   root /encodings/ \
   fsdocs-logo-src content/img/fockmap-logo.svg \
   fsdocs-favicon-src content/img/fockmap-icon.svg \
