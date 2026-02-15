@@ -386,4 +386,4 @@ The encoding step is where JW, BK, and tree-based methods live. They all produce
 
 ---
 
-*Next steps: Try encoding a real molecule in the [H₂ lab](../labs/02-h2-molecule.fsx) or compare encodings interactively in the [comparison lab](../labs/03-compare-encodings.fsx).*
+*Next steps: Try encoding a real molecule in the [H₂ lab](../labs/02-h2-molecule.html) or compare encodings interactively in the [comparison lab](../labs/03-compare-encodings.html).*

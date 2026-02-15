@@ -60,7 +60,7 @@ Written in [F#](https://fsharp.org/), fully open-source under the [F# Software F
 - **Start here:** [Library Cookbook](guides/cookbook/index.html) — every type and function, step by step
 - **Molecules → qubits:** [From Molecules to Qubits](from-molecules-to-qubits/index.html) — complete H₂ pipeline
 - **Theory first:** [Why Encodings?](theory/01-why-encodings.html)
-- **Hands-on first:** [Your First Encoding](labs/01-first-encoding.fsx)
+- **Hands-on first:** [Your First Encoding](labs/01-first-encoding.html)
 - **Library internals:** [Architecture Guide](guides/architecture.html)
 - **API Reference:** [All types and functions](reference/index.html)
 
@@ -86,12 +86,12 @@ A step-by-step guide using H₂ as a worked example.
 - [Mixed Systems](theory/07-mixed-systems.html) — Canonical sector ordering and hybrid workflows
 
 ### Interactive Labs
-- [First Encoding](labs/01-first-encoding.fsx) — Encode your first operator (5 min)
-- [H₂ Molecule](labs/02-h2-molecule.fsx) — Full molecular Hamiltonian
-- [Compare Encodings](labs/03-compare-encodings.fsx) — Side-by-side comparison
-- [Custom Encoding](labs/04-custom-encoding.fsx) — Define your own scheme
-- [Custom Tree](labs/05-custom-tree.fsx) — Build tree-based encodings
-- [Scaling Analysis](labs/06-scaling.fsx) — Pauli weight scaling with system size
+- [First Encoding](labs/01-first-encoding.html) — Encode your first operator (5 min)
+- [H₂ Molecule](labs/02-h2-molecule.html) — Full molecular Hamiltonian
+- [Compare Encodings](labs/03-compare-encodings.html) — Side-by-side comparison
+- [Custom Encoding](labs/04-custom-encoding.html) — Define your own scheme
+- [Custom Tree](labs/05-custom-tree.html) — Build tree-based encodings
+- [Scaling Analysis](labs/06-scaling.html) — Pauli weight scaling with system size
 
 ### Guides
 - [Library Cookbook](guides/cookbook/index.html) — Every type and function, step by step
