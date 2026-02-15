@@ -103,6 +103,11 @@ Current coverage is 96.51\% line and 86.94\% branch on the core library.
 A complete H$_2$/STO-3G example is provided and reproduced across all
 five built-in encodings.
 
+A companion walkthrough (\emph{Library Cookbook}) is available both as
+hosted documentation on the repository website and as a standalone
+typeset document~\cite{cookbook2026}, providing 13 progressive chapters
+that cover every public type, function, and workflow in the library.
+
 %%--------------------------------------------------------------------
 \section*{Statement of Need}
 
@@ -286,6 +291,26 @@ motivated the path-based framework as a universal alternative and is
 explored further in a companion paper.
 
 %%--------------------------------------------------------------------
+\section*{Documentation}
+
+The repository includes four tiers of documentation:
+
+\begin{enumerate}
+  \item \textbf{Library Cookbook} — a 13-chapter progressive tutorial
+    covering every public type and function, from Pauli operators
+    through custom encodings to mixed bosonic--fermionic Hamiltonians.
+    Available as hosted Markdown on the documentation site and as a
+    companion preprint~\cite{cookbook2026}.
+  \item \textbf{From Molecules to Qubits} — a pedagogical walkthrough
+    of the complete H$_2$ pipeline, available as both web documentation
+    and a separate preprint~\cite{tutorial2026}.
+  \item \textbf{Theory pages} — seven background articles on second
+    quantization, Pauli algebra, and encoding theory.
+  \item \textbf{Interactive labs} — six runnable F\# scripts with
+    guided exercises.
+\end{enumerate}
+
+%%--------------------------------------------------------------------
 \section*{Comparison with Related Software}
 
 \begin{table}[h]
@@ -334,5 +359,6 @@ and runtime ecosystem supporting this work.
 
 %%--------------------------------------------------------------------
 \bibliography{paper}
+% Note: paper.bib must include cookbook2026 and tutorial2026 entries
 
 \end{document}
