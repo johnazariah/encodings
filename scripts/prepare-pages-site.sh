@@ -6,8 +6,11 @@ cd "$REPO_ROOT"
 
 rm -rf api-output docs/reference
 
-# Build the library so fsdocs can crack the project
+# Build the library so fsdocs can crack the project.
+# fsdocs internally resolves references from the Debug output path
+# regardless of --properties, so we build both configurations.
 dotnet build src/Encodings/Encodings.fsproj --configuration Release
+dotnet build src/Encodings/Encodings.fsproj --configuration Debug
 
 # Generate API reference docs
 dotnet fsdocs build --output api-output \
