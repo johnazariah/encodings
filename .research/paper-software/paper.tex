@@ -90,16 +90,18 @@ at Hamiltonian assembly.  This design supports transparent correctness
 checks and avoids numerical artefacts common in matrix-first workflows.
 
 In addition to the fermionic canonical anti-commutation workflow,
-\texttt{FockMap} now includes a bosonic canonical commutation algebra
-for symbolic normal ordering of ladder-operator expressions.  This
-extends the same typed expression pipeline to bosonic sectors and
-supports mixed-statistics model assembly in a single representation.
+\texttt{FockMap} includes a bosonic canonical commutation algebra
+for symbolic normal ordering of ladder-operator expressions, as well
+as three bosonic-to-qubit truncation encodings (Unary, Standard Binary,
+and Gray Code) that map $d$-level bosonic modes to qubit Pauli strings
+\citep{sawaya2020}.  This extends the same typed expression pipeline
+to both fermionic and bosonic sectors, supporting mixed-statistics
+model assembly in a single representation.
 
 The library is implemented with algebraic data types and pure functions,
 includes a persistent Fenwick tree ADT, and is validated by an extensive
-xUnit + FsCheck test suite (427 passing tests), including both
+xUnit + FsCheck test suite (497 passing tests), including both
 property-based algebraic checks and targeted edge-case regressions.
-Current coverage is 96.51\% line and 86.94\% branch on the core library.
 A complete H$_2$/STO-3G example is provided and reproduced across all
 five built-in encodings.
 
@@ -148,8 +150,10 @@ Many contemporary models also require bosonic modes (for example,
 vibrational and photonic degrees of freedom), where canonical
 commutation relations govern symbolic rewriting.  A practical software
 stack therefore needs both fermionic and bosonic ladder-operator
-normal-ordering support before any downstream qubit mapping or
-truncation strategy is applied.
+normal-ordering support, together with bosonic-to-qubit truncation
+encodings, before downstream circuit synthesis can proceed.  Existing
+libraries provide neither bosonic-to-qubit encodings nor a unified
+framework for mixed fermion--boson workflows.
 
 The library serves quantum computing researchers exploring
 encoding-aware circuit synthesis, students learning the algebraic
@@ -221,14 +225,36 @@ typed expression representation, while preserving distinct rewrite rules
 ($a_i a_i^\dagger = 1 - a_i^\dagger a_i$ versus
 $b_i b_i^\dagger = 1 + b_i^\dagger b_i$).
 
+\subsection*{Bosonic-to-Qubit Encodings}
+
+For bosonic modes truncated to $d$ occupation levels, the library
+provides three encoding strategies that map bosonic ladder operators
+$b^\dagger$ and $b$ to qubit Pauli strings:
+
+\begin{itemize}
+  \item \textbf{Unary (one-hot):} $d$ qubits per mode, maximum Pauli
+    weight~2.  Each transition $|n\rangle \to |n{+}1\rangle$ is
+    decomposed algebraically as $\sigma^+_{n+1}\sigma^-_n$.
+  \item \textbf{Standard binary:} $\lceil\log_2 d\rceil$ qubits per
+    mode.  The $d \times d$ operator matrix is embedded in a
+    $2^q \times 2^q$ space and decomposed via
+    $O = \sum_P \tfrac{1}{2^q}\text{Tr}(PO)\,P$.
+  \item \textbf{Gray code:} $\lceil\log_2 d\rceil$ qubits per mode.
+    Consecutive Fock states differ in exactly one qubit, reducing the
+    average Pauli weight of transition operators.
+\end{itemize}
+
+All three encodings produce \texttt{PauliRegisterSequence} values,
+making them interchangeable with the fermionic encoding output and
+enabling mixed fermion--boson Hamiltonian assembly in a single pipeline.
+
 \subsection*{Verification Suite}
 
 The verification strategy combines unit tests, property-based tests, and
-cross-encoding consistency checks.  At submission time, 427 tests pass
-for the software package, with 96.51\% line coverage and 86.94\% branch
-coverage on the core \texttt{Encodings} library.
+cross-encoding consistency checks.  At submission time, 497 tests pass
+for the software package.
 
-Tests cover five categories:
+Tests cover six categories:
 \begin{itemize}
   \item \textbf{Anti-commutation:}
     $\{a_i, a^\dagger_j\} = \delta_{ij}$ verified symbolically for all
@@ -239,17 +265,19 @@ Tests cover five categories:
     different-index swap behavior.
   \item \textbf{Number conservation:}
     $a^\dagger_j a_j$ produces diagonal Pauli operators.
-  \item \textbf{Cross-encoding agreement:} all five encodings produce
-    isospectral Hamiltonians for H$_2$ (eigenvalue agreement to
+  \item \textbf{Cross-encoding agreement:} all five fermionic encodings
+    produce isospectral Hamiltonians for H$_2$ (eigenvalue agreement to
     $5 \times 10^{-16}$).
+  \item \textbf{Bosonic encoding correctness (70 tests):}
+    matrix construction, Pauli decomposition infrastructure,
+    Pauli-weight bounds ($\leq 2$ for unary, $\leq \lceil\log_2 d\rceil$
+    for binary/Gray), multi-mode embedding, number-operator roundtrip
+    ($b^\dagger b \to \tfrac{1}{2}(I - Z)$ at $d = 2$), and
+    cross-encoding consistency between binary and Gray code.
   \item \textbf{Parser and ordering robustness:} malformed input handling,
     normal/index-order canonicalization, and swap-tracking edge branches for
     deterministic symbolic normalization.
 \end{itemize}
-
-These checks provide evidence that symbolic rewriting is robust in both
-fermionic and bosonic workflows, including malformed parser inputs,
-non-canonical operator orderings, and same-index rewrite edge cases.
 
 %%--------------------------------------------------------------------
 \section*{Design Principles}
@@ -327,16 +355,20 @@ JW / BK / Parity
   & \checkmark/\checkmark/---
   & \checkmark/\checkmark/\checkmark \\
 Tree encodings & Steiner ext. & --- & --- & Binary, Ternary \\
+Bosonic CCR algebra & --- & --- & \checkmark & \checkmark \\
+Bosonic-to-qubit encodings & --- & --- & --- & \checkmark \\
+Mixed fermion--boson ordering & --- & --- & --- & \checkmark \\
 User-defined encodings & --- & --- & --- & \checkmark \\
 User-defined trees & --- & --- & --- & \checkmark \\
 Generic encoding abstraction & --- & --- & --- & \checkmark \\
-Symbolic Pauli algebra & --- & --- & --- & \checkmark \\
+Symbolic Pauli algebra & --- & Partial & \checkmark & \checkmark \\
 Typed / functional & --- & --- & --- & \checkmark \\
 Persistent Fenwick tree & --- & --- & --- & \checkmark \\
 \bottomrule
 \end{tabular}
-\caption{Feature comparison with existing fermion-to-qubit libraries.
-FockMap additionally provides symbolic bosonic normal ordering.}
+\caption{Feature comparison with existing fermion-to-qubit and bosonic
+encoding libraries.  FockMap is the only library providing both fermionic
+and bosonic-to-qubit encodings within a single symbolic algebra framework.}
 \label{tab:comparison}
 \end{table}
 
