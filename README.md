@@ -11,6 +11,10 @@
 
 > Learn by doing: pick an encoding, map operators to Pauli strings, and compare results.
 
+📖 **New here?** Read the [Visual Guide to Fermion-to-Qubit Encodings](https://johnazariah.github.io/encodings/guides/visual-encodings.html) — a diagram-rich introduction for scientists who know chemistry but not quantum computing.
+
+🍳 **Ready to code?** Work through the [Cookbook](https://johnazariah.github.io/encodings/guides/cookbook/) — 13 progressive chapters covering every type and function.
+
 ---
 
 ## Why FockMap
