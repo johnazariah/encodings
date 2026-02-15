@@ -1,0 +1,96 @@
+% drafts/01-intro.tex — Introduction
+%
+% Target length: ~2.5 pages (two-column PRA)
+% Dependencies: none
+
+Quantum simulation of fermionic systems is one of the most promising
+near-term applications of quantum computers.  Yet every such simulation
+must cross an algebraic divide: electrons obey anticommutation relations,
+while the native operations of a qubit processor are products of Pauli
+matrices that commute across distinct sites.  The bridge between the two
+is a \emph{fermion-to-qubit encoding} — a mapping that translates
+creation and annihilation operators into Pauli strings while faithfully
+preserving the canonical anticommutation relations (CAR).
+
+A substantial body of work has studied specific encodings
+\cite{jordan1928,bravyi2002,seeley2012,tranter2015}, compared their
+circuit-level costs \cite{havlicek2017}, and unified them within
+tree-based frameworks \cite{steudtner2018,jiang2020,miller2023bonsai}.
+In all of this, the encoding is treated as a \emph{tool} — a means to
+an end.  The question that drives the present paper is different:
+
+\begin{quote}
+\itshape
+What does the encoding \textbf{mean}?
+\end{quote}
+
+We argue that a fermion-to-qubit encoding is a minimal, exactly solvable
+model of \emph{quantum emergence}.  The fermionic Hamiltonian and its
+qubit image share an identical eigenspectrum, yet every structural
+property — locality, symmetry representation, gauge structure,
+computational complexity — differs between the two descriptions.
+These differences are not artefacts to be optimised away; they are
+\emph{emergent} properties, created by the act of re-representation.
+
+
+
+%--- The tree--encoding connection (brief) ---
+\subsection*{The tree is the encoding}
+
+Our central result is that every CAR-preserving encoding of $n$
+fermionic modes is uniquely specified by a labelled rooted tree on $n$
+nodes — and conversely, every such tree defines a valid encoding.  The
+familiar Jordan--Wigner, Bravyi--Kitaev, and Parity encodings
+correspond to particular tree shapes (linear chain, Fenwick tree,
+reverse chain); balanced binary and ternary trees yield encodings with
+$O(\log n)$ Pauli weight.  The number of distinct encodings on $n$
+modes is $n^{n-1}$ (Cayley's formula) — an enormous space whose
+structural properties we characterise for the first time.
+
+%--- Emergence angle ---
+\subsection*{Emergence from representation}
+
+From the tree alone — without solving any physics — one can read off:
+\begin{enumerate}
+  \item the Pauli weight of every encoded operator (emergent locality),
+  \item how the global $\mathbb{Z}_2$ parity symmetry is represented on
+        qubits (emergent symmetry fractionalization),
+  \item what stabiliser constraints appear when fixing particle number
+        (emergent gauge structure),
+  \item the renormalization hierarchy implicit in the encoding
+        (the tree as a coarse-graining scheme).
+\end{enumerate}
+None of these properties exist in the fermionic description.  They are
+created by the encoding, and they depend entirely on the tree.  This
+makes the encoding a concrete, finite-dimensional analogue of emergence
+phenomena studied in condensed matter~\cite{anderson1972more,wen2017zoo}
+and holography~\cite{swingle2012,pastawski2015happy}.
+
+%--- Phase boundary ---
+\subsection*{A structural phase transition}
+
+The space of labelled rooted trees decomposes into two regions.
+\emph{Index-monotonic} trees — those in which every ancestor's label
+exceeds its descendant's — admit a compact algebraic construction
+(the index-set method of Seeley--Richard--Love~\cite{seeley2012}).
+\emph{Non-monotonic} trees require the geometric, path-based
+construction of Jiang et al.~\cite{jiang2020}.  We prove that the
+index-set method silently violates the CAR on non-monotonic trees,
+identify the precise failure mechanism, and show that the monotonic
+fraction vanishes as $n$ grows.  This boundary is itself a structural
+phase transition in the space of representations.
+
+%--- Outline ---
+\subsection*{Outline}
+
+\Cref{sec:background} reviews the fermionic and Pauli algebras.
+\Cref{sec:tree-encoding} establishes the tree--encoding correspondence
+via two constructions and recovers every known encoding as a special
+case.
+\Cref{sec:emergence} identifies emergent locality, symmetry
+fractionalization, gauge structure, and renormalization as consequences
+of the tree geometry.
+\Cref{sec:phase-boundary} characterises the monotonicity boundary.
+\Cref{sec:validation} presents computational verification.
+\Cref{sec:discussion} draws connections to holography, Hamiltonian-adapted
+trees, and open questions.

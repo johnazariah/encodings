@@ -1,0 +1,159 @@
+% drafts/04-emergence.tex — Emergent Properties from Tree Structure
+%
+% Target length: ~5 pages (two-column PRA)
+% Subsections: 4.1 Emergent locality, 4.2 Symmetry fractionalization,
+%              4.3 Gauge structure, 4.4 Renormalization
+
+This section is the conceptual heart of the paper.  We show that
+locality, symmetry, gauge structure, and renormalization are not
+intrinsic to the physics — they emerge from the tree.
+
+%%====================================================================
+\subsection{Emergent locality}
+\label{sec:em-locality}
+
+\begin{definition}[Encoding weight]
+\label{def:encoding-weight}
+For an encoding $E$ and a fermionic operator $O$, the
+\emph{encoding weight} is
+$\pauliw{E(O)} = \max_{\sigma \in \mathrm{supp}(E(O))} \pauliw{\sigma}$.
+\end{definition}
+
+\begin{theorem}[Weight bound]
+\label{thm:weight-bound}
+For a tree $T$ of depth~$d$ with path-based encoding,
+\begin{equation}
+  \pauliw{\ad{j}} \le 2\,\depth{j} + 1.
+  \label{eq:weight-bound}
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+In Construction~B, the Majorana string for a leg at the end of a
+follow-$X/Y$-then-$Z$ path from node~$j$ has at most $\depth{j} + d_Z$
+non-identity Pauli factors, where $d_Z$ counts the $Z$-links followed
+after the initial $X$ or $Y$ step.  In the worst case
+$d_Z \le \depth{j}$, and a ladder operator involves two Majorana
+strings, giving $\pauliw{\ad{j}} \le 2\,\depth{j} + 1$.
+
+See \cref{app:weight-proof} for the detailed argument.
+\end{proof}
+
+\begin{corollary}
+For a balanced ternary tree with branching factor~3,
+$\depth{j} \le \lfloor \log_3 n \rfloor$, so
+$\pauliw{\ad{j}} = O(\log_3 n)$.
+\end{corollary}
+
+\paragraph{The locality paradox.}
+Consider the nearest-neighbour hopping term $\ad{0}\an{1}$.
+Under the Jordan--Wigner encoding this has weight~2 (two-local), but
+under the Parity encoding it has weight~$n$ (maximally non-local).
+The physics is identical — same eigenspectrum, same ground-state energy
+— yet the \emph{manifest locality} is entirely different.
+
+\begin{quote}\itshape
+Locality is not a property of the interaction.\\
+It is a property of the \emph{representation} of the interaction.
+\end{quote}
+
+This is precisely the sense in which locality is \emph{emergent}: it
+does not exist in the algebraic (fermionic) description and is created
+by the encoding.  The parallel to holographic reconstruction —  where a
+bulk local operator can be a simple or complex boundary operator
+depending on the code~\cite{pastawski2015happy} — is exact.
+
+% TODO: Figure — same hopping term, weight comparison across 5 encodings.
+
+%%====================================================================
+\subsection{Emergent symmetry fractionalization}
+\label{sec:em-symmetry}
+
+The particle-number parity operator is a global $\mathbb{Z}_2$ symmetry:
+%
+\begin{equation}
+  P = \prod_{j=0}^{n-1} (I - 2\nhat{j}) = \prod_j (-1)^{\nhat{j}}.
+  \label{eq:parity-op}
+\end{equation}
+
+\begin{theorem}[Parity weight]
+\label{thm:parity-weight}
+Under the path-based encoding for a tree $T$, the encoded parity
+operator $\hat{P} = E(P)$ satisfies
+\begin{equation}
+  \hat{P} = \prod_{v \in Z\text{-chain}(T)} Z_v,
+\end{equation}
+where $Z$-chain$(T)$ is the maximal path from the root following
+$Z$-links.  Hence $\pauliw{\hat{P}} = |Z\text{-chain}(T)|$.
+\end{theorem}
+
+\paragraph{Examples.}
+\begin{itemize}
+  \item \textbf{JW} (linear chain): $Z$-chain = full chain, weight~$n$.
+  \item \textbf{Parity} (reverse chain): $Z$-chain = last node, weight~1.
+  \item \textbf{BK} (Fenwick, $n = 2^k$): $Z$-chain = root, weight~1.
+\end{itemize}
+
+The same $\mathbb{Z}_2$ symmetry is represented as a weight-$n$ (global)
+or weight-1 (local) Pauli operator, depending solely on the tree.  This
+is a concrete instance of \emph{symmetry fractionalization}
+\cite{wen2017zoo}: the tree determines how a global symmetry is
+distributed among the qubits.
+
+% TODO: Figure — parity operator across 5 encodings.
+
+%%====================================================================
+\subsection{Emergent gauge structure}
+\label{sec:em-gauge}
+
+When the physical Hilbert space is restricted — e.g., to states with
+fixed particle number~$N_e$ — the encoding introduces stabiliser
+constraints that act as emergent gauge symmetries.
+
+\paragraph{Example ($n=4$, $N_e=2$).}
+Under the Parity encoding, $Z_3 = (-1)^{N_e}$.  For $N_e = 2$ (even),
+$Z_3 = +1$, so qubit~3 is frozen: it can be eliminated by qubit
+tapering~\cite{bravyi2017tapering}.  Under Jordan--Wigner, no single
+qubit carries the particle-number parity, and no direct tapering is
+available from this symmetry alone.
+
+Different trees produce different stabiliser groups and hence different
+effective theories after gauge fixing.  The tree determines not just
+\emph{which} gauge constraints exist, but \emph{how many} qubits can
+be eliminated.
+
+% TODO: Stabiliser analysis for all 5 encodings at n=4 and n=8.
+
+%%====================================================================
+\subsection{The tree as renormalization scheme}
+\label{sec:em-renorm}
+
+In a balanced ternary tree:
+\begin{itemize}
+  \item Leaf nodes encode individual occupation numbers (microscopic).
+  \item Internal nodes at depth~$d$ encode parity of $O(3^d)$ modes
+        (mesoscopic).
+  \item The root encodes total parity (macroscopic).
+\end{itemize}
+This hierarchy is a coarse-graining: each level aggregates three
+sublevels — structurally identical to the multi-scale entanglement
+renormalization ansatz (MERA)~\cite{vidal2007mera,swingle2012}.
+
+\begin{conjecture}[MERA connection]
+\label{conj:mera}
+For a 1D fermionic system with a critical ground state, the tree
+minimising total Pauli weight is structurally similar to the optimal
+MERA network for the same system.
+\end{conjecture}
+
+\begin{conjecture}[Hamiltonian-adapted trees]
+\label{conj:hamiltonian-adapted}
+For a Hamiltonian $H$, the tree minimising
+$\sum_{\text{terms}} |c_t| \cdot \pauliw{t}$ corresponds to a
+renormalization scheme adapted to the entanglement structure of $H$'s
+ground state.
+\end{conjecture}
+
+These conjectures are presented as motivation for future work.
+The precise connection between encoding optimality and renormalization
+optimality remains open.

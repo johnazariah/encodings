@@ -1,0 +1,105 @@
+% drafts/07-discussion.tex — Discussion
+%
+% Target length: ~2.5 pages (two-column PRA)
+% Subsections: 7.1 Holographic map, 7.2 Hamiltonian-adapted trees,
+%              7.3 Noise-aware encodings, 7.4 Open questions
+
+%%====================================================================
+\subsection{The encoding as a holographic map}
+\label{sec:disc-holo}
+
+The tree--encoding correspondence is not merely a formal analogy: it
+shares structural features with holographic codes
+\cite{pastawski2015happy,swingle2012}.
+
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Holographic code} & \textbf{Fermion-to-qubit encoding} \\
+\midrule
+Bulk Hilbert space   & Fock space (fermionic) \\
+Boundary Hilbert space & Qubit space \\
+Tensor network / code  & Labelled rooted tree \\
+Bulk local operator  & Ladder operator $\ad{j}$ \\
+Boundary representation & Pauli string $E(\ad{j})$ \\
+Emergent locality    & Weight bound (\cref{thm:weight-bound}) \\
+Gauge constraints    & Stabiliser group \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{What carries over.}
+(i)~Locality emergence: a bulk-local operator may be boundary-local or
+boundary-non-local depending on the code.
+(ii)~Symmetry: a bulk symmetry maps to different boundary
+representations.
+(iii)~Gauge constraints: bulk constraints become boundary stabilisers.
+
+\paragraph{What does not carry over.}
+(i)~No gravitational dynamics — the encoding is a static map.
+(ii)~No entanglement wedge reconstruction — all bulk operators are
+reconstructible.
+(iii)~The Hilbert space is finite-dimensional; there is no UV/IR
+hierarchy in the usual sense.
+
+Despite these differences, the encoding provides a \emph{calculable}
+toy model for phenomena that are intractable in the full AdS/CFT
+setting.
+
+%%====================================================================
+\subsection{Hamiltonian-adapted trees}
+\label{sec:disc-adapted}
+
+The results of \cref{sec:emergence} suggest that the optimal tree
+depends on the Hamiltonian being encoded.  For a nearest-neighbour
+fermionic chain, the Jordan--Wigner encoding gives weight-2 hopping
+terms — outperforming the balanced ternary tree despite its worse
+worst-case scaling.  For non-local Hamiltonians, the balanced ternary
+tree's $O(\log_3 n)$ bound is near-optimal.
+
+Given a Hamiltonian $H$ and a hardware connectivity graph~$G$, the
+problem of finding the tree $T$ that minimises the resulting CNOT count
+is likely NP-hard.  Approximation algorithms and heuristic searches
+\cite{loaiza2023,goings2023} offer a practical path forward.
+
+%%====================================================================
+\subsection{Noise-aware encodings}
+\label{sec:disc-noise}
+
+On current quantum hardware, not all qubit pairs have equal gate
+fidelity.  An encoding that routes high-weight operators through
+low-noise qubit subsets could outperform a theoretically optimal
+encoding.  The tree provides a natural parametrisation for this
+optimisation: tree mutations (edge swaps, re-rootings) define a search
+landscape over encodings.
+
+%%====================================================================
+\subsection{Open questions}
+\label{sec:disc-open}
+
+We conclude with several directions for future work.
+
+\begin{enumerate}
+  \item \textbf{Entanglement entropy of the encoding.}
+    Different encodings produce different entanglement in the qubit
+    computational basis for the same fermionic ground state.  Can this
+    ``encoding entanglement'' be defined intrinsically?
+
+  \item \textbf{Topological invariants of the encoding space.}
+    The space of trees has a graph structure via edge swaps.  Does
+    this graph possess topological features that distinguish encoding
+    classes?
+
+  \item \textbf{Field-theoretic interpretation of the phase boundary.}
+    Is there a continuum limit in which the monotonicity boundary
+    becomes a phase transition in the statistical-mechanical sense?
+
+  \item \textbf{Complexity of optimal-tree search.}
+    What is the computational complexity of finding the weight-minimising
+    tree for a given Hamiltonian?
+
+  \item \textbf{Composition with error correction.}
+    An encoding followed by an error-correcting code produces a
+    composite map.  What properties of the encoding survive error
+    correction, and what new structure appears?
+\end{enumerate}

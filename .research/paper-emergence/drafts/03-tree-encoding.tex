@@ -1,0 +1,133 @@
+% drafts/03-tree-encoding.tex — The Tree–Encoding Correspondence
+%
+% Target length: ~4 pages (two-column PRA)
+% Subsections: 3.1 Labelled rooted trees, 3.2 Construction A (index-set),
+%              3.3 Construction B (path-based), 3.4 Recovering known encodings
+
+This section establishes the central mathematical result: every
+CAR-preserving encoding corresponds to a labelled rooted tree, and
+every tree defines an encoding.
+
+%%====================================================================
+\subsection{Labelled rooted trees}
+\label{sec:te-trees}
+
+\begin{definition}
+A \emph{labelled rooted tree} $T$ on $[n] = \{0, 1, \ldots, n{-}1\}$
+is a tree with $n$ vertices, each labelled by a distinct element of
+$[n]$, with a distinguished root vertex.
+\end{definition}
+
+The number of labelled rooted trees on $n$ vertices is $n^{n-1}$ by
+Cayley's formula~\cite{cayley1889}.  This is the cardinality of the
+encoding space.
+
+For a vertex $v$ in $T$, we write $\depth{v}$ for the length of the
+unique root-to-$v$ path.
+
+%%====================================================================
+\subsection{Construction A: the index-set method}
+\label{sec:te-indexset}
+
+Following Seeley, Richard, and Love~\cite{seeley2012}, we define for
+each node $j$ the following index sets derived from $T$:
+%
+\begin{align}
+  \Uset{j} &= \{\text{ancestors of } j\}, \label{eq:update-set} \\
+  \Rset{j} &= \{v : v \text{ is a child of an ancestor of } j,\;
+               v < j,\; v \notin \Uset{j}\}, \\
+  \Occ{j}  &= \{j\} \cup \{\text{descendants of } j\}.
+\end{align}
+%
+Let $F(j)$ denote the children of $j$ and
+$\Pset{j} = \Rset{j} \cup F(j)$.  The Majorana operators are then
+%
+\begin{align}
+  c_j &= X_{\Uset{j} \cup \{j\}} \cdot Z_{\Pset{j}},
+    \label{eq:cj-indexset} \\
+  d_j &= Y_j \cdot X_{\Uset{j}} \cdot
+         Z_{(\Pset{j} \oplus \Occ{j}) \setminus \{j\}}.
+    \label{eq:dj-indexset}
+\end{align}
+
+\textbf{Critical restriction.}  This construction satisfies the CAR
+\emph{only} when the tree is index-monotonic (\cref{sec:phase-boundary}).
+
+%%====================================================================
+\subsection{Construction B: the path-based method}
+\label{sec:te-pathbased}
+
+The path-based construction \cite{jiang2020,miller2023bonsai} is
+universal — it works for \emph{any} labelled rooted tree with branching
+factor at most~3.
+
+\paragraph{Link labelling.}
+Each internal node $v$ has up to three descending connections.  Label
+them $X$, $Y$, $Z$.  A connection leading to a child is an
+\emph{edge}; one with no child is a \emph{leg} (a free Majorana
+endpoint).
+
+\paragraph{Majorana strings.}
+The Majorana operator for a leg $\ell$ is the product of Pauli labels
+along the root-to-$\ell$ path:
+%
+\begin{equation}
+  S_\ell = \prod_{(v,\,\lambda) \in \mathrm{path}(\text{root},\,\ell)}
+           \lambda_v,
+  \label{eq:majorana-path}
+\end{equation}
+%
+where $\lambda_v \in \{X_v, Y_v, Z_v\}$ is the Pauli corresponding to
+the label of the link taken at vertex~$v$.
+
+\paragraph{Leg pairing.}
+For each vertex $v$:
+\begin{itemize}
+  \item Follow the $X$-link, then $Z$-links until a leg
+        $\to$ Majorana $c_v$.
+  \item Follow the $Y$-link, then $Z$-links until a leg
+        $\to$ Majorana $d_v$.
+\end{itemize}
+
+\begin{proposition}
+\label{prop:pathbased-car}
+For any rooted tree $T$ on $[n]$ with branching factor $\le 3$,
+Construction~B produces $2n$ Majorana operators satisfying the CAR.
+\end{proposition}
+
+\begin{proof}[Proof sketch]
+Two Majorana strings $S_\ell$ and $S_{\ell'}$ for distinct legs
+$\ell, \ell'$ share a common prefix from the root to their lowest
+common ancestor, then diverge at different Pauli labels on the same
+qubit.  At the divergence point, the distinct labels guarantee
+anticommutation; the shared prefix contributes only an overall sign.
+The full proof proceeds by induction on the tree depth.
+\end{proof}
+
+%%====================================================================
+\subsection{Recovering known encodings}
+\label{sec:te-recovery}
+
+\begin{table}[t]
+\centering
+\caption{Known encodings as special trees.}
+\label{tab:encodings-as-trees}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+\textbf{Tree shape} & \textbf{Depth} & \textbf{Constr.} &
+  \textbf{Encoding} & \textbf{Weight} \\
+\midrule
+Linear chain        & $n{-}1$              & A or B & JW      & $O(n)$ \\
+Fenwick tree        & $\lfloor\log_2 n\rfloor$ & A      & BK      & $O(\log_2 n)$ \\
+Reverse chain       & $n{-}1$              & A or B & Parity  & $O(n)$ \\
+Balanced binary     & $\lfloor\log_2 n\rfloor$ & B only & BinTree & $O(\log_2 n)$ \\
+Balanced ternary    & $\lfloor\log_3 n\rfloor$ & B only & TerTree & $O(\log_3 n)$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\Cref{tab:encodings-as-trees} summarises the correspondence.  The
+balanced binary and ternary trees are \emph{not} index-monotonic, so
+Construction~A fails for them — only Construction~B is valid.  This
+observation motivates the analysis of the structural phase boundary
+in~\cref{sec:phase-boundary}.
