@@ -14,11 +14,11 @@
       A composable functional framework for encoding quantum operators
       on Fock space as qubit Pauli operators. Implements Jordan-Wigner,
       Bravyi-Kitaev, Parity, and tree-based encodings (balanced binary,
-      balanced ternary) as algebraic data types in pure F#. Define
-      custom encodings in 3-5 lines. Supports fermionic encodings and
-      bosonic normal-ordering algebra.
+      balanced ternary) for fermionic systems, plus unary, binary, and
+      Gray-code truncation encodings for bosonic systems. Supports
+      bosonic normal-ordering algebra and mixed fermion-boson workflows.
     </Description>
-    <PackageTags>quantum;quantum-computing;quantum-chemistry;encoding;jordan-wigner;bravyi-kitaev;fock-space;fsharp;functional-programming</PackageTags>
+    <PackageTags>quantum;quantum-computing;quantum-chemistry;encoding;jordan-wigner;bravyi-kitaev;fock-space;bosonic;fsharp;functional-programming</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageProjectUrl>https://github.com/johnazariah/encodings</PackageProjectUrl>
     <RepositoryUrl>https://github.com/johnazariah/encodings</RepositoryUrl>
@@ -61,6 +61,7 @@
     <Compile Include="CombiningAlgebra.fs" />
     <Compile Include="LadderOperatorSequence.fs" />
     <Compile Include="Bosonic.fs" />
+    <Compile Include="BosonicEncoding.fs" />
     <Compile Include="MixedSystems.fs" />
     <Compile Include="JordanWigner.fs" />
     <Compile Include="FenwickTree.fs" />

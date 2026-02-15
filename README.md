@@ -32,6 +32,7 @@ FockMap gives you one small, consistent API for both. You can:
 | Define a new encoding | ~200 lines Python | Not supported | Not supported | **3–5 lines F#** |
 | Tree → encoding pipeline | ❌ | ❌ | ❌ | **✅** |
 | Bosonic operator algebra (CCR) | ❌ | ❌ | ✅ | **✅** |
+| Bosonic-to-qubit encodings | ❌ | ❌ | ❌ | **✅ (Unary, Binary, Gray)** |
 | Mixed fermion–boson normal ordering | ❌ | ❌ | ❌ | **✅** |
 | Type-safe operator algebra | ❌ | ❌ | ❌ | **✅** |
 | Pure functional, zero mutation | ❌ | ❌ | ❌ | **✅** |
@@ -42,6 +43,8 @@ Internally, the library uses exact symbolic Pauli algebra (not floating-point ma
 
 ## Available Encodings
 
+### Fermionic Encodings
+
 | Encoding | Worst-Case Pauli Weight | Framework | Function |
 |----------|:-----------------------:|:---------:|----------|
 | Jordan-Wigner | $O(n)$ | Index-set | `jordanWignerTerms` |
@@ -49,6 +52,16 @@ Internally, the library uses exact symbolic Pauli algebra (not floating-point ma
 | Parity | $O(n)$ | Index-set | `parityTerms` |
 | Balanced Binary Tree | $O(\log_2 n)$ | Path-based | `balancedBinaryTreeTerms` |
 | Balanced Ternary Tree | $O(\log_3 n)$ | Path-based | `ternaryTreeTerms` |
+
+### Bosonic Encodings
+
+| Encoding | Qubits / Mode | Max Weight | Function |
+|----------|:---:|:---:|----------|
+| Unary (one-hot) | $d$ | 2 | `unaryBosonTerms` |
+| Standard Binary | $\lceil\log_2 d\rceil$ | $\lceil\log_2 d\rceil$ | `binaryBosonTerms` |
+| Gray Code | $\lceil\log_2 d\rceil$ | $\lceil\log_2 d\rceil$ | `grayCodeBosonTerms` |
+
+Bosonic modes are truncated to $d$ occupation levels. All bosonic encodings share the `BosonicEncoderFn` signature and return `PauliRegisterSequence`, just like their fermionic counterparts.
 
 All encodings return the same output type (`PauliRegisterSequence`), so you can swap schemes without rewriting downstream code.
 

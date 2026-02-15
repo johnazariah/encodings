@@ -1,8 +1,8 @@
-# Bosonic Operators
+# Bosonic Operators and Encodings
 
 FockMap supports both fermionic and bosonic ladder-operator normal ordering. Fermions use canonical anti-commutation relations (CAR), while bosons use canonical commutation relations (CCR).
 
-This page introduces the bosonic algebra, how truncation works in practice, and how bosonic and fermionic sectors can be modeled together.
+This page introduces the bosonic algebra, how truncation works in practice, and the three bosonic-to-qubit encodings provided by FockMap.
 
 ## Bosons vs Fermions
 
@@ -80,11 +80,92 @@ Many applications (for example, electron-phonon models) include both fermionic a
 
 See the [Mixed Systems chapter](../guides/cookbook/11-mixed-systems.html) in the Library Cookbook for a full workflow.
 
-## Truncation Encodings (Conceptual)
+## Truncation Encodings
 
-FockMap's current bosonic support focuses on symbolic CCR normal ordering. If you then map bosonic modes to qubits, common strategies include unary, binary, and Gray-code truncation encodings.
+FockMap provides three bosonic-to-qubit encodings. Each maps a truncated bosonic mode (d levels) into qubits, then decomposes the ladder operators into Pauli strings.
 
-Each strategy trades off qubit count against Pauli weight and circuit complexity. In practice, truncation choices should be made per model and validated against convergence of observables.
+### Unary (One-Hot) Encoding
+
+Each Fock state $|n\rangle$ is mapped to a one-hot qubit state with exactly one qubit in $|1\rangle$:
+
+$$
+|n\rangle_{\text{boson}} \mapsto |0\cdots0\,\underset{n}{1}\,0\cdots0\rangle
+$$
+
+**Qubits per mode:** $d$
+
+The creation operator is decomposed algebraically:
+
+$$
+b^\dagger = \sum_{n=0}^{d-2} \sqrt{n+1}\, \sigma^+_{n+1}\, \sigma^-_n
+$$
+
+Each transition $|n\rangle \to |n+1\rangle$ produces four weight-2 Pauli terms:
+
+$$
+\sigma^+_{q_1}\, \sigma^-_{q_0} = \tfrac{1}{4}(X_{q_0}X_{q_1} - iX_{q_0}Y_{q_1} + iY_{q_0}X_{q_1} + Y_{q_0}Y_{q_1})
+$$
+
+**Total Pauli terms:** $4(d-1)$.  **Maximum Pauli weight:** 2.
+
+```fsharp
+let result = unaryBosonTerms Raise 0u 1u 4u   // d=4, 1 mode
+// → 12 Pauli terms, all weight ≤ 2
+```
+
+### Standard Binary Encoding
+
+Each Fock state $|n\rangle$ maps to the standard binary representation of $n$:
+
+$$
+|n\rangle_{\text{boson}} \mapsto |n_{\text{binary}}\rangle
+$$
+
+**Qubits per mode:** $\lceil \log_2 d \rceil$
+
+The $d \times d$ operator matrix is embedded in a $2^q \times 2^q$ space and decomposed via:
+
+$$
+O = \sum_{P \in \{I,X,Y,Z\}^{\otimes q}} \frac{\mathrm{Tr}(PO)}{2^q}\, P
+$$
+
+**Maximum Pauli weight:** $\lceil \log_2 d \rceil$.
+
+```fsharp
+let result = binaryBosonTerms Raise 0u 1u 4u   // d=4, 2 qubits
+```
+
+The number operator has an especially compact binary decomposition:
+
+$$
+\hat{n} = \sum_{k=0}^{q-1} 2^k \cdot \frac{I - Z_k}{2}
+$$
+
+### Gray Code Encoding
+
+Like binary, but maps Fock state $|n\rangle$ to the reflected Gray code $G(n) = n \oplus (n \gg 1)$:
+
+$$
+|n\rangle_{\text{boson}} \mapsto |G(n)\rangle
+$$
+
+**Qubits per mode:** $\lceil \log_2 d \rceil$ (same as binary)
+
+Consecutive Fock states differ in exactly one qubit, so transition operators $|n\rangle\langle n{+}1|$ have lower average Pauli weight.
+
+```fsharp
+let result = grayCodeBosonTerms Raise 0u 1u 4u   // d=4, 2 qubits
+```
+
+### Comparison Table
+
+| Encoding | Qubits / mode | Terms for $b^\dagger$ | Max weight | Best for |
+|----------|:---:|:---:|:---:|----------|
+| Unary | $d$ | $4(d{-}1)$ | 2 | Hardware with nearest-neighbour connectivity |
+| Binary | $\lceil\log_2 d\rceil$ | $O(d)$ | $\lceil\log_2 d\rceil$ | Minimum qubit count |
+| Gray code | $\lceil\log_2 d\rceil$ | $O(d)$ | $\lceil\log_2 d\rceil$ | Lower average weight than binary |
+
+Reference: Sawaya et al., "Resource-efficient digital quantum simulation of d-level systems" (arXiv:1909.05820).
 
 ---
 
