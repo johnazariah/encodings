@@ -115,4 +115,4 @@ See runnable examples:
 
 **Previous:** [Bosonic Operators](06-bosonic-preview.html) — CCR and truncation basics
 
-**Next:** [Advanced Operations Guide](../guides/advanced-operations.html) — hybrid workflows and decision rules
+**Next:** [Mixed Systems (Cookbook)](../guides/cookbook/11-mixed-systems.html) — hybrid workflows, decision rules, and runnable scripts

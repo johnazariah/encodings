@@ -57,7 +57,8 @@ Written in [F#](https://fsharp.org/), fully open-source under the [F# Software F
 
 ## Learn More
 
-- **Start here:** [From Molecules to Qubits](from-molecules-to-qubits/index.html) — complete H₂ pipeline
+- **Start here:** [Library Cookbook](guides/cookbook/index.html) — every type and function, step by step
+- **Molecules → qubits:** [From Molecules to Qubits](from-molecules-to-qubits/index.html) — complete H₂ pipeline
 - **Theory first:** [Why Encodings?](theory/01-why-encodings.html)
 - **Hands-on first:** [Your First Encoding](labs/01-first-encoding.fsx)
 - **Library internals:** [Architecture Guide](guides/architecture.html)
@@ -93,8 +94,6 @@ A step-by-step guide using H₂ as a worked example.
 - [Scaling Analysis](labs/06-scaling.fsx) — Pauli weight scaling with system size
 
 ### Guides
+- [Library Cookbook](guides/cookbook/index.html) — Every type and function, step by step
 - [Architecture](guides/architecture.html) — Two-framework design
-- [Type System](guides/type-system.html) — C/P/S algebra explained
-- [Mixed Registers](guides/mixed-registers.html) — Bosonic + fermionic components with runnable examples
-- [Advanced Operations](guides/advanced-operations.html) — Hybrid pipelines, projections, and encoding comparisons
 - [Cross-Platform](guides/cross-platform.html) — .NET 10 and F# on all platforms

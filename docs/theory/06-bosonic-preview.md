@@ -78,7 +78,7 @@ Many applications (for example, electron-phonon models) include both fermionic a
 4. Encode fermionic terms to Pauli strings with any encoding scheme.
 5. Keep bosonic terms symbolic or apply a separate bosonic truncation/encoding layer.
 
-See the [Mixed Registers guide](../guides/mixed-registers.html) for a full workflow.
+See the [Mixed Systems chapter](../guides/cookbook/11-mixed-systems.html) in the Library Cookbook for a full workflow.
 
 ## Truncation Encodings (Conceptual)
 

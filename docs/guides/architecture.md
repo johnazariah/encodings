@@ -91,7 +91,7 @@ For mixed bosonic/fermionic expressions, use sector-tagged operators and mixed n
 3. apply CCR in bosonic blocks,
 4. continue with the same symbolic and encoding pipeline.
 
-See the [Mixed Registers guide](mixed-registers.md) for workflow details.
+See the [Mixed Systems chapter](cookbook/11-mixed-systems.html) in the Library Cookbook for workflow details.
 
 ## Practical Navigation
 
