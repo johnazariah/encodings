@@ -2,7 +2,20 @@
 
 All notable changes to FockMap will be documented in this file.
 
-## [0.1.0] - 2026-02-14
+## [0.3.0] - 2026-02-15
+
+### 📚 Documentation
+
+- docs(cookbook): add 13-chapter progressive tutorial, merge redundant guides
+- docs(paper): add cookbook companion paper for arXiv/JOSS
+- docs(paper): cross-reference cookbook in JOSS and tutorial papers
+
+### 🔧 Maintenance
+
+- chore(devcontainer): use .NET 10 preview SDK, add .NET 8 side-by-side
+- chore(devcontainer): add jq; docs(paper): refresh software metrics
+- devcontainer: remove hardcoded test count in post-create message
+- ci(release): add cookbook PDF to release pipeline
 
 ## [0.2.0] - 2026-02-14
 
