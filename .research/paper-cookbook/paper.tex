@@ -72,13 +72,15 @@
 This document is the companion walkthrough for the FockMap
 library~\cite{fockmap2026}, a composable functional framework for
 symbolic operator algebra and fermion-to-qubit encodings.  Organized as
-13 progressive chapters, it covers every public type, function, and
+14 progressive chapters, it covers every public type, function, and
 workflow in the library: from single-qubit Pauli operators through the
 three-level algebraic hierarchy (\texttt{C}/\texttt{P}/\texttt{S}),
 indexed operators, creation and annihilation, fermionic and bosonic
-normal ordering, five built-in encodings, custom encoding schemes,
-tree-based encoding via Fenwick and balanced trees, full Hamiltonian
-construction, and mixed bosonic--fermionic systems.  Each chapter
+normal ordering, five built-in fermionic encodings, custom encoding
+schemes, tree-based encoding via Fenwick and balanced trees, full
+Hamiltonian construction, mixed bosonic--fermionic systems, and three
+bosonic-to-qubit truncation encodings (Unary, Binary, Gray
+Code)~\cite{sawaya2020}.  Each chapter
 introduces concepts through worked F\# code examples that the reader
 can execute directly.  The final chapter ties everything together with
 a capstone script that encodes the H$_2$ molecule under three encodings
@@ -720,6 +722,102 @@ affect measurement cost on real quantum hardware.
 
 
 %%====================================================================
+\section{Bosonic-to-Qubit Encodings}\label{ch:bosonic}
+
+Chapters 1--13 covered the fermionic pipeline.  Many physical models
+also involve \textbf{bosonic} modes (photons, phonons, vibrations) whose
+occupation numbers are unbounded.  To simulate these on a qubit device
+we \emph{truncate} the Fock space to $d$ levels and encode the resulting
+$d$-level system as qubits~\cite{sawaya2020}.
+
+FockMap provides three encodings, all sharing the same function
+signature:
+
+\begin{lstlisting}
+// BosonicEncoderFn =
+//   LadderOperatorUnit -> uint32 -> uint32 -> uint32
+//                      -> PauliRegisterSequence
+//   operator              mode j   modes M   cutoff d
+\end{lstlisting}
+
+\subsection{Unary (one-hot)}
+
+Uses $d$ qubits per mode.  Each Fock state $|n\rangle$ is a one-hot
+string; each transition $|n\rangle \to |n{+}1\rangle$ decomposes as
+$\sigma^+_{n+1}\sigma^-_n$, giving maximum Pauli weight~2.
+
+\begin{lstlisting}
+let bDagger = unaryBosonTerms Raise 0u 1u 4u
+// 6 Pauli terms, max weight 2
+\end{lstlisting}
+
+\subsection{Standard binary}
+
+Uses $\lceil\log_2 d\rceil$ qubits.  The $d\times d$ operator matrix is
+embedded into $2^q\times 2^q$ and decomposed via $O = \sum_P
+\tfrac{1}{2^q}\operatorname{Tr}(PO)\,P$.
+
+\begin{lstlisting}
+let bDaggerBin = binaryBosonTerms Raise 0u 1u 4u
+// 2 qubits instead of 4
+\end{lstlisting}
+
+\subsection{Gray code}
+
+Also $\lceil\log_2 d\rceil$ qubits, but consecutive Fock states differ
+in exactly one qubit, reducing average Pauli weight.
+
+\begin{lstlisting}
+let bDaggerGray = grayCodeBosonTerms Raise 0u 1u 4u
+\end{lstlisting}
+
+\subsection{Side-by-side comparison}
+
+\begin{center}
+\small
+\begin{tabular}{lccc}
+\toprule
+\textbf{Encoding} & \textbf{Qubits/mode} & \textbf{Max weight} & \textbf{Best for} \\
+\midrule
+Unary & $d$ & 2 & Clarity, small $d$ \\
+Binary & $\lceil\log_2 d\rceil$ & $\lceil\log_2 d\rceil$ & Qubit-limited \\
+Gray code & $\lceil\log_2 d\rceil$ & $\lceil\log_2 d\rceil$ & Low avg.\ weight \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Building a bosonic Hamiltonian}
+
+The harmonic oscillator $H = \omega\, b^\dagger b$:
+
+\begin{lstlisting}
+let cr = unaryBosonTerms Raise 0u 1u 4u
+let an = unaryBosonTerms Lower 0u 1u 4u
+let numberOp = cr * an   // PauliRegisterSequence
+\end{lstlisting}
+
+For multi-mode systems the \texttt{mode} and \texttt{numModes}
+parameters handle qubit-register embedding automatically:
+
+\begin{lstlisting}
+// Beam-splitter: H = w1 n0 + w2 n1 + g(b0+ b1 + b1+ b0)
+let n0 = (binaryBosonTerms Raise 0u 2u 3u)
+       * (binaryBosonTerms Lower 0u 2u 3u)
+let n1 = (binaryBosonTerms Raise 1u 2u 3u)
+       * (binaryBosonTerms Lower 1u 2u 3u)
+let coupling =
+    (binaryBosonTerms Raise 0u 2u 3u)
+  * (binaryBosonTerms Lower 1u 2u 3u)
+  + (binaryBosonTerms Raise 1u 2u 3u)
+  * (binaryBosonTerms Lower 0u 2u 3u)
+\end{lstlisting}
+
+All three encodings produce \texttt{PauliRegisterSequence}, making them
+interchangeable with fermionic encoding output and enabling mixed
+fermion--boson Hamiltonian assembly.
+
+
+%%====================================================================
 \section*{Quick Reference}\label{sec:quickref}
 
 \subsection*{Encoding functions}
@@ -736,6 +834,9 @@ affect measurement cost on real quantum hardware.
 \texttt{ternaryTreeTerms} & $O(\log_3 n)$ & Best asymptotic \\
 \texttt{encodeOperator} & Varies & Custom scheme \\
 \texttt{encodeWithTernaryTree} & Varies & Custom tree \\
+\texttt{unaryBosonTerms} & $d$ qubits & Bosonic, weight $\leq 2$ \\
+\texttt{binaryBosonTerms} & $\lceil\log_2 d\rceil$ & Bosonic, std binary \\
+\texttt{grayCodeBosonTerms} & $\lceil\log_2 d\rceil$ & Bosonic, Gray code \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -761,6 +862,7 @@ affect measurement cost on real quantum hardware.
 \texttt{EncodingTree} & Tree shape \\
 \texttt{FenwickTree<'a>} & Immutable binary indexed tree \\
 \texttt{SectorLadderOperatorUnit} & Sector-tagged ladder op \\
+\texttt{BosonicEncoderFn} & Bosonic encoder function type \\
 \bottomrule
 \end{tabular}
 \end{center}

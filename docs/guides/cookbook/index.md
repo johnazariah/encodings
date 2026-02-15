@@ -26,6 +26,7 @@ a complete molecular Hamiltonian by the end.
 | 11 | [Mixed Bosonic–Fermionic Systems](11-mixed-systems.html) | Sector tags, mixed normal ordering, and hybrid workflows |
 | 12 | [The Utility Belt](12-utilities.html) | Complex extensions, map helpers, currying |
 | 13 | [Grand Finale](13-grand-finale.html) | Three encodings, one molecule — a capstone script |
+| 14 | [Bosonic-to-Qubit Encodings](14-bosonic-encodings.html) | Unary, Binary, and Gray code truncation encodings |
 
 ## Quick Reference
 
@@ -40,6 +41,9 @@ a complete molecular Hamiltonian by the end.
 | `ternaryTreeTerms` | $O(\log_3 n)$ | Best asymptotic scaling |
 | `encodeOperator scheme` | Varies | Your custom scheme |
 | `encodeWithTernaryTree tree` | Varies | Your custom tree shape |
+| `unaryBosonTerms` | $d$ qubits | Bosonic, weight ≤ 2 |
+| `binaryBosonTerms` | $\lceil\log_2 d\rceil$ qubits | Bosonic, standard binary basis |
+| `grayCodeBosonTerms` | $\lceil\log_2 d\rceil$ qubits | Bosonic, reduced avg weight |
 
 ### Type cheat sheet
 
@@ -58,6 +62,7 @@ a complete molecular Hamiltonian by the end.
 | `EncodingTree` | Tree shape for tree-based encodings |
 | `FenwickTree<'a>` | Immutable binary indexed tree |
 | `SectorLadderOperatorUnit` | Sector-tagged ladder operator (mixed systems) |
+| `BosonicEncoderFn` | `LadderOperatorUnit → uint32 → uint32 → uint32 → PauliRegisterSequence` |
 
 ## Where to Go Next
 

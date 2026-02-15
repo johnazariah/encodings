@@ -63,4 +63,6 @@ affect the cost of measurement on real quantum hardware.
 
 ---
 
+**Next:** [Bosonic-to-Qubit Encodings](14-bosonic-encodings.html) — Unary, Binary, and Gray code truncation encodings
+
 **Back to:** [Cookbook index](index.html) — quick reference and further reading
