@@ -53,11 +53,19 @@ the *content* is ready.
 
 ## 6. Papers
 
-- [ ] **JOSS paper** (`paper-software/paper.tex`):
+- [ ] **JOSS paper** (`paper-software/paper.md`):
+  - [ ] YAML frontmatter has correct author, affiliation, date, tags
   - [ ] Test count matches actual count
   - [ ] Feature comparison table is current
   - [ ] All encoding types are mentioned
-  - [ ] Bibliography includes all referenced works
+  - [ ] State of the field section is up to date
+  - [ ] AI usage disclosure is accurate
+  - [ ] Bibliography (`paper.bib`) includes all referenced works
+  - [ ] Paper compiles via JOSS Draft Action or Docker:
+    ```bash
+    docker run --rm --volume $PWD/.research/paper-software:/data \
+      --user $(id -u):$(id -g) --env JOURNAL=joss openjournals/inara
+    ```
 - [ ] **Cookbook paper** (`paper-cookbook/paper.tex`):
   - [ ] Chapter count in abstract matches actual
   - [ ] Quick-reference tables match cookbook index

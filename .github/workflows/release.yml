@@ -55,14 +55,20 @@ jobs:
       - name: Pack NuGet package
         run: dotnet pack src/Encodings/Encodings.fsproj --configuration Release --no-build -o nupkg
 
-      - name: Build papers (PDF)
+      - name: Build JOSS paper (Markdown → PDF via Open Journals)
+        uses: openjournals/openjournals-draft-action@master
+        with:
+          journal: joss
+          paper-path: .research/paper-software/paper.md
+
+      - name: Build other papers (LaTeX → PDF)
         run: |
-          make -C .research clean
-          make -C .research all
+          make -C .research tutorial
+          make -C .research cookbook
 
       - name: Copy release PDFs with unique names
         run: |
-          cp .research/paper-software/fockmap-joss.pdf .research/fockmap-joss.pdf
+          cp .research/paper-software/paper.pdf .research/fockmap-joss.pdf
           cp .research/paper-tutorial/fockmap-tutorial.pdf .research/fockmap-tutorial.pdf
           cp .research/paper-cookbook/fockmap-cookbook.pdf .research/fockmap-cookbook.pdf
 
