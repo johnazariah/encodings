@@ -4,9 +4,12 @@
 >
 > Last verified: 2026-02-15 against `v0.3.1`
 
-This document catalogues every test case in the FockMap test suite.
-It describes *what* is tested in plain English so that readers can
-quickly judge coverage without reading F# source.
+> **Purpose:** Plain-English catalogue of every automated test in FockMap test suite.
+> The LLM coding agent is responsible for keeping this register in sync
+> with the test code before each commit. It serves as a quick
+> business-level reference for code quality and reliability.
+> It describes *what* is tested in plain English so that readers can
+> quickly judge coverage without reading F# source.
 
 ---
 
