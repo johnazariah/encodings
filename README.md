@@ -120,18 +120,19 @@ let myEncode op j n = encodeOperator myScheme op j n
 ## Where to Start
 
 - New to this topic? Start with [Why Encodings?](https://johnazariah.github.io/encodings/theory/01-why-encodings.html)
+- Want a progressive walkthrough? Try the [Cookbook](https://johnazariah.github.io/encodings/guides/cookbook/) — 13 chapters covering every type and function
 - Want a full worked example? Go to [From Molecules to Qubits](https://johnazariah.github.io/encodings/from-molecules-to-qubits/index.html)
 - Prefer hands-on? Try [Your First Encoding](https://johnazariah.github.io/encodings/labs/01-first-encoding.html)
 - Need API details? Browse [All types and functions](https://johnazariah.github.io/encodings/reference/index.html)
 
 ## Documentation
 
-- Site: [johnazariah.github.io/encodings](https://johnazariah.github.io/encodings/)
-- Tutorial path: [From Molecules to Qubits](https://johnazariah.github.io/encodings/from-molecules-to-qubits/index.html)
-- Theory: [Why Encodings?](https://johnazariah.github.io/encodings/theory/01-why-encodings.html)
-- Mixed theory chapter: [Mixed Systems](https://johnazariah.github.io/encodings/theory/07-mixed-systems.html)
-- Labs: [Your First Encoding](https://johnazariah.github.io/encodings/labs/01-first-encoding.html)
-- Guides: [Architecture](https://johnazariah.github.io/encodings/guides/architecture.html)
+- **Site**: [johnazariah.github.io/encodings](https://johnazariah.github.io/encodings/)
+- **Cookbook**: [13-chapter progressive tutorial](https://johnazariah.github.io/encodings/guides/cookbook/) — covers every type and function with runnable examples
+- **Tutorial**: [From Molecules to Qubits](https://johnazariah.github.io/encodings/from-molecules-to-qubits/index.html) — end-to-end worked example
+- **Theory**: [Why Encodings?](https://johnazariah.github.io/encodings/theory/01-why-encodings.html) — mathematical foundations
+- **Labs**: [Your First Encoding](https://johnazariah.github.io/encodings/labs/01-first-encoding.html) — hands-on F# scripts
+- **Architecture**: [Architecture guide](https://johnazariah.github.io/encodings/guides/architecture.html) — module and pipeline overview
 
 Build docs locally (with logo/icon + Mermaid/MathJax runtime injection):
 
@@ -149,11 +150,7 @@ It also supports **bosonic ladder-operator normal ordering** via canonical commu
 
 For models with both statistics, use sector-tagged operators (`fermion`, `boson`) and `constructMixedNormalOrdered` to canonicalize mixed expressions.
 
-If you want the full derivations and internals, jump to the docs:
-- [Architecture guide](https://johnazariah.github.io/encodings/guides/architecture.html)
-- [Type system guide](https://johnazariah.github.io/encodings/guides/type-system.html)
-- [Mixed registers guide](https://johnazariah.github.io/encodings/guides/mixed-registers.html)
-- [Advanced operations guide](https://johnazariah.github.io/encodings/guides/advanced-operations.html)
+For the full derivations and internals, jump to the [Cookbook](https://johnazariah.github.io/encodings/guides/cookbook/) or the [Architecture guide](https://johnazariah.github.io/encodings/guides/architecture.html).
 
 ## Examples
 
