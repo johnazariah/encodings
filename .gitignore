@@ -32,6 +32,7 @@ README.pdf
 # Generated documentation
 docs-output/
 api-output/
+.fsdocs/
 
 # Roslyn cache directories
 *.ide/
