@@ -138,6 +138,7 @@ let myEncode op j n = encodeOperator myScheme op j n
 - **Labs**: [Your First Encoding](https://johnazariah.github.io/encodings/labs/01-first-encoding.html) — hands-on F# scripts
 - **Architecture**: [Architecture guide](https://johnazariah.github.io/encodings/guides/architecture.html) — module and pipeline overview
 - **API Reference**: [All types and functions](https://johnazariah.github.io/encodings/reference/index.html) — generated from source XML docs
+- **Test Register**: [What is tested](.project/test-register.md) — plain-English catalogue of all 427 automated tests
 
 Build docs locally (with logo/icon + Mermaid/MathJax runtime injection):
 
