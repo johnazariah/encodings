@@ -59,18 +59,18 @@ jobs:
         uses: openjournals/openjournals-draft-action@master
         with:
           journal: joss
-          paper-path: .research/paper-software/paper.md
+          paper-path: .project/research/paper-software/paper.md
 
       - name: Build other papers (LaTeX → PDF)
         run: |
-          make -C .research tutorial
-          make -C .research cookbook
+          make -C .project/research tutorial
+          make -C .project/research cookbook
 
       - name: Copy release PDFs with unique names
         run: |
-          cp .research/paper-software/paper.pdf .research/fockmap-joss.pdf
-          cp .research/paper-tutorial/fockmap-tutorial.pdf .research/fockmap-tutorial.pdf
-          cp .research/paper-cookbook/fockmap-cookbook.pdf .research/fockmap-cookbook.pdf
+          cp .project/research/paper-software/paper.pdf .project/research/fockmap-joss.pdf
+          cp .project/research/paper-tutorial/fockmap-tutorial.pdf .project/research/fockmap-tutorial.pdf
+          cp .project/research/paper-cookbook/fockmap-cookbook.pdf .project/research/fockmap-cookbook.pdf
 
       - name: Publish to NuGet
         run: dotnet nuget push nupkg/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
@@ -80,6 +80,6 @@ jobs:
         with:
           files: |
             nupkg/*.nupkg
-            .research/fockmap-joss.pdf
-            .research/fockmap-tutorial.pdf
-            .research/fockmap-cookbook.pdf
+            .project/research/fockmap-joss.pdf
+            .project/research/fockmap-tutorial.pdf
+            .project/research/fockmap-cookbook.pdf

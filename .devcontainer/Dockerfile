@@ -67,7 +67,7 @@ ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
 
 # ── .NET global tools ──────────────────────────────────────────
 RUN dotnet tool install --global fsdocs-tool \
-    && dotnet tool install --global dotnet-repl
+    && (dotnet tool install --global dotnet-repl || echo "WARNING: dotnet-repl install failed, skipping")
 
 # ── Pre-warm NuGet cache with common test packages ─────────────
 RUN dotnet new console -n _warmup --no-restore -o /tmp/_warmup \

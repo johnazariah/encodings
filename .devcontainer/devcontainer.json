@@ -27,8 +27,15 @@
         "GitHub.copilot",
         "GitHub.copilot-chat",
 
+        // Git
+        "mhutchie.git-graph",
+        "eamodio.gitlens",
+
         // General
-        "editorconfig.editorconfig"
+        "editorconfig.editorconfig",
+        "streetsidesoftware.code-spell-checker",
+        "yzhang.markdown-all-in-one",
+        "redhat.vscode-yaml"
       ],
       "settings": {
         // F#
@@ -54,9 +61,16 @@
 
         // General
         "files.trimTrailingWhitespace": true,
-        "files.insertFinalNewline": true
+        "files.insertFinalNewline": true,
+        "editor.rulers": [100]
       }
     }
+  },
+
+  // Features to add
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
   },
 
   // Install tooling, build and test on first open
