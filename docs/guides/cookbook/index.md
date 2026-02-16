@@ -73,4 +73,4 @@ a complete molecular Hamiltonian by the end.
 
 ## PDF Version
 
-A TeX-typeset version of this cookbook is available as a [companion preprint (PDF)](https://github.com/johnazariah/encodings/blob/main/.research/paper-cookbook/paper.pdf) suitable for printing and citation.
+A TeX-typeset version of this cookbook is available as a [companion preprint (PDF)](https://github.com/johnazariah/encodings/blob/main/.project/research/paper-cookbook/paper.pdf) suitable for printing and citation.

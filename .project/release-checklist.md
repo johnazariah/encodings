@@ -63,7 +63,7 @@ the *content* is ready.
   - [ ] Bibliography (`paper.bib`) includes all referenced works
   - [ ] Paper compiles via JOSS Draft Action or Docker:
     ```bash
-    docker run --rm --volume $PWD/.research/paper-software:/data \
+    docker run --rm --volume $PWD/.project/research/paper-software:/data \
       --user $(id -u):$(id -g) --env JOURNAL=joss openjournals/inara
     ```
 - [ ] **Cookbook paper** (`paper-cookbook/paper.tex`):
@@ -73,7 +73,7 @@ the *content* is ready.
   - [ ] Bibliography includes all referenced works
 - [ ] Papers compile:
   ```bash
-  make -C .research clean && make -C .research all
+  make -C .project/research clean && make -C .project/research all
   ```
 
 ## 7. Package Metadata
@@ -118,7 +118,7 @@ the *content* is ready.
 | Run all tests | `dotnet test` |
 | Build Release | `dotnet build -c Release` |
 | Build docs | `dotnet build && dotnet fsdocs build --clean --strict` |
-| Build papers | `make -C .research clean && make -C .research all` |
+| Build papers | `make -C .project/research clean && make -C .project/research all` |
 | Dry run release | `./scripts/release.sh --dry-run` |
 | Execute release | `./scripts/release.sh` |
 | Count tests | `dotnet test --logger "console;verbosity=minimal" 2>&1 \| grep -oP '\d+ Passed'` |

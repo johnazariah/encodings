@@ -291,13 +291,13 @@ The repository must be publication-ready:
 | README.md | repo root | Comprehensive documentation | 🔲 |
 | CONTRIBUTING.md | repo root | Contribution guidelines | 🔲 |
 | CITATION.cff | repo root | Machine-readable citation | 🔲 |
-| paper.md | .research/paper-software/ | JOSS paper source | 🔲 |
-| paper.bib | .research/paper-software/ | BibTeX references | 🔲 |
+| paper.md | .project/research/paper-software/ | JOSS paper source | 🔲 |
+| paper.bib | .project/research/paper-software/ | BibTeX references | 🔲 |
 | CI workflow | .github/workflows/ | Automated build + test | 🔲 |
 | API docs | docs/ | Generated or hand-written | 🔲 |
 | Examples | examples/ | 4 runnable F# scripts | 🔲 |
-| Feature comparison | .research/paper-software/ | Table comparing with OpenFermion etc. | 🔲 |
-| Architecture diagram | .research/paper-software/figures/ | Index-set vs path-based diagram | 🔲 |
+| Feature comparison | .project/research/paper-software/ | Table comparing with OpenFermion etc. | 🔲 |
+| Architecture diagram | .project/research/paper-software/figures/ | Index-set vs path-based diagram | 🔲 |
 
 ---
 

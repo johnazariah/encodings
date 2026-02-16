@@ -588,10 +588,10 @@ test each for monotonicity.
 Present data, fit to scaling hypothesis.
 
 **Dependencies:**
-- [ ] MatrixVerification.fsx (eigenspectrum check) — .research/tools/
-- [ ] AnticommutationTest.fsx (full {c,d} verification) — .research/tools/
-- [ ] MonotonicityCensus.fsx (tree enumeration + test) — .research/tools/
-- [ ] ScalingPlot.py or .fsx (log-log plot with fit) — .research/paper-emergence/figures/
+- [ ] MatrixVerification.fsx (eigenspectrum check) — .project/research/tools/
+- [ ] AnticommutationTest.fsx (full {c,d} verification) — .project/research/tools/
+- [ ] MonotonicityCensus.fsx (tree enumeration + test) — .project/research/tools/
+- [ ] ScalingPlot.py or .fsx (log-log plot with fit) — .project/research/paper-emergence/figures/
 
 
 ### Section 7: Discussion (2.5 pages)
@@ -682,12 +682,12 @@ could outperform a "theoretically optimal" encoding.
 
 | Component | Location | Purpose | Status |
 |-----------|----------|---------|--------|
-| MatrixVerification.fsx | .research/tools/ | 2ⁿ × 2ⁿ matrix diag for eigenspectrum | 🔲 |
-| AnticommutationTest.fsx | .research/tools/ | Full {c_j, d_k} verification | 🔲 |
-| MonotonicityCensus.fsx | .research/tools/ | Enumerate trees, test monotonicity | 🔲 |
-| ParityOperator.fsx | .research/tools/ | Compute P̂ weight for each encoding | 🔲 |
-| StabiliserAnalysis.fsx | .research/tools/ | Find stabiliser group for fixed N_e | 🔲 |
-| CNOTCostEstimator.fsx | .research/tools/ | CNOT count from Pauli decomposition | 🔲 |
+| MatrixVerification.fsx | .project/research/tools/ | 2ⁿ × 2ⁿ matrix diag for eigenspectrum | 🔲 |
+| AnticommutationTest.fsx | .project/research/tools/ | Full {c_j, d_k} verification | 🔲 |
+| MonotonicityCensus.fsx | .project/research/tools/ | Enumerate trees, test monotonicity | 🔲 |
+| ParityOperator.fsx | .project/research/tools/ | Compute P̂ weight for each encoding | 🔲 |
+| StabiliserAnalysis.fsx | .project/research/tools/ | Find stabiliser group for fixed N_e | 🔲 |
+| CNOTCostEstimator.fsx | .project/research/tools/ | CNOT count from Pauli decomposition | 🔲 |
 | Fig. 1: Five trees | figures/ | Side-by-side tree diagrams | 🔲 |
 | Fig. 2: Locality paradox | figures/ | Same term, different weights | 🔲 |
 | Fig. 3: Parity fractionalization | figures/ | P̂ weight across encodings | 🔲 |

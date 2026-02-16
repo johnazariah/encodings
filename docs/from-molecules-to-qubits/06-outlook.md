@@ -52,7 +52,7 @@ If you've followed this tutorial from [Chapter 1](01-electronic-structure.html),
 - **The encoding framework:** [Beyond Jordan–Wigner](../theory/05-beyond-jordan-wigner.html) — how all encodings are unified under two composable abstractions
 - **Hands-on code:** [Interactive labs](../labs/01-first-encoding.html) — executable F# labs
 - **The library itself:** [API Reference](../reference/index.html) — all types and functions
-- **The TeX preprint:** A typeset PDF version of this tutorial is available in the [repository](https://github.com/johnazariah/encodings/blob/main/.research/paper-tutorial/paper.pdf)
+- **The TeX preprint:** A typeset PDF version of this tutorial is available in the [repository](https://github.com/johnazariah/encodings/blob/main/.project/research/paper-tutorial/paper.pdf)
 
 At this point you have the full end-to-end picture; the labs are the best next step to turn the concepts into intuition.
 

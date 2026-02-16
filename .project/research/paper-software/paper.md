@@ -37,8 +37,8 @@ structure through two composable abstractions: *index-set schemes*,
 defined by three set-valued functions (`Update`, `Parity`,
 `Occupation`), and *path-based tree encodings*, in which any rooted
 labelled tree induces a valid encoding.  The index-set abstraction
-expresses Jordan--Wigner [@jordanwigner1928], Bravyi--Kitaev
-[@bravyikitaev2002; @seeley2012], and Parity in 3--5 lines each, while
+expresses Jordan--Wigner [@jordan1928], Bravyi--Kitaev
+[@bravyi2002; @seeley2012], and Parity in 3--5 lines each, while
 the path-based abstraction supports arbitrary tree topologies, including
 balanced binary and balanced ternary trees with optimal $O(\log n)$
 asymptotic Pauli weight [@jiang2020].

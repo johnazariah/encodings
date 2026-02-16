@@ -69,16 +69,26 @@ and holography~\cite{swingle2012,pastawski2015happy}.
 %--- Phase boundary ---
 \subsection*{A structural phase transition}
 
-The space of labelled rooted trees decomposes into two regions.
-\emph{Index-monotonic} trees — those in which every ancestor's label
-exceeds its descendant's — admit a compact algebraic construction
-(the index-set method of Seeley--Richard--Love~\cite{seeley2012}).
-\emph{Non-monotonic} trees require the geometric, path-based
-construction of Jiang et al.~\cite{jiang2020}.  We prove that the
-index-set method silently violates the CAR on non-monotonic trees,
-identify the precise failure mechanism, and show that the monotonic
-fraction vanishes as $n$ grows.  This boundary is itself a structural
-phase transition in the space of representations.
+The space of labelled rooted trees harbours a sharp surprise.  The
+Seeley--Richard--Love index-set framework~\cite{seeley2012} appears to
+unify Jordan--Wigner, Bravyi--Kitaev, and Parity into a single
+algebraic construction.  We show that this generality is illusory: the
+generic index-set construction satisfies the CAR \emph{only for star
+trees} (depth~$\le 1$) --- a far more restrictive domain than
+previously recognized.  The Bravyi--Kitaev encoding survives because
+it uses a \emph{separate} construction with hand-derived Fenwick-tree
+formulas, not the generic index-set method.  The literature thus
+contains three distinct constructions, not two: one for stars (the
+index-set method), one for Fenwick trees (bit-manipulation formulas),
+and one that is truly universal (the path-based method of Jiang et
+al.~\cite{jiang2020}).
+
+We prove computationally that the number of index-monotonic labelled
+rooted trees is exactly $(n{-}1)!$, a vanishing fraction of the
+$n^{n-1}$ tree encoding space.  Even this minority is mostly
+inaccessible to the algebraic construction.  The monotonic boundary
+and the star-only restriction together reveal a rich phase structure in
+the space of representations.
 
 %--- Outline ---
 \subsection*{Outline}

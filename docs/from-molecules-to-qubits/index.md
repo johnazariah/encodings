@@ -57,4 +57,4 @@ Every numerical result in this tutorial is reproduced by the FockMap library. Se
 
 ## PDF Version
 
-A TeX-typeset version of this tutorial is available as a [preprint (PDF)](https://github.com/johnazariah/encodings/blob/main/.research/paper-tutorial/paper.pdf) suitable for printing and citation.
+A TeX-typeset version of this tutorial is available as a [preprint (PDF)](https://github.com/johnazariah/encodings/blob/main/.project/research/paper-tutorial/paper.pdf) suitable for printing and citation.

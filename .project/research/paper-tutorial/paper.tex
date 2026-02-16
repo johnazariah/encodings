@@ -710,7 +710,7 @@ mapping does not preserve the fermionic algebra.
 
 \subsection{The Jordan--Wigner transform}
 
-Jordan and Wigner (1928)~\cite{jordanwigner1928} found the fix: insert
+Jordan and Wigner (1928)~\cite{jordan1928} found the fix: insert
 a chain of $Z$ operators on all lower-index qubits.  Since $Z$ has
 eigenvalues $\pm 1$ depending on the qubit's state, this chain tracks
 the \emph{parity} of all preceding occupations, exactly the sign
@@ -776,7 +776,7 @@ structure.  Can we do better?
 
 \paragraph{Bravyi--Kitaev (2002).}
 Replaces the linear chain with a \emph{Fenwick tree} (binary indexed
-tree)~\cite{bravyikitaev2002,seeley2012}.  Each qubit stores the parity
+tree)~\cite{bravyi2002,seeley2012}.  Each qubit stores the parity
 of a logarithmically bounded subset of modes, resulting in
 $O(\log_2 n)$ Pauli weight.
 
@@ -1173,6 +1173,6 @@ non-identity entries:
 $w(\sigma) = |\{j : P_j \neq I\}|$.
 
 %%====================================================================
-\bibliography{paper}
+\bibliography{../shared/bibliography/references}
 
 \end{document}

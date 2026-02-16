@@ -539,11 +539,11 @@ Create an `examples/` folder at the repo root with curated scripts:
 | `Custom_Tree.fsx` | New | Build an arbitrary tree, encode an operator |
 | `Compare_Encodings.fsx` | Adapt from `ScalingBenchmark.fsx` | All 5 encodings on H₂, weight comparison |
 
-### 5.2 Research tools stay in .research/
+### 5.2 Research tools stay in .project/research/
 
-The `.research/tools/` scripts (MatrixVerification, AnticommutationTest,
+The `.project/research/tools/` scripts (MatrixVerification, AnticommutationTest,
 MonotonicityCensus, etc.) are research artifacts, not user-facing
-examples.  Keep them in `.research/` and don't reference them in README.
+examples.  Keep them in `.project/research/` and don't reference them in README.
 
 ### 5.3 Review .fsx scripts for hardcoded paths
 

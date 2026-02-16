@@ -51,7 +51,11 @@ $\Pset{j} = \Rset{j} \cup F(j)$.  The Majorana operators are then
 \end{align}
 
 \textbf{Critical restriction.}  This construction satisfies the CAR
-\emph{only} when the tree is index-monotonic (\cref{sec:phase-boundary}).
+\emph{only} when the tree is a star (depth~$\le 1$).  We prove this
+surprising result by exhaustive enumeration in
+\cref{sec:phase-boundary}, which also shows that the restriction is
+far sharper than the index-monotonicity condition suggested by the
+original Seeley--Richard--Love framework~\cite{seeley2012}.
 
 %%====================================================================
 \subsection{Construction B: the path-based method}
@@ -110,24 +114,29 @@ The full proof proceeds by induction on the tree depth.
 
 \begin{table}[t]
 \centering
-\caption{Known encodings as special trees.}
+\caption{Known encodings as special trees.  Construction~A works only
+for stars (depth~$\le 1$); Construction~F uses hand-derived
+Fenwick-specific formulas; Construction~B is universal.}
 \label{tab:encodings-as-trees}
 \begin{tabular}{@{}lcccc@{}}
 \toprule
 \textbf{Tree shape} & \textbf{Depth} & \textbf{Constr.} &
   \textbf{Encoding} & \textbf{Weight} \\
 \midrule
-Linear chain        & $n{-}1$              & A or B & JW      & $O(n)$ \\
-Fenwick tree        & $\lfloor\log_2 n\rfloor$ & A      & BK      & $O(\log_2 n)$ \\
-Reverse chain       & $n{-}1$              & A or B & Parity  & $O(n)$ \\
-Balanced binary     & $\lfloor\log_2 n\rfloor$ & B only & BinTree & $O(\log_2 n)$ \\
-Balanced ternary    & $\lfloor\log_3 n\rfloor$ & B only & TerTree & $O(\log_3 n)$ \\
+Star (linear)       & $1$ (star)           & A      & JW      & $O(n)$ \\
+Fenwick tree        & $\lfloor\log_2 n\rfloor$ & F      & BK      & $O(\log_2 n)$ \\
+Star (reverse)      & $1$ (star)           & A      & Parity  & $O(n)$ \\
+Balanced binary     & $\lfloor\log_2 n\rfloor$ & B      & BinTree & $O(\log_2 n)$ \\
+Balanced ternary    & $\lfloor\log_3 n\rfloor$ & B      & TerTree & $O(\log_3 n)$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\Cref{tab:encodings-as-trees} summarises the correspondence.  The
-balanced binary and ternary trees are \emph{not} index-monotonic, so
-Construction~A fails for them — only Construction~B is valid.  This
-observation motivates the analysis of the structural phase boundary
-in~\cref{sec:phase-boundary}.
+\Cref{tab:encodings-as-trees} summarises the correspondence.
+Jordan--Wigner and Parity are both star trees (depth~1) and are the
+only non-trivial encodings accessible to Construction~A.  The
+Bravyi--Kitaev encoding uses a separate construction~(F) with
+tree-specific Fenwick formulas --- the generic index-set method fails
+on Fenwick-shaped trees.  Balanced binary and ternary trees require
+Construction~B, which is universal.  This three-construction landscape
+is analysed in~\cref{sec:phase-boundary}.

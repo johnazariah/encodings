@@ -6,20 +6,11 @@ tutorial:
 	cd paper-tutorial && latexmk -pdf -interaction=nonstopmode paper.tex
 	cp paper-tutorial/paper.pdf paper-tutorial/fockmap-tutorial.pdf
 
-# JOSS paper uses Markdown + pandoc via the Open Journals Docker image.
-# Falls back to a simple note if Docker is unavailable.
+# JOSS paper uses Markdown + pandoc via the Open Journals GitHub Action.
+# Build is handled by CI (draft-paper.yml); no local build needed.
 software:
-	@if command -v docker >/dev/null 2>&1; then \
-	  docker run --rm \
-	    --volume $(CURDIR)/paper-software:/data \
-	    --user $$(id -u):$$(id -g) \
-	    --env JOURNAL=joss \
-	    openjournals/inara && \
-	  cp paper-software/paper.pdf paper-software/fockmap-joss.pdf; \
-	else \
-	  echo "WARNING: Docker not available. Skipping JOSS PDF build."; \
-	  echo "Install Docker or use the JOSS GitHub Action to build the PDF."; \
-	fi
+	@echo "JOSS paper builds via GitHub Actions (draft-paper.yml)."
+	@echo "Push to .project/research/paper-software/ to trigger a build."
 
 cookbook:
 	cd paper-cookbook && latexmk -pdf -interaction=nonstopmode paper.tex

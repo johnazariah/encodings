@@ -46,6 +46,20 @@ Despite these differences, the encoding provides a \emph{calculable}
 toy model for phenomena that are intractable in the full AdS/CFT
 setting.
 
+\paragraph{The three-construction landscape.}
+The discovery that the index-set method works only for stars
+(\cref{thm:monotonicity}) has implications for the holographic
+analogy.  In AdS/CFT, there is typically a single code --- the
+tensor network or error-correcting code --- that governs bulk/boundary
+reconstruction.  In the fermion-to-qubit setting, three distinct
+constructions coexist, each with a different domain.  One may view
+the domain boundaries as analogues of different holographic phases:
+the algebraic constructions (A and~F) are brittle codes that work
+only under stringent structural conditions, while the geometric
+construction~(B) is a robust universal code that sacrifices algebraic
+compactness for generality.  The provably optimal encoding (balanced
+ternary) lives in the universal phase.
+
 %%====================================================================
 \subsection{Hamiltonian-adapted trees}
 \label{sec:disc-adapted}
@@ -91,8 +105,11 @@ We conclude with several directions for future work.
     classes?
 
   \item \textbf{Field-theoretic interpretation of the phase boundary.}
-    Is there a continuum limit in which the monotonicity boundary
-    becomes a phase transition in the statistical-mechanical sense?
+    Is there a continuum limit in which the star-tree restriction and
+    the monotonicity boundary become phase transitions in the
+    statistical-mechanical sense?  The three-region structure
+    (stars / non-star monotonic / non-monotonic) suggests a richer
+    landscape than a single binary transition.
 
   \item \textbf{Complexity of optimal-tree search.}
     What is the computational complexity of finding the weight-minimising

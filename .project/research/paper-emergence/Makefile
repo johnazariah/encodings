@@ -3,7 +3,7 @@
 MAIN  = paper
 TEX   = $(MAIN).tex
 PDF   = $(MAIN).pdf
-BIB   = $(MAIN).bib
+BIB   = ../shared/bibliography/references.bib
 DEPS  = $(wildcard drafts/*.tex) $(wildcard figures/*.tex) $(BIB)
 
 all: $(PDF)

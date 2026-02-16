@@ -63,7 +63,9 @@ by the encoding.  The parallel to holographic reconstruction —  where a
 bulk local operator can be a simple or complex boundary operator
 depending on the code~\cite{pastawski2015happy} — is exact.
 
-% TODO: Figure — same hopping term, weight comparison across 5 encodings.
+% Figure: same hopping term, weight comparison across 5 encodings.
+% At n=8: JW weight-2, BK weight-4, Parity weight-8,
+%         BinTree weight-4, TerTree weight-3.
 
 %%====================================================================
 \subsection{Emergent symmetry fractionalization}
@@ -89,9 +91,17 @@ $Z$-links.  Hence $\pauliw{\hat{P}} = |Z\text{-chain}(T)|$.
 
 \paragraph{Examples.}
 \begin{itemize}
-  \item \textbf{JW} (linear chain): $Z$-chain = full chain, weight~$n$.
-  \item \textbf{Parity} (reverse chain): $Z$-chain = last node, weight~1.
-  \item \textbf{BK} (Fenwick, $n = 2^k$): $Z$-chain = root, weight~1.
+  \item \textbf{JW} (star, linear ordering): $Z$-chain = full chain,
+    weight~$n$.  The parity operator is $Z^{\otimes n}$.
+  \item \textbf{Parity} (star, reverse ordering): $Z$-chain =
+    root only, weight~1.  A single $Z_{n-1}$ encodes global parity.
+  \item \textbf{BK} (Fenwick, $n = 2^k$): weight~1.  The root qubit
+    carries total parity as~$Z_{n-1}$.
+  \item \textbf{BinTree} (balanced binary): weight~1.  The root
+    qubit carries parity as~$Z_{\text{root}}$.
+  \item \textbf{TerTree} (balanced ternary): $Z$-chain =
+    $\lfloor \log_3 n \rfloor + 1$ qubits.  For $n = 8$, weight~2;
+    for $n = 27$, weight~3.
 \end{itemize}
 
 The same $\mathbb{Z}_2$ symmetry is represented as a weight-$n$ (global)
@@ -100,7 +110,9 @@ is a concrete instance of \emph{symmetry fractionalization}
 \cite{wen2017zoo}: the tree determines how a global symmetry is
 distributed among the qubits.
 
-% TODO: Figure — parity operator across 5 encodings.
+% Figure: parity operator across 5 encodings at n=8.
+% JW: weight 8 (ZZZZZZZZ).  BK: weight 1 (Z_7).  Parity: weight 1 (Z_7).
+% BinTree: weight 1 (Z_root).  TerTree: weight 2 (Z_root Z_child).
 
 %%====================================================================
 \subsection{Emergent gauge structure}
@@ -111,9 +123,11 @@ fixed particle number~$N_e$ — the encoding introduces stabiliser
 constraints that act as emergent gauge symmetries.
 
 \paragraph{Example ($n=4$, $N_e=2$).}
-Under the Parity encoding, $Z_3 = (-1)^{N_e}$.  For $N_e = 2$ (even),
+Under the Parity encoding (a star tree in reverse ordering),
+$Z_3 = (-1)^{N_e}$.  For $N_e = 2$ (even),
 $Z_3 = +1$, so qubit~3 is frozen: it can be eliminated by qubit
-tapering~\cite{bravyi2017tapering}.  Under Jordan--Wigner, no single
+tapering~\cite{bravyi2017tapering}.  Under Jordan--Wigner (also a star,
+with direct ordering), no single
 qubit carries the particle-number parity, and no direct tapering is
 available from this symmetry alone.
 
@@ -122,7 +136,9 @@ effective theories after gauge fixing.  The tree determines not just
 \emph{which} gauge constraints exist, but \emph{how many} qubits can
 be eliminated.
 
-% TODO: Stabiliser analysis for all 5 encodings at n=4 and n=8.
+% Stabiliser analysis: at n=8, Parity/BK/BinTree allow tapping 1 qubit
+% via the weight-1 parity operator.  JW requires all 8 qubits.
+% TerTree allows tapping via a weight-2 operator.
 
 %%====================================================================
 \subsection{The tree as renormalization scheme}

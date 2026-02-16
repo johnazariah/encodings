@@ -5,6 +5,321 @@ Entries are reverse-chronological (newest first).
 
 ---
 
+## 2026-02-16 — Paper 3 (Emergence) Draft: Major Revision Incorporating Discoveries
+
+### Context
+
+The Paper 3 scaffold was committed on 2026-02-15 (commit `18ca6ca`):
+8 section drafts, paper.tex, paper.bib, Makefile — a clean LaTeX skeleton
+for the PRA-targeted emergence paper. However, the drafts still contained
+the **old hypothesis** (Theorem 3: "Construction A works for monotonic trees")
+rather than the **star-tree discovery** documented on 2026-02-09.
+
+This session rewrote all 8 draft sections, both appendices, the abstract,
+and the bibliography to incorporate the actual computational findings.
+
+### What changed (10 files, +561 / −155 lines, uncommitted)
+
+**Core theorem rewrite (05-phase-boundary.tex)**
+- Complete rewrite (~150 lines → ~250 lines)
+- New structure: §5.1 Monotonicity → §5.2 Three constructions (A/B/F) →
+  §5.3 Star-tree theorem → §5.4 Failure mode → §5.5 Counting → §5.6 Phase diagram
+- Theorem 3 now states: "Construction A satisfies CAR iff tree is a star"
+- Proof by exhaustive enumeration for n=3,4,5 with exact counts
+- Three-region phase diagram: Stars (n trees) / Non-star monotonic ((n−1)!−n) /
+  Non-monotonic (n^{n−1}−(n−1)!)
+- Proposition: |M(n)| = (n−1)! with computational proof for n≤6
+- Two universality classes: algebraic (tree-specific) vs geometric (universal)
+
+**Validation data (06-validation.tex)**
+- Complete rewrite with actual computed numbers:
+  - Eigenspectrum equivalence: |Δλ| = 4.44×10⁻¹⁶ (machine precision)
+  - H₂ ground state: E₀ = −1.7622 Ha (electronic), −1.0471 Ha (total)
+  - Scaling table: max Pauli weight for n=4..24, all 5 encodings
+  - Mean weight table: n=4..24 confirming TerTree lowest at every size
+  - Parity operator weight table: JW=n, Parity/BK/BinTree=1, TerTree=O(log₃n)
+  - Monotonicity census: full table n=1..6 with |M(n)|=(n−1)! and Pass CAR=n
+
+**Introduction reframing (01-intro.tex)**
+- "Phase boundary" subsection rewritten: SRL generality called "illusory",
+  star-only restriction stated, three constructions named, (n−1)! fraction cited
+
+**Tree-encoding correspondence (03-tree-encoding.tex)**
+- "Critical restriction" updated: "only for stars" (was "only for monotonic")
+- Recovery table: JW/Parity marked as stars (depth 1), BK uses Construction F
+  (was "A"), BinTree/TerTree use Construction B
+- Closing paragraph: three-construction landscape, forward-reference to §5
+
+**Emergence (04-emergence.tex)**
+- Parity weight examples expanded: added BinTree (weight 1) and TerTree
+  (weight O(log₃n), n=8→2, n=27→3)
+- Gauge structure example: clarified Parity and JW are both stars with
+  different orderings
+- TODO markers replaced with actual data comments
+
+**Discussion (07-discussion.tex)**
+- New paragraph: "The three-construction landscape" — algebraic constructions
+  as brittle holographic codes, path-based as robust universal code
+- Open question 3: updated from "monotonicity boundary" to star-tree
+  restriction and three-region structure
+
+**Conclusion (08-conclusion.tex)**
+- Rewritten from "two universality classes" to three-construction narrative
+- Added |M(n)|=(n−1)! as a concrete mathematical finding
+- Named SRL framework explicitly and cited star-tree theorem
+
+**Abstract (paper.tex)**
+- Rewritten to state star-tree restriction, three constructions, and (n−1)!
+  result directly
+
+**Appendices (paper.tex)**
+- Appendix B: Monotonicity counterexample — full computation for modes 4,7
+  on n=8 balanced ternary tree. Shows index sets, spurious anticommutator
+  terms (ZZZZZIXY, ZZZZZIXX), diagnostic D(T)=0.707
+- Appendix C: Census data table for n=1..8 with columns for total, monotonic,
+  stars, non-star monotonic, fraction
+
+**Bibliography (paper.bib)**
+- Added `bergeron1992`: Bergeron, Flajolet, Salvy — "Varieties of Increasing
+  Trees", CAAP 1992, LNCS 581
+
+### Build status
+
+- Emergence paper excluded from release cycle: `make all` target in
+  `.project/research/Makefile` has `#emergence` commented out
+- These changes are uncommitted — the emergence paper is a long-term
+  working document (estimated 6-month iteration toward viva defence)
+
+### Key editorial decisions
+
+1. **Construction F named explicitly.** The BK encoding's separate Fenwick
+   formulas deserve their own label — they are neither Construction A on a
+   Fenwick tree nor Construction B. This clarifies a genuine confusion in
+   the literature.
+
+2. **Proof by exhaustive enumeration accepted.** For n≤5, the star-tree
+   theorem is proved computationally. An analytical proof for all n remains
+   an open question (see §5.3 remark). This is honest and appropriate for
+   a computational physics paper.
+
+3. **Three-region phase diagram rather than binary boundary.** The original
+   plan had a clean "monotonic vs non-monotonic" split. Reality is richer:
+   stars / non-star monotonic / non-monotonic, with each region having
+   different construction compatibility.
+
+### Open questions for the 6-month iteration
+
+1. **Analytical proof of star-tree theorem for all n** — can we show that
+   the `treeRemainderSet` formula necessarily produces incorrect Z-assignments
+   when depth ≥ 2?
+
+2. **Bijective proof of |M(n)| = (n−1)!** — the heap-ordering connection
+   (Bergeron et al.) is sketched but not formalised in the paper.
+
+3. **Full proof of Proposition 1** (Construction B universality) — currently
+   a proof sketch with "induction on tree depth". Needs to be rigorous.
+
+4. **Emergence terminology** — need precise definitions that withstand viva
+   examination: what exactly is meant by "emergent" vs "representation-dependent"?
+
+5. **Holographic analogy limits** — the Discussion acknowledges what doesn't
+   carry over, but needs sharper articulation.
+
+6. **Figures** — no figures have been created yet. Need: tree diagrams,
+   phase diagram, scaling plots, parity operator visualisation.
+
+---
+
+## 2026-02-15 (evening) — Emergence Paper Scaffold (PR #3)
+
+### What was done
+
+Created the full LaTeX skeleton for Paper 3 (Emergence) in
+`.project/research/paper-emergence/` and merged as PR #3:
+
+- `paper.tex` — revtex4-2 (PRA format), `\input{}` per section, custom
+  commands for operators, sets, weights
+- 8 section draft files (`01-intro.tex` through `08-conclusion.tex`) —
+  substantive stubs, not just placeholders
+- `paper.bib` — 21 references covering core encoding theory,
+  emergence/holography, chemistry, software, combinatorics
+- `Makefile` — build / watch / clean / wordcount targets
+- `README.md` — project overview, claim tracker, figure list
+- `figures/`, `supplementary/` — placeholder directories
+
+Updated `.project/research/Makefile` with `emergence` and `watch-emergence` targets.
+Paper compiles to 8 pages (two-column PRA format).
+
+### Paper structure at scaffold stage
+
+| Section | Content | Status |
+|---------|---------|--------|
+| §1 Intro | Motivating question, tree-encoding claim, emergence angle | Solid draft |
+| §2 Background | CAR, Pauli algebra, three encodings, Majorana framework | Solid draft |
+| §3 Tree-encoding | Trees, Construction A/B, recovery of known encodings | Solid draft |
+| §4 Emergence | Locality, symmetry, gauge, renormalization | Conceptual heart, needs data |
+| §5 Phase boundary | Monotonicity, theorem statement | **Used old hypothesis** |
+| §6 Validation | Eigenspectrum, scaling, census | Stub with TODOs |
+| §7 Discussion | Holographic map, adapted trees, open questions | Good framework |
+| §8 Conclusion | Summary paragraph | Brief but coherent |
+
+**Critical issue:** §5 still contained the original Theorem 3 ("Construction A
+works for monotonic trees") rather than the star-tree discovery from 2026-02-09.
+This was fixed in the next session (2026-02-16).
+
+---
+
+## 2026-02-15 (afternoon) — v0.3.1 Hotfix & Project Infrastructure
+
+### v0.3.1 release (tag `v0.3.1`, commit `488c328`)
+
+Quick fix release:
+- Standardised on .NET 8 LTS (had drifted to preview SDKs in devcontainer)
+- Fixed API reference generation in fsdocs
+- Restored missing [0.1.0] changelog entry
+- Added README check to release prompt
+- Added cookbook links to README, removed dead guide references
+
+### CI fix
+
+- `73a1364` — Skip duplicate NuGet push when package version already exists;
+  removed stale `nuget` reference from cookbook chapter 01 that broke builds
+
+### Project infrastructure
+
+Added tooling for maintainability:
+
+- **`.project/test-register.md`** — Plain-English test register listing all
+  test files, test counts, and what each test validates. Makes it easy to
+  check that every behavior has coverage.
+- **`.github/prompts/commit.prompt.md`** — Reusable Copilot prompt for the
+  commit workflow (quality gate → group changes → imperative messages).
+  Moved from `.project/` to `.github/prompts/` for discoverability.
+- **`.github/prompts/release.prompt.md`** — Already existed; commit workflow
+  complements it.
+
+---
+
+## 2026-02-15 (morning) — v0.3.0 Release: Cookbook & Devcontainer Overhaul
+
+### Cookbook (13 chapters)
+
+Created a comprehensive progressive tutorial at `docs/guides/cookbook/`:
+
+| Chapter | Topic |
+|---------|-------|
+| 01 | Hello Qubit — first Pauli expression |
+| 02 | Building Expressions — combining terms |
+| 03 | Indexed Operators — sites and registers |
+| 04 | Creation & Annihilation — fermionic operators |
+| 05 | Normal Ordering — canonical form |
+| 06 | First Encoding — JW by hand |
+| 07 | Five Encodings — side-by-side comparison |
+| 08 | Encoding Internals — Majorana framework |
+| 09 | Trees — building custom tree encodings |
+| 10 | Building a Hamiltonian — H₂ end-to-end |
+| 11 | Mixed Systems — bosonic + fermionic |
+| 12 | Utilities — helper functions |
+| 13 | Grand Finale — putting it all together |
+
+Merged redundant guide pages into cookbook. This replaces scattered docs with
+a single learning path.
+
+### Cookbook companion paper
+
+Created `.project/research/paper-cookbook/` — a short arXiv/JOSS companion paper
+documenting the cookbook's pedagogical design. Cross-referenced in both the
+tutorial paper and the JOSS software paper.
+
+### Devcontainer overhaul
+
+- `fe91429` — Switched to .NET 10 preview SDK with .NET 8 side-by-side
+  (needed for latest tooling while keeping production target at net8.0)
+- Added `jq` to devcontainer tooling
+- Refreshed software metrics in JOSS paper
+- Removed hardcoded test count from post-create message (was showing "303
+  tests" but count changes with coverage work)
+
+### Release pipeline
+
+- Added cookbook PDF to release pipeline artifacts
+- v0.3.0 tagged and released (`1323689`)
+
+---
+
+## 2026-02-14 (afternoon) — v0.2.0 Release: Bosonic Extension & Docs Hardening
+
+### PR #2: Bosonic & mixed-system support (`67298ce`)
+
+Major feature addition (22 files, +1,412 / −270 lines):
+
+**New library modules:**
+- `Bosonic.fs` — Bosonic creation/annihilation with CCR (commutation relations)
+- `MixedSystems.fs` — Sector-aware mixed normal ordering (fermionic + bosonic)
+- `CombiningAlgebra.fs` — Extended combining layer for bosonic terms
+
+**New tests:**
+- `Bosonic.fs` — CCR swap/identity verification
+- `MixedSystems.fs` — Sector separation, hybrid pipeline tests
+
+**New examples:**
+- `Mixed_NormalOrdering.fsx` — Basic mixed-system normal ordering
+- `Mixed_ElectronPhonon_Toy.fsx` — Toy electron-phonon model
+- `Mixed_HybridCompare.fsx` — Compare fermionic vs bosonic handling
+- `Mixed_HybridPipeline.fsx` — End-to-end hybrid workflow
+
+**New documentation:**
+- `docs/theory/07-mixed-systems.md` — Theory chapter on mixed systems
+- `docs/guides/mixed-registers.md` — Practical mixed-system guide
+- `docs/guides/advanced-operations.md` — Practical playbook (replaced old guide)
+- Overhauled `docs/guides/architecture.md` for GitHub rendering
+
+### Test coverage push
+
+Six commits hardening test coverage after v0.1.0:
+
+- `4fa9b6a` — Expand coverage: terms, tree encoding, helpers
+- `146ad40` — Raise line and branch coverage with edge-case paths
+- `569d335` — Expose internals for branch coverage assertions (`InternalsVisibleTo`)
+- `0e27df8` — Harden parser and ordering branches
+- `dacc33d` — Harden sequence sorting and swap-tracking edge cases
+- `dc1408c` — Make TypeExtensions reflection test CI-safe (platform-independent)
+
+### Documentation pages overhaul
+
+Significant effort getting GitHub Pages to render math and diagrams correctly:
+
+- `7374982` — Branding + Mermaid runtime fix + streamlined docs build
+- `41ead06` — Keep markdown raw, limit post-processing to links/assets
+- `7a3c7ba` — Native markdown via Jekyll + fsdocs API-only reference (split
+  strategy: Jekyll renders theory/guides, fsdocs generates API reference only)
+- `d8fd2b4`, `311ac00`, `fca2713` — Three passes fixing ket/bra math notation
+  for Pages parser safety (MathJax vs fsdocs conflicts)
+- `eabc087` — Fix lab links for native markdown pages
+- Simplified onboarding docs and strengthened tutorial pedagogy
+
+### v0.2.0 tagged and released (`27b89ec`)
+
+---
+
+## 2026-02-14 (morning) — v0.1.0 Release (PR #1)
+
+### First public release
+
+PR #1 merged (`a8cc64f`, 131 files, +22,091 / −1,221 lines). This was the
+full repository cleanup documented in the entry below. Tagged as `v0.1.0`
+(`1a6cdb5`).
+
+### CI fixes for LaTeX paper builds
+
+Two quick fixes needed after tagging:
+- `ecf6927` — Install `texlive-publishers` for revtex4-2 paper compilation
+- `1a6cdb5` — Install `lmodern` font package for LaTeX builds
+
+Both were needed because the CI runner's TeX Live installation was minimal.
+
+---
+
 ## 2026-02-14 — Repository Cleanup, Documentation & Release Infrastructure
 
 ### Context
@@ -425,7 +740,7 @@ MonotonicityCensus, ParityOperator.
 - Compare against direct FCI (full configuration interaction) in Fock space
 
 **Bugs encountered:**
-1. *DLL path:* Scripts in `.research/tools/` need `#r "../../Encodings/bin/Debug/net8.0/Encodings.dll"` — two levels up, not one.
+1. *DLL path:* Scripts in `.project/research/tools/` need `#r "../../Encodings/bin/Debug/net8.0/Encodings.dll"` — two levels up, not one.
 2. *`reg.Size` is internal:* Had to use `reg.Signature.Length` instead.
 3. *FCI operator ordering:* `applyExchange` was applying exchange operators in the wrong order. The two-body term `a†_p a†_q a_s a_r` requires applying operators right-to-left (a_r first, then a_s, then a†_q, then a†_p).
 4. *Complex eigenvalue solver:* Balanced ternary encoding produced complex-valued matrix entries. Standard real symmetric eigenvalue routines fail. Fixed by embedding the n×n Hermitian matrix as a 2n×2n real symmetric matrix: `[[Re, -Im], [Im, Re]]`.

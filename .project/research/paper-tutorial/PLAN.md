@@ -486,7 +486,7 @@ the qubit Hamiltonian for H₂ step by step.
 
 **Dependencies:**
 - H2Demo.fsx output (all 15 terms with coefficients)
-- Need: matrix eigenspectrum verification script (from .research/tools/)
+- Need: matrix eigenspectrum verification script (from .project/research/tools/)
   to confirm eigenvalues match classical FCI
 
 
@@ -521,7 +521,7 @@ to known results.
 - Fig. 11: H₂ dissociation curve (energy vs. R, with HF and FCI curves)
 
 **Dependencies:**
-- MatrixVerification.fsx (to be built in .research/tools/)
+- MatrixVerification.fsx (to be built in .project/research/tools/)
 - Need eigenvalue data at multiple bond lengths for dissociation curve
 
 
@@ -569,16 +569,16 @@ pipeline leads.
 
 | Component | Location | Purpose | Status |
 |-----------|----------|---------|--------|
-| MatrixVerification.fsx | .research/tools/ | Build 16×16 matrices, diagonalise, eigenspectrum | 🔲 |
-| DissociationCurve.fsx | .research/tools/ | H₂ energy at multiple bond lengths | 🔲 |
-| IntegralTables.fsx | .research/paper-tutorial/ | Generate all integral tables for appendix | 🔲 |
-| Fig. 1: Pipeline | .research/paper-tutorial/figures/ | TikZ or SVG pipeline diagram | 🔲 |
-| Fig. 2: Orbitals | .research/paper-tutorial/figures/ | H₂ orbital diagram | 🔲 |
-| Fig. 3: Notation | .research/paper-tutorial/figures/ | Chemist vs. physicist comparison | 🔲 |
-| Fig. 6: JW string | .research/paper-tutorial/figures/ | Z-chain visualization | 🔲 |
-| Fig. 8: Hamiltonian | .research/paper-tutorial/figures/ | 15-term table | 🔲 |
-| Fig. 10: Eigenvalues | .research/paper-tutorial/figures/ | Eigenspectrum plot | 🔲 |
-| Fig. 11: Dissociation | .research/paper-tutorial/figures/ | E vs. R curve | 🔲 |
+| MatrixVerification.fsx | .project/research/tools/ | Build 16×16 matrices, diagonalise, eigenspectrum | 🔲 |
+| DissociationCurve.fsx | .project/research/tools/ | H₂ energy at multiple bond lengths | 🔲 |
+| IntegralTables.fsx | .project/research/paper-tutorial/ | Generate all integral tables for appendix | 🔲 |
+| Fig. 1: Pipeline | .project/research/paper-tutorial/figures/ | TikZ or SVG pipeline diagram | 🔲 |
+| Fig. 2: Orbitals | .project/research/paper-tutorial/figures/ | H₂ orbital diagram | 🔲 |
+| Fig. 3: Notation | .project/research/paper-tutorial/figures/ | Chemist vs. physicist comparison | 🔲 |
+| Fig. 6: JW string | .project/research/paper-tutorial/figures/ | Z-chain visualization | 🔲 |
+| Fig. 8: Hamiltonian | .project/research/paper-tutorial/figures/ | 15-term table | 🔲 |
+| Fig. 10: Eigenvalues | .project/research/paper-tutorial/figures/ | Eigenspectrum plot | 🔲 |
+| Fig. 11: Dissociation | .project/research/paper-tutorial/figures/ | E vs. R curve | 🔲 |
 
 ---
 
