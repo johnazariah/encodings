@@ -1,0 +1,152 @@
+% §6 Path-Based Tree Encodings
+%
+% Presents Construction B: the universal path-based method.
+% Shows how it works, why it always satisfies the CAR,
+% and how it recovers all known encodings.
+
+The path-based tree encoding~\cite{jiang2020, miller2023bonsai}
+provides an entirely different route from trees to Pauli strings ---
+one that works for \emph{every} tree, not just stars.
+
+\subsection{Encoding trees}
+\label{sec:encoding-trees}
+
+\begin{definition}[Encoding tree]
+\label{def:encoding-tree}
+An \emph{encoding tree} for $n$ fermionic modes is a rooted tree $T$
+with internal nodes, where each node has at most three descending
+connections, each labelled by a distinct Pauli operator from $\{X, Y,
+Z\}$.  Each connection is either an \emph{edge} (to a child node) or a
+\emph{leg} (a dangling terminal link).  The total number of legs is
+$2n$, paired into $n$ mode assignments.
+\end{definition}
+
+The branching constraint (at most 3 children per node) comes directly
+from the Pauli algebra: there are exactly three non-identity
+single-qubit Paulis ($X$, $Y$, $Z$), and each link label must be
+distinct among siblings to ensure anticommutation.
+
+\subsection{The path-based construction (Construction B)}
+\label{sec:construction-b}
+
+For mode~$j$, let $\ell_j^{(c)}$ and $\ell_j^{(d)}$ be the paired
+legs assigned to that mode.  The Majorana operator for each leg is the
+Pauli string obtained by collecting the link labels along the
+root-to-leg path:
+\begin{equation}
+  S(\ell) = \bigotimes_{v \in \mathrm{path}(\ell)}
+    \text{label}(v \to \text{next}) \;\otimes\;
+    \bigotimes_{v \notin \mathrm{path}(\ell)} I.
+  \label{eq:path-pauli}
+\end{equation}
+
+Each qubit in the register corresponds to an internal node of the
+tree.  At each node on the root-to-leg path, the Pauli label of the
+outgoing edge/leg becomes the operator on that qubit.  All nodes
+\emph{not} on the path receive identity.
+
+The Majorana operators for mode~$j$ are:
+\begin{equation}
+  c_j = S(\ell_j^{(c)}), \qquad d_j = S(\ell_j^{(d)}).
+\end{equation}
+The ladder operators follow from~\eqref{eq:encoded-ladder}.
+
+\subsection{Correctness: why Construction B always works}
+\label{sec:tree-car-proof}
+
+\begin{theorem}[Tree encoding correctness]
+\label{thm:tree-car}
+For any encoding tree $T$ with $2n$ legs paired into $n$ modes, the
+ladder operators satisfy the CAR.
+\end{theorem}
+
+\begin{proof}[Proof sketch]
+Consider two Majorana operators $S(\ell_a)$ and $S(\ell_b)$.
+
+\emph{Case 1: paths diverge at some ancestor.}
+The two root-to-leg paths share a common prefix and diverge at some
+node~$v$, where $S(\ell_a)$ follows one child (label $\sigma_a$) and
+$S(\ell_b)$ follows another (label $\sigma_b$, with $\sigma_a \neq
+\sigma_b$).  At node~$v$: $\sigma_a \sigma_b = -\sigma_b \sigma_a$
+(anticommutation of distinct Paulis).  At all shared prefix
+nodes: same labels, so they commute.  Below the branch: one operator
+has identity where the other is non-trivial.  Total anticommuting
+positions: exactly~1 (odd), so $\{S(\ell_a), S(\ell_b)\} = 0$.
+
+\emph{Case 2: one path is a prefix of the other.}
+This cannot occur because legs are terminals (they don't continue
+to child nodes), so two distinct legs always diverge.
+
+\emph{Case 3: same leg ($\ell_a = \ell_b$).}
+$S(\ell)^2 = I^{\otimes n}$ (each Pauli squares to identity),
+so $\{S(\ell), S(\ell)\} = 2I$.
+
+In all cases, the Majorana anticommutation
+relations~\eqref{eq:majorana-car} are satisfied.  The formal
+inductive proof is given by Jiang et al.~\cite{jiang2020}.
+\end{proof}
+
+The elegance of Construction~B is that correctness follows from the
+\emph{tree structure alone}: distinct paths through a branching tree
+necessarily anticommute at exactly one node.  No constraints on tree
+shape, depth, or labelling are needed.
+
+\subsection{Recovery of known encodings}
+\label{sec:recovery}
+
+All five standard encodings arise from specific tree topologies:
+
+\begin{table}[t]
+\centering
+\caption{Standard encodings as tree topologies.}
+\label{tab:tree-encodings}
+\begin{tabular}{@{}lll@{}}
+\toprule
+Tree topology & Encoding & Max Pauli weight \\
+\midrule
+Star (depth 1, chain ordering) & Jordan--Wigner & $O(n)$ \\
+Star (depth 1, reversed) & Parity & $O(n)$ \\
+Fenwick tree & Bravyi--Kitaev & $O(\log_2 n)$ \\
+Balanced binary tree & Binary tree & $O(\log_2 n)$ \\
+Balanced ternary tree & Ternary tree & $O(\log_3 n)$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The star-tree topologies (JW, Parity) have maximum depth~1, giving
+weight up to $2(1) + 1 = 3$ \emph{per Majorana operator} --- but the
+star has $n$ legs radiating from a single root, and the root qubit
+participates in \emph{every} Majorana operator, leading to $O(n)$
+weight in aggregate.  Deeper trees distribute the work across more
+internal nodes, achieving logarithmic weight.
+
+\subsection{Pauli-weight bounds}
+\label{sec:weight-bounds}
+
+\begin{theorem}[Weight bound]
+\label{thm:weight-bound}
+For an encoding tree $T$ with depth $d = \depth{T}$, every Majorana
+operator has Pauli weight at most $d + 1$.  Every encoded ladder
+operator has Pauli weight at most $2d + 1$.
+\end{theorem}
+
+\begin{proof}
+Each Majorana string has weight equal to its root-to-leg path length,
+at most $d + 1$.  A ladder operator is
+$\tfrac{1}{2}(S(\ell^{(c)}) \pm i\,S(\ell^{(d)}))$; in the worst
+case, the two Majorana strings share only the root, giving weight at
+most $2d + 1$.
+\end{proof}
+
+\begin{corollary}[Optimal asymptotic weight]
+\label{cor:optimal-weight}
+Since each node has at most 3 children (one per Pauli label), the
+minimum depth for $2n$ legs is $d \ge \lceil\log_3(2n)\rceil$.
+The balanced ternary tree achieves this bound, giving optimal weight
+$O(\log_3 n)$ among fixed-arity trees.
+\end{corollary}
+
+This optimality result, established by Jiang et al.~\cite{jiang2020},
+is notable: the provably optimal encoding uses a balanced ternary tree
+--- a tree that is \emph{not} a star, and therefore lies outside the
+domain of the index-set construction (\cref{sec:star-tree}).

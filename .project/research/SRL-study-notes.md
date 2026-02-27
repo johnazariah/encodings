@@ -64,8 +64,8 @@ SRL makes four distinct contributions:
 
 ### 2a. Introduces the Fenwick tree as the organising structure for BK
 The key insight: the Fenwick tree (binary indexed tree from CS) naturally gives the
-update, parity, and occupation sets needed for BK. The bit-manipulation formulas 
-`lsb(k) = k & (-k)`, `ancestors via k + lsb(k)`, `descendants via k - 1 & (k-1)` 
+update, parity, and occupation sets needed for BK. The bit-manipulation formulas
+`lsb(k) = k & (-k)`, `ancestors via k + lsb(k)`, `descendants via k - 1 & (k-1)`
 make everything O(log n).
 
 ### 2b. Defines three index sets abstractly
@@ -156,7 +156,7 @@ let cMajorana scheme j n =
     let u = scheme.Update j n
     let p = scheme.Parity j
     (j, X) :: setAssign X u @ setAssign Z p
-    
+
 // d Majorana:  Y on j,  X on U(j),  Z on (P(j) ⊕ Occ(j)) \ {j}
 let dMajorana scheme j n =
     let u   = scheme.Update j n
@@ -184,9 +184,9 @@ Both formulas produce identical operators.
 
 ### When do they diverge?
 
-For **deeper trees** where a node can be simultaneously in the update set 
-(as an ancestor) AND the occupation set (as a descendant) of another node, 
-or where {j} ∪ U(j) overlaps with P(j). The SRL formula handles overlaps by 
+For **deeper trees** where a node can be simultaneously in the update set
+(as an ancestor) AND the occupation set (as a descendant) of another node,
+or where {j} ∪ U(j) overlaps with P(j). The SRL formula handles overlaps by
 the casework (X→Y promotion at intersections), while the code formula assumes
 disjointness and applies assignments independently.
 
@@ -232,7 +232,7 @@ The proof of sufficiency in the star-tree theorem shows this explicitly.
 
 ### Bravyi-Kitaev
 
-For BK, SRL derives the sets from the Fenwick tree using **hand-derived 
+For BK, SRL derives the sets from the Fenwick tree using **hand-derived
 bit-manipulation formulas**:
 ```fsharp
 let bravyiKitaevScheme : EncodingScheme =
@@ -274,9 +274,9 @@ Example for n=8 (1-indexed, then shifted to 0-indexed):
 ```
         8
        / \
-      4    
-     / \   
-    2   6  
+      4
+     / \
+    2   6
    / \ / \
   1  3 5  7
 ```
@@ -309,7 +309,7 @@ the latter passes. Same tree topology, different derivation method, different re
 ### What SRL explicitly claims
 
 1. ✅ "BK achieves O(log n) Pauli weight" — correct, proven
-2. ✅ "BK can be described by update, parity, and occupation sets" — correct 
+2. ✅ "BK can be described by update, parity, and occupation sets" — correct
 3. ✅ "JW and Parity can also be described by U, P, Occ" — correct
 4. ✅ "The Fenwick tree structure determines the BK index sets" — correct
 5. ✅ "BK requires fewer gates than JW for H₂" — correct, demonstrated
@@ -383,7 +383,7 @@ which all happen to work (for different reasons each).
 // Construction A: generic tree → scheme
 let treeEncodingScheme (tree : EncodingTree) : EncodingScheme =
     { Update     = fun j _n -> treeUpdateSet tree j     // ancestors
-      Parity     = fun j    -> treeParitySet tree j     // remainder ∪ children  
+      Parity     = fun j    -> treeParitySet tree j     // remainder ∪ children
       Occupation = fun j    -> treeOccupationSet tree j  // descendants ∪ {j}
     }
 
@@ -556,7 +556,7 @@ symmetric difference correctly produces the required Z positions.
 
 ### The failing anticommutator
 
-{a₄, a†₇} should be 0 (since 4 ≠ 7). The depth-2 path 4 → 6 → 7 triggers 
+{a₄, a†₇} should be 0 (since 4 ≠ 7). The depth-2 path 4 → 6 → 7 triggers
 the cancellation mechanism. The explicit computation gives:
 
 ```

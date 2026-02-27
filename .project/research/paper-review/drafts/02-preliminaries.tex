@@ -1,0 +1,137 @@
+% §2 Preliminaries
+%
+% Notation, fermionic algebra, Pauli algebra, Majorana operators.
+% Kept self-contained for tutorial accessibility.
+
+We establish the notation and collect the key definitions used
+throughout.
+
+\subsection{Fermionic operators and canonical anticommutation relations}
+
+Consider $n$ fermionic modes with creation operators $\ad{j}$ and
+annihilation operators $\an{j}$ for $j \in \{0, \ldots, n{-}1\}$.
+These satisfy the \emph{canonical anticommutation relations} (CAR):
+\begin{align}
+  \acomm{\an{i}}{\ad{j}} &= \delta_{ij}, \label{eq:car1} \\
+  \acomm{\an{i}}{\an{j}} &= 0, \label{eq:car2} \\
+  \acomm{\ad{i}}{\ad{j}} &= 0. \label{eq:car3}
+\end{align}
+These relations encode the Pauli exclusion principle: no two fermions
+can occupy the same mode.  The \emph{number operator}
+$\nhat{j} = \ad{j}\an{j}$ has eigenvalues 0 and~1, and the Fock space
+basis states are tensor products $\ket{f_{n-1} \cdots f_1 f_0}$ with
+$f_j \in \{0, 1\}$.
+
+\subsection{Pauli algebra}
+\label{sec:pauli-algebra}
+
+A qubit register of $n$ qubits admits the Pauli group $\mathcal{P}_n$
+consisting of $n$-fold tensor products of single-qubit Pauli operators
+$\{I, X, Y, Z\}$ with phases in $\{+1, -1, +i, -i\}$.  The
+single-qubit multiplication rules are:
+\begin{equation}
+  XY = iZ, \quad YZ = iX, \quad ZX = iY,
+  \label{eq:pauli-products}
+\end{equation}
+with $\sigma^2 = I$ for all $\sigma \in \{X, Y, Z\}$ and
+$\sigma_a \sigma_b = -\sigma_b \sigma_a$ for $a \neq b$.
+
+Multi-qubit Pauli strings multiply componentwise:
+\begin{equation}
+  (\sigma_{a_0} \otimes \cdots \otimes \sigma_{a_{n-1}})
+  (\sigma_{b_0} \otimes \cdots \otimes \sigma_{b_{n-1}})
+  = \phi \cdot
+  (\sigma_{a_0}\sigma_{b_0}) \otimes \cdots \otimes
+  (\sigma_{a_{n-1}}\sigma_{b_{n-1}}),
+  \label{eq:pauli-mult}
+\end{equation}
+where $\phi = \prod_{k=0}^{n-1} \phi_k$ is the accumulated phase from
+each single-qubit multiplication.
+
+\begin{definition}[Pauli weight]
+\label{def:pauli-weight}
+The \emph{Pauli weight} of a string $\sigma \in \mathcal{P}_n$ is the
+number of non-identity tensor factors.  For an encoded ladder operator
+expressed as a sum of Pauli strings, the weight is the maximum over all
+terms.
+\end{definition}
+
+Pauli weight directly determines the number of CNOT gates required to
+measure the corresponding term in a variational quantum eigensolver
+(VQE) circuit, making it the primary figure of merit for encoding
+quality.
+
+\subsection{Majorana operators}
+\label{sec:majorana}
+
+\begin{definition}[Majorana operators]
+\label{def:majorana}
+For each mode $j$, the Hermitian \emph{Majorana operators} are:
+\begin{align}
+  c_j &= \ad{j} + \an{j}, \label{eq:majorana-c} \\
+  d_j &= i(\ad{j} - \an{j}). \label{eq:majorana-d}
+\end{align}
+\end{definition}
+
+These satisfy the Majorana anticommutation relations:
+\begin{equation}
+  \{c_i, c_j\} = 2\delta_{ij}, \quad
+  \{d_i, d_j\} = 2\delta_{ij}, \quad
+  \{c_i, d_j\} = 0.
+  \label{eq:majorana-car}
+\end{equation}
+
+Inverting~\eqref{eq:majorana-c}--\eqref{eq:majorana-d}:
+\begin{equation}
+  \ad{j} = \tfrac{1}{2}(c_j - id_j), \qquad
+  \an{j} = \tfrac{1}{2}(c_j + id_j).
+  \label{eq:ladder-from-majorana}
+\end{equation}
+
+The Majorana decomposition is the key bridge between fermions and
+qubits: every encoding reduces to specifying how to represent $c_j$
+and $d_j$ as Pauli strings.  If the Pauli representations satisfy
+the Majorana anticommutation relations~\eqref{eq:majorana-car}, the
+induced ladder operators automatically satisfy the
+CAR~\eqref{eq:car1}--\eqref{eq:car3}.
+
+\begin{definition}[Fermion-to-qubit encoding]
+\label{def:encoding}
+A \emph{fermion-to-qubit encoding} for $n$ modes on $n$ qubits is a
+pair of maps $c_j \mapsto S_j^{(c)}$ and $d_j \mapsto S_j^{(d)}$, where
+each $S_j^{(c)}$ and $S_j^{(d)}$ is a Pauli string in
+$\mathcal{P}_n$, such that the induced ladder operators
+\begin{equation}
+  \ad{j} = \tfrac{1}{2}(S_j^{(c)} - i S_j^{(d)}), \qquad
+  \an{j} = \tfrac{1}{2}(S_j^{(c)} + i S_j^{(d)})
+  \label{eq:encoded-ladder}
+\end{equation}
+satisfy the CAR~\eqref{eq:car1}--\eqref{eq:car3}.
+\end{definition}
+
+\subsection{The electronic Hamiltonian}
+\label{sec:hamiltonian}
+
+The second-quantized electronic Hamiltonian is:
+\begin{equation}
+  H = \sum_{pq} h_{pq}\, \ad{p}\an{q}
+    + \frac{1}{2} \sum_{pqrs} g_{pqrs}\, \ad{p}\ad{q}\an{s}\an{r},
+  \label{eq:hamiltonian}
+\end{equation}
+where $h_{pq}$ are one-electron integrals and $g_{pqrs}$ are
+two-electron integrals from quantum chemistry
+computations~\cite{szabo1996, helgaker2000}.  An encoding maps each
+$\ad{j}$ and $\an{j}$ to a two-term Pauli expression
+via~\eqref{eq:encoded-ladder}, and the products are expanded using the
+Pauli multiplication rule~\eqref{eq:pauli-mult}.  The result is a
+Hamiltonian expressed entirely in terms of Pauli strings:
+\begin{equation}
+  H = \sum_{\alpha} h_\alpha\, \sigma_\alpha,
+  \label{eq:pauli-hamiltonian}
+\end{equation}
+where $\sigma_\alpha \in \mathcal{P}_n$ and $h_\alpha \in \mathbb{C}$.
+
+The choice of encoding affects neither the eigenspectrum nor the
+physics, only the measurement cost: each distinct Pauli string
+requires a separate measurement basis, and the number of such terms
+and their weights determine the overall simulation overhead.

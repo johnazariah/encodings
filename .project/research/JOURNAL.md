@@ -5,6 +5,45 @@ Entries are reverse-chronological (newest first).
 
 ---
 
+## 2026-02-27 — Paper Consolidation: Three-Paper Architecture
+
+### Decision
+
+Consolidated from 7 paper directories down to 3 active papers:
+
+1. **paper-review/** — *Fermion-to-Qubit Encodings: A Tutorial Review
+   of the Three-Construction Landscape* (arXiv / Quantum, 46 pages).
+   The main publication.
+
+2. **paper-software/** — *FockMap: A Composable Functional Framework
+   for Symbolic Fock-Space Operator Algebra* (JOSS, ~6 pages).
+   The software paper, submitted alongside the library.
+
+3. **paper-explainer/** — *Why Most Fermion-to-Qubit Encoding Trees
+   Don't Work* (private, 22 pages).  Teaching/presentation companion.
+
+### Archived (moved to `_archive/`)
+
+| Directory | Reason |
+|-----------|--------|
+| `paper-algebraic/` | Star-tree theorem content absorbed into review §7–§8 |
+| `paper-emergence/` | Phase-boundary content absorbed into review §7–§8 |
+| `paper-tutorial/` | Pedagogical content absorbed into review §1–§6; also lives in `docs/from-molecules-to-qubits/` |
+| `paper-cookbook/` | Library documentation, not a paper; lives as `docs/guides/cookbook/` |
+
+### Changes this session
+
+- Moved 4 directories to `_archive/`
+- Simplified Makefile to three targets: `review`, `software`, `explainer`
+- Rewrote README.md to reflect three-paper architecture
+- Added Bonsai (Miller et al. 2023) coverage to review paper (§1.6, §10.2, §10.3)
+- Added Aspuru-Guzik (2005) citations to review paper (§1 opening, §1.6, §10.2)
+- Fixed comparison table overflow with `sidewaystable*` + `\resizebox`
+- Added Jordan-Wigner appendix to explainer paper (Appendix A)
+- Added Construction A and Construction F sections to explainer paper
+
+---
+
 ## 2026-02-17 (session 2) — Paper–Algebraic: Structural Additions
 
 ### Changes

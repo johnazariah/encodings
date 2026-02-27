@@ -1,0 +1,189 @@
+% §7 The Star-Tree Theorem
+%
+% The main original result.  Self-contained statement and proof,
+% with the structural failure analysis.
+
+We now state and prove the main result: the generic index-set
+construction satisfies the CAR if and only if the tree is a star.
+
+\subsection{Definitions}
+
+\begin{definition}[Star tree]
+\label{def:star}
+A labelled rooted tree $T$ on $[n]$ is a \emph{star} if every
+non-root vertex is a direct child of the root, i.e., $T$ has
+depth~$\le 1$.
+\end{definition}
+
+\begin{definition}[Index-monotonic tree]
+\label{def:monotonic}
+A labelled rooted tree $T$ on $[n]$ is \emph{index-monotonic} if for
+every vertex $v$ and every ancestor $u$ of $v$,
+$\mathrm{label}(u) > \mathrm{label}(v)$.  Equivalently, labels
+strictly decrease on every root-to-leaf path.
+\end{definition}
+
+Every star is trivially monotonic, but most monotonic trees are not
+stars.  Monotonicity is neither necessary nor sufficient for
+Construction~A correctness; the star condition is both necessary and
+sufficient.
+
+\subsection{Statement}
+
+\begin{theorem}[Star-tree constraint]
+\label{thm:star-tree}
+Let $T$ be a labelled rooted tree on $[n]$, and let $(U, P,
+\mathrm{Occ})$ be the tree-derived index-set
+scheme~\eqref{eq:tree-derived-sets}.  The Majorana operators defined
+by~\eqref{eq:cj-from-scheme}--\eqref{eq:dj-from-scheme} satisfy the
+CAR if and only if $T$ is a star.
+\end{theorem}
+
+\subsection{Proof of sufficiency}
+
+\begin{proof}[Proof that stars work]
+Let $T$ be a star with root~$r$ and leaves $L = \{l_1, \ldots,
+l_{n-1}\}$.  For any leaf~$j$:
+\[
+  U(j) = \{r\}, \quad
+  P(j) = \{k \in L : k < j\}, \quad
+  \mathrm{Occ}(j) = \{j\}.
+\]
+Since $U(j) \cap P(j) = \emptyset$ and $\{j\} \cap P(j) = \emptyset$,
+the formula~\eqref{eq:cj-from-scheme} is unambiguous.  We verify the
+Majorana anticommutation relations directly.
+
+\emph{Case 1: distinct leaves $j < k$.}
+$c_j$ has $X_j X_r Z_{\{<j\}}$ and $c_k$ has $X_k X_r Z_{\{<k\}}$.
+At position~$r$: $X \cdot X$ commutes.  At position~$j$: $c_j$ has
+$X$, $c_k$ has $Z$ (since $j < k$ implies $j \in P(k)$);
+anticommutes.  No other position has non-identity in both.  Total
+anticommuting positions: 1 (odd).  So $\{c_j, c_k\} = 0$. \checkmark
+
+\emph{Case 2: root $r$ and leaf $j$.}
+$c_r$ has $X_r Z_L$ and $c_j$ has $X_j X_r Z_{\{<j\}}$.
+At~$r$: $X \cdot X$ commutes.  At~$j$: $c_r$ has $Z$ (since
+$j \in L \subseteq P(r)$), $c_j$ has $X$; anticommutes.  Total: 1
+(odd).  So $\{c_r, c_j\} = 0$. \checkmark
+
+The $d$--$d$ and $c$--$d$ relations follow analogously.  In every
+case, exactly one position anticommutes, giving odd total parity.
+\end{proof}
+
+\subsection{Proof of necessity: the structural failure}
+
+\begin{proof}[Proof that non-stars fail]
+Suppose $T$ is \emph{not} a star.  Then $T$ has depth~$\ge 2$, so
+there exists a path $w \to u \to v$ of length~2, where $w$ is the
+grandparent, $u$ is the parent, and $v$ is the grandchild.
+
+We show that $\{d_w, c_v\} \neq 0$, violating the Majorana CAR
+requirement $\{c_i, d_j\} = 0$ for all $i, j$.
+
+\textbf{Step 1: Identify the Pauli assignments.}
+From~\eqref{eq:cj-from-scheme}: $c_v = X_{\{v\} \cup U(v)} \cdot
+Z_{P(v)}$.  Since $w$ and $u$ are both ancestors of $v$, positions
+$w$ and $u$ both receive $X$.
+
+From~\eqref{eq:dj-from-scheme}: $d_w = Y_w \cdot X_{U(w)} \cdot
+Z_{(P(w)\,\triangle\,\mathrm{Occ}(w))\,\setminus\,\{w\}}$.
+
+\textbf{Step 2: $d_w$ at position $u$ is identity.}
+Node $u$ is a child of $w$, so $u \in \text{children}(w) \subseteq
+P(w)$.  Node $u$ is also a descendant of $w$, so $u \in \mathrm{Occ}(w)$.
+Since $u \in P(w) \cap \mathrm{Occ}(w)$, it \emph{cancels} in the
+symmetric difference $P(w) \triangle \mathrm{Occ}(w)$.  Node $u$ is
+not an ancestor of $w$, so $u \notin U(w)$.  Therefore:
+\[
+  d_w \text{ at position } u = I.
+\]
+
+\textbf{Step 3: $d_w$ at position $v$ is $Z$.}
+Node $v$ is a descendant of $w$ (grandchild), so
+$v \in \mathrm{Occ}(w)$.  But $v$ is \emph{not} a child of $w$
+(it is a grandchild), and $v \notin \text{remainder}(w)$ because
+remainder collects children of \emph{ancestors} of $w$.  Therefore
+$v \notin P(w)$, so $v \in \mathrm{Occ}(w) \setminus P(w) \subset
+P(w) \triangle \mathrm{Occ}(w)$.  Hence:
+\[
+  d_w \text{ at position } v = Z.
+\]
+
+\textbf{Step 4: Count anticommuting positions.}
+\begin{center}
+\begin{tabular}{@{}ccccl@{}}
+\toprule
+Position & $d_w$ & $c_v$ & Anticommute? & Reason \\
+\midrule
+$w$ & $Y$ & $X$ & Yes & $w \in U(v)$, leading term of $d_w$ \\
+$u$ & $I$ & $X$ & No  & $u$ cancelled in $P \triangle \mathrm{Occ}$ \\
+$v$ & $Z$ & $X$ & Yes & $v \in \mathrm{Occ} \setminus P$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+At all other positions, at least one operator has identity.  The total
+count of anticommuting positions is $2$ (even).  Therefore
+$d_w c_v = +c_v d_w$, and $\{d_w, c_v\} = 2 d_w c_v \neq 0$.
+
+Since every non-star tree has depth~$\ge 2$ and thus contains such a
+path, only stars are valid.
+\end{proof}
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[
+  node distance=1.5cm,
+  every node/.style={font=\small},
+  treeNode/.style={circle, draw, minimum size=0.6cm, inner sep=0pt},
+  pauli/.style={font=\ttfamily\bfseries},
+  comm/.style={font=\footnotesize\itshape}
+]
+  % Tree structure
+  \node[treeNode, label=left:$w$] (w) {};
+  \node[treeNode, label=left:$u$, below of=w] (u) {};
+  \node[treeNode, label=left:$v$, below of=u] (v) {};
+  \draw (w) -- (u) -- (v);
+
+  % Column headers
+  \node[right=2cm of w, yshift=0.5cm] (h1) {$d_w$};
+  \node[right=1cm of h1] (h2) {$c_v$};
+  \node[right=1cm of h2] (h3) {Result};
+
+  % Row w
+  \node[pauli, right=2cm of w] (dw_w) {Y};
+  \node[pauli] at (dw_w -| h2) (cv_w) {X};
+  \node[comm]  at (dw_w -| h3) {Anticommute};
+
+  % Row u
+  \node[pauli, right=2cm of u, color=red] (dw_u) {I};
+  \node[pauli] at (dw_u -| h2) (cv_u) {X};
+  \node[comm]  at (dw_u -| h3) {Commute};
+
+  % Row v
+  \node[pauli, right=2cm of v] (dw_v) {Z};
+  \node[pauli] at (dw_v -| h2) (cv_v) {X};
+  \node[comm]  at (dw_v -| h3) {Anticommute};
+
+  % Annotation
+  \node[below=0.5cm of v, font=\scriptsize, color=red, align=center]
+    {$u \in P(w) \cap \mathrm{Occ}(w)$\\cancels in symmetric difference};
+\end{tikzpicture}
+\caption{The structural failure mode.  On any depth-$\ge 2$ path
+$w \to u \to v$, the symmetric-difference cancellation assigns
+identity to $u$ in $d_w$ (red), while $c_v$ assigns $X$ to all
+ancestors.  The even count of anticommuting positions (2) causes the
+operators to commute instead of anticommute.}
+\label{fig:structural-failure}
+\end{figure}
+
+\subsection{Remark on generality}
+
+The proof does not depend on the tree labelling: the failure arises
+from the tree \emph{shape} (having depth~$\ge 2$), not the specific
+index assignments.  It applies for all~$n \ge 3$.  The failure mode
+is also \emph{silent}: Construction~A produces well-formed Pauli
+strings with correct widths and plausible coefficients.  The encoded
+operators pass superficial checks (correct term count, correct
+register size) but fail the CAR, producing Hamiltonians with wrong
+eigenspectra.

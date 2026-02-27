@@ -1,43 +1,52 @@
 # Research Papers — Fermion-to-Qubit Encodings
 
-Four papers exploring the structure, pedagogy, and emergent properties of
-fermion-to-qubit encodings for quantum simulation.
+Three papers supporting the FockMap project: a comprehensive tutorial
+review (arXiv), a software paper (JOSS), and a private teaching
+companion.
 
 ## Papers
 
-| # | Directory | Title | Target |
-|---|-----------|-------|--------|
-| 1 | `paper-tutorial/` | From Molecules to Qubits: A Complete Guide to Quantum Chemistry Simulation | AJP / Quantum (pedagogical) |
-| 2 | `paper-software/` | Algebraic Encodings: A Typed Functional Framework for Fermion-to-Qubit Mappings | JOSS / SoftwareX |
-| 2b | `paper-cookbook/` | FockMap Library Cookbook: A Progressive Tutorial for Symbolic Fock-Space Operator Algebra | Companion to Paper 2 (arXiv / JOSS supplement) |
-| 3 | `paper-emergence/` | Emergent Structure in Fermion-to-Qubit Encodings: Trees, Locality, and the Geometry of Representation | PRA / PRResearch / Quantum |
+| # | Directory | Title | Target | Status |
+|---|-----------|-------|--------|--------|
+| 1 | `paper-review/` | Fermion-to-Qubit Encodings: A Tutorial Review of the Three-Construction Landscape | arXiv / Quantum | Draft, 46 pages |
+| 2 | `paper-software/` | FockMap: A Composable Functional Framework for Symbolic Fock-Space Operator Algebra | JOSS | Draft, ~6 pages |
+| 3 | `paper-explainer/` | Why Most Fermion-to-Qubit Encoding Trees Don't Work | Private (teaching/presentations) | Draft, 22 pages |
+
+## Archived Papers
+
+Earlier drafts that were superseded during consolidation live in
+`_archive/`.  Their content has been folded into the review paper.
+
+| Directory | What it was | Why archived |
+|-----------|-------------|--------------|
+| `_archive/paper-algebraic/` | Star-tree theorem paper (PRA target) | Content absorbed into review §7–§8 |
+| `_archive/paper-emergence/` | Emergence / phase-boundary paper | Content absorbed into review §7–§8 |
+| `_archive/paper-tutorial/` | Pedagogical tutorial (AJP target) | Content absorbed into review §1–§6; also in `docs/from-molecules-to-qubits/` |
+| `_archive/paper-cookbook/` | Library cookbook | Not a paper — lives as `docs/guides/cookbook/` in the repo |
 
 ## Shared Resources
 
-- `tools/` — Verification & analysis scripts shared across all papers
+- `shared/bibliography/` — BibTeX references shared across all papers
+- `tools/` — Verification & analysis scripts
   - Matrix-level eigenspectrum validation
   - Symmetry analysis (Z₂ stabilizer detection)
   - CNOT cost estimation
   - Encoding space explorer (random trees, phase diagram)
-- `figures/` — Shared figure assets (tree diagrams, scaling plots)
 
-## Dependencies
-
-All scripts reference the compiled library at `../Encodings/bin/Debug/net8.0/Encodings.dll`.
-Build the library first:
+## Build
 
 ```bash
-cd .. && dotnet build Encodings/Encodings.fsproj
+# Build all papers
+make all
+
+# Build individually
+make review      # arXiv paper (latexmk)
+make software    # JOSS paper (builds via GitHub Actions)
+make explainer   # Teaching companion (latexmk)
+
+# Clean
+make clean
 ```
-
-## Status
-
-| Paper | Outline | Plan | Draft | Figures | Verification |
-|-------|---------|------|-------|---------|--------------|
-| Tutorial   | ✅ | ✅ | ✅ v0.1 | 🔲 | ✅ MatrixVerification, ParityOperator |
-| Software   | ✅ | ✅ | ✅ v0.1 | 🔲 | ✅ AnticommutationTest |
-| Cookbook    | — | — | ✅ v0.1 | — | — (shares Software verification) |
-| Emergence  | ✅ | ✅ | 🔲 (deferred) | 🔲 | ✅ MonotonicityCensus |
 
 ## Investigation Journal
 

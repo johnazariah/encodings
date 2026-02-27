@@ -1,0 +1,229 @@
+% ======================================================================
+%  Fermion-to-Qubit Encodings: A Tutorial Review
+%  with a Structural Limitation Theorem
+% ======================================================================
+%
+%  Target journal: Quantum (quantum-journal.org)
+%  Compile: latexmk -pdf paper.tex
+% ======================================================================
+\documentclass[aps,pra,preprint,superscriptaddress,showpacs]{revtex4-2}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb,amsfonts,amsthm}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\usepackage{braket}
+\usepackage{mathtools}
+\usepackage{cleveref}
+\usepackage{siunitx}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{tcolorbox}
+\usepackage{enumitem}
+\usepackage{rotating}
+
+\usetikzlibrary{trees,positioning,arrows.meta,calc,decorations.pathmorphing,
+  backgrounds,fit,shapes.geometric}
+\pgfplotsset{compat=1.18}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!70!black,
+  citecolor=green!50!black,
+  urlcolor=blue!60!black,
+}
+
+% --- Custom commands ------------------------------------------------
+\newcommand{\ad}[1]{a_{#1}^{\dagger}}       % creation operator
+\newcommand{\an}[1]{a_{#1}^{\vphantom{\dagger}}} % annihilation operator
+\newcommand{\nhat}[1]{\hat{n}_{#1}}          % number operator
+\newcommand{\pauliw}[1]{w\!\left(#1\right)}  % Pauli weight
+\newcommand{\acomm}[2]{\{#1,\,#2\}}         % anti-commutator
+\newcommand{\comm}[2]{[#1,\,#2]}            % commutator
+\newcommand{\Uset}[1]{U(#1)}                % update set
+\newcommand{\Pset}[1]{P(#1)}                % parity set
+\newcommand{\Rset}[1]{R(#1)}                % remainder set
+\newcommand{\Occ}[1]{\mathrm{Occ}(#1)}      % occupation set
+\newcommand{\depth}[1]{\mathrm{depth}(#1)}   % depth function
+\newcommand{\CAR}{\mathrm{CAR}}
+\newcommand{\CCR}{\mathrm{CCR}}
+\newcommand{\encode}{\mathcal{E}}            % encoding map
+\newcommand{\scheme}{\mathcal{S}}            % encoding scheme
+\newcommand{\Qi}{\mathbb{Q}[i]}             % Gaussian rationals
+\newcommand{\Zi}{\mathbb{Z}_4}              % cyclic group Z4
+
+% Theorems
+\newtheorem{theorem}{Theorem}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+% Callout boxes for pedagogical emphasis
+\tcbuselibrary{skins}
+\newtcolorbox{keyinsight}[1][]{%
+  colback=yellow!8,
+  colframe=orange!70!black,
+  fonttitle=\bfseries,
+  title={Key Insight},
+  #1
+}
+
+%%====================================================================
+\begin{document}
+
+\title{Fermion-to-Qubit Encodings: A Tutorial Review\\
+  with a Structural Limitation Theorem}
+
+\author{John Azariah}
+\email{john.azariah@student.uts.edu.au}
+\affiliation{University of Technology Sydney, Australia}
+
+\date{\today}
+
+%%--------------------------------------------------------------------
+\begin{abstract}
+Mapping fermionic creation and annihilation operators to qubit Pauli
+strings is a prerequisite for quantum simulation of molecular and
+condensed-matter systems.  Five encodings dominate the literature:
+Jordan--Wigner, Bravyi--Kitaev, Parity, balanced binary tree, and
+balanced ternary tree.  The Seeley--Richard--Love (SRL) index-set
+framework is widely cited as a unified treatment, expressing the first
+three as instances of a single parameterized map.
+
+This paper provides a self-contained tutorial review of the
+fermion-to-qubit encoding landscape, tracing the development from the
+1928 Jordan--Wigner transformation through modern tree-based methods.
+We present two encoding paradigms --- index-set schemes and path-based
+tree encodings --- in a unified notation and compare their domains of
+validity.
+
+Our main original result is the \emph{star-tree theorem}: the generic
+index-set construction, applied to a labelled rooted tree, satisfies
+the canonical anticommutation relations if and only if the tree is a
+star (depth~$\le 1$).  This reveals that the SRL unification is far
+narrower than assumed, covering only relabelled Jordan--Wigner and
+Parity encodings.  The Bravyi--Kitaev encoding uses a separate,
+Fenwick-specific construction that is algebraically distinct from the
+generic method.
+
+We identify three construction-compatibility regions in the space of
+$n^{n-1}$ labelled rooted trees, establish the path-based construction
+as the only universal method, and validate all results by exhaustive
+symbolic computation.
+\end{abstract}
+
+\maketitle
+\tableofcontents
+
+%%====================================================================
+%% §1 Introduction and Motivation
+%%====================================================================
+\section{Introduction and motivation}
+\label{sec:intro}
+\input{drafts/01-introduction}
+
+%%====================================================================
+%% §2 Preliminaries
+%%====================================================================
+\section{Preliminaries}
+\label{sec:prelim}
+\input{drafts/02-preliminaries}
+
+%%====================================================================
+%% §3 The Jordan–Wigner Transformation
+%%====================================================================
+\section{The Jordan--Wigner transformation}
+\label{sec:jw}
+\input{drafts/03-jordan-wigner}
+
+%%====================================================================
+%% §4 The Index-Set Framework
+%%====================================================================
+\section{The index-set framework}
+\label{sec:index-set}
+\input{drafts/04-index-set-framework}
+
+%%====================================================================
+%% §5 The Bravyi–Kitaev Encoding and Fenwick Trees
+%%====================================================================
+\section{The Bravyi--Kitaev encoding and Fenwick trees}
+\label{sec:bk}
+\input{drafts/05-bravyi-kitaev}
+
+%%====================================================================
+%% §6 Path-Based Tree Encodings
+%%====================================================================
+\section{Path-based tree encodings}
+\label{sec:tree-encoding}
+\input{drafts/06-path-based-encodings}
+
+%%====================================================================
+%% §7 The Star-Tree Theorem
+%%====================================================================
+\section{The star-tree theorem}
+\label{sec:star-tree}
+\input{drafts/07-star-tree-theorem}
+
+%%====================================================================
+%% §8 The Three-Construction Landscape
+%%====================================================================
+\section{The three-construction landscape}
+\label{sec:landscape}
+\input{drafts/08-three-constructions}
+
+%%====================================================================
+%% §9 Computational Validation
+%%====================================================================
+\section{Computational validation}
+\label{sec:validation}
+\input{drafts/09-validation}
+
+%%====================================================================
+%% §10 Discussion and Open Questions
+%%====================================================================
+\section{Discussion and open questions}
+\label{sec:discussion}
+\input{drafts/10-discussion}
+
+%%====================================================================
+%% Appendices
+%%====================================================================
+\appendix
+
+\section{CAR verification protocol}
+\label{app:car-verification}
+\input{drafts/appendix-a-car}
+
+\section{Counterexample: balanced ternary tree on \texorpdfstring{$n = 8$}{n=8}}
+\label{app:counterexample}
+\input{drafts/appendix-b-counterexample}
+
+%%====================================================================
+%% Acknowledgements
+%%====================================================================
+\begin{acknowledgments}
+This work is dedicated to Dr.\ Guang Hao Low, whose encouragement to
+explore Bravyi--Kitaev encodings seven years ago set this investigation
+in motion.  The author thanks Dr.\ Stephen Jordan for insightful
+discussions on all things quantum physics, and Prof.\ Chris Ferrie for
+his patience, guidance, and encouragement throughout this work.
+\end{acknowledgments}
+
+%%====================================================================
+%% Bibliography
+%%====================================================================
+\bibliography{../shared/bibliography/references}
+
+\end{document}
