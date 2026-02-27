@@ -1,0 +1,71 @@
+% §6 Further Results
+%
+% Condensed from old §6 (exactness) and §7 (extensions).
+% Brief treatment — these support the JOSS paper, not this one.
+
+%%====================================================================
+\subsection{Algebraic exactness}
+\label{sec:further-exactness}
+
+The encoding pipeline tracks Pauli phases symbolically in the cyclic
+group $\Zi = \{+1, -1, +i, -i\}$ rather than as floating-point complex
+numbers.  Single-qubit Pauli multiplication is computed by exhaustive
+pattern matching on the $4 \times 4$ Cayley table; no arithmetic is
+involved.  The accumulated phase is folded into the coefficient by
+negation and the swap $(a + bi) \mapsto (-b + ai)$, never by
+\texttt{Complex.Multiply}.
+
+\begin{theorem}[Algebraic exactness]
+\label{thm:exactness}
+Let $H = \sum_k c_k \prod_j O_j^{(k)}$ be a fermionic Hamiltonian
+with coefficients $c_k \in \Qi$.  The Pauli-string representation
+$\encode(H)$ satisfies: (i)~all intermediate phases are computed
+exactly in $\Zi$; (ii)~the output coefficients lie in $\Qi$;
+(iii)~term cancellation is exact (dictionary-keyed by Pauli
+signature, not floating-point comparison).
+\end{theorem}
+
+\begin{proof}[Proof sketch]
+Each pipeline stage — Majorana decomposition ($\pm\frac{1}{2}$,
+$\pm\frac{i}{2}$), Pauli lookup ($\pm 1$, $\pm i$), qubit-by-qubit
+multiplication ($\Zi$ accumulation), coefficient fold (negation and
+swap) — introduces no rounding.  The only floating-point arithmetic
+is addition of $\Qi$ coefficients in the like-term combination step,
+which is exact for half-integers in IEEE~754.
+\end{proof}
+
+When input coefficients are not in $\Qi$ (e.g., from quantum chemistry
+integrals), the pipeline still benefits: the only source of rounding is
+the input data, not the encoding algebra.
+
+%%====================================================================
+\subsection{Extension to bosonic and mixed systems}
+\label{sec:further-bosonic}
+
+The normal-ordering algorithm is parameterized by a combining algebra
+that specifies the fundamental swap relation:
+\begin{align}
+  \text{Fermionic (CAR):}\ & \an{j}\ad{j} = \delta_{jj} - \ad{j}\an{j},
+  \label{eq:car-swap} \\
+  \text{Bosonic (CCR):}\ & b_j b_j^\dagger = b_j^\dagger b_j + 1.
+  \label{eq:ccr-swap}
+\end{align}
+The pipeline is identical for both statistics; only the swap rule
+changes.  This abstraction is a concrete instance of the ``algebra as
+parameter'' pattern.
+
+Bosonic modes have unbounded occupation and must be truncated to a
+maximum occupation $d$ before mapping to qubits.  We implement three
+bosonic-to-qubit encodings: unary ($q = d$ qubits, weight~2), binary
+($q = \lceil\log_2 d\rceil$ qubits, weight~$q$), and Gray-code
+(same qubit count, improved average weight).  Unlike the fermionic
+path, bosonic encodings introduce irrational coefficients
+($\sqrt{n+1}$); algebraic exactness does not extend to this case.
+
+Mixed fermion--boson Hamiltonians (electron--phonon, polariton--cavity)
+are handled by sector tagging: each operator carries a
+$\mathrm{Fermionic}$ or $\mathrm{Bosonic}$ label.  The normal-ordering
+algorithm groups operators by sector, applies the appropriate combining
+algebra within each block, and combines the results via Cartesian
+product.  Cross-sector operators commute.  The qubit encoding tensors
+the fermionic and bosonic registers on disjoint qubit sets.

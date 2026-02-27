@@ -1,0 +1,170 @@
+% §3 Index-Set Encoding Schemes
+
+We now define the first parameterized map: the index-set scheme.
+
+\subsection{Definition}
+
+\begin{definition}[Index-set scheme]
+\label{def:index-set-scheme}
+An \emph{index-set encoding scheme} for $n$ modes is a triple of
+functions $\scheme = (U, P, \mathrm{Occ})$:
+\begin{align}
+  U &: \{0, \ldots, n{-}1\} \times \{n\} \to 2^{\{0,\ldots,n{-}1\}},
+    \label{eq:update-fn} \\
+  P &: \{0, \ldots, n{-}1\} \to 2^{\{0,\ldots,n{-}1\}},
+    \label{eq:parity-fn} \\
+  \mathrm{Occ} &: \{0, \ldots, n{-}1\} \to 2^{\{0,\ldots,n{-}1\}}.
+    \label{eq:occ-fn}
+\end{align}
+We call $U(j,n)$ the \emph{update set}, $P(j)$ the \emph{parity set},
+and $\mathrm{Occ}(j)$ the \emph{occupation set} of mode~$j$.
+\end{definition}
+
+\subsection{The universal encoding algorithm}
+\label{sec:universal-algorithm}
+
+Given a scheme $\scheme$, the Majorana operators are constructed as
+follows.  For each mode $j \in \{0, \ldots, n{-}1\}$, define two
+Pauli strings of width~$n$:
+\begin{align}
+  S_j^{(c)} &= \bigotimes_{k=0}^{n-1}
+    \begin{cases}
+      X & \text{if } k \in \Occ{j} \setminus \Pset{j}, \\
+      Y & \text{if } k \in \Occ{j} \cap \Pset{j}, \\
+      Z & \text{if } k \in \Uset{j,n} \cup
+          (\Pset{j} \setminus \Occ{j}), \\
+      I & \text{otherwise},
+    \end{cases}
+    \label{eq:cj-from-scheme} \\[6pt]
+  S_j^{(d)} &= \bigotimes_{k=0}^{n-1}
+    \begin{cases}
+      Y & \text{if } k \in \Occ{j} \setminus \Pset{j}, \\
+      X & \text{if } k \in \Occ{j} \cap \Pset{j}, \\
+      Z & \text{if } k \in \Uset{j,n} \cup
+          (\Pset{j} \setminus \Occ{j}), \\
+      I & \text{otherwise}.
+    \end{cases}
+    \label{eq:dj-from-scheme}
+\end{align}
+The ladder operators are then obtained
+via~\eqref{eq:encoded-ladder}:
+$\ad{j} = \tfrac{1}{2}(S_j^{(c)} - i S_j^{(d)})$.
+
+\begin{remark}
+Equations~\eqref{eq:cj-from-scheme}--\eqref{eq:dj-from-scheme}
+constitute a single universal algorithm, implemented once.  All
+variation between encodings is captured in the functions $U$, $P$,
+$\mathrm{Occ}$.  The algorithm itself never changes.
+\end{remark}
+
+\subsection{Instantiation: Three classical encodings}
+
+We now exhibit the three classical encodings as specific choices of
+$(U, P, \mathrm{Occ})$.
+
+\subsubsection{Jordan--Wigner}
+
+\begin{equation}
+  U_{\text{JW}}(j, n) = \emptyset, \qquad
+  P_{\text{JW}}(j) = \{0, \ldots, j{-}1\}, \qquad
+  \mathrm{Occ}_{\text{JW}}(j) = \{j\}.
+  \label{eq:jw-scheme}
+\end{equation}
+The parity set consists of all preceding modes, producing the
+characteristic $Z$-chain of Jordan--Wigner.  The update set is empty,
+and the occupation set is a singleton.
+
+\subsubsection{Parity}
+
+\begin{equation}
+  U_{\text{Par}}(j, n) = \{j{+}1, \ldots, n{-}1\}, \quad
+  P_{\text{Par}}(j) =
+    \begin{cases}
+      \{j{-}1\} & j > 0, \\
+      \emptyset & j = 0,
+    \end{cases}
+  \quad
+  \mathrm{Occ}_{\text{Par}}(j) =
+    \begin{cases}
+      \{j{-}1, j\} & j > 0, \\
+      \{0\} & j = 0.
+    \end{cases}
+  \label{eq:parity-scheme}
+\end{equation}
+The update set propagates changes to all higher qubits, while the
+occupation set includes the previous mode.
+
+\subsubsection{Bravyi--Kitaev}
+
+The Bravyi--Kitaev encoding derives its index sets from the
+\emph{Fenwick tree}~\cite{fenwick1994, seeley2012} on $n$ nodes:
+\begin{align}
+  U_{\text{BK}}(j, n) &= \text{ancestors of } j \text{ in the Fenwick tree}, \notag \\
+  P_{\text{BK}}(j) &= \text{children of } j \text{ in the Fenwick tree}, \notag \\
+  \mathrm{Occ}_{\text{BK}}(j) &= \text{descendants of } j \text{ (including } j\text{)}.
+  \label{eq:bk-scheme}
+\end{align}
+The Fenwick tree structure ensures $|U_{\text{BK}}|, |P_{\text{BK}}|,
+|\mathrm{Occ}_{\text{BK}}| \le \lceil \log_2 n \rceil$, yielding
+$O(\log_2 n)$ Pauli weight.
+
+\begin{proposition}[Encoding as data]
+\label{prop:encoding-as-data}
+Let $\mathfrak{S}_n$ denote the set of all index-set schemes for $n$
+modes, and let $\mathfrak{E}_n$ denote the set of fermion-to-qubit
+encodings satisfying CAR.  The universal
+algorithm~\eqref{eq:cj-from-scheme}--\eqref{eq:dj-from-scheme} defines
+a map $\encode : \mathfrak{S}_n \to \mathfrak{E}_n$.  This map is:
+\begin{enumerate}
+  \item[(a)] \textbf{Deterministic}: given $\scheme$, the encoding
+    $\encode_\scheme$ is uniquely determined.
+  \item[(b)] \textbf{Surjective over known encodings}: Jordan--Wigner,
+    Bravyi--Kitaev, and Parity are all in the image of $\encode$.
+  \item[(c)] \textbf{Compact}: each scheme is specified by at most
+    $3n$ set values (three sets per mode).
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+Part~(a) follows from the deterministic construction
+in~\eqref{eq:cj-from-scheme}--\eqref{eq:dj-from-scheme}.  Part~(b) is
+witnessed by~\eqref{eq:jw-scheme}--\eqref{eq:bk-scheme}.  Part~(c) is
+immediate from the domain of the functions.
+\end{proof}
+
+\subsection{The SRL correctness conditions}
+
+Not every triple of set functions produces an encoding satisfying CAR.
+Seeley, Richard, and Love~\cite{seeley2012} identified conditions on
+the sets that guarantee correctness:
+\begin{enumerate}
+  \item The sets $\Occ{j}$, $\Pset{j} \setminus \Occ{j}$, and
+    $\Uset{j,n}$ are pairwise disjoint for each~$j$.
+  \item For $i \neq j$: the qubit positions where $S_i^{(c)}$ and
+    $S_j^{(c)}$ differ must have even overlap.
+\end{enumerate}
+Verifying these conditions for a candidate scheme is a finite check on
+sets.  When the conditions hold, the resulting encoding satisfies CAR
+(\cref{app:car-verification}).
+
+\subsection{Structural limitation}
+
+A natural question is whether one can \emph{derive} valid index sets
+from a tree structure, making the index-set framework as general as the
+tree framework of \cref{sec:tree-encoding}.  The SRL construction
+attempts this by reading off update, parity, and occupation sets from
+ancestors, children, and descendants of each node.  We prove in
+\cref{sec:star-tree} that this derivation satisfies the CAR if and only
+if the tree is a \emph{star} (depth~$\le 1$), a surprisingly
+restrictive domain.  The Bravyi--Kitaev encoding survives via a
+separate, Fenwick-specific construction.  This limitation motivates the
+path-based framework, which is universal.
+
+\begin{remark}[Defining an encoding]
+\label{rem:defining-encoding}
+In the index-set framework, defining a new encoding requires only
+writing three set-valued functions and verifying the SRL conditions.
+In a concrete implementation, this amounts to fewer than 10 lines of
+code.  By contrast, existing software libraries require implementing
+the entire mapping procedure from scratch for each encoding.
+\end{remark}

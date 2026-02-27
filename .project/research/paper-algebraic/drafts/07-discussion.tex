@@ -1,0 +1,113 @@
+% §7 Discussion and Conclusion
+%
+% Restructured to center on the star-tree theorem's implications.
+
+%%====================================================================
+\subsection{Summary}
+
+We have proved that the Seeley--Richard--Love index-set construction
+satisfies the canonical anticommutation relations if and only if the
+underlying tree is a star (\cref{thm:star-tree}).  The proof
+identifies a generic structural failure — a parity-set cancellation
+along any depth-$\ge 2$ path — that is invisible when encodings are
+studied individually.  This result classifies the space of $n^{n-1}$
+encoding trees into three construction-compatibility regions and
+establishes the path-based construction (Construction~B) as the only
+universal method.
+
+%%====================================================================
+\subsection{Implications for the literature}
+
+\paragraph{The SRL framework is narrower than cited.}
+The index-set framework of Seeley, Richard, and
+Love~\cite{seeley2012} is widely cited as a unified treatment of
+fermion-to-qubit encodings.  Our result shows that this unification
+covers only star trees --- depth-1 graphs that produce relabelled
+Jordan--Wigner or Parity encodings.  The Bravyi--Kitaev encoding,
+commonly presented as an instance of the SRL framework, actually uses
+a separate Fenwick-specific construction (Construction~F) that is
+algebraically distinct from the generic algorithm.  We recommend that
+future presentations distinguish these constructions explicitly.
+
+\paragraph{Silent encoding errors.}
+The failure mode identified in \cref{sec:st-failure} is particularly
+concerning because it is silent: Construction~A applied to a non-star
+tree produces well-formed Pauli strings with correct widths and
+plausible coefficients.  The encoded operators pass superficial checks
+(correct number of terms, correct register size) but fail the CAR,
+producing Hamiltonians with wrong eigenspectra.  The diagnostic
+$D(T)$~\eqref{eq:diagnostic} provides a simple test that
+implementations should apply when deriving index sets from novel tree
+structures.
+
+\paragraph{Retroactive justification for path-based constructions.}
+The work of Jiang et al.~\cite{jiang2020} and Miller et
+al.~\cite{miller2023bonsai} introduced path-based tree encodings as
+a generalization of Bravyi--Kitaev.  Our result provides a
+retroactive explanation of why this construction was necessary: the
+alternative (deriving index sets from the tree) fails for all but
+the simplest trees.  The universality of Construction~B is not just
+convenient but \emph{required}.
+
+%%====================================================================
+\subsection{Limitations}
+
+\paragraph{Computational proof scope.}
+The exhaustive enumeration in \cref{sec:val-census} covers
+$n \le 6$.  The structural proof (\cref{thm:star-tree}) provides a
+general argument for all~$n$, but relies on identifying a specific
+failure witness (the $\{d_w, c_v\}$ anticommutator for a depth-2
+path).  We have not proved that this is the \emph{only} failure mode,
+though the enumeration data are consistent with it being generic.
+
+\paragraph{No computational speedup.}
+The encoding pipeline has $O(n^5)$ complexity, matching existing
+implementations~\cite{mcclean2020, bergholm2022}.  The advantage is
+structural (correctness by construction, exact phases, extensibility
+to mixed systems) rather than asymptotic.
+
+\paragraph{Bosonic exactness.}
+Algebraic exactness (\cref{thm:exactness}) applies only to the
+fermionic pipeline.  Bosonic encodings introduce $\sqrt{n+1}$
+coefficients during truncated-space decomposition.
+
+%%====================================================================
+\subsection{Open questions}
+
+\begin{enumerate}
+  \item \textbf{Bijective proof of $|M(n)| = (n{-}1)!$.}
+    The identity between monotonic tree counts and shifted factorials
+    is verified computationally (\cref{prop:monotonic-count}).  A
+    constructive bijection via heap-labeled tree
+    correspondences~\cite{bergeron1992} would be a useful
+    contribution to enumerative combinatorics in the encoding context.
+
+  \item \textbf{Problem-adapted tree optimization.}
+    Given a molecular Hamiltonian, what tree topology minimizes the
+    total Pauli weight of the encoded Hamiltonian?  The framework
+    enables systematic exploration, but the optimization landscape
+    is combinatorially vast ($n^{n-1}$ candidates).
+
+  \item \textbf{Higher-arity tree encodings.}
+    The branching factor~$\le 3$ restriction arises from the three
+    non-identity single-qubit Paulis.  Multi-qubit link labels could
+    support higher arity, at the cost of the one-qubit-per-mode
+    property.
+
+  \item \textbf{Bosonic tree encodings.}
+    Can the path-based construction be adapted to truncated bosonic
+    modes, yielding a unified tree-based encoding for mixed systems?
+\end{enumerate}
+
+%%====================================================================
+\subsection{Conclusion}
+
+The star-tree theorem corrects a widespread assumption about the
+generality of index-set fermion-to-qubit encodings.  By making the
+parameterization explicit, we identified a structural limitation that
+is invisible when encodings are studied one at a time.  The three
+constructions (A, B, F) and their distinct domains provide a cleaner
+conceptual framework for the encoding landscape.  The path-based
+construction emerges as the only universal method, and its provably
+optimal instance (balanced ternary tree, $O(\log_3 n)$) resides
+outside the domain of the index-set approach.

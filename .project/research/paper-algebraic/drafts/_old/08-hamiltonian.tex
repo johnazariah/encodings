@@ -1,0 +1,162 @@
+% drafts/08-hamiltonian.tex — From Hamiltonian to Pauli Strings
+%
+% Target length: ~1.5 pages (two-column PRA)
+% Shows the end-to-end pipeline as a concrete worked example.
+
+The preceding sections have developed the algebraic framework in the
+abstract.  We now trace the complete pipeline from a second-quantized
+Hamiltonian to a sum of Pauli strings, making the computational
+structure concrete.
+
+%%====================================================================
+\subsection{The encoding pipeline}
+\label{sec:ham-pipeline}
+
+Given a second-quantized Hamiltonian~\eqref{eq:hamiltonian} and an
+encoding (specified by either an index-set scheme or a tree), the
+transformation to Pauli strings proceeds in five stages:
+
+\begin{enumerate}
+  \item \textbf{Normal ordering.}  Each product of ladder operators
+    is rewritten in normal order (all $\ad{}$ to the left of all
+    $\an{}$) using the combining algebra
+    (\cref{def:combining-algebra}).  This step applies the CAR
+    repeatedly, potentially doubling the number of terms at each swap
+    (when the $\delta_{ij}$ identity fires).  The result is a sum of
+    normal-ordered products with updated coefficients.
+
+  \item \textbf{Majorana decomposition.}  Each ladder operator is
+    replaced by its Majorana decomposition~\eqref{eq:ladder-from-majorana}:
+    \begin{equation*}
+      \ad{j} \to \tfrac{1}{2}(c_j - id_j), \qquad
+      \an{j} \to \tfrac{1}{2}(c_j + id_j).
+    \end{equation*}
+    Each two-operator product $\ad{p}\an{q}$ expands to four Majorana
+    products; a four-operator product $\ad{p}\ad{q}\an{s}\an{r}$
+    expands to sixteen.
+
+  \item \textbf{Majorana $\to$ Pauli.}  Each Majorana operator is
+    mapped to a single Pauli string via the chosen encoding's
+    construction (\cref{sec:index-set} or \cref{sec:tree-encoding}).
+    This is a lookup: $c_j \mapsto S_j^{(c)}$ and
+    $d_j \mapsto S_j^{(d)}$.
+
+  \item \textbf{Pauli multiplication.}  Each product of Pauli strings
+    is reduced to a single Pauli string by qubit-by-qubit
+    multiplication~\eqref{eq:pauli-mult}, with phase tracked
+    symbolically in $\Zi$ (\cref{sec:exactness}).
+
+  \item \textbf{Like-term combination.}  All resulting Pauli strings
+    are collected in a signature-keyed dictionary.  Terms with the
+    same Pauli signature have their coefficients summed; terms whose
+    coefficients cancel to zero are removed.  The output is the
+    final Pauli Hamiltonian~\eqref{eq:pauli-hamiltonian}.
+\end{enumerate}
+
+\paragraph{Complexity.}
+For an $n$-mode molecular Hamiltonian, the one-body part has $O(n^2)$
+terms and the two-body part has $O(n^4)$ terms.  Each term generates
+at most 16~Majorana products (step~2), each involving at most 4~Pauli
+string multiplications (step~4), each costing $O(n)$ (qubit-by-qubit).
+The total cost is $O(n^5)$, matching existing
+implementations~\cite{mcclean2020, bergholm2022}.  Like-term
+combination (step~5) adds $O(T \log T)$ where $T$ is the total number
+of intermediate Pauli strings.
+
+%%====================================================================
+\subsection{Worked example: H$_2$ in minimal basis}
+\label{sec:ham-example}
+
+The H$_2$ molecule in the STO-3G basis has four spin-orbitals
+($n = 4$) and a Hamiltonian with 13 distinct ladder-operator terms
+(after symmetry reduction).  We trace a single representative
+two-body term through the pipeline using the Jordan--Wigner encoding.
+
+\paragraph{Input.}
+Consider the term $g = 0.1744\;\ad{0}\ad{2}\an{3}\an{1}$ from the
+two-electron integral.
+
+\paragraph{Step 1: Normal ordering.}
+This term is already in normal order ($\ad{}\ad{}\an{}\an{}$), so
+no swaps are needed.
+
+\paragraph{Step 2: Majorana decomposition.}
+\begin{align*}
+  \ad{0}\ad{2}\an{3}\an{1}
+  &= \tfrac{1}{16}\,(c_0 - id_0)(c_2 - id_2)(c_3 + id_3)(c_1 + id_1).
+\end{align*}
+Expanding yields 16 products of four Majorana operators, each with a
+coefficient in $\frac{1}{16}\{+1, -1, +i, -i\}$.
+
+\paragraph{Step 3: Majorana $\to$ Pauli (JW).}
+Under Jordan--Wigner, the Majorana operators for $n = 4$ are:
+\begin{align*}
+  c_0 &= X_0,         & d_0 &= Y_0, \\
+  c_1 &= Z_0 X_1,     & d_1 &= Z_0 Y_1, \\
+  c_2 &= Z_0 Z_1 X_2, & d_2 &= Z_0 Z_1 Y_2, \\
+  c_3 &= Z_0 Z_1 Z_2 X_3, & d_3 &= Z_0 Z_1 Z_2 Y_3.
+\end{align*}
+
+\paragraph{Step 4: Pauli multiplication.}
+One of the 16 products is
+$c_0 \cdot c_2 \cdot c_3 \cdot c_1
+= (XIII)(ZZXI)(ZZZX)(ZXII)$.
+Multiplying qubit-by-qubit with $\Zi$ phase tracking:
+\begin{align*}
+  \text{qubit 0:}\quad & X \cdot Z \cdot Z \cdot Z
+    = X \cdot Z \cdot I = X \cdot I = X, \quad \phi_0 = (-i)(+1)(+1) = -i \\
+  \text{qubit 1:}\quad & I \cdot Z \cdot Z \cdot X = I \cdot I \cdot X = X,
+    \quad \phi_1 = (+1)(+1)(+1) \\
+  \text{qubit 2:}\quad & I \cdot X \cdot Z \cdot I = (-iY) \cdot I = -iY,
+    \quad \phi_2 = (-i)(+1) \\
+  \text{qubit 3:}\quad & I \cdot I \cdot X \cdot I = X,
+    \quad \phi_3 = +1.
+\end{align*}
+Global phase: $\phi = (-i)(-i) = -1$.
+Result: $(-1) \cdot XXYXI = -XXYXI$.
+
+After accounting for the $\frac{1}{16}$ prefactor and the original
+coefficient: $0.1744 \times \frac{1}{16} \times (-1) \cdot XXYX$.
+
+\paragraph{Step 5: Combination.}
+After processing all 16 products from this term (and all 12 other
+terms), the 15~surviving Pauli strings with nonzero coefficients are:
+\begin{equation*}
+  H_\text{qubit} = \sum_{k=1}^{15} h_k\, \sigma_k,
+\end{equation*}
+where the specific signatures ($IIII$, $IIIZ$, $IIZI$, $XXYY$,
+$YYXX$, etc.) and coefficients match the standard H$_2$ STO-3G
+benchmark.
+
+%%====================================================================
+\subsection{What the pipeline makes explicit}
+\label{sec:ham-observations}
+
+Several properties of this pipeline deserve emphasis:
+
+\begin{enumerate}
+  \item \textbf{Encoding-independence of the pipeline.}  Only step~3
+    depends on the encoding choice.  Steps~1, 2, 4, and~5 are
+    universal.  Changing the encoding is a one-line substitution:
+    replace the Majorana lookup table.
+
+  \item \textbf{Phase tracking is separable.}  Steps~2 and~4 each
+    produce phases in $\Zi$, which accumulate via the group law
+    independently of the coefficient arithmetic.  This separation is
+    what makes exact phase tracking possible
+    (\cref{thm:exactness}).
+
+  \item \textbf{Like-term cancellation is essential.}  The 16
+    Majorana products from a single two-body term often produce
+    Pauli strings that partially cancel.  A four-mode Hamiltonian
+    with 208 raw Pauli products (13 terms $\times$ 16 products) reduces
+    to just 15 distinct Pauli strings after combination.  Missing
+    cancellations produce a Hamiltonian with wrong eigenvalues.
+
+  \item \textbf{The combinatorial explosion is bounded.}  Despite the
+    $O(n^4)$ two-body terms each producing 16 Majorana products, the
+    number of \emph{distinct} Pauli strings in the final Hamiltonian
+    is at most $O(n^4)$ (bounded by the number of input terms), and
+    in practice much smaller due to cancellations.  The dictionary
+    structure handles this efficiently.
+\end{enumerate}

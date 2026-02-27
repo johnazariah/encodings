@@ -5,6 +5,106 @@ Entries are reverse-chronological (newest first).
 
 ---
 
+## 2026-02-17 (session 2) — Paper–Algebraic: Structural Additions
+
+### Changes
+
+Four structural additions following adviser discussion:
+
+1. **Expanded §2 Preliminaries** with a "Core Definitions" subsection
+   (§2.3) collecting Definitions 1–5: Phase group, Majorana operators,
+   Encoding, Encoding scheme, Combining algebra.  Forward-references
+   star/monotonic tree defs to §5 where they're needed.
+
+2. **New §8: From Hamiltonian to Pauli Strings** — end-to-end pipeline
+   walkthrough with worked H₂ example tracing a single two-body term
+   through normal ordering → Majorana decomposition → Pauli lookup →
+   qubit-by-qubit multiplication → like-term combination.
+
+3. **New §10: Addressing Potential Concerns** — proactive Q&A covering:
+   - Is exhaustive enumeration a proof?
+   - What would an analytical proof require?
+   - Does the star-tree result generalise?
+   - Is |M(n)|=(n−1)! known?
+   - Why not claim computational speedup?
+   - How does this compare to PennyLane/OpenFermion? (table)
+   - Is branching factor ≤3 fundamental?
+
+4. **Appendix D: Algebraic Data Types** — C<'u>/P<'u>/S<'u> hierarchy,
+   Phase as discriminated union, PauliRegister/Sequence dictionary,
+   ICombiningAlgebra interface, sector tags, design rationale (why DUs
+   not classes, why generics not codegen, why dictionaries not lists).
+
+### Structure after changes
+
+11 sections + 4 appendices, 20 pages.  File renaming:
+08-validation.tex → 09-validation.tex, 09-discussion.tex → 11-discussion.tex.
+New files: 08-hamiltonian.tex, 10-concerns.tex, appendix-d-datatypes.tex.
+
+## 2026-02-17 — Paper–Algebraic: Full Standalone Draft Complete
+
+### Context
+
+Adviser feedback questioned whether the FockMap library had sufficient
+novelty for an arXiv paper beyond "we have both fermionic and bosonic
+algebras." After detailed analysis, identified five genuine contributions:
+(1) encoding as parameterised maps, (2) the star-tree theorem,
+(3) algebraic exactness via Z4 phase tracking, (4) composable
+bosonic/mixed-system extensions, (5) tight weight bounds from tree depth.
+
+Decision: fold the star-tree discovery (previously in paper-emergence)
+directly into this paper, making it self-contained — no companion paper.
+
+### What was created
+
+**New paper directory**: `paper-algebraic/`
+
+- `paper.tex` — revtex4-2 PRA format, 9 sections + 3 appendices, 15 pages
+- `drafts/01-intro.tex` — 5 contributions, prior work critique (SRL limitation)
+- `drafts/02-preliminaries.tex` — CAR, Pauli algebra, Z4 phases, Majorana ops
+- `drafts/03-index-set.tex` — Index-set schemes (JW/Parity/BK), SRL conditions,
+  new subsection foreshadowing star-tree limitation
+- `drafts/04-tree-encoding.tex` — Path-based universal construction, weight bounds,
+  updated to reference §5 instead of companion paper
+- `drafts/05-star-tree.tex` — **Key section**: three constructions (A/B/F),
+  star-tree theorem with proof, failure mode, counting monotonic trees,
+  phase diagram of encoding landscape (adapted from paper-emergence §5)
+- `drafts/06-exactness.tex` — Z4 phase group, Pauli multiplication table,
+  like-term combination algorithm, exactness theorem
+- `drafts/07-extensions.tex` — ICombiningAlgebra abstraction, CCR normal ordering,
+  bosonic-to-qubit encodings (unary/binary/Gray), mixed fermion–boson pipeline
+- `drafts/08-validation.tex` — Eigenspectrum equivalence (H₂ STO-3G),
+  CAR verification, scaling benchmarks, parity operators, star-tree census
+- `drafts/09-discussion.tex` — Summary, implications, limitations, 5 open questions
+- `drafts/appendix-a-exactness.tex` — Full proof of algebraic exactness theorem
+- `drafts/appendix-b-car.tex` — CAR verification protocol
+- `drafts/appendix-c-counterexample.tex` — Balanced ternary n=8 counterexample
+- `Makefile` — latexmk build, watch, clean, wordcount targets
+
+**Parent Makefile updated**: added `algebraic` and `watch-algebraic` targets.
+
+### Build status
+
+Paper compiles to 15-page PDF with no undefined references.
+Minor bibtex warnings (qiskit2023 missing journal field — pre-existing).
+
+### Key decisions
+
+1. **Star-tree theorem is IN this paper** (not deferred to companion)
+2. Proof of necessity is computational (exhaustive for n≤5), not analytical
+3. Exactness claimed only for fermionic pipeline; bosonic has inherent √(n+1)
+4. No computational speedup claim — same O(N^5) as OpenFermion
+5. Novelty framed as structural insight + correctness-by-construction
+
+### Open items
+
+- Analytical proof of star-tree theorem for all n (currently open question)
+- Bijective proof of |M(n)| = (n−1)! (conjectured via heap orderings)
+- Log-log scaling figure (TODO in validation section)
+- Phase diagram figure / Venn diagram (TODO in star-tree section)
+- Verify counterexample index sets against actual code output
+- Final bibliography check (bergeron1992, cayley1889 needed)
+
 ## 2026-02-16 — Paper 3 (Emergence) Draft: Major Revision Incorporating Discoveries
 
 ### Context

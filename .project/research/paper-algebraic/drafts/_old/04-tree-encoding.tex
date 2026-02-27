@@ -1,0 +1,161 @@
+% §4 Path-Based Tree Encodings
+
+The index-set framework of \cref{sec:index-set} is concise and
+sufficient for the three classical encodings.  However, it has a
+structural limitation: deriving valid index sets from tree structures
+requires strong structural conditions that most trees do not satisfy
+(we prove this precisely in \cref{sec:star-tree}).  We now present a
+second parameterization that removes this restriction entirely.
+
+\subsection{Labelled rooted trees}
+
+\begin{definition}[Encoding tree]
+\label{def:encoding-tree}
+An \emph{encoding tree} for $n$ fermionic modes is a rooted tree $T$
+with internal nodes, where each node $v$ has at most three descending
+connections.  Each connection is either an \emph{edge} (to a child
+node) or a \emph{leg} (a dangling link to no child).  Every node has
+exactly three connections, each labelled by a Pauli operator:
+one $X$, one $Y$, one $Z$.  The total number of legs is $2n$ (one pair
+per fermionic mode).
+\end{definition}
+
+\noindent
+The labelling scheme allocates legs to modes: if a node has $k$ children
+($0 \le k \le 3$), it contributes $3 - k$ legs.  The legs across the
+entire tree are paired into $n$ mode assignments, with each mode
+receiving one ``$x$-type'' and one ``$y$-type'' leg.
+
+\subsection{Construction: from tree to encoding}
+
+Given an encoding tree $T$, the encoding of mode $j$ proceeds as
+follows.
+
+\paragraph{Step 1: Identify legs.}
+For mode $j$, let $\ell_j^{(x)}$ and $\ell_j^{(y)}$ be the paired
+legs.
+
+\paragraph{Step 2: Trace root-to-leg paths.}
+For each leg, walk from the root to the leg, recording the Pauli
+label of each edge traversed and appending the leg's own label at the
+end.  Let $\pi(\ell)$ denote this sequence of Pauli labels.
+
+\paragraph{Step 3: Construct Majorana strings.}
+The Majorana operator for leg $\ell$ is the Pauli string obtained by
+placing the path labels at the corresponding qubit positions (one
+qubit per internal node) and identity elsewhere:
+\begin{equation}
+  S(\ell) = \bigotimes_{v \in \mathrm{path}(\ell)}
+    \text{label}(v \to \text{child}) \;\;\otimes\;\;
+    \bigotimes_{v \notin \mathrm{path}(\ell)} I.
+  \label{eq:path-pauli}
+\end{equation}
+
+\paragraph{Step 4: Combine into ladder operators.}
+\begin{equation}
+  \ad{j} = \tfrac{1}{2}\bigl(S(\ell_j^{(x)}) - i\, S(\ell_j^{(y)})\bigr).
+  \label{eq:tree-ladder}
+\end{equation}
+
+\begin{theorem}[Tree encoding correctness]
+\label{thm:tree-car}
+For any encoding tree $T$ with $2n$ legs paired into $n$ modes, the
+ladder operators defined by~\eqref{eq:tree-ladder} satisfy the canonical
+anticommutation relations~\eqref{eq:car1}--\eqref{eq:car3}.
+\end{theorem}
+
+\begin{proof}[Proof sketch]
+The key property is that legs on distinct subtrees produce Pauli strings
+with disjoint non-identity support except at the branching ancestor,
+where the distinct labels ($X$, $Y$, or $Z$) ensure anticommutation.
+Legs on the same subtree inherit a shared prefix and differ only in the
+subtree below the branch point.  The $\Zi$ phase arithmetic of
+\cref{sec:exactness} ensures that all cross-terms cancel exactly.  A
+detailed proof by induction on tree depth follows the
+construction of Jiang et al.~\cite{jiang2020} and Miller et
+al.~\cite{miller2023bonsai}.
+\end{proof}
+
+\subsection{Recovery of known encodings}
+
+Different tree topologies recover all five known encodings:
+
+\begin{table}[h]
+\centering
+\caption{Tree topologies and the encodings they induce.}
+\label{tab:tree-recovery}
+\begin{tabular}{@{}lll@{}}
+\toprule
+Tree topology & Encoding recovered & Max Pauli weight \\
+\midrule
+Linear chain (star, depth 1) & Jordan--Wigner & $O(n)$ \\
+Star with different ordering & Parity & $O(n)$ \\
+Fenwick tree (depth $\lceil\log_2 n\rceil$) & Bravyi--Kitaev & $O(\log_2 n)$ \\
+Balanced binary (depth $\lceil\log_2 n\rceil$) & Binary tree & $O(\log_2 n)$ \\
+Balanced ternary (depth $\lceil\log_3 n\rceil$) & Ternary tree & $O(\log_3 n)$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Pauli-weight bounds}
+
+\begin{theorem}[Weight bound]
+\label{thm:weight-bound}
+For an encoding tree $T$ with depth $d = \depth{T}$, every encoded
+operator $\ad{j}$ or $\an{j}$ has Pauli weight at most $2d + 1$.
+\end{theorem}
+
+\begin{proof}
+Each ladder operator is a sum of two Pauli strings (from the two
+Majorana operators).  Each Majorana string has weight equal to the
+length of the root-to-leg path, which is at most $d + 1$ (depth plus
+the leg label).  The worst case for the sum
+$\frac{1}{2}(S^{(c)} \pm i S^{(d)})$ occurs when the two paths share
+only the root, giving weight at most $2d + 1$.
+\end{proof}
+
+\begin{corollary}[Optimal asymptotic weight]
+\label{cor:optimal-weight}
+Among trees on $n$ modes:
+\begin{enumerate}
+  \item[(a)] The balanced binary tree achieves weight $O(\log_2 n)$.
+  \item[(b)] The balanced ternary tree achieves weight $O(\log_3 n)$,
+    which is optimal among fixed-arity trees since each node can have
+    at most 3 children (one per Pauli label).
+\end{enumerate}
+\end{corollary}
+
+\subsection{Relationship between the two frameworks}
+
+The index-set and tree frameworks are complementary:
+
+\begin{enumerate}
+  \item \textbf{Index-set $\to$ tree.}  Given a valid scheme
+    $\scheme$, one can construct a tree whose path-based encoding
+    reproduces the same Majorana operators.  However, this requires
+    the index sets to be compatible with a tree structure (not all
+    set triples arise from trees).
+
+  \item \textbf{Tree $\to$ index-set.}  Given a tree $T$, one can
+    attempt to derive index sets $U$, $P$, $\mathrm{Occ}$ by
+    reading off ancestor, child, and descendant relationships.
+    This derivation (``Construction~A'' in the terminology
+    of~\cite{seeley2012}) satisfies the CAR only when the tree is a
+    \emph{star} (depth~$\le 1$), as we prove in \cref{sec:star-tree}.
+    This is a far more restrictive domain than previously recognized.
+
+  \item \textbf{Path-based is universal.}  The path-based construction
+    produces valid encodings for \emph{every} rooted tree, regardless of
+    monotonicity.  It is therefore the more general framework, while the
+    index-set framework provides a compact algebraic characterization
+    for the three classical encodings.
+\end{enumerate}
+
+\begin{remark}[The encoding space]
+By Cayley's formula~\cite{cayley1889}, there are $n^{n-1}$ labelled
+rooted trees on $n$ nodes, each defining a valid encoding via the
+path-based construction.  The classical encodings are a measure-zero
+subset of this exponentially large space.  Different trees in this space
+trade off maximum Pauli weight, mean Pauli weight, and structural
+properties such as symmetry and stabilizer structure.
+\end{remark}

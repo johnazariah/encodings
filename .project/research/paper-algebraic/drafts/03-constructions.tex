@@ -1,0 +1,213 @@
+% §3 Two Encoding Constructions
+%
+% Merges old §3 (index-set) and §4 (tree-encoding) into a single
+% side-by-side presentation.  Fixes the formula inconsistency between
+% eq (7) (SRL) and the code/proof formula.
+
+We now define the two parameterized maps that generate fermion-to-qubit
+encodings.  Both factor through the Majorana intermediate representation
+(\cref{def:majorana}), separating encoding \emph{definition} from
+encoding \emph{computation}.
+
+%%====================================================================
+\subsection{Construction~A: Index-set schemes}
+\label{sec:index-set}
+
+\begin{definition}[Index-set scheme]
+\label{def:index-set-scheme}
+An \emph{index-set encoding scheme} for $n$ modes is a triple of
+set-valued functions $\scheme = (U, P, \mathrm{Occ})$:
+\begin{align}
+  U &: \{0, \ldots, n{-}1\} \to 2^{\{0,\ldots,n{-}1\}},
+    \label{eq:update-fn} \\
+  P &: \{0, \ldots, n{-}1\} \to 2^{\{0,\ldots,n{-}1\}},
+    \label{eq:parity-fn} \\
+  \mathrm{Occ} &: \{0, \ldots, n{-}1\} \to 2^{\{0,\ldots,n{-}1\}}.
+    \label{eq:occ-fn}
+\end{align}
+We call $U(j)$ the \emph{update set}, $P(j)$ the \emph{parity set},
+and $\mathrm{Occ}(j)$ the \emph{occupation set} of mode~$j$.
+\end{definition}
+
+\paragraph{The encoding algorithm.}
+Given a scheme~$\scheme$, the Majorana operators for mode~$j$ are:
+\begin{align}
+  c_j &= X_{\{j\} \cup U(j)} \;\cdot\; Z_{P(j)},
+  \label{eq:cj-from-scheme} \\[4pt]
+  d_j &= Y_j \;\cdot\; X_{U(j)} \;\cdot\;
+    Z_{(P(j)\,\triangle\,\mathrm{Occ}(j))\,\setminus\,\{j\}},
+  \label{eq:dj-from-scheme}
+\end{align}
+where $X_S$ denotes $X$ on every qubit in set~$S$ (identity elsewhere),
+$\triangle$ is the symmetric difference, and qubit positions in
+multiple sets are resolved left-to-right (the first assignment
+wins).  The sets $\{j\} \cup U(j)$ and $P(j)$ are required to be
+disjoint for the formula to be unambiguous; we verify this as part of
+the correctness check.
+
+The ladder operators are then given by~\eqref{eq:encoded-ladder}.
+
+\begin{remark}[Relation to the SRL formula]
+\label{rem:srl}
+Seeley, Richard, and Love~\cite{seeley2012} present a more complex
+formula that places $Y$ at positions in $\mathrm{Occ}(j) \cap P(j)$
+and $X$ at $\mathrm{Occ}(j) \setminus P(j)$.  For the three classical
+schemes (JW, BK, Parity), the sets $\{j\} \cup U(j)$ and $P(j)$ are
+disjoint, and both formulas produce identical Majorana operators.  Our
+simpler formulation~\eqref{eq:cj-from-scheme}--\eqref{eq:dj-from-scheme}
+suffices for the structural analysis of \cref{sec:star-tree} and
+matches the implementation.
+\end{remark}
+
+\paragraph{Three classical encodings as set triples.}
+\begin{align}
+  \text{JW:}\;&\;
+    U(j) = \emptyset,\;
+    P(j) = \{0,\ldots,j{-}1\},\;
+    \mathrm{Occ}(j) = \{j\}.
+    \label{eq:jw-scheme} \\[3pt]
+  \text{Parity:}\;&\;
+    U(j) = \{j{+}1,\ldots,n{-}1\},\;
+    P(j) = \{j{-}1\}^*,\;
+    \mathrm{Occ}(j) = \{j{-}1,j\}^*.
+    \label{eq:parity-scheme} \\[3pt]
+  \text{BK:}\;&\;
+    U, P, \mathrm{Occ}\text{ from the Fenwick tree}
+    ~\cite{fenwick1994, seeley2012}.
+    \label{eq:bk-scheme}
+\end{align}
+(Starred entries: for $j = 0$, $P(0) = \emptyset$ and
+$\mathrm{Occ}(0) = \{0\}$.)
+
+All variation between encodings is captured in the three
+functions.  The encoding algorithm itself never changes.
+
+\paragraph{Deriving index sets from a tree.}
+Given a labelled rooted tree $T$ on $[n]$, one can attempt to derive
+a scheme by reading off structural relationships:
+\begin{align}
+  U(j) &= \text{ancestors of } j, \notag \\
+  P(j) &= \text{remainder}(j) \cup \text{children}(j), \notag \\
+  \mathrm{Occ}(j) &= \text{descendants}(j) \cup \{j\},
+  \label{eq:tree-derived-sets}
+\end{align}
+where $\text{remainder}(j)$ collects children of ancestors of $j$
+that have index $< j$ and are not themselves ancestors of~$j$.
+
+This derivation always produces well-formed sets and yields Pauli
+strings of the correct width.  The question is whether the resulting
+encoding satisfies the CAR.  We prove in \cref{sec:star-tree} that it
+does \emph{if and only if} the tree is a star.
+
+%%====================================================================
+\subsection{Construction~B: Path-based tree encodings}
+\label{sec:tree-encoding}
+
+\begin{definition}[Encoding tree]
+\label{def:encoding-tree}
+An \emph{encoding tree} for $n$ fermionic modes is a rooted tree $T$
+with internal nodes, where each node has at most three descending
+connections, each labelled by a distinct Pauli operator from $\{X, Y,
+Z\}$.  Each connection is either an \emph{edge} (to a child node) or a
+\emph{leg} (a dangling link).  The total number of legs is $2n$, paired
+into $n$ mode assignments.
+\end{definition}
+
+\paragraph{The encoding algorithm.}
+For mode~$j$, let $\ell_j^{(x)}$ and $\ell_j^{(y)}$ be the paired
+legs.  The Majorana operator for each leg is the Pauli string obtained
+by collecting the link labels along the root-to-leg path:
+\begin{equation}
+  S(\ell) = \bigotimes_{v \in \mathrm{path}(\ell)}
+    \text{label}(v \to \text{next}) \;\otimes\;
+    \bigotimes_{v \notin \mathrm{path}(\ell)} I.
+  \label{eq:path-pauli}
+\end{equation}
+The ladder operators are:
+$\ad{j} = \tfrac{1}{2}(S(\ell_j^{(x)}) - i\,S(\ell_j^{(y)}))$.
+
+\begin{theorem}[Tree encoding correctness]
+\label{thm:tree-car}
+For any encoding tree $T$ with $2n$ legs paired into $n$ modes, the
+ladder operators satisfy the CAR.
+\end{theorem}
+
+\begin{proof}[Proof sketch]
+Legs on distinct subtrees produce Pauli strings with disjoint
+non-identity support except at the branching ancestor, where distinct
+labels ($X$, $Y$, $Z$) ensure anticommutation.  Legs sharing a prefix
+differ in the subtree below the branch point.  The proof follows Jiang
+et al.~\cite{jiang2020} by induction on tree depth.
+\end{proof}
+
+\paragraph{Recovery of known encodings.}
+All five standard encodings arise from specific tree topologies:
+\begin{center}
+\begin{tabular}{@{}lll@{}}
+\toprule
+Tree topology & Encoding & Max Pauli weight \\
+\midrule
+Star (depth 1, chain ordering) & Jordan--Wigner & $O(n)$ \\
+Star (depth 1, reversed) & Parity & $O(n)$ \\
+Fenwick tree & Bravyi--Kitaev & $O(\log_2 n)$ \\
+Balanced binary tree & Binary tree & $O(\log_2 n)$ \\
+Balanced ternary tree & Ternary tree & $O(\log_3 n)$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+%%====================================================================
+\subsection{Pauli-weight bounds}
+\label{sec:weight-bounds}
+
+\begin{theorem}[Weight bound]
+\label{thm:weight-bound}
+For an encoding tree $T$ with depth $d = \depth{T}$, every encoded
+ladder operator has Pauli weight at most $2d + 1$.
+\end{theorem}
+
+\begin{proof}
+Each Majorana string has weight equal to the root-to-leg path length,
+at most $d + 1$.  The worst-case ladder operator (sum of two Majorana
+strings sharing only the root) has weight at most $2d + 1$.
+\end{proof}
+
+\begin{corollary}[Optimal asymptotic weight]
+\label{cor:optimal-weight}
+Since each node has at most 3 children (one per Pauli label), the
+balanced ternary tree achieves optimal weight $O(\log_3 n)$ among
+fixed-arity trees.
+\end{corollary}
+
+%%====================================================================
+\subsection{Three constructions, not two}
+\label{sec:three-constructions}
+
+A key observation is that the literature contains three distinct
+encoding constructions, each with a different domain of validity:
+
+\begin{description}
+  \item[Construction~A] (index-set method,
+    \cref{sec:index-set}): derives index sets from a tree via
+    \eqref{eq:tree-derived-sets} and applies the universal
+    algorithm~\eqref{eq:cj-from-scheme}--\eqref{eq:dj-from-scheme}.
+    Valid only for star trees (\cref{sec:star-tree}).
+
+  \item[Construction~B] (path-based method,
+    \cref{sec:tree-encoding}): generates Pauli strings directly from
+    root-to-leg paths.  Universal: valid for every encoding tree.
+
+  \item[Construction~F] (Fenwick-specific): the Bravyi--Kitaev
+    encoding uses hand-derived bit-manipulation formulas for $U$, $P$,
+    $\mathrm{Occ}$ that exploit the unique algebraic structure of the
+    Fenwick tree~\cite{fenwick1994}.  These formulas produce a correct
+    encoding but are not the same as the generic tree-derived sets of
+    Construction~A applied to a Fenwick-shaped tree.
+\end{description}
+
+The SRL ``unification'' of JW, BK, and Parity into a single index-set
+framework is, on inspection, a conflation of Constructions~A and~F.
+JW and Parity are genuine Construction~A instances (star trees).  BK
+is a Construction~F instance that happens to be \emph{expressible} as
+an index-set scheme, but the scheme is hand-derived for the Fenwick
+tree rather than mechanically extracted.

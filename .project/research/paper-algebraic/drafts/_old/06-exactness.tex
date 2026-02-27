@@ -1,0 +1,159 @@
+% drafts/06-exactness.tex — Algebraic Exactness of the Pauli Pipeline
+%
+% Target length: ~1.5 pages (two-column PRA)
+% Subsections: 6.1 Phase representation, 6.2 Pauli multiplication,
+%              6.3 Like-term combination, 6.4 Exactness theorem
+
+Every fermion-to-qubit encoding ultimately reduces to multiplying and
+summing Pauli strings with complex coefficients.  In standard
+implementations (e.g., OpenFermion~\cite{mcclean2020},
+PennyLane~\cite{bergholm2022}), phases such as $\pm 1$ and $\pm i$
+are represented as floating-point complex numbers.  For single products
+this introduces no visible error, but in deep multiplication chains
+and Hamiltonian assembly with thousands of terms, floating-point
+cancellation can accumulate silently.  We show that the Pauli pipeline
+can be made \emph{exactly} symbolic by tracking phases in the cyclic
+group $\Zi$.
+
+%%====================================================================
+\subsection{The phase representation}
+\label{sec:ex-phase}
+
+The four values $\{+1, -1, +i, -i\}$ arising from Pauli products form
+the cyclic group $\Zi$ under multiplication (\cref{def:phase-group}).  We
+represent this group as a four-element discriminated union:
+\begin{align}
+  \texttt{P1} &\leftrightarrow +1, &
+  \texttt{M1} &\leftrightarrow -1, \notag \\
+  \texttt{Pi} &\leftrightarrow +i, &
+  \texttt{Mi} &\leftrightarrow -i.
+  \label{eq:phase-enum}
+\end{align}
+Multiplication is implemented by exhaustive pattern matching on the
+$4 \times 4$ Cayley table.  No floating-point operation is involved.
+
+The key operation \textsc{FoldIntoGlobalPhase} converts a symbolic
+phase into an effect on a \texttt{Complex} coefficient using only
+negation and the swap $(a + bi) \mapsto (-b + ai)$ for multiplication
+by~$i$.  This avoids the standard \texttt{Complex.Multiply} call and
+its associated rounding.
+
+%%====================================================================
+\subsection{Pauli multiplication}
+\label{sec:ex-pauli}
+
+The product of two single-qubit Pauli operators returns a pair
+$(\sigma_k, \phi)$ where $\sigma_k \in \{I, X, Y, Z\}$ and
+$\phi \in \Zi$:
+\begin{equation}
+  \sigma_a \cdot \sigma_b = \phi_{ab}\; \sigma_{a \oplus b},
+  \label{eq:pauli-product}
+\end{equation}
+where $\oplus$ is the mod-2 group operation on the Pauli index
+labels.  The full table is:
+\begin{center}
+\begin{tabular}{@{}c|cccc@{}}
+$\cdot$ & $I$ & $X$ & $Y$ & $Z$ \\
+\midrule
+$I$ & $(I,+1)$ & $(X,+1)$ & $(Y,+1)$ & $(Z,+1)$ \\
+$X$ & $(X,+1)$ & $(I,+1)$ & $(Z,+i)$ & $(Y,-i)$ \\
+$Y$ & $(Y,+1)$ & $(Z,-i)$ & $(I,+1)$ & $(X,+i)$ \\
+$Z$ & $(Z,+1)$ & $(Y,+i)$ & $(X,-i)$ & $(I,+1)$ \\
+\end{tabular}
+\end{center}
+This is computed by pattern matching with no arithmetic.
+
+For an $n$-qubit Pauli string, multiplication proceeds qubit-by-qubit
+in $O(n)$ time.  At each position, the single-qubit product returns
+$(\sigma_k, \phi_k)$.  The phase factors are accumulated via the
+$\Zi$ group law, then folded into the global coefficient exactly once
+at the end.  The coefficient $c_\text{global}$ is modified only by
+the \textsc{FoldIntoGlobalPhase} operation — never by floating-point
+complex multiplication of phase factors.
+
+%%====================================================================
+\subsection{Like-term combination}
+\label{sec:ex-combination}
+
+After encoding a Hamiltonian, distinct products may map to the same
+Pauli string.  Combining like terms is done by a dictionary keyed on
+the string \emph{signature} — the operator labels without coefficients
+(e.g., ``$XYZII$'').
+
+\begin{algorithm}[t]
+\caption{Like-term combination}
+\label{alg:like-term}
+\begin{algorithmic}[1]
+\State $D \gets$ empty dictionary
+\For{each Pauli register $r$ with signature $s$ and coefficient $c$}
+  \If{$s \in D$}
+    \State $c' \gets D[s].\text{coefficient} + c$
+    \If{$c' = 0$}
+      \State remove $s$ from $D$ \Comment{exact cancellation}
+    \Else
+      \State $D[s] \gets r$ with coefficient $c'$
+    \EndIf
+  \Else
+    \State $D[s] \gets r$
+  \EndIf
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+Because the dictionary key is a \emph{string} (not a floating-point
+comparison), matching is exact.  Two terms contribute to the same
+entry if and only if they act on precisely the same qubits with
+precisely the same Pauli operators.  Coefficient addition is ordinary
+complex addition — the only point where floating-point arithmetic
+enters — and cancellation (removal of zero-coefficient terms) is
+checked against exact zero.
+
+%%====================================================================
+\subsection{The exactness theorem}
+\label{sec:ex-theorem}
+
+\begin{theorem}[Algebraic exactness]
+\label{thm:exactness}
+Let $H = \sum_k c_k \prod_j O_j^{(k)}$ be a fermionic Hamiltonian
+with coefficients $c_k \in \Qi$.  The Pauli-string representation
+$\encode(H) = \sum_m d_m P_m$ produced by the encoding pipeline
+satisfies $d_m \in \Qi$ for all~$m$, and the computation introduces
+no floating-point error in the phase tracking.
+\end{theorem}
+
+\begin{proof}[Proof sketch]
+Each encoding step produces Majorana operators whose coefficients are
+$\pm 1$ or $\pm i$ (elements of $\Zi$), combined with the
+input coefficients $c_k$.  The encoding pipeline consists of:
+\begin{enumerate}
+  \item \emph{Ladder $\to$ Majorana}: coefficients are
+    $\pm\frac{1}{2}$ and $\pm\frac{i}{2}$ (elements of
+    $\frac{1}{2}\Qi$).
+  \item \emph{Majorana $\to$ Pauli string}: each Majorana operator is
+    a single Pauli string with coefficient $\pm 1$ or $\pm i$,
+    tracked symbolically in $\Zi$.
+  \item \emph{Pauli $\times$ Pauli}: qubit-by-qubit multiplication
+    via the finite table of \cref{eq:pauli-product}, phase
+    accumulated in $\Zi$.
+  \item \emph{Phase fold}: a single application of
+    \textsc{FoldIntoGlobalPhase}, using only negation and
+    real/imaginary swap.
+  \item \emph{Like-term combination}: coefficient addition in
+    $\mathbb{C}$, with exact string matching.
+\end{enumerate}
+Steps 1--4 introduce no rounding.  Step 5 performs
+$\Qi$-coefficient additions that are exact in IEEE~754 when
+the operands are half-integers (representable exactly as
+\texttt{double}).  The full proof is in \cref{app:exactness-proof}.
+\end{proof}
+
+\begin{remark}
+When input coefficients are not in $\Qi$ (e.g., from quantum
+chemistry integrals), the pipeline still benefits from exact phase
+tracking: the only source of rounding is the input data itself,
+not the encoding algebra.  In contrast, libraries that multiply
+phases as \texttt{Complex(0, 1)} accumulate $O(\epsilon)$ errors
+per Pauli product, where $\epsilon \approx 10^{-16}$ is machine
+epsilon.  Over $K$ products, the worst-case phase error grows as
+$K\epsilon$, which can become significant for large Hamiltonians.
+\end{remark}

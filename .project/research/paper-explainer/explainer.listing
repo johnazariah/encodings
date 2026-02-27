@@ -1,0 +1,6 @@
+let treeEncodingScheme tree =
+  { Update     = fun j n -> ancestors tree j
+    Parity     = fun j   -> remainder tree j
+                             |> Set.union (children tree j)
+    Occupation = fun j   -> descendants tree j
+                             |> Set.add j }

@@ -70,3 +70,5 @@ node_modules/
 # Built LaTeX documents (attach to releases instead)
 .project/research/**/*.pdf
 !.project/research/**/figures/*.pdf
+
+.fake

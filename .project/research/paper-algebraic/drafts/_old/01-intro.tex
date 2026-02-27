@@ -1,0 +1,147 @@
+% §1 Introduction
+
+Simulating fermionic systems on quantum hardware requires a mapping
+from the anticommuting creation and annihilation operators of second
+quantization to the tensor-product structure of qubit Pauli operators.
+This fermion-to-qubit encoding is a necessary middleware step between
+the molecular Hamiltonian and the quantum circuit, and its choice
+directly determines the Pauli weight, measurement complexity, and
+circuit depth of the resulting simulation~\cite{tranter2015,
+havlicek2017}.
+
+Five encodings dominate the literature: Jordan--Wigner~\cite{jordan1928},
+Bravyi--Kitaev~\cite{bravyi2002, seeley2012}, Parity~\cite{seeley2012,
+bravyi2017tapering}, balanced binary tree, and balanced ternary
+tree~\cite{jiang2020, miller2023bonsai}.  Each has been derived and
+implemented independently, typically as a bespoke function mapping
+\texttt{FermionOperator} $\to$ \texttt{QubitOperator} in software
+libraries such as OpenFermion~\cite{mcclean2020}, Qiskit
+Nature~\cite{qiskit2023}, and PennyLane~\cite{bergholm2022}.  Adding a
+new encoding to any of these frameworks requires reimplementing the
+entire mapping algorithm --- typically several hundred lines of code ---
+even though the underlying algebraic structure is largely shared.
+
+\subsection{The structural question}
+
+This situation raises a natural mathematical question: \emph{what is the
+minimal specification that uniquely determines a fermion-to-qubit
+encoding?}  If such a specification exists and is compact, then the
+mapping algorithm can be factored into a universal procedure
+parameterized by a small data structure, and the definition of an
+encoding becomes a declaration rather than a computation.
+
+We show that two such specifications exist, each defining a class of
+parameterized maps:
+
+\begin{enumerate}
+  \item \textbf{Index-set schemes.}  A triple of set-valued functions
+    $\scheme = (\Uset{\cdot}, \Pset{\cdot}, \Occ{\cdot})$ from mode
+    indices to subsets of qubit indices.  The universal encoding
+    algorithm $\encode_\scheme$ produces Majorana operators, and thence
+    ladder operators, from any valid scheme.  Jordan--Wigner,
+    Bravyi--Kitaev, and Parity are each fully specified by choosing
+    three such functions.
+
+  \item \textbf{Path-based tree encodings.}  A rooted labelled tree $T$
+    on $\lceil n/2 \rceil$ internal nodes, where each node has at most
+    three descending links labelled $X$, $Y$, $Z$.  The encoding is
+    read off from root-to-leaf paths.  Every rooted tree defines a valid
+    encoding; different tree topologies recover all five known encodings
+    and define infinitely many new ones.
+\end{enumerate}
+
+Both specifications factor through a common intermediate step: the
+\emph{Majorana representation}, where the operators $c_j = \ad{j} +
+\an{j}$ and $d_j = i(\ad{j} - \an{j})$ are expressed as single Pauli
+strings.  This factorization separates the \emph{definition} of an
+encoding (what makes it different from other encodings) from the
+\emph{computation} of the encoding (how Majorana operators become ladder
+operators become Hamiltonian terms), which is universal.
+
+\subsection{Contributions}
+
+This paper makes five contributions:
+
+\begin{enumerate}
+  \item \textbf{Unified framework.}  We formalize the two parameterized
+    maps and prove that both are complete: every known encoding is an
+    instance, and every valid parameter value yields a correct encoding
+    (\cref{sec:index-set,sec:tree-encoding}).
+
+  \item \textbf{Star-tree theorem.}  We prove that the
+    Seeley--Richard--Love index-set construction satisfies the CAR if
+    and only if the underlying tree is a star (depth~$\le 1$) --- a far
+    sharper restriction than the monotonicity condition assumed in prior
+    work.  By contrast, the path-based construction is universal.  The
+    space of $n^{n-1}$ encoding trees decomposes into three
+    construction-compatibility regions (\cref{sec:star-tree}).
+
+  \item \textbf{Algebraic exactness.} We prove that the Pauli
+    multiplication pipeline, when implemented with symbolic $\Zi$ phase
+    tracking, preserves exactness over the Gaussian rationals $\Qi$ ---
+    eliminating floating-point cancellation errors that produce spurious
+    Hamiltonian terms in matrix-based approaches
+    (\cref{sec:exactness}).
+
+  \item \textbf{Tight weight bounds.}  We establish that Pauli
+    weight is determined by tree depth alone:
+    $w \le 2\,\depth{T} + 1$, and the balanced ternary tree achieves
+    the optimal scaling $O(\log_3 n)$ (\cref{sec:tree-encoding}).
+
+  \item \textbf{Algebraic composability.}  We show that the same
+    parameterized pipeline extends to bosonic canonical commutation
+    relations and mixed fermion--boson systems by abstracting the
+    commutation algebra as an interface, with no change to the
+    downstream Pauli multiplication (\cref{sec:extensions}).
+\end{enumerate}
+
+The framework is implemented in the open-source \textsc{FockMap}
+library~\cite{fockmap2026} and validated by 497 automated tests and
+eigenspectrum comparison against known molecular
+benchmarks~(\cref{sec:validation}).
+
+\subsection{Relation to prior work}
+
+Seeley, Richard, and Love~\cite{seeley2012} introduced the update,
+parity, and remainder sets for the Bravyi--Kitaev encoding and observed
+that Jordan--Wigner and Parity could be expressed in the same language.
+Their framework appeared to unify these three encodings under a single
+index-set construction.  We show (\cref{sec:star-tree}) that this
+unification is less general than it appears: the generic index-set
+construction satisfies the CAR only for star trees, and the
+Bravyi--Kitaev encoding actually uses a separate, Fenwick-specific
+construction that is algebraically distinct.
+
+Steudtner and Wehner~\cite{steudtner2018} identified ternary tree
+structure as a unifying construction and proved $O(\log_3 n)$ weight
+bounds.  Jiang et al.~\cite{jiang2020} gave the path-based
+construction for optimal ternary trees, and Miller et
+al.~\cite{miller2023bonsai} generalized to arbitrary tree topologies.
+
+Our contribution builds on these foundations but shifts the emphasis
+from \emph{individual encodings} to the \emph{structure of the map
+itself}.  By making the parameterization explicit and the algorithm
+universal, we can: (a)~define new encodings in 3--5 lines rather than
+hundreds; (b)~prove properties that hold for \emph{all} encodings
+simultaneously (exactness, weight bounds); (c)~extend the same
+framework to non-fermionic systems; and (d)~identify structural
+restrictions (such as the star-tree limitation) that are invisible when
+encodings are studied one at a time.
+
+\subsection{Outline}
+
+\Cref{sec:prelim} establishes notation, collects core definitions,
+and reviews the Majorana decomposition.  \Cref{sec:index-set} defines
+the index-set parameterization and proves its correctness.
+\Cref{sec:tree-encoding} defines the tree parameterization and
+establishes weight bounds.  \Cref{sec:star-tree} proves the star-tree
+theorem and maps the three-region structure of the encoding space.
+\Cref{sec:exactness} proves algebraic exactness of the pipeline.
+\Cref{sec:extensions} extends the framework to bosonic and mixed
+systems.  \Cref{sec:hamiltonian} traces the complete encoding pipeline
+on a worked example.  \Cref{sec:validation} presents computational
+validation.  \Cref{sec:concerns} proactively addresses potential
+concerns about proof technique, scope, and comparison to existing
+tools.  \Cref{sec:discussion} discusses implications and open
+questions.  \Cref{app:datatypes} documents the correspondence between
+the algebraic data types and the mathematical structures.

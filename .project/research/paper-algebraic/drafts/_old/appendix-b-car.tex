@@ -1,0 +1,99 @@
+% drafts/appendix-b-car.tex — CAR Verification Protocol
+
+We describe the protocol used to verify that an encoding satisfies
+the canonical anticommutation relations (CAR).
+
+%%====================================================================
+\subsection*{Construction of Majorana operators}
+
+Given an encoding with $n$ fermionic modes, we construct $2n$
+Majorana operators:
+\begin{align}
+  c_j &= \ad{j} + \an{j}, &
+  d_j &= i(\ad{j} - \an{j}),
+  \label{eq:majorana-construction}
+\end{align}
+for $j = 0, \ldots, n-1$.  Each $c_j$ and $d_j$ is represented as a
+\texttt{PauliRegisterSequence} (a sum of Pauli strings with complex
+coefficients).
+
+%%====================================================================
+\subsection*{Anticommutator computation}
+
+The full CAR requires:
+\begin{align}
+  \acomm{c_j}{c_k} &= 2\delta_{jk}\, I^{\otimes n}, \\
+  \acomm{d_j}{d_k} &= 2\delta_{jk}\, I^{\otimes n}, \\
+  \acomm{c_j}{d_k} &= 0 \quad \forall\; j, k.
+\end{align}
+
+For $2n$ Majorana operators, there are $\binom{2n}{2} + 2n =
+(2n)^2/2 + n$ anticommutators to check (including the diagonal
+$\acomm{c_j}{c_j} = 2I$).
+
+Each anticommutator $\acomm{A}{B} = AB + BA$ is computed symbolically:
+\begin{enumerate}
+  \item Multiply $A \cdot B$ via qubit-by-qubit Pauli multiplication,
+    producing a \texttt{PauliRegisterSequence}.
+  \item Multiply $B \cdot A$ similarly.
+  \item Add the two sequences using like-term combination
+    (\cref{alg:like-term}).
+  \item Compare the result against the expected value ($2I^{\otimes n}$
+    for diagonal, $0$ for off-diagonal).
+\end{enumerate}
+
+%%====================================================================
+\subsection*{Verification criteria}
+
+An encoding passes the CAR verification if and only if:
+\begin{itemize}
+  \item All diagonal anticommutators equal $2I^{\otimes n}$ exactly
+    (a single Pauli string with coefficient~$2$ and all-identity
+    operators).
+  \item All off-diagonal anticommutators are the empty sum (no
+    surviving Pauli strings after like-term cancellation).
+\end{itemize}
+
+We define the \emph{deviation} of a tree $T$ under a construction as:
+\begin{equation}
+  D(T) = \max_{(A,B) \in \text{off-diag}}
+    \sum_{P \in \acomm{A}{B}} |c_P|,
+\end{equation}
+where the sum runs over all Pauli strings in the off-diagonal
+anticommutator.  $D(T) = 0$ indicates a valid encoding.
+
+%%====================================================================
+\subsection*{Computational details}
+
+\begin{itemize}
+  \item All verification is performed symbolically using the
+    \texttt{PauliRegisterSequence} type, which stores Pauli strings
+    in a dictionary keyed by operator signature.
+  \item For small $n$ ($\le 8$), we additionally verify by
+    constructing the full $2^n \times 2^n$ matrix representation
+    and computing anticommutators numerically.  The symbolic and
+    matrix results agree to machine precision.
+  \item The verification scales as $O(n^3)$ per anticommutator
+    (product of two $O(n)$-term Majorana operators, each producing
+    an $O(n)$-qubit Pauli string), with $O(n^2)$
+    anticommutators.  Total: $O(n^5)$.  For $n = 24$, this completes
+    in approximately 2~seconds.
+\end{itemize}
+
+%%====================================================================
+\subsection*{Tree enumeration for star-tree census}
+
+For the exhaustive verification of \cref{sec:val-census}:
+\begin{enumerate}
+  \item Generate all $n^{n-1}$ labelled rooted trees on $[n]$ via
+    Pr\"ufer sequence enumeration.
+  \item For each tree, compute Construction~A's index sets and
+    build the Majorana operators.
+  \item Check all $\binom{2n}{2}$ off-diagonal anticommutators.
+  \item Record the tree's topology (star, non-star monotonic,
+    non-monotonic) and whether $D(T) = 0$.
+\end{enumerate}
+
+For $n = 6$, this involves $6^5 = 7{,}776$ trees, each requiring
+$\binom{12}{2} = 66$ anticommutator checks.  The total computation
+completes in approximately 30~seconds.
