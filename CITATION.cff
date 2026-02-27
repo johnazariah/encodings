@@ -5,6 +5,8 @@ authors:
   - family-names: Azariah
     given-names: John
     orcid: "https://orcid.org/0009-0007-9870-1970"
+    affiliation: "University of Technology Sydney, Australia"
+    email: "john.azariah@student.uts.edu.au"
 version: 0.4.0
 date-released: 2026-02-15
 license: MIT

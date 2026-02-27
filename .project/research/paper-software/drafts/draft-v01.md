@@ -11,7 +11,7 @@ authors:
     orcid: 0009-0007-9870-1970
     affiliation: 1
 affiliations:
-  - name: University of Technology, Sydney
+  - name: University of Technology Sydney, Australia
     index: 1
 date: 2024
 bibliography: paper.bib
