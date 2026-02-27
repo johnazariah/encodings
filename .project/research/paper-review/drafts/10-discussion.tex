@@ -222,6 +222,23 @@ These experiments illustrate that encoding choice is not merely a
 theoretical concern: it has measurable consequences for experimental
 feasibility on current devices.
 
+\paragraph{Trotterization and circuit depth.}
+Product-formula (Trotter--Suzuki) methods remain the most
+straightforward approach to Hamiltonian
+simulation~\cite{lloyd1996,suzuki1976}.
+Given a Hamiltonian $H = \sum_k c_k P_k$ expressed as a sum of Pauli
+strings, each first-order Trotter step applies the sequence of
+rotations $\prod_k e^{-i c_k P_k \Delta t}$.  A single Pauli rotation
+$e^{-i\theta P}$ with $P$ of weight~$w$ is implemented by a CNOT
+staircase of depth~$w-1$, a single $R_z(2\theta)$, and a reverse
+staircase --- $2(w-1)$ CNOTs in total.  For a Hamiltonian with $L$
+terms and maximum Pauli weight~$w_{\max}$, each Trotter step therefore
+requires $O(L \, w_{\max})$ CNOT gates.  Reducing $w_{\max}$ from
+$O(n)$ (Jordan--Wigner) to $O(\log n)$ (Bravyi--Kitaev or tree
+encodings) yields an exponential saving in per-step circuit depth.
+This makes encoding choice a first-order concern for any simulation
+pipeline based on Trotterization.
+
 \paragraph{Fault-tolerant simulation.}
 For larger molecules beyond VQE's reach, fault-tolerant quantum
 algorithms such as quantum phase estimation require deep circuits.

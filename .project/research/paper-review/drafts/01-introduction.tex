@@ -33,9 +33,15 @@ Five encodings dominate the literature:
 
 These encodings differ in their Pauli weight (the number of non-identity
 Pauli operators per encoded ladder operator), which directly affects
-measurement costs and circuit depths.  Lower weight is better: the
-balanced ternary tree achieves the proven optimum for fixed-arity
-tree encodings.
+measurement costs and circuit depths.  The importance of Pauli weight
+becomes concrete through Trotterization: simulating time evolution
+$e^{-iHt}$ requires decomposing it into a product of Pauli rotations
+$e^{-i c_k P_k \Delta t}$, each implemented by a CNOT ladder of depth
+equal to the weight of $P_k$.  Thus an encoding with maximum weight~$w$
+contributes $O(w)$ CNOT gates per Trotter step per Hamiltonian term,
+making weight reduction a direct route to shallower circuits.  The
+balanced ternary tree achieves the proven optimum $O(\log_3 n)$ for
+fixed-arity tree encodings.
 
 \subsection{Two construction paradigms}
 
