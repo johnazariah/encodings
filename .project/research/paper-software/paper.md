@@ -9,12 +9,12 @@ tags:
   - bosonic encoding
   - Hamiltonian simulation
 authors:
-  - name: John Azariah
+  - name: John S Azariah
     orcid: 0009-0007-9870-1970
     corresponding: true
     affiliation: 1
 affiliations:
-  - name: University of Technology Sydney, Australia
+  - name: Centre for Quantum Software and Information, School of Computer Science, Faculty of Engineering & Information Technology, University of Technology Sydney, NSW 2007, Australia
     index: 1
     ror: 03f0f6041
 date: 15 February 2026

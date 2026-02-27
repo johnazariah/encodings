@@ -7,11 +7,11 @@ tags:
   - F#
   - functional programming
 authors:
-  - name: John Azariah
+  - name: John S Azariah
     orcid: 0009-0007-9870-1970
     affiliation: 1
 affiliations:
-  - name: University of Technology Sydney, Australia
+  - name: Centre for Quantum Software and Information, School of Computer Science, Faculty of Engineering & Information Technology, University of Technology Sydney, NSW 2007, Australia
     index: 1
 date: 2024
 bibliography: paper.bib
