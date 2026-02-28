@@ -54,10 +54,10 @@ let nSpinOrbitals = 4u
 
 let oneBodyIntegrals = Map.ofList [
     // Diagonal elements (same spatial orbital)
-    ("00", Complex(-1.2563390730032498, 0.0))  // h₀₀ = ⟨σg↑|h|σg↑⟩
-    ("11", Complex(-1.2563390730032498, 0.0))  // h₁₁ = ⟨σg↓|h|σg↓⟩
-    ("22", Complex(-0.4718960244306283, 0.0))  // h₂₂ = ⟨σu↑|h|σu↑⟩
-    ("33", Complex(-0.4718960244306283, 0.0))  // h₃₃ = ⟨σu↓|h|σu↓⟩
+    ("0,0", Complex(-1.2563390730032498, 0.0))  // h₀₀ = ⟨σg↑|h|σg↑⟩
+    ("1,1", Complex(-1.2563390730032498, 0.0))  // h₁₁ = ⟨σg↓|h|σg↓⟩
+    ("2,2", Complex(-0.4718960244306283, 0.0))  // h₂₂ = ⟨σu↑|h|σu↑⟩
+    ("3,3", Complex(-0.4718960244306283, 0.0))  // h₃₃ = ⟨σu↓|h|σu↓⟩
 ]
 
 (**
@@ -69,34 +69,34 @@ Symmetries reduce the number of unique values significantly.
 
 let twoBodyIntegrals = Map.ofList [
     // Direct Coulomb: electrons in same orbital
-    ("0000", Complex(0.6744887663049631, 0.0))
-    ("1111", Complex(0.6744887663049631, 0.0))
-    ("2222", Complex(0.6973979494693556, 0.0))
-    ("3333", Complex(0.6973979494693556, 0.0))
+    ("0,0,0,0", Complex(0.6744887663049631, 0.0))
+    ("1,1,1,1", Complex(0.6744887663049631, 0.0))
+    ("2,2,2,2", Complex(0.6973979494693556, 0.0))
+    ("3,3,3,3", Complex(0.6973979494693556, 0.0))
 
     // Coulomb: σg-σg interactions
-    ("0011", Complex(0.6744887663049631, 0.0))
-    ("1100", Complex(0.6744887663049631, 0.0))
+    ("0,0,1,1", Complex(0.6744887663049631, 0.0))
+    ("1,1,0,0", Complex(0.6744887663049631, 0.0))
 
     // Coulomb: σg-σu interactions
-    ("0022", Complex(0.6636340478615040, 0.0))
-    ("2200", Complex(0.6636340478615040, 0.0))
-    ("0033", Complex(0.6636340478615040, 0.0))
-    ("3300", Complex(0.6636340478615040, 0.0))
-    ("1122", Complex(0.6636340478615040, 0.0))
-    ("2211", Complex(0.6636340478615040, 0.0))
-    ("1133", Complex(0.6636340478615040, 0.0))
-    ("3311", Complex(0.6636340478615040, 0.0))
+    ("0,0,2,2", Complex(0.6636340478615040, 0.0))
+    ("2,2,0,0", Complex(0.6636340478615040, 0.0))
+    ("0,0,3,3", Complex(0.6636340478615040, 0.0))
+    ("3,3,0,0", Complex(0.6636340478615040, 0.0))
+    ("1,1,2,2", Complex(0.6636340478615040, 0.0))
+    ("2,2,1,1", Complex(0.6636340478615040, 0.0))
+    ("1,1,3,3", Complex(0.6636340478615040, 0.0))
+    ("3,3,1,1", Complex(0.6636340478615040, 0.0))
 
     // Coulomb: σu-σu interactions
-    ("2233", Complex(0.6973979494693556, 0.0))
-    ("3322", Complex(0.6973979494693556, 0.0))
+    ("2,2,3,3", Complex(0.6973979494693556, 0.0))
+    ("3,3,2,2", Complex(0.6973979494693556, 0.0))
 
     // Exchange integrals
-    ("0220", Complex(0.1809312433852046, 0.0))
-    ("2002", Complex(0.1809312433852046, 0.0))
-    ("1331", Complex(0.1809312433852046, 0.0))
-    ("3113", Complex(0.1809312433852046, 0.0))
+    ("0,2,2,0", Complex(0.1809312433852046, 0.0))
+    ("2,0,0,2", Complex(0.1809312433852046, 0.0))
+    ("1,3,3,1", Complex(0.1809312433852046, 0.0))
+    ("3,1,1,3", Complex(0.1809312433852046, 0.0))
 ]
 
 (**
@@ -107,9 +107,9 @@ for arbitrary index combinations. We provide a factory function:
 *)
 
 let coefficientFactory (key : string) : Complex option =
-    match key.Length with
-    | 2 -> oneBodyIntegrals.TryFind key   // One-body: 2-digit key
-    | 4 -> twoBodyIntegrals.TryFind key   // Two-body: 4-digit key
+    match key.Split(',').Length with
+    | 2 -> oneBodyIntegrals.TryFind key   // One-body: "p,q" key
+    | 4 -> twoBodyIntegrals.TryFind key   // Two-body: "p,q,r,s" key
     | _ -> None
 
 (**

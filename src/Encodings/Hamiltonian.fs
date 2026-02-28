@@ -55,7 +55,7 @@ module Hamiltonian =
             [|
                 for i in 0u .. n do
                     for j in 0u .. n do
-                        let key = sprintf "%u%u" i j
+                        let key = sprintf "%u,%u" i j
                         match coefficientFactory key with
                         | Some hij ->
                             let term = {OverlapTerm.i = i; OverlapTerm.j = j}
@@ -92,7 +92,7 @@ module Hamiltonian =
                     for j in 0u .. n do
                         for k in 0u .. n do
                             for l in 0u .. n do
-                                let key = sprintf "%u%u%u%u" i j k l
+                                let key = sprintf "%u,%u,%u,%u" i j k l
                                 match coefficientFactory key with
                                 | Some hijkl ->
                                     let term = {
@@ -113,13 +113,14 @@ module Hamiltonian =
     /// <summary>
     /// Compute a qubit Hamiltonian from integral coefficients using Jordan-Wigner encoding.
     /// </summary>
-    /// <param name="coefficientFactory">A function that returns Some(coefficient) for a given index key, or None if the term should be skipped.</param>
+    /// <param name="coefficientFactory">A function that returns Some(coefficient) for a given comma-separated index key (e.g., "0,1" for one-body, "0,1,2,3" for two-body), or None if the term should be skipped.</param>
     /// <param name="n">The number of qubits/modes in the system.</param>
     /// <returns>A PauliRegisterSequence representing the encoded Hamiltonian.</returns>
     /// <remarks>
     /// Iterates over all one-body (i,j) and two-body (i,j,k,l) index combinations,
     /// retrieves coefficients from the factory function, and encodes non-zero terms
-    /// using the Jordan-Wigner transformation.
+    /// using the Jordan-Wigner transformation. Keys are formatted as comma-separated
+    /// indices: "i,j" for one-body and "i,j,k,l" for two-body terms.
     /// </remarks>
     let computeHamiltonian coefficientFactory n =
         [|
@@ -132,13 +133,14 @@ module Hamiltonian =
     /// Compute a qubit Hamiltonian from integral coefficients using any encoding.
     /// </summary>
     /// <param name="encode">The encoding function to transform ladder operators to Pauli strings.</param>
-    /// <param name="coefficientFactory">A function that returns Some(coefficient) for a given index key, or None if the term should be skipped.</param>
+    /// <param name="coefficientFactory">A function that returns Some(coefficient) for a given comma-separated index key (e.g., "0,1" for one-body, "0,1,2,3" for two-body), or None if the term should be skipped.</param>
     /// <param name="n">The number of qubits/modes in the system.</param>
     /// <returns>A PauliRegisterSequence representing the encoded Hamiltonian.</returns>
     /// <remarks>
     /// Generic version that accepts any fermion-to-qubit encoding function.
     /// Useful for comparing different encodings (Jordan-Wigner, Bravyi-Kitaev, etc.)
-    /// on the same Hamiltonian.
+    /// on the same Hamiltonian. Keys are formatted as comma-separated indices:
+    /// "i,j" for one-body and "i,j,k,l" for two-body terms.
     /// </remarks>
     let computeHamiltonianWith (encode : EncoderFn) coefficientFactory n =
         [|
