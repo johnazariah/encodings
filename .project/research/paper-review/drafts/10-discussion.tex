@@ -22,6 +22,7 @@ establishes that:
 \end{enumerate}
 
 \subsection{Implications for the literature}
+\label{sec:implications-literature}
 
 \paragraph{The SRL framework is narrower than cited.}
 The index-set framework of Seeley, Richard, and
@@ -31,6 +32,43 @@ covers only star trees --- depth-1 graphs that produce relabelled
 Jordan--Wigner or Parity encodings.  We recommend that future
 presentations distinguish the construction method (how sets are
 derived) from the notation (expressing any encoding as index sets).
+
+\paragraph{Implicit generality and downstream adoption.}
+An important subtlety deserves emphasis.  The SRL paper does not
+\emph{explicitly} claim that its index-set construction works for
+arbitrary trees: it presents the framework in terms of three specific
+encodings (JW, BK, Parity), derives the index sets for each, and
+shows they fit a common algebraic structure.  The paper's language,
+however, naturally invites the reading that this is a general recipe.
+By presenting all three encodings as instances of a single framework
+--- without noting that BK's index sets require a separate, non-generic
+derivation --- the paper creates the impression of a universal
+construction method.
+
+This impression was adopted uncritically by subsequent work.
+Tranter et al.~\cite{tranter2015} frame their molecular benchmarks
+entirely within the SRL index-set language, treating it as the
+canonical encoding framework without questioning its scope.
+Steudtner and Wehner~\cite{steudtner2018} introduce an entirely
+new path-based construction for ternary trees without ever noting
+that the SRL framework \emph{could not have served} the same
+purpose --- they simply build the right tool without diagnosing
+why the existing one was insufficient.
+Jiang et al.~\cite{jiang2020} establish path-based encodings as
+the standard for new tree topologies, again without identifying
+the limitation they are implicitly working around.
+Miller et al.~\cite{miller2023bonsai} build an entire software
+infrastructure (Bonsai) on the path-based paradigm without
+referencing or engaging with the SRL index-set approach at all.
+
+The result is a striking pattern: over the decade 2012--2023, the
+community migrated from index-set methods to path-based methods
+without anyone formally identifying \emph{why} the older approach
+was inadequate.  The assumption that SRL provided a general
+construction was never tested, and the star-tree limitation was
+never identified --- not because it was hidden, but because no one
+attempted to apply the generic recipe to non-star trees and verify
+the result.  The star-tree theorem provides the missing diagnosis.
 
 \paragraph{Silent encoding errors.}
 The failure mode identified in \cref{sec:star-tree} is particularly
@@ -185,17 +223,13 @@ encodings as well.  We advocate for systematic CAR verification
 regardless of the paradigm.
 
 \paragraph{The historical pattern.}
-A striking pattern emerges from this review: the field has migrated from
-index-set methods to path-based methods over the period 2012--2023
-without anyone formally identifying why.  SRL~\cite{seeley2012} and
-Tranter et al.~\cite{tranter2015} worked within the index-set paradigm.
-Steudtner and Wehner~\cite{steudtner2018} introduced the path-based
-paradigm in 2018.  By 2020, Jiang et al.~\cite{jiang2020} had established
-it as the standard for new encodings, and by 2023, Miller et
-al.~\cite{miller2023bonsai} had built a complete software infrastructure
-around it.  The star-tree theorem provides the formal explanation for
-this migration: the path-based construction succeeded because it was
-the only method that could.
+The per-paper analysis above corroborates the broader pattern noted
+in \cref{sec:implications-literature}: the field migrated from
+index-set methods to path-based methods over 2012--2023 without
+anyone formally diagnosing the limitation that made the migration
+necessary.  Each group independently adopted Construction~B because
+it worked, not because Construction~A had been shown to fail.
+The star-tree theorem closes this explanatory gap.
 
 \subsection{Applications and software landscape}
 \label{sec:applications}

@@ -1,8 +1,8 @@
 # Spec: Trotterization Module for FockMap
 
-**Status**: Proposed  
-**Date**: 2026-02-27  
-**Author**: John S Azariah  
+**Status**: Proposed
+**Date**: 2026-02-27
+**Author**: John S Azariah
 
 ---
 

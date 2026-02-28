@@ -69,11 +69,42 @@ The scaling is consistent with $O(n)$ for JW and Parity,
 $O(\log_2 n)$ for BK and BinTree, and $O(\log_3 n)$ for TerTree,
 matching the weight bound of \cref{thm:weight-bound}.
 
+\paragraph{CNOT cost per Pauli rotation.}
+The Pauli weight directly determines the CNOT cost of implementing a
+single Pauli rotation $e^{-i\theta P}$ via the standard staircase
+decomposition: a Pauli string of weight~$w$ requires $2(w-1)$~CNOT
+gates.  \Cref{tab:cnot-cost} translates the weights from
+\cref{tab:scaling} into CNOT counts per worst-case rotation.
+
+\begin{table}[t]
+\centering
+\caption{CNOT gates per worst-case Pauli rotation: $2(\max_j \pauliw{\ad{j}} - 1)$.}
+\label{tab:cnot-cost}
+\begin{tabular}{@{}rrrrrr@{}}
+\toprule
+$n$ & JW & BK & Parity & BinTree & TerTree \\
+\midrule
+ 4  &   6 &  4 &   6 &  4 & \textbf{2} \\
+ 8  &  14 &  6 &  14 &  6 & \textbf{4} \\
+16  &  30 &  8 &  30 &  8 & \textbf{6} \\
+32  &  62 & 10 &  62 & 10 & \textbf{8} \\
+64  & 126 & 12 & 126 & 12 & \textbf{8} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+At $n = 64$, the worst-case rotation under JW or Parity requires
+126~CNOTs, while TerTree requires only~8 --- a 16$\times$ reduction
+per rotation.  For a Hamiltonian with $L$~terms and $r$~Trotter
+steps, the total saving is $O(r \cdot L \cdot n / \log_3 n)$~gates,
+making encoding choice a first-order determinant of circuit depth in
+Trotter-based simulation.
+
 \subsection{Exhaustive tree census}
 \label{sec:val-census}
 
 We enumerate all $n^{n-1}$ labelled rooted trees (via Pr\"ufer
-sequences) for small~$n$ and symbolically verify every
+sequences~\cite{prufer1918}) for small~$n$ and symbolically verify every
 anticommutator.  The results confirm the structural proof:
 
 \begin{table}[t]

@@ -30,13 +30,26 @@ The choice of encoding directly affects the scaling:
 - **Higher Pauli weight → deeper CNOT ladders → more gate errors.**
 - **The ternary tree encoding's $O(\log_3 n)$ weight scaling** means that for 100 modes, the deepest circuits are roughly 5 CNOTs instead of Jordan–Wigner's 100 — a difference that may determine whether the simulation is feasible on early fault-tolerant hardware.
 
-| System | Spin-orbitals | JW max weight | Ternary tree max weight |
-|:---:|:---:|:---:|:---:|
-| H₂ | 4 | 4 | 2 |
-| LiH | 12 | 12 | 4 |
-| H₂O | 14 | 14 | 4 |
-| N₂ | 20 | 20 | 5 |
-| FeMo-co | ~100 | ~100 | ~5 |
+### Concrete CNOT costs
+
+Each Pauli rotation $e^{-i\theta P}$ with weight $w$ requires $2(w-1)$ CNOT gates
+(the "CNOT staircase"). A Trotter step applies one rotation per term, so encoding
+choice directly controls circuit depth:
+
+| System | Spin-orbitals | JW max weight | JW CNOTs/rotation | Ternary max weight | Ternary CNOTs/rotation | Reduction |
+|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| H₂ | 4 | 4 | 6 | 2 | 2 | 3× |
+| LiH | 12 | 12 | 22 | 4 | 6 | 3.7× |
+| H₂O | 14 | 14 | 26 | 4 | 6 | 4.3× |
+| N₂ | 20 | 20 | 38 | 5 | 8 | 4.8× |
+| FeMo-co | ~100 | ~100 | ~198 | ~5 | ~8 | ~25× |
+
+The 25× CNOT reduction at FeMo-co scale compounds across every term and every
+Trotter step — potentially the difference between feasible and infeasible
+simulation on near-term hardware.
+
+> **Try it yourself:** [Lab 07: Trotter Cost](../labs/07-trotter-cost.html)
+> computes these numbers directly from the FockMap library.
 
 ## What You've Learned
 

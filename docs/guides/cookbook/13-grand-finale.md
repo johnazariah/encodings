@@ -61,6 +61,28 @@ All three Hamiltonians have the same eigenvalues — they represent
 identical physics. The differences in term count and Pauli weight
 affect the cost of measurement on real quantum hardware.
 
+## From Pauli Weight to CNOT Count
+
+Pauli weight isn't just an abstract metric — it directly determines
+the number of **CNOT gates** needed on real hardware. To implement a
+single Pauli rotation $e^{-i\theta P}$ where $P$ has weight $w$,
+the standard CNOT staircase decomposition requires **$2(w-1)$ CNOTs**.
+
+For a first-order Trotter step, you apply one rotation per Hamiltonian
+term, so the total CNOT cost is $\sum_k 2(w_k - 1)$ over all terms.
+
+| Encoding | Terms | Max weight | Avg weight | CNOTs / Trotter step |
+|:---|:---:|:---:|:---:|:---:|
+| Jordan–Wigner | 6 | 2 | 1.3 | 4 |
+| Bravyi–Kitaev | 6 | 3 | 2.0 | 12 |
+| Ternary Tree | 6 | 3 | 1.7 | 8 |
+
+> **Surprise:** For H₂ (4 qubits), Jordan–Wigner has the *lowest* CNOT
+> count! The $O(n)$ weight scaling only becomes problematic at larger $n$.
+> At $n = 32$, JW needs 62 CNOTs per worst-case rotation while the
+> ternary tree needs only 8. See [Lab 07](../../labs/07-trotter-cost.html)
+> for the full scaling analysis.
+
 ---
 
 **Next:** [Bosonic-to-Qubit Encodings](14-bosonic-encodings.html) — Unary, Binary, and Gray code truncation encodings
