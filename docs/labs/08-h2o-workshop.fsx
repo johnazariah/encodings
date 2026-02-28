@@ -155,7 +155,7 @@ type EncodingStats = {
 
 let results =
     encoders |> List.map (fun (name, encode) ->
-        let ham = computeHamiltonianWith encode coefficientFactory nSpinOrbitals
+        let ham = computeHamiltonianWithParallel encode coefficientFactory nSpinOrbitals
         let terms = ham.DistributeCoefficient.SummandTerms
         let nonIdentity = terms |> Array.filter (fun t -> pauliWeight t.Signature > 0)
         let maxW = nonIdentity |> Array.map (fun t -> pauliWeight t.Signature) |> Array.max
@@ -325,61 +325,105 @@ printfn "  Energy range: %.2f mHa (= %.1f kJ/mol)" maxDelta (maxDelta * 2.6255)
 printfn "  Each █ ≈ %.2f mHa" (maxDelta / float barWidth)
 
 (**
-### Step 2: CNOT cost at representative geometries
+### Step 2: Pauli skeleton precomputation
 
-Encoding the full Hamiltonian at every angle is expensive, so we pick
-three representative geometries: compressed (70°), equilibrium (~100°),
-and stretched (160°). Since the number of spin-orbitals is the same for
-all geometries (STO-3G always gives 12), the encoding structure is the
-same — only the coefficient values change.
+Here's the key insight: the Pauli strings for each operator product
+depend ONLY on the encoding and system size — not on the integral
+values (which change with geometry). We can **precompute the Pauli
+structure once per encoding** and then cheaply "dress" it with
+different coefficients for each bond angle.
+
+This is `computeHamiltonianSkeleton` — it precomputes all Pauli
+strings for the n² one-body and n⁴ two-body operator products,
+parallelised across all CPU cores. Then `applyCoefficients` just
+multiplies in the integral values — no Pauli algebra at all.
 *)
 
 let buildFactory (geom : JsonElement) =
-    let ob = geom.GetProperty("one_body")
-    let tb = geom.GetProperty("two_body")
+    // Pre-convert JSON to Dictionary for O(1) lookups.
+    // JsonElement.TryGetProperty does linear scans — fatal in the inner loop.
+    let dict = System.Collections.Generic.Dictionary<string, Complex>()
+    for prop in geom.GetProperty("one_body").EnumerateObject() do
+        dict.[prop.Name] <- Complex(prop.Value.GetDouble(), 0.0)
+    for prop in geom.GetProperty("two_body").EnumerateObject() do
+        dict.[prop.Name] <- Complex(prop.Value.GetDouble(), 0.0)
     fun (key : string) ->
-        let tryGet (element : JsonElement) =
-            match element.TryGetProperty(key) with
-            | true, v -> Some (Complex(v.GetDouble(), 0.0))
-            | _ -> None
-        match tryGet ob with
-        | Some _ as r -> r
-        | None -> tryGet tb
+        match dict.TryGetValue key with
+        | true, v -> Some v
+        | _ -> None
 
-let representativeAngles = [| 70.0; 100.0; 160.0 |]
+let n_scan = geometries.[0].GetProperty("n_spin_orbitals").GetUInt32()
 
-printfn "\n═══ CNOT Cost at Representative Geometries ═══\n"
-printfn "  Angle │ Encoding       │ Terms │ Max w │ CNOTs/step │ TT saving"
-printfn "  ──────┼────────────────┼───────┼───────┼────────────┼──────────"
+// Build one skeleton per encoding.  We use computeHamiltonianSkeletonFor
+// with a union factory that includes ALL keys from ALL geometries.  This
+// is correct because different geometries can have different non-zero
+// integrals (some vanish by symmetry at certain angles).
+let sw = System.Diagnostics.Stopwatch.StartNew()
 
-for targetAngle in representativeAngles do
-    // Find the geometry closest to the target angle
-    let geom =
-        geometries
-        |> Array.minBy (fun g ->
-            abs (g.GetProperty("geometry").GetProperty("angle_deg").GetDouble() - targetAngle))
-    let actualAngle = geom.GetProperty("geometry").GetProperty("angle_deg").GetDouble()
-    let n = geom.GetProperty("n_spin_orbitals").GetUInt32()
-    let factory = buildFactory geom
+let unionFactory =
+    let allKeys = System.Collections.Generic.HashSet<string>()
+    for geom in geometries do
+        for prop in geom.GetProperty("one_body").EnumerateObject() do
+            ignore <| allKeys.Add prop.Name
+        for prop in geom.GetProperty("two_body").EnumerateObject() do
+            ignore <| allKeys.Add prop.Name
+    fun key -> if allKeys.Contains key then Some Complex.One else None
 
-    let mutable jwCnots = 0
-    for (name, encode) in encoders do
-        let ham = computeHamiltonianWith encode factory n
-        let terms = ham.DistributeCoefficient.SummandTerms
-        let nonId = terms |> Array.filter (fun t -> pauliWeight t.Signature > 0)
-        let maxW = nonId |> Array.map (fun t -> pauliWeight t.Signature) |> Array.max
-        let cnots = nonId |> Array.sumBy (fun t -> cnotsPerRotation (pauliWeight t.Signature))
-        if name = "Jordan-Wigner" then jwCnots <- cnots
-        let saving =
-            if name = "Jordan-Wigner" then "baseline"
-            else sprintf "%d%% fewer" (int (100.0 * float (jwCnots - cnots) / float (max 1 jwCnots)))
-        printfn "  %4.0f° │ %-14s │  %3d  │  %3d  │   %5d    │ %s"
-            actualAngle name nonId.Length maxW cnots saving
-    printfn "  ──────┼────────────────┼───────┼───────┼────────────┼──────────"
+let skeletons =
+    encoders |> List.map (fun (name, encode) ->
+        let skel = computeHamiltonianSkeletonFor encode unionFactory n_scan
+        printfn "  Skeleton %-14s built: %d one-body + %d two-body entries"
+            name skel.OneBody.Length skel.TwoBody.Length
+        (name, skel))
+
+printfn "  Skeleton build: %.1f s (parallelised across all cores)" sw.Elapsed.TotalSeconds
+
+// Now apply coefficients at EVERY angle — near-instant
+type ScanResult = { Angle: float; JwCnots: int; BkCnots: int; TtCnots: int }
+
+let sw2 = System.Diagnostics.Stopwatch.StartNew()
+
+let scanResults =
+    geometries |> Array.map (fun geom ->
+        let angle = geom.GetProperty("geometry").GetProperty("angle_deg").GetDouble()
+        let factory = buildFactory geom
+
+        let cnots =
+            skeletons |> List.map (fun (name, skel) ->
+                let ham = applyCoefficients skel factory
+                let terms = ham.DistributeCoefficient.SummandTerms
+                let nonId = terms |> Array.filter (fun t -> pauliWeight t.Signature > 0)
+                nonId |> Array.sumBy (fun t -> cnotsPerRotation (pauliWeight t.Signature)))
+
+        { Angle = angle; JwCnots = cnots.[0]; BkCnots = cnots.[1]; TtCnots = cnots.[2] })
+
+printfn "  Coefficient application: %.0f ms for %d geometries × %d encodings"
+    sw2.Elapsed.TotalMilliseconds geometries.Length skeletons.Length
+
+printfn "\n═══ CNOT Cost Across the Potential Energy Surface ═══\n"
+printfn "  Angle │  JW CNOTs │  BK CNOTs │  TT CNOTs │ TT saving"
+printfn "  ──────┼───────────┼───────────┼───────────┼──────────"
+
+for r in scanResults do
+    let ttSave = sprintf "%.0f%%" (100.0 * float (r.JwCnots - r.TtCnots) / float (max 1 r.JwCnots))
+    printfn "  %4.0f° │    %5d  │    %5d  │    %5d  │   %s"
+        r.Angle r.JwCnots r.BkCnots r.TtCnots ttSave
 
 printfn ""
-printfn "  Observation: CNOT savings are consistent across geometries —"
+printfn "  Observation: CNOT savings are consistent across ALL %d geometries —"
+    scanResults.Length
 printfn "  the Ternary Tree advantage is structural, not chemistry-dependent."
+
+// CNOT savings bar chart across the full PES
+printfn "\n═══ CNOT Savings: Ternary Tree vs Jordan-Wigner ═══\n"
+
+for r in scanResults do
+    let pctSave = 100.0 * float (r.JwCnots - r.TtCnots) / float (max 1 r.JwCnots)
+    let barLen = int (float 40 * pctSave / 30.0) |> min 40
+    let bar = String.replicate barLen "▓"
+    printfn "  %3.0f° │%s %.0f%%" r.Angle bar pctSave
+
+printfn ""
 
 (**
 ### Discussion: What Did We Learn from the Scan?
@@ -390,10 +434,13 @@ printfn "  the Ternary Tree advantage is structural, not chemistry-dependent."
 
 2. **CNOT savings are consistent across geometries**: the Ternary Tree
    advantage holds at every angle, not just the equilibrium geometry.
-   This means encoding choice is geometry-independent.
+   This means encoding choice is geometry-independent — a structural
+   property of the encoding, not an accident of the chemistry.
 
-3. **The PES is smooth**: small changes in bond angle produce small
-   changes in energy, confirming our calculation is well-behaved.
+3. **Skeleton precomputation is the key to speed**: building the Pauli
+   skeleton once per encoding and then applying coefficients for each
+   geometry reduced 75 full Hamiltonian builds to 3 skeleton builds
+   plus 75 near-instant coefficient applications.
 
 4. **Energy barrier to linearity**: The energy difference between the
    equilibrium angle and 180° tells us how much energy it costs to
