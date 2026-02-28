@@ -65,6 +65,9 @@ RUN uv venv ${HOME}/.venv
 ENV VIRTUAL_ENV=${HOME}/.venv
 ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
 
+# ── Python scientific packages (for H₂O workshop etc.) ─────────
+RUN uv pip install pyscf numpy
+
 # ── .NET global tools ──────────────────────────────────────────
 RUN dotnet tool install --global fsdocs-tool \
     && (dotnet tool install --global dotnet-repl || echo "WARNING: dotnet-repl install failed, skipping")
