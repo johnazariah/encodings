@@ -47,7 +47,14 @@ jobs:
           dotnet-version: 8.0.x
 
       - name: Install LaTeX toolchain
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends latexmk texlive-latex-extra texlive-fonts-recommended texlive-science texlive-publishers lmodern
+        run: |
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends \
+            latexmk \
+            texlive-latex-extra \
+            texlive-fonts-recommended \
+            texlive-science \
+            texlive-publishers \
+            lmodern
 
       - name: Build
         run: dotnet build --configuration Release
@@ -61,16 +68,17 @@ jobs:
           journal: joss
           paper-path: .project/research/paper-software/paper.md
 
-      - name: Build other papers (LaTeX → PDF)
-        run: |
-          make -C .project/research tutorial
-          make -C .project/research cookbook
+      - name: Build review paper (LaTeX → PDF)
+        run: make -C .project/research review
+
+      - name: Build explainer paper (LaTeX → PDF)
+        run: make -C .project/research explainer
 
       - name: Copy release PDFs with unique names
         run: |
           cp .project/research/paper-software/paper.pdf .project/research/fockmap-joss.pdf
-          cp .project/research/paper-tutorial/fockmap-tutorial.pdf .project/research/fockmap-tutorial.pdf
-          cp .project/research/paper-cookbook/fockmap-cookbook.pdf .project/research/fockmap-cookbook.pdf
+          cp .project/research/paper-review/fockmap-review.pdf .project/research/fockmap-review.pdf
+          cp .project/research/paper-explainer/fockmap-explainer.pdf .project/research/fockmap-explainer.pdf
 
       - name: Publish to NuGet
         run: dotnet nuget push nupkg/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
@@ -81,5 +89,5 @@ jobs:
           files: |
             nupkg/*.nupkg
             .project/research/fockmap-joss.pdf
-            .project/research/fockmap-tutorial.pdf
-            .project/research/fockmap-cookbook.pdf
+            .project/research/fockmap-review.pdf
+            .project/research/fockmap-explainer.pdf
