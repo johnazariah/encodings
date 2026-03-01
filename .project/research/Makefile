@@ -3,8 +3,11 @@
 all: review software explainer
 
 # The main arXiv paper — tutorial review with original contributions.
+# latexmk may return non-zero due to REVTeX journal abbreviation warnings
+# in bibtex, so we ignore its exit code and verify the PDF was produced.
 review:
-	cd paper-review && latexmk -pdf -interaction=nonstopmode -f paper.tex
+	-cd paper-review && latexmk -pdf -interaction=nonstopmode -f paper.tex
+	test -f paper-review/paper.pdf
 	cp paper-review/paper.pdf paper-review/fockmap-review.pdf
 
 # JOSS paper uses Markdown + pandoc via the Open Journals GitHub Action.
@@ -15,7 +18,8 @@ software:
 
 # Private explainer — for teaching, presentations, adviser meetings.
 explainer:
-	cd paper-explainer && latexmk -pdf -interaction=nonstopmode explainer.tex
+	-cd paper-explainer && latexmk -pdf -interaction=nonstopmode explainer.tex
+	test -f paper-explainer/explainer.pdf
 	cp paper-explainer/explainer.pdf paper-explainer/fockmap-explainer.pdf
 
 clean:

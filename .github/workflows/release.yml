@@ -32,11 +32,14 @@ jobs:
       - name: Test
         run: dotnet test --configuration Release
 
-  # Only publish after all platforms pass
-  publish:
+  # Build papers via the reusable draft-paper workflow
+  papers:
+    uses: ./.github/workflows/draft-paper.yml
+
+  # Publish NuGet package (parallel with papers, only needs tests)
+  publish-library:
     needs: test
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -46,54 +49,59 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
-      - name: Install LaTeX toolchain
-        run: |
-          sudo apt-get update && sudo apt-get install -y --no-install-recommends \
-            latexmk \
-            texlive-latex-extra \
-            texlive-fonts-recommended \
-            texlive-science \
-            texlive-publishers \
-            lmodern
-
       - name: Build
         run: dotnet build --configuration Release
 
       - name: Pack NuGet package
         run: dotnet pack src/Encodings/Encodings.fsproj --configuration Release --no-build -o nupkg
 
-      - name: Build JOSS paper (Markdown → PDF via Open Journals)
-        uses: openjournals/openjournals-draft-action@master
-        with:
-          journal: joss
-          paper-path: .project/research/paper-software/paper.md
-
-      - name: Build review paper (LaTeX → PDF)
-        run: make -C .project/research review || true
-        # latexmk returns non-zero due to REVTeX journal abbreviation warnings in bibtex;
-        # verify the PDF was actually produced
-      - name: Verify review paper PDF
-        run: test -f .project/research/paper-review/fockmap-review.pdf
-
-      - name: Build explainer paper (LaTeX → PDF)
-        run: make -C .project/research explainer || true
-      - name: Verify explainer paper PDF
-        run: test -f .project/research/paper-explainer/fockmap-explainer.pdf
-
-      - name: Copy release PDFs with unique names
-        run: |
-          cp .project/research/paper-software/paper.pdf .project/research/fockmap-joss.pdf
-          cp .project/research/paper-review/fockmap-review.pdf .project/research/fockmap-review.pdf
-          cp .project/research/paper-explainer/fockmap-explainer.pdf .project/research/fockmap-explainer.pdf
-
       - name: Publish to NuGet
         run: dotnet nuget push nupkg/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+
+      - name: Upload NuGet package
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-package-release
+          path: nupkg/*.nupkg
+
+  # Create GitHub Release with all artifacts
+  create-release:
+    needs: [publish-library, papers]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download NuGet package
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-package-release
+          path: artifacts/
+
+      - name: Download JOSS paper
+        uses: actions/download-artifact@v4
+        with:
+          name: joss-paper
+          path: artifacts/
+
+      - name: Download review paper
+        uses: actions/download-artifact@v4
+        with:
+          name: review-paper
+          path: artifacts/
+
+      - name: Download explainer paper
+        uses: actions/download-artifact@v4
+        with:
+          name: explainer-paper
+          path: artifacts/
+
+      - name: Rename paper PDFs
+        run: |
+          mv artifacts/paper.pdf artifacts/fockmap-joss.pdf
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            nupkg/*.nupkg
-            .project/research/fockmap-joss.pdf
-            .project/research/fockmap-review.pdf
-            .project/research/fockmap-explainer.pdf
+            artifacts/*.nupkg
+            artifacts/fockmap-joss.pdf
+            artifacts/fockmap-review.pdf
+            artifacts/fockmap-explainer.pdf
