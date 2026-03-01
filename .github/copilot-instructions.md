@@ -65,11 +65,13 @@ Ladder Operators → Encoding → Pauli Strings → Hamiltonian Assembly
 | File | Purpose |
 |------|---------|
 | `src/Encodings/Terms.fs` | Core types: `C`, `P`, `S` (coefficient, product, sum) |
-| `src/Encodings/MajoranaEncoding.fs` | Universal path-based encoding |
-| `src/Encodings/IndexSetEncoding.fs` | Index-set encoding schemes |
-| `src/Encodings/TreeEncoding.fs` | Tree-based encoding infrastructure |
+| `src/Encodings/TypeExtensions.fs` | Complex number extensions (`Reduce`, `IsZero`, `IsNonZero`) |
+| `src/Encodings/MajoranaEncoding.fs` | Index-set encoding (`EncodingScheme`) and Majorana operator construction |
+| `src/Encodings/TreeEncoding.fs` | Tree-based encoding infrastructure and path-based Majorana strings |
+| `src/Encodings/BravyiKitaev.fs` | Bravyi-Kitaev encoding via Fenwick tree |
+| `src/Encodings/JordanWigner.fs` | Jordan-Wigner encoding |
 | `src/Encodings/Hamiltonian.fs` | Hamiltonian assembly |
-| `src/Encodings/Encodings.fsproj` | Project file, version, metadata |
+| `src/Encodings/Encodings.fsproj` | Project file, version, metadata, and **compilation order** |
 
 ---
 
@@ -79,8 +81,17 @@ Ladder Operators → Encoding → Pauli Strings → Hamiltonian Assembly
 # Build
 dotnet build
 
-# Run tests
+# Run all tests
 dotnet test
+
+# Run a single test project
+dotnet test test/Test.Encodings/Test.Encodings.fsproj
+
+# Run a single test by name (xunit filter syntax)
+dotnet test --filter "FullyQualifiedName~SomeTestName"
+
+# Run tests with verbose output
+dotnet test --logger "console;verbosity=detailed"
 
 # Build in Release mode
 dotnet build -c Release
@@ -136,6 +147,16 @@ type P<'u> = P of C<'u> list      // Product of coefficients
 type S<'u> = S of P<'u> list      // Sum of products
 ```
 
+`S<'unit>` stores terms in a `Map<string, P<'unit>>` — two products are "like terms" if their `ToString()` representations match. The `Reduce` member on `P` and `S` uses **lazy evaluation** to defer expensive normalization.
+
+### `[<AutoOpen>]` Modules
+
+Every source file is an `[<AutoOpen>]` module inside `namespace Encodings`. All symbols are available without explicit module qualification throughout the library.
+
+### F# Compilation Order
+
+Files in `Encodings.fsproj` must be listed in **strict dependency order** — F# requires this. When adding a new file, insert it in the correct position within the `<ItemGroup>` compile list, after all its dependencies.
+
 ### Encoding via Index Sets
 
 ```fsharp
@@ -143,19 +164,25 @@ let jordanWignerScheme n : EncodingScheme = ...
 let bravyiKitaevScheme n : EncodingScheme = ...
 ```
 
+`EncodingScheme` is defined in `MajoranaEncoding.fs` with three index-set functions: `Update`, `Parity`, `Occupation`.
+
 ### Encoding via Trees
 
 ```fsharp
 let balancedTernaryTreeTerms n : MajoranaTerms = ...
 ```
 
+### Exact Phase Tracking
+
+Coefficients are `System.Numerics.Complex` — no floats used directly for phase. The `Complex.Reduce` extension sanitizes non-finite values to zero.
+
 ---
 
 ## Testing
 
-- 270+ tests with FsCheck property testing
-- Test register at `.project/test-register.md`
-- Run `dotnet test` before committing
+- 270+ tests using **xunit** and **FsCheck.Xunit** (property testing)
+- Test register at `.project/test-register.md` — update it when tests change
+- Pre-commit gate: `dotnet build Encodings.sln && dotnet test Encodings.sln`
 
 ---
 
