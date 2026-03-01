@@ -2,6 +2,37 @@
 
 All notable changes to FockMap will be documented in this file.
 
+## [0.5.0] - 2026-03-01
+
+### ✨ Features
+
+- feat: add parallel + skeleton APIs for Hamiltonian construction
+- feat: add H₂O workshop lesson with PySCF integral pipeline
+- feat: add bond angle scan (Part 8) to H₂O workshop
+- feat: unify bibliography into shared/bibliography/references.bib
+
+### 🐛 Bug Fixes
+
+- fix: use comma-separated keys in Hamiltonian coefficient lookup
+
+### 📚 Documentation
+
+- docs: add 14 Architecture Decision Records
+- docs: update copilot-instructions with accurate file descriptions and dev commands
+
+### 🔧 Maintenance
+
+- ci: fix release and draft workflows for 3-paper architecture
+- chore: update author to 'John S Azariah' with full affiliation
+- chore: standardise author metadata across all papers
+- chore: move star-tree discovery artifacts to research/tools/
+- chore: align devcontainer, .gitignore, and CI workflows
+- chore: add copilot-instructions and AI prompts
+- refactor: move .research/ to .project/research/
+- research: consolidate to three-paper architecture
+- spec: Trotterization module for FockMap
+- review: add Trotterization motivation for Pauli weight
+
 ## [0.3.1] - 2026-02-15
 
 ## [0.4.0] - 2026-02-15

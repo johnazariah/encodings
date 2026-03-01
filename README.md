@@ -188,6 +188,7 @@ Runnable F# scripts in the [`examples/`](examples/) directory:
 | [`Mixed_ElectronPhonon_Toy.fsx`](examples/Mixed_ElectronPhonon_Toy.fsx) | Toy electron-phonon style mixed symbolic workflow |
 | [`Mixed_HybridPipeline.fsx`](examples/Mixed_HybridPipeline.fsx) | Encode fermion sector to Pauli while keeping boson sector symbolic |
 | [`Mixed_HybridCompare.fsx`](examples/Mixed_HybridCompare.fsx) | Compare JW vs BK on extracted fermionic blocks in mixed terms |
+| [`Bosonic_Encoding.fsx`](examples/Bosonic_Encoding.fsx) | Encode bosonic operators using Unary, Binary, and Gray encodings |
 
 Run any example with:
 ```bash
