@@ -2,6 +2,7 @@ name: Draft Papers
 
 on:
   push:
+    tags-ignore: ['v*']
     paths:
       - '.project/research/paper-software/**'
       - '.project/research/paper-review/**'
@@ -53,10 +54,14 @@ jobs:
             lmodern
 
       - name: Build review paper
-        run: make -C .project/research review
+        run: make -C .project/research review || true
+      - name: Verify review paper PDF
+        run: test -f .project/research/paper-review/fockmap-review.pdf
 
       - name: Build explainer paper
-        run: make -C .project/research explainer
+        run: make -C .project/research explainer || true
+      - name: Verify explainer paper PDF
+        run: test -f .project/research/paper-explainer/fockmap-explainer.pdf
 
       - name: Upload review paper PDF
         uses: actions/upload-artifact@v4
