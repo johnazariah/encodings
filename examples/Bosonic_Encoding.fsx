@@ -9,7 +9,7 @@
 /// Reference: Sawaya et al., "Resource-efficient digital quantum simulation
 /// of d-level systems" (arXiv:1909.05820)
 
-#r "../src/Encodings/bin/Debug/net8.0/Encodings.dll"
+#r "../src/Encodings/bin/Debug/net10.0/Encodings.dll"
 
 open System.Numerics
 open Encodings

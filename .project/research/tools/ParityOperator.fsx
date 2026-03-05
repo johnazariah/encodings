@@ -11,7 +11,7 @@
 ///  and Paper 2 (Software — demonstrating symbolic algebra)
 /// ═══════════════════════════════════════════════════════
 
-#r "../../src/Encodings/bin/Debug/net8.0/Encodings.dll"
+#r "../../src/Encodings/bin/Debug/net10.0/Encodings.dll"
 
 open System
 open System.Numerics
@@ -37,8 +37,8 @@ let numberOperatorSym (encode : EncoderFn) (j : int) (n : int) : PauliRegisterSe
 let parityFactor (encode : EncoderFn) (j : int) (n : int) : PauliRegisterSequence =
     let nj = numberOperatorSym encode j n
     // -2 · n̂_j
-    let minus2nj = 
-        nj.SummandTerms 
+    let minus2nj =
+        nj.SummandTerms
         |> Array.map (fun r -> r.ResetPhase (r.Coefficient * Complex(-2.0, 0.0)))
         |> PauliRegisterSequence
     // I + (-2·n̂_j)  — combine via array constructor (merges like terms)
@@ -200,7 +200,7 @@ for n in [32; 64; 100] do
     sw.Restart()
     let parityPAR = parityOperatorSym (fun op j nn -> parityTerms op j nn) n
     let tPAR = sw.Elapsed.TotalMilliseconds
-    printfn "  n=%3d:  JW weight=%d (%4.0f ms)  BK weight=%d (%4.0f ms)  PAR weight=%d (%4.0f ms)" 
+    printfn "  n=%3d:  JW weight=%d (%4.0f ms)  BK weight=%d (%4.0f ms)  PAR weight=%d (%4.0f ms)"
         n (maxWeight parityJW) tJW (maxWeight parityBK) tBK (maxWeight parityPAR) tPAR
     printfn "          JW = %s" (formatPRS parityJW)
     printfn "          BK = %s" (formatPRS parityBK)
@@ -213,9 +213,9 @@ for (name, encode) in encodings do
     let p = parityOperatorSym encode 4
     let p2 = p * p
     let terms = p2.SummandTerms
-    let isIdentity = 
-        terms.Length = 1 && 
-        terms.[0].Signature = "IIII" && 
+    let isIdentity =
+        terms.Length = 1 &&
+        terms.[0].Signature = "IIII" &&
         abs(terms.[0].Coefficient.Real - 1.0) < 1e-12 &&
         abs(terms.[0].Coefficient.Imaginary) < 1e-12
     printfn "  %-22s  P̂² = %s  %s" name (formatPRS p2) (if isIdentity then "✅" else "❌")

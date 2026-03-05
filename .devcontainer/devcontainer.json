@@ -1,5 +1,5 @@
 // FockMap — Fermion-to-Qubit Encoding Library
-// Full-stack development container: .NET 8 (LTS), Python, LaTeX
+// Full-stack development container: .NET 10 (GA), Python, LaTeX
 {
   "name": "FockMap",
   "build": {

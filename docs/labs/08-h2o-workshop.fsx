@@ -59,7 +59,7 @@ in the molecular orbital basis as JSON.
 Now we load those integrals into FockMap and encode the Hamiltonian:
 *)
 
-#r "../../src/Encodings/bin/Release/net8.0/Encodings.dll"
+#r "../../src/Encodings/bin/Release/net10.0/Encodings.dll"
 
 open System
 open System.IO

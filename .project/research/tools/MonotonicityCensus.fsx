@@ -27,7 +27,7 @@ open System
 // n different rooted trees by choosing any vertex as root.
 // Total: n * n^{n-2} = n^{n-1}. ✓
 //
-// Actually, there's an even simpler bijection: 
+// Actually, there's an even simpler bijection:
 // A labelled rooted tree on [n] corresponds to a Prüfer sequence of
 // length n-1 (not n-2) with elements in {0..n-1}. This is the
 // "parking function" version. The last element of the extended sequence
@@ -179,7 +179,7 @@ printfn ""
 printfn "  n    n^{n-1}    |M(n)|    Fraction     (n-1)!     |M(n)|/(n-1)!"
 printfn "  ─    ───────    ──────    ────────     ──────     ────────────"
 
-let factorial n = 
+let factorial n =
     let mutable f = 1
     for i in 2..n do f <- f * i
     f
@@ -217,7 +217,7 @@ for n in 1 .. 20 do
     let logNn = float (n - 1) * log (float n)
     let frac = exp (logFact - logNn)
     let nf = float (n - 1)
-    let stirling = 
+    let stirling =
         if n <= 1 then 0.0
         else sqrt (2.0 * Math.PI * nf) * exp (nf * log (nf / Math.E) - logNn)
     printfn "  %2d   %.10e    %.10e" n frac stirling
@@ -233,8 +233,8 @@ for n in [4; 6; 8; 10; 12; 14; 16; 20; 24; 32] do
     let sampled = sampleMonotonicFraction n 10000
     let nf = n - 1
     // For large n, compute log of fraction to avoid overflow
-    let logFrac = 
-        [1..nf] |> List.sumBy (fun k -> log (float k)) 
+    let logFrac =
+        [1..nf] |> List.sumBy (fun k -> log (float k))
         |> fun logFact -> logFact - float nf * log (float n)
     let exact = exp logFrac
     printfn "  %2d      %.6f            %.6f" n sampled exact
@@ -257,7 +257,7 @@ printfn ""
 printfn "━━━ Verification: all monotonic trees for n=4 satisfy CAR ━━━"
 printfn ""
 
-#r "../../src/Encodings/bin/Debug/net8.0/Encodings.dll"
+#r "../../src/Encodings/bin/Debug/net10.0/Encodings.dll"
 open Encodings
 open System.Numerics
 
@@ -310,10 +310,10 @@ let pauliStringToMatrix (reg : PauliRegister) : CMatrix =
     let n = reg.Signature.Length
     let coeff = reg.Coefficient
     let mats = [| for i in 0..n-1 do
-                    match reg.[i] with 
-                    | Some Pauli.X -> yield pauliX 
-                    | Some Pauli.Y -> yield pauliY 
-                    | Some Pauli.Z -> yield pauliZ 
+                    match reg.[i] with
+                    | Some Pauli.X -> yield pauliX
+                    | Some Pauli.Y -> yield pauliY
+                    | Some Pauli.Z -> yield pauliZ
                     | _ -> yield pauliI |]
     let m = mats |> Array.fold kron { N = 1; Data = array2D [[Complex.One]] }
     matScale coeff m
@@ -322,10 +322,10 @@ let encoderToMatrix (encode : EncoderFn) (j : int) (n : int) : CMatrix * CMatrix
     let dim = pown 2 n
     let adag = encode Raise (uint32 j) (uint32 n)
     let a    = encode Lower (uint32 j) (uint32 n)
-    let adagM = 
-        adag.SummandTerms |> Array.map pauliStringToMatrix 
+    let adagM =
+        adag.SummandTerms |> Array.map pauliStringToMatrix
         |> Array.fold matAdd (matZero dim)
-    let aM = 
+    let aM =
         a.SummandTerms |> Array.map pauliStringToMatrix
         |> Array.fold matAdd (matZero dim)
     // c = a† + a,  d = i(a† - a)
@@ -358,13 +358,13 @@ let parentArrayToEncodingTree (parent : int array) : EncodingTree =
     let n = parent.Length
     let root = Array.findIndex (fun p -> p = -1) parent
     let childrenMap =
-        [0..n-1] 
-        |> List.filter (fun i -> parent.[i] >= 0) 
+        [0..n-1]
+        |> List.filter (fun i -> parent.[i] >= 0)
         |> List.groupBy (fun i -> parent.[i])
         |> Map.ofList
     let rec buildNode i =
-        let children = 
-            childrenMap |> Map.tryFind i |> Option.defaultValue [] 
+        let children =
+            childrenMap |> Map.tryFind i |> Option.defaultValue []
             |> List.map buildNode
         { Index = i
           Children = children
@@ -397,14 +397,14 @@ for n in [3; 4; 5] do
             let (pass, dev) = verifyCAR encode n
             let mono = isMonotonic parent
             if mono then
-                if pass then 
+                if pass then
                     monoPass <- monoPass + 1
                     let parentStr = parent |> Array.mapi (fun i p -> sprintf "%d→%d" i p) |> String.concat ", "
                     passingTrees.Add(sprintf "    MONO  [%s]" parentStr)
-                else 
+                else
                     monoFail <- monoFail + 1
             else
-                if pass then 
+                if pass then
                     nonMonoPass <- nonMonoPass + 1
                     let parentStr = parent |> Array.mapi (fun i p -> sprintf "%d→%d" i p) |> String.concat ", "
                     passingTrees.Add(sprintf "    other [%s]" parentStr)
@@ -412,9 +412,9 @@ for n in [3; 4; 5] do
 
     let total = monoPass + monoFail + nonMonoPass + nonMonoFail
     let totalPass = monoPass + nonMonoPass
-    printfn "  n=%d: %d trees total, %d pass Construction A (%d monotonic, %d non-monotonic)" 
+    printfn "  n=%d: %d trees total, %d pass Construction A (%d monotonic, %d non-monotonic)"
         n total totalPass monoPass nonMonoPass
-    printfn "        Monotonic: %d/%d pass, Non-monotonic: %d/%d pass" 
+    printfn "        Monotonic: %d/%d pass, Non-monotonic: %d/%d pass"
         monoPass (monoPass + monoFail) nonMonoPass (nonMonoPass + nonMonoFail)
     if passingTrees.Count <= 20 then
         for t in passingTrees do printfn "%s" t

@@ -40,7 +40,7 @@ where $L$ is the number of Pauli terms and $w_k$ is the weight of term $k$.
 ## Setup
 *)
 
-#r "../../src/Encodings/bin/Release/net8.0/Encodings.dll"
+#r "../../src/Encodings/bin/Release/net10.0/Encodings.dll"
 
 open Encodings
 open System.Numerics

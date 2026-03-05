@@ -4,7 +4,7 @@
 [![codecov](https://codecov.io/gh/johnazariah/encodings/graph/badge.svg)](https://codecov.io/gh/johnazariah/encodings)
 [![NuGet](https://img.shields.io/nuget/v/FockMap.svg)](https://www.nuget.org/packages/FockMap)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-![.NET 8](https://img.shields.io/badge/.NET-8.0%20LTS-512BD4)
+![.NET 10](https://img.shields.io/badge/.NET-10.0%20GA-512BD4)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)
 
 **A practical F# library for symbolic operator algebra on Fock space — fermionic and bosonic — with fermion-to-qubit encodings.**
@@ -84,7 +84,7 @@ dotnet test
 
 ### Dev Container (for contributors)
 
-This repository includes a full [dev container](https://containers.dev/) configuration with .NET 8 (LTS), F#, Python, LaTeX, and all required tooling pre-installed. To use it:
+This repository includes a full [dev container](https://containers.dev/) configuration with .NET 10 (GA), F#, Python, LaTeX, and all required tooling pre-installed. To use it:
 
 1. Install [Docker](https://www.docker.com/) and [VS Code](https://code.visualstudio.com/) with the [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
 2. Clone the repository and open it in VS Code
@@ -214,7 +214,7 @@ Coverage and test counts are tracked in CI.
 
 ## Cross-Platform
 
-This library runs on **Windows**, **macOS**, and **Linux** via [.NET 8](https://dotnet.microsoft.com/) (LTS), Microsoft's open-source, cross-platform runtime. It is written in [F#](https://fsharp.org/), a functional-first language that is fully open-source under the [F# Software Foundation](https://foundation.fsharp.org/) and the [.NET Foundation](https://dotnetfoundation.org/).
+This library runs on **Windows**, **macOS**, and **Linux** via [.NET 10](https://dotnet.microsoft.com/), Microsoft's open-source, cross-platform runtime. It is written in [F#](https://fsharp.org/), a functional-first language that is fully open-source under the [F# Software Foundation](https://foundation.fsharp.org/) and the [.NET Foundation](https://dotnetfoundation.org/).
 
 No platform-specific code and no native dependencies beyond the .NET SDK.
 

@@ -23,7 +23,7 @@ where:
 ## Setup
 *)
 
-#r "../../src/Encodings/bin/Release/net8.0/Encodings.dll"
+#r "../../src/Encodings/bin/Release/net10.0/Encodings.dll"
 
 open System.Numerics
 open Encodings

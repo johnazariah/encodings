@@ -4,7 +4,7 @@
 // specifying three index-set functions. Any encoding in the Majorana
 // decomposition family can be defined this way.
 
-#r "../src/Encodings/bin/Debug/net8.0/Encodings.dll"
+#r "../src/Encodings/bin/Debug/net10.0/Encodings.dll"
 
 open Encodings
 

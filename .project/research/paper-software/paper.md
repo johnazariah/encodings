@@ -275,7 +275,7 @@ monotonicity requirement is satisfied only by star-shaped trees.  This
 finding motivated the path-based framework as a universal alternative
 and is explored further in a companion paper.
 
-`FockMap` is packaged on NuGet for cross-platform use (.NET 8.0), tested
+`FockMap` is packaged on NuGet for cross-platform use (.NET 10.0), tested
 on Linux, macOS, and Windows via GitHub Actions CI, and designed for
 integration into quantum simulation pipelines.
 
