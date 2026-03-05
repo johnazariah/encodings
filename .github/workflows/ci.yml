@@ -42,6 +42,7 @@ jobs:
         with:
           name: test-results
           path: '**/*.trx'
+          retention-days: 30
 
       - name: Pack NuGet package
         run: dotnet pack src/Encodings/Encodings.fsproj --configuration Release --no-build -o nupkg
@@ -51,3 +52,4 @@ jobs:
         with:
           name: nuget-package
           path: nupkg/*.nupkg
+          retention-days: 30

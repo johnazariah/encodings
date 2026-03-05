@@ -63,6 +63,7 @@ jobs:
         with:
           name: nuget-package-release
           path: nupkg/*.nupkg
+          retention-days: 30
 
   # Create GitHub Release with all artifacts
   create-release:

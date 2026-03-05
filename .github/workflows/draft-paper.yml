@@ -30,3 +30,4 @@ jobs:
         with:
           name: joss-paper
           path: joss/paper.pdf
+          retention-days: 30
