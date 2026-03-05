@@ -50,25 +50,16 @@ Thumbs.db
 *.tmp
 node_modules/
 
-# LaTeX build artifacts (papers are rebuilt by CI)
-.project/research/**/*.aux
-.project/research/**/*.bbl
-.project/research/**/*.blg
-.project/research/**/*.bcf
-.project/research/**/*.fdb_latexmk
-.project/research/**/*.fls
-.project/research/**/*.log
-.project/research/**/*.out
-.project/research/**/*.toc
-.project/research/**/*.lof
-.project/research/**/*.lot
-.project/research/**/*.run.xml
-.project/research/**/*.synctex.gz
-.project/research/**/*.synctex(busy)
-.project/research/**/paperNotes.bib
+# Private research content (lives in encodings-research repo)
+.project/plans/
+.project/reports/
+.project/research/
+.project/release-checklist.md
 
-# Built LaTeX documents (attach to releases instead)
-.project/research/**/*.pdf
-!.project/research/**/figures/*.pdf
+# External research repo
+encodings-research/
+
+# Notebook artifacts
+Investigate_Construction_A_Failure.ipynb
 
 .fake

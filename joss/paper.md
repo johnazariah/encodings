@@ -17,7 +17,7 @@ affiliations:
   - name: Centre for Quantum Software and Information, School of Computer Science, Faculty of Engineering & Information Technology, University of Technology Sydney, NSW 2007, Australia
     index: 1
     ror: 03f0f6041
-date: 15 February 2026
+date: 5 March 2026
 bibliography: paper.bib
 ---
 
@@ -210,15 +210,9 @@ provides three encoding strategies that map bosonic ladder operators
 $b^\dagger$ and $b$ to qubit Pauli strings [@sawaya2020]:
 
 - **Unary (one-hot):** $d$ qubits per mode, maximum Pauli weight 2.
-  Each transition $|n\rangle \to |n{+}1\rangle$ is decomposed
-  algebraically as $\sigma^+_{n+1}\sigma^-_n$.
-- **Standard binary:** $\lceil\log_2 d\rceil$ qubits per mode.  The
-  $d \times d$ operator matrix is embedded in a $2^q \times 2^q$ space
-  and decomposed via
-  $O = \sum_P \tfrac{1}{2^q}\operatorname{Tr}(PO)\,P$.
-- **Gray code:** $\lceil\log_2 d\rceil$ qubits per mode.  Consecutive
-  Fock states differ in exactly one qubit, reducing the average Pauli
-  weight of transition operators.
+- **Standard binary:** $\lceil\log_2 d\rceil$ qubits per mode.
+- **Gray code:** $\lceil\log_2 d\rceil$ qubits per mode with reduced
+  average Pauli weight.
 
 All three encodings produce `PauliRegisterSequence` values, making them
 interchangeable with the fermionic encoding output and enabling mixed
@@ -227,19 +221,16 @@ fermion--boson Hamiltonian assembly in a single pipeline.
 ## Key design principles
 
 - **Symbolic over numerical.**  Operators are typed Pauli strings with
-  exact algebraic phases, not sparse matrices or opaque integer-keyed
-  coefficient dictionaries.  Numerical coefficients enter only at
-  Hamiltonian assembly.
+  exact algebraic phases, not sparse matrices.  Numerical coefficients
+  enter only at Hamiltonian assembly.
 - **Pure functions, no mutation.**  All data structures are immutable:
   persistent Fenwick trees, recursive tree ADTs, and Pauli register
-  sequences.  The library has zero mutation and no side effects in its
-  core modules.
-- **Two complementary frameworks.**  The index-set framework
-  (`MajoranaEncoding.fs`) is fast and algebraically transparent but
-  requires a monotonicity condition on ancestor indices.  The path-based
-  framework (`TreeEncoding.fs`) works for *any* tree topology.  Both
-  produce the same output type (`PauliRegisterSequence`), so downstream
-  code is encoding-agnostic.
+  sequences.
+- **Two complementary frameworks.**  The index-set framework is fast and
+  algebraically transparent but requires a monotonicity condition on
+  ancestor indices.  The path-based framework works for *any* tree
+  topology.  Both produce the same output type
+  (`PauliRegisterSequence`), so downstream code is encoding-agnostic.
 
 ## Verification suite
 
@@ -253,31 +244,19 @@ correctness (70 tests covering Pauli-weight bounds, number-operator
 roundtrip, and cross-encoding consistency), and parser and ordering
 robustness.
 
-# Research impact statement
+# Documentation
 
-`FockMap` has been developed as research infrastructure for
-encoding-aware quantum simulation and is accompanied by extensive
-reproducible materials:
+`FockMap` ships with extensive documentation hosted at
+[johnazariah.github.io/encodings](https://johnazariah.github.io/encodings/):
 
-- A 14-chapter progressive tutorial (*Library Cookbook*) covering every
-  public type, function, and workflow, available as both hosted
-  documentation and a companion preprint [@cookbook2026].
-- A pedagogical walkthrough of the complete H~2~ pipeline (*From
-  Molecules to Qubits*), also available as web documentation and a
-  standalone preprint [@tutorial2026].
+- A 14-chapter progressive *Cookbook* tutorial covering every public
+  type, function, and workflow.
+- A complete pedagogical walkthrough (*From Molecules to Qubits*)
+  reproducing the H~2~ pipeline end-to-end.
 - Seven theory pages on second quantization, Pauli algebra, and encoding
   theory.
 - Six runnable F# interactive lab scripts with guided exercises.
-
-The library's typed, symbolic approach has enabled the discovery of a
-previously undocumented structural constraint: the index-set framework's
-monotonicity requirement is satisfied only by star-shaped trees.  This
-finding motivated the path-based framework as a universal alternative
-and is explored further in a companion paper.
-
-`FockMap` is packaged on NuGet for cross-platform use (.NET 10.0), tested
-on Linux, macOS, and Windows via GitHub Actions CI, and designed for
-integration into quantum simulation pipelines.
+- Full API reference generated from XML documentation comments.
 
 # AI usage disclosure
 

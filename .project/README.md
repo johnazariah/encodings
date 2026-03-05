@@ -1,32 +1,23 @@
 # Project Management
 
-Planning, research, and project management files.
+Software project management files for the public FockMap library.
+
+> Research planning, paper drafts, and investigation journals live in the
+> private `encodings-research` repo. This directory contains only software
+> project artifacts.
 
 ## Structure
 
 ```
 .project/
-├── plans/              # Sprint/milestone plans, cleanup plans
-├── reports/            # Status reports
-├── research/           # Research papers, tools, investigation journal
-│   ├── JOURNAL.md      # Running log of investigations and discoveries
-│   ├── REFERENCES.md   # Key reference papers
-│   ├── Makefile         # Build all papers
-│   ├── paper-cookbook/   # JOSS companion cookbook paper
-│   ├── paper-emergence/ # PRA emergence paper (flagship)
-│   ├── paper-software/  # JOSS software paper
-│   ├── paper-tutorial/  # AJP tutorial paper
-│   └── tools/           # Verification & analysis scripts
-├── release-checklist.md # Pre-release verification
-└── test-register.md     # Test documentation and coverage
+├── adrs/               # Architectural Decision Records
+│   └── README.md       # ADR index and conventions
+└── test-register.md    # Test documentation and coverage
 ```
 
 ## Conventions
 
-This structure mirrors the layout used across all PhD repos:
-
 | Directory | Purpose |
 |-----------|---------|
-| `plans/` | Forward-looking: milestones, cleanup plans, roadmaps |
-| `research/` | Papers, experiments, investigation journal |
-| `reports/` | Point-in-time status snapshots |
+| `adrs/` | Architectural decisions documenting the software design |
+| `test-register.md` | Plain-English catalogue of all automated tests |

@@ -1,73 +1,32 @@
-name: Draft Papers
+name: Draft JOSS Paper
 
 on:
+  workflow_dispatch:
   push:
-    tags-ignore: ['v*']
+    tags-ignore:
+      - 'v*'
     paths:
-      - '.project/research/paper-software/**'
-      - '.project/research/paper-review/**'
-      - '.project/research/paper-explainer/**'
-      - '.project/research/shared/**'
+      - 'joss/**'
       - '.github/workflows/draft-paper.yml'
   pull_request:
     paths:
-      - '.project/research/paper-software/**'
-      - '.project/research/paper-review/**'
-      - '.project/research/paper-explainer/**'
-      - '.project/research/shared/**'
-  workflow_call:
+      - 'joss/**'
 
 jobs:
-  joss-paper:
+  paper:
+    name: Build JOSS Paper PDF
     runs-on: ubuntu-latest
-    name: Build JOSS paper PDF
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Build draft PDF
         uses: openjournals/openjournals-draft-action@master
         with:
           journal: joss
-          paper-path: .project/research/paper-software/paper.md
+          paper-path: joss/paper.md
 
       - name: Upload paper PDF
         uses: actions/upload-artifact@v4
         with:
           name: joss-paper
-          path: .project/research/paper-software/paper.pdf
-
-  latex-papers:
-    runs-on: ubuntu-latest
-    name: Build LaTeX papers
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install LaTeX toolchain
-        run: |
-          sudo apt-get update && sudo apt-get install -y --no-install-recommends \
-            latexmk \
-            texlive-latex-extra \
-            texlive-fonts-recommended \
-            texlive-science \
-            texlive-publishers \
-            lmodern
-
-      - name: Build review paper
-        run: make -C .project/research review
-
-      - name: Build explainer paper
-        run: make -C .project/research explainer
-
-      - name: Upload review paper PDF
-        uses: actions/upload-artifact@v4
-        with:
-          name: review-paper
-          path: .project/research/paper-review/fockmap-review.pdf
-
-      - name: Upload explainer PDF
-        uses: actions/upload-artifact@v4
-        with:
-          name: explainer-paper
-          path: .project/research/paper-explainer/fockmap-explainer.pdf
+          path: joss/paper.pdf

@@ -32,7 +32,7 @@ jobs:
       - name: Test
         run: dotnet test --configuration Release
 
-  # Build papers via the reusable draft-paper workflow
+  # Build JOSS paper via the reusable draft-paper workflow
   papers:
     uses: ./.github/workflows/draft-paper.yml
 
@@ -81,18 +81,6 @@ jobs:
           name: joss-paper
           path: artifacts/
 
-      - name: Download review paper
-        uses: actions/download-artifact@v4
-        with:
-          name: review-paper
-          path: artifacts/
-
-      - name: Download explainer paper
-        uses: actions/download-artifact@v4
-        with:
-          name: explainer-paper
-          path: artifacts/
-
       - name: Rename paper PDFs
         run: |
           mv artifacts/paper.pdf artifacts/fockmap-joss.pdf
@@ -103,5 +91,3 @@ jobs:
           files: |
             artifacts/*.nupkg
             artifacts/fockmap-joss.pdf
-            artifacts/fockmap-review.pdf
-            artifacts/fockmap-explainer.pdf

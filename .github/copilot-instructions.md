@@ -101,9 +101,6 @@ dotnet fsi examples/H2_Encoding.fsx
 
 # Build documentation
 dotnet build && dotnet fsdocs build --clean --strict
-
-# Build papers
-make -C .project/research clean && make -C .project/research all
 ```
 
 ---
@@ -112,28 +109,11 @@ make -C .project/research clean && make -C .project/research all
 
 | Document | Purpose |
 |----------|---------|
-| [.project/plans/](.project/plans/) | Cleanup and improvement plans |
-| [.project/research/JOURNAL.md](.project/research/JOURNAL.md) | Research investigation journal |
-| [.project/research/README.md](.project/research/README.md) | Paper status and overview |
-| [.project/release-checklist.md](.project/release-checklist.md) | Pre-release verification |
+| [.project/adrs/](.project/adrs/) | Architectural decision records |
 | [.project/test-register.md](.project/test-register.md) | Test documentation and coverage |
+| [joss/paper.md](joss/paper.md) | JOSS software paper |
 
-**Always check the research JOURNAL** to understand recent discoveries.
-
-**Always update the JOURNAL** after completing research work.
-
----
-
-## Research Papers
-
-| Paper | Target | Status |
-|-------|--------|--------|
-| Tutorial (Paper 1) | AJP / Quantum | Draft v0.1 |
-| Software (Paper 2) | JOSS | Draft v0.1 |
-| Cookbook (Paper 2b) | arXiv / JOSS supplement | Draft v0.1 |
-| Emergence (Paper 3) | PRA / PRResearch | Scaffold, major revision |
-
-Papers live in `.project/research/paper-*/`.
+> Research planning and paper drafts live in the private `encodings-research` repo. This repo focuses on the public software.
 
 ---
 
@@ -188,22 +168,18 @@ Coefficients are `System.Numerics.Complex` — no floats used directly for phase
 
 ## Current Focus
 
-Check `.project/research/JOURNAL.md` for current priorities, but likely:
-
-1. **Paper 3 (Emergence)** — Major revision incorporating star-tree discovery
-2. **Paper 2 (Software)** — JOSS submission preparation
-3. **Documentation** — Cookbook chapters, API docs
-4. **Bosonic extensions** — Mixed fermion-boson systems
+1. **JOSS submission** — Software paper at `joss/paper.md`
+2. **Documentation** — Cookbook chapters, API docs
+3. **Bosonic extensions** — Mixed fermion-boson systems
 
 ---
 
 ## Tips
 
-1. **Ask about context** if unsure — read plans and journal first
+1. **Ask about context** if unsure — read ADRs and test register first
 2. **Use immutable types** — F# discriminated unions, records
 3. **Write tests** — especially property tests with FsCheck
 4. **Update documentation** — XML doc comments required on all public APIs
-5. **Update journal** — record what was done each session
-6. **Check CI** — all commits must pass build + tests on all platforms
-7. **Test register** — update `.project/test-register.md` when tests change
-8. **Use prompts** — `commit`, `release`, `paper`, `coach`, `pick-next-work` etc.
+5. **Check CI** — all commits must pass build + tests on all platforms
+6. **Test register** — update `.project/test-register.md` when tests change
+7. **Use prompts** — `commit`, `release`, `paper`, `coach`, `pick-next-work` etc.

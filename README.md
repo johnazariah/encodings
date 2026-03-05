@@ -3,6 +3,7 @@
 [![CI](https://github.com/johnazariah/encodings/actions/workflows/ci.yml/badge.svg)](https://github.com/johnazariah/encodings/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/johnazariah/encodings/graph/badge.svg)](https://codecov.io/gh/johnazariah/encodings)
 [![NuGet](https://img.shields.io/nuget/v/FockMap.svg)](https://www.nuget.org/packages/FockMap)
+[![Docs](https://github.com/johnazariah/encodings/actions/workflows/docs.yml/badge.svg)](https://johnazariah.github.io/encodings/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![.NET 10](https://img.shields.io/badge/.NET-10.0%20GA-512BD4)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)
@@ -154,7 +155,7 @@ let myEncode op j n = encodeOperator myScheme op j n
 - **Labs**: [Your First Encoding](https://johnazariah.github.io/encodings/labs/01-first-encoding.html) — hands-on F# scripts
 - **Architecture**: [Architecture guide](https://johnazariah.github.io/encodings/guides/architecture.html) — module and pipeline overview
 - **API Reference**: [All types and functions](https://johnazariah.github.io/encodings/reference/index.html) — generated from source XML docs
-- **Test Register**: [What is tested](.project/test-register.md) — plain-English catalogue of all 427 automated tests
+- **Test Register**: [What is tested](.project/test-register.md) — plain-English catalogue of all automated tests
 
 Build docs locally (with logo/icon + Mermaid/MathJax runtime injection):
 
