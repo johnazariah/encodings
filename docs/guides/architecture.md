@@ -12,6 +12,7 @@ This guide explains how FockMap is organized so you can quickly locate the right
 | Fermion→qubit mapping | `EncodingScheme`, `TreeEncoding` | Produce Majorana and ladder encodings |
 | Pauli representation | `PauliRegister`, `PauliRegisterSequence` | Exact symbolic Pauli arithmetic |
 | Hamiltonian assembly | `Hamiltonian.fs` | Build qubit Hamiltonians from integrals |
+| Qubit tapering | `Tapering.fs` | Reduce qubit count via Z₂ symmetries (diagonal + Clifford) |
 
 ## End-to-End Pipeline
 
@@ -27,6 +28,7 @@ flowchart TD
     G --> H[PauliRegisterSequence]
     H --> I[Multiply / combine terms]
     I --> J[Hamiltonian assembly]
+    J --> K[Qubit tapering<br/>Diagonal Z2 sectors]
 ```
 
 ## Two Encoding Frameworks
@@ -73,6 +75,24 @@ FockMap keeps the pipeline symbolic end-to-end:
 
 This avoids constructing large $2^n \times 2^n$ matrices and keeps intermediate forms inspectable and testable.
 
+## Qubit Tapering
+
+FockMap includes a symbolic tapering pass with two levels:
+
+**v1 (Diagonal Z₂):**
+- Detect qubits where every term is `I` or `Z`.
+- Choose a sector eigenvalue (`+1` or `-1`) for each symmetry qubit.
+- Substitute `Z_i -> ±1` and remove those qubits.
+
+**v2 (General Clifford):**
+- Represent Pauli strings as symplectic binary vectors over GF(2).
+- Compute the null space of the commutation check matrix to find all Z₂ generators.
+- Select a maximal independent subset.
+- Synthesize a Clifford circuit (H, S, CNOT) to rotate each generator onto a single-qubit Z.
+- Apply the Clifford symbolically to the Hamiltonian, then taper diagonally.
+
+The unified `taper` function supports both modes via `TaperingMethod = DiagonalOnly | FullClifford`.
+
 ## Algebra Layer: CAR and CCR
 
 Normal ordering is algebra-pluggable through `ICombiningAlgebra`:
@@ -102,3 +122,4 @@ See the [Mixed Systems chapter](cookbook/11-mixed-systems.html) in the Library C
 | Change rewrite semantics | `CombiningAlgebra.fs` |
 | Inspect symbolic arithmetic | `Terms.fs`, `PauliRegister.fs` |
 | Build encoded Hamiltonians | `Hamiltonian.fs` |
+| Taper encoded Hamiltonians | `Tapering.fs` |

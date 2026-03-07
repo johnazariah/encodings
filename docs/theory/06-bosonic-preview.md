@@ -86,7 +86,7 @@ FockMap provides three bosonic-to-qubit encodings. Each maps a truncated bosonic
 
 ### Unary (One-Hot) Encoding
 
-Each Fock state $|n\rangle$ is mapped to a one-hot qubit state with exactly one qubit in $|1\rangle$:
+Each Fock state $\lvert n\rangle$ is mapped to a one-hot qubit state with exactly one qubit in $\lvert 1\rangle$:
 
 $$
 |n\rangle_{\text{boson}} \mapsto |0\cdots0\,\underset{n}{1}\,0\cdots0\rangle
@@ -100,7 +100,7 @@ $$
 b^\dagger = \sum_{n=0}^{d-2} \sqrt{n+1}\, \sigma^+_{n+1}\, \sigma^-_n
 $$
 
-Each transition $|n\rangle \to |n+1\rangle$ produces four weight-2 Pauli terms:
+Each transition $\lvert n\rangle \to \lvert n+1\rangle$ produces four weight-2 Pauli terms:
 
 $$
 \sigma^+_{q_1}\, \sigma^-_{q_0} = \tfrac{1}{4}(X_{q_0}X_{q_1} - iX_{q_0}Y_{q_1} + iY_{q_0}X_{q_1} + Y_{q_0}Y_{q_1})
@@ -115,7 +115,7 @@ let result = unaryBosonTerms Raise 0u 1u 4u   // d=4, 1 mode
 
 ### Standard Binary Encoding
 
-Each Fock state $|n\rangle$ maps to the standard binary representation of $n$:
+Each Fock state $\lvert n\rangle$ maps to the standard binary representation of $n$:
 
 $$
 |n\rangle_{\text{boson}} \mapsto |n_{\text{binary}}\rangle
@@ -143,7 +143,7 @@ $$
 
 ### Gray Code Encoding
 
-Like binary, but maps Fock state $|n\rangle$ to the reflected Gray code $G(n) = n \oplus (n \gg 1)$:
+Like binary, but maps Fock state $\lvert n\rangle$ to the reflected Gray code $G(n) = n \oplus (n \gg 1)$:
 
 $$
 |n\rangle_{\text{boson}} \mapsto |G(n)\rangle
@@ -151,7 +151,7 @@ $$
 
 **Qubits per mode:** $\lceil \log_2 d \rceil$ (same as binary)
 
-Consecutive Fock states differ in exactly one qubit, so transition operators $|n\rangle\langle n{+}1|$ have lower average Pauli weight.
+Consecutive Fock states differ in exactly one qubit, so transition operators $\lvert n\rangle\langle n{+}1\rvert$ have lower average Pauli weight.
 
 ```fsharp
 let result = grayCodeBosonTerms Raise 0u 1u 4u   // d=4, 2 qubits

@@ -16,7 +16,7 @@ al. (2020): Unary, Standard Binary, and Gray Code.
 ## The problem: d levels → qubits
 
 A bosonic mode truncated to $d$ levels lives in a $d$-dimensional
-Hilbert space spanned by $|0\rangle, |1\rangle, \ldots, |d{-}1\rangle$.
+Hilbert space spanned by $\lvert 0\rangle, \lvert 1\rangle, \ldots, \lvert d{-}1\rangle$.
 The creation operator $b^\dagger$ and annihilation operator $b$ act as:
 
 $$b^\dagger |n\rangle = \sqrt{n+1}\, |n{+}1\rangle, \qquad b |n\rangle = \sqrt{n}\, |n{-}1\rangle$$
@@ -28,10 +28,10 @@ mode and the Pauli weight of the resulting terms.
 ## Encoding 1: Unary (one-hot)
 
 The unary encoding uses **$d$ qubits per mode**. Each Fock state
-$|n\rangle$ is represented by a one-hot qubit string where only the
-$n$-th qubit is $|1\rangle$.
+$\lvert n\rangle$ is represented by a one-hot qubit string where only the
+$n$-th qubit is $\lvert 1\rangle$.
 
-Each transition $|n\rangle \to |n{+}1\rangle$ becomes a two-qubit
+Each transition $\lvert n\rangle \to \lvert n{+}1\rangle$ becomes a two-qubit
 operation $\sigma^+_{n+1}\sigma^-_n$, so the maximum Pauli weight is
 always 2.
 
@@ -62,7 +62,7 @@ The first argument is `Raise` ($b^\dagger$) or `Lower` ($b$).
 ## Encoding 2: Standard binary
 
 The binary encoding uses **$\lceil\log_2 d\rceil$ qubits per mode** —
-much more compact. Fock state $|n\rangle$ maps to the binary
+much more compact. Fock state $\lvert n\rangle$ maps to the binary
 representation of $n$.
 
 Internally, FockMap builds the $d \times d$ matrix for $b^\dagger$ (or
@@ -232,5 +232,7 @@ dotnet fsi examples/Bosonic_Encoding.fsx
 ```
 
 ---
+
+**Next:** [Qubit Tapering](15-qubit-tapering.html) — Diagonal Z₂ and Clifford tapering for qubit reduction
 
 **Back to:** [Cookbook index](index.html) — quick reference and further reading

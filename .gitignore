@@ -40,6 +40,9 @@ TestResult.xml
 *.swp
 *.swo
 
+# Private research repo (nested git repo — do not publish)
+encodings-research/
+
 # OS
 .DS_Store
 Thumbs.db

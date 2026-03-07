@@ -66,6 +66,14 @@ Written in [F#](https://fsharp.org/), fully open-source under the [F# Software F
 
 ## Explore the Docs
 
+### Qubit Tapering
+A compact guide to reducing qubit count via diagonal Z₂ symmetry.
+- [Overview](qubit-tapering/index.html) — The tapering pipeline at a glance
+- [Why Tapering?](qubit-tapering/01-why-tapering.html) — How encoding creates removable qubits
+- [The Diagonal Z₂ Approach](qubit-tapering/02-diagonal-z2-approach.html) — Detection, sectors, and fixing eigenvalues
+- [FockMap Implementation](qubit-tapering/03-fockmap-implementation.html) — The v1 API in practice
+- [General Z₂ and Clifford Tapering](qubit-tapering/04-clifford-tapering.html) — Symplectic representation and the unified pipeline
+
 ### From Molecules to Qubits
 A step-by-step guide using H₂ as a worked example.
 - [Overview](from-molecules-to-qubits/index.html) — The complete pipeline at a glance
@@ -92,6 +100,7 @@ A step-by-step guide using H₂ as a worked example.
 - [Custom Encoding](labs/04-custom-encoding.html) — Define your own scheme
 - [Custom Tree](labs/05-custom-tree.html) — Build tree-based encodings
 - [Scaling Analysis](labs/06-scaling.html) — Pauli weight scaling with system size
+- [Qubit Tapering](labs/09-qubit-tapering.html) — Diagonal Z2 symmetry reduction
 
 ### Guides
 - [Library Cookbook](guides/cookbook/index.html) — Every type and function, step by step

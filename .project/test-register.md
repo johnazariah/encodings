@@ -1,8 +1,8 @@
 # Test Register
 
-> **497 tests** | 0 skipped | xUnit + FsCheck (property-based)
+> **557 tests** | 0 skipped | xUnit + FsCheck (property-based)
 >
-> Last verified: 2026-02-15 against `v0.3.1`
+> Last verified: 2026-03-07 against current `main`
 
 > **Purpose:** Plain-English catalogue of every automated test in FockMap test suite.
 > The LLM coding agent is responsible for keeping this register in sync

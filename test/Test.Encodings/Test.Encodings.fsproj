@@ -32,6 +32,7 @@
     <Compile Include="BravyiKitaev.fs" />
     <Compile Include="Parity.fs" />
     <Compile Include="TreeEncoding.fs" />
+    <Compile Include="Tapering.fs" />
     <Compile Include="Hamiltonian.fs" />
   </ItemGroup>
 

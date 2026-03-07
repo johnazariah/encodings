@@ -27,6 +27,7 @@ a complete molecular Hamiltonian by the end.
 | 12 | [The Utility Belt](12-utilities.html) | Complex extensions, map helpers, currying |
 | 13 | [Grand Finale](13-grand-finale.html) | Three encodings, one molecule — a capstone script |
 | 14 | [Bosonic-to-Qubit Encodings](14-bosonic-encodings.html) | Unary, Binary, and Gray code truncation encodings |
+| 15 | [Qubit Tapering](15-qubit-tapering.html) | Diagonal Z₂ and Clifford tapering for qubit reduction |
 
 ## Quick Reference
 

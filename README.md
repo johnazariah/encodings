@@ -3,6 +3,7 @@
 [![CI](https://github.com/johnazariah/encodings/actions/workflows/ci.yml/badge.svg)](https://github.com/johnazariah/encodings/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/johnazariah/encodings/graph/badge.svg)](https://codecov.io/gh/johnazariah/encodings)
 [![NuGet](https://img.shields.io/nuget/v/FockMap.svg)](https://www.nuget.org/packages/FockMap)
+[![DOI](https://zenodo.org/badge/203530692.svg)](https://zenodo.org/badge/latestdoi/203530692)
 [![Docs](https://github.com/johnazariah/encodings/actions/workflows/docs.yml/badge.svg)](https://johnazariah.github.io/encodings/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![.NET 10](https://img.shields.io/badge/.NET-10.0%20GA-512BD4)
@@ -14,7 +15,7 @@
 
 📖 **New here?** Read the [Visual Guide to Fermion-to-Qubit Encodings](https://johnazariah.github.io/encodings/guides/visual-encodings.html) — a diagram-rich introduction for scientists who know chemistry but not quantum computing.
 
-🍳 **Ready to code?** Work through the [Cookbook](https://johnazariah.github.io/encodings/guides/cookbook/) — 13 progressive chapters covering every type and function.
+🍳 **Ready to code?** Work through the [Cookbook](https://johnazariah.github.io/encodings/guides/cookbook/) — 15 progressive chapters covering every type and function.
 
 ---
 
@@ -38,6 +39,7 @@ FockMap gives you one small, consistent API for both. You can:
 | Type-safe operator algebra | ❌ | ❌ | ❌ | **✅** |
 | Pure functional, zero mutation | ❌ | ❌ | ❌ | **✅** |
 | Symbolic Pauli algebra (no matrices) | ❌ | Partial | ✅ | **✅** |
+| Symbolic qubit tapering (Z₂ + Clifford) | ❌ | Partial | ❌ | **✅** |
 | Runtime dependencies | NumPy, SciPy | Many | NumPy, autograd, … | **None** |
 
 Internally, the library uses exact symbolic Pauli algebra (not floating-point matrix multiplication), so encoded operator manipulation stays fast and predictable.
@@ -149,13 +151,14 @@ let myEncode op j n = encodeOperator myScheme op j n
 ## Documentation
 
 - **Site**: [johnazariah.github.io/encodings](https://johnazariah.github.io/encodings/)
-- **Cookbook**: [13-chapter progressive tutorial](https://johnazariah.github.io/encodings/guides/cookbook/) — covers every type and function with runnable examples
+- **Cookbook**: [15-chapter progressive tutorial](https://johnazariah.github.io/encodings/guides/cookbook/) — covers every type and function with runnable examples
+- **Qubit Tapering**: [4-chapter tapering guide](https://johnazariah.github.io/encodings/qubit-tapering/) — symmetry detection, Clifford rotation, qubit removal
 - **Tutorial**: [From Molecules to Qubits](https://johnazariah.github.io/encodings/from-molecules-to-qubits/index.html) — end-to-end worked example
 - **Theory**: [Why Encodings?](https://johnazariah.github.io/encodings/theory/01-why-encodings.html) — mathematical foundations
 - **Labs**: [Your First Encoding](https://johnazariah.github.io/encodings/labs/01-first-encoding.html) — hands-on F# scripts
 - **Architecture**: [Architecture guide](https://johnazariah.github.io/encodings/guides/architecture.html) — module and pipeline overview
 - **API Reference**: [All types and functions](https://johnazariah.github.io/encodings/reference/index.html) — generated from source XML docs
-- **Test Register**: [What is tested](.project/test-register.md) — plain-English catalogue of all automated tests
+- **Test Register**: [What is tested](.project/test-register.md) — plain-English catalogue of all 557 automated tests
 
 Build docs locally (with logo/icon + Mermaid/MathJax runtime injection):
 
@@ -190,6 +193,7 @@ Runnable F# scripts in the [`examples/`](examples/) directory:
 | [`Mixed_HybridPipeline.fsx`](examples/Mixed_HybridPipeline.fsx) | Encode fermion sector to Pauli while keeping boson sector symbolic |
 | [`Mixed_HybridCompare.fsx`](examples/Mixed_HybridCompare.fsx) | Compare JW vs BK on extracted fermionic blocks in mixed terms |
 | [`Bosonic_Encoding.fsx`](examples/Bosonic_Encoding.fsx) | Encode bosonic operators using Unary, Binary, and Gray encodings |
+| [`Qubit_Tapering.fsx`](examples/Qubit_Tapering.fsx) | Detect diagonal Z2 symmetries and taper qubits symbolically |
 
 Run any example with:
 ```bash
@@ -209,9 +213,8 @@ dotnet test --logger "console;verbosity=detailed"
 dotnet test --collect:"XPlat Code Coverage"
 ```
 
-The test suite covers encoding behavior, Pauli algebra laws, and cross-encoding consistency checks.
-
-Coverage and test counts are tracked in CI.
+The test suite covers encoding behavior, Pauli algebra laws, qubit tapering, and cross-encoding consistency checks.
+See the **[Test Register](.project/test-register.md)** for a plain-English catalogue of all 557 automated tests.
 
 ## Cross-Platform
 

@@ -29,7 +29,19 @@
     <script>
       document.addEventListener('DOMContentLoaded', function () {
         if (!window.mermaid) return;
-        mermaid.initialize({ startOnLoad: false, securityLevel: 'loose' });
+        mermaid.initialize({
+          startOnLoad: false,
+          securityLevel: 'loose',
+          theme: 'neutral',
+          themeVariables: {
+            primaryColor: '#e8ecf1',
+            primaryBorderColor: '#9ca3af',
+            primaryTextColor: '#1f2937',
+            lineColor: '#6b7280',
+            secondaryColor: '#f3f4f6',
+            tertiaryColor: '#ffffff'
+          }
+        });
         var blocks = document.querySelectorAll('pre > code.language-mermaid');
         blocks.forEach(function (code, index) {
           var pre = code.parentElement;

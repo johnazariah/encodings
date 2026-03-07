@@ -61,7 +61,7 @@ Orbitals:     0    1    2    3
 Occupation:  [1,   0,   1,   0]
 ```
 
-The notation $|1010\rangle$ means orbitals 0 and 2 are occupied, orbitals 1 and 3 are empty.
+The notation $\lvert 1010\rangle$ means orbitals 0 and 2 are occupied, orbitals 1 and 3 are empty.
 
 ---
 
@@ -101,8 +101,8 @@ Creating an electron in orbital j:
 ```
 
 The $Z$ gate acts like a parity detector:
-- On an empty orbital (qubit in state $|0\rangle$): $Z$ gives $+1$
-- On an occupied orbital (qubit in state $|1\rangle$): $Z$ gives $-1$
+- On an empty orbital (qubit in state $\lvert 0\rangle$): $Z$ gives $+1$
+- On an occupied orbital (qubit in state $\lvert 1\rangle$): $Z$ gives $-1$
 
 So the chain of $Z$ gates multiplies out the **parity** (even/odd count of electrons below orbital $j$), which is exactly the fermion sign.
 

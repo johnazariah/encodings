@@ -5,7 +5,7 @@
 
     <!-- Package identity -->
     <PackageId>FockMap</PackageId>
-    <Version>0.5.1</Version>
+    <Version>0.6.0</Version>
     <Authors>John S Azariah</Authors>
     <Company />
 
@@ -16,9 +16,10 @@
       Bravyi-Kitaev, Parity, and tree-based encodings (balanced binary,
       balanced ternary) for fermionic systems, plus unary, binary, and
       Gray-code truncation encodings for bosonic systems. Supports
-      bosonic normal-ordering algebra and mixed fermion-boson workflows.
+      bosonic normal-ordering algebra, mixed fermion-boson workflows,
+      and symbolic qubit tapering (diagonal Z₂ and general Clifford).
     </Description>
-    <PackageTags>quantum;quantum-computing;quantum-chemistry;encoding;jordan-wigner;bravyi-kitaev;fock-space;bosonic;fsharp;functional-programming</PackageTags>
+    <PackageTags>quantum;quantum-computing;quantum-chemistry;encoding;jordan-wigner;bravyi-kitaev;fock-space;bosonic;tapering;fsharp;functional-programming</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageProjectUrl>https://github.com/johnazariah/encodings</PackageProjectUrl>
     <RepositoryUrl>https://github.com/johnazariah/encodings</RepositoryUrl>
@@ -68,6 +69,7 @@
     <Compile Include="MajoranaEncoding.fs" />
     <Compile Include="BravyiKitaev.fs" />
     <Compile Include="TreeEncoding.fs" />
+    <Compile Include="Tapering.fs" />
     <Compile Include="Hamiltonian.fs" />
   </ItemGroup>
 
