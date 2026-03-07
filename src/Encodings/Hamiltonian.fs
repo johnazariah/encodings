@@ -12,9 +12,9 @@
 /// The function handles one-body terms, two-body terms, coefficient combination,
 /// and zero-term dropping.
 /// </remarks>
-[<AutoOpen>]
 module Hamiltonian =
     open System.Numerics
+    open Encodings.JordanWigner
 
     /// <summary>
     /// A function type that encodes a ladder operator into qubit Pauli strings.

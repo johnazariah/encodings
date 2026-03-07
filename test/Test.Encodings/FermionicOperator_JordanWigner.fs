@@ -2,6 +2,7 @@
 
 module FermionicOperator_JordanWigner =
     open Encodings
+    open Encodings.JordanWigner
     open Xunit
 
     [<Theory>]

@@ -11,7 +11,6 @@ namespace Encodings
 /// The index sets used by the Bravyi-Kitaev encoding (update, parity,
 /// occupation, remainder) all fall out naturally from the Fenwick tree
 /// structure, making this a good foundation for the BK transform.
-[<AutoOpen>]
 module FenwickTree =
 
     /// A Fenwick tree over values of type 'a.

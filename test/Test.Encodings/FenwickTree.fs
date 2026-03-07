@@ -2,6 +2,7 @@ namespace Tests
 
 module FenwickTree =
     open Encodings
+    open Encodings.FenwickTree
     open Xunit
 
     // ──────────────────────────────────────────────────

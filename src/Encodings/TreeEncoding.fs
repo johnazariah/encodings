@@ -20,10 +20,10 @@ namespace Encodings
 ///   - Chain (linear tree):   recovers Jordan-Wigner
 ///   - Fenwick tree:          recovers Bravyi-Kitaev
 ///   - Balanced ternary tree: achieves O(log₃ n) Pauli weight (optimal)
-[<AutoOpen>]
 module TreeEncoding =
 
     open System.Numerics
+    open Encodings.MajoranaEncoding
 
     // ─────────────────────────────────────────────
     //  Tree data structure

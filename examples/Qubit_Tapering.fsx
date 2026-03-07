@@ -4,6 +4,7 @@
 
 open System.Numerics
 open Encodings
+open Encodings.Tapering
 
 let hamiltonian =
     [|

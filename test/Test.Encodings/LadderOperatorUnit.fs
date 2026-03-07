@@ -38,3 +38,15 @@ module LadderOperatorUnit =
     let ``FromTuple keeps operator and index`` () =
         let actual = LadderOperatorUnit.FromTuple (Lower, 9u)
         Assert.Equal("(d, 9)", actual.ToString())
+
+    [<Fact>]
+    let ``Apply returns None for invalid string`` () =
+        Assert.True((LadderOperatorUnit.Apply "X").IsNone)
+        Assert.True((LadderOperatorUnit.Apply "").IsNone)
+        Assert.True((LadderOperatorUnit.Apply "raise").IsNone)
+
+    [<Fact>]
+    let ``Apply parses all valid cases`` () =
+        Assert.Equal(Some Identity, LadderOperatorUnit.Apply "I")
+        Assert.Equal(Some Raise, LadderOperatorUnit.Apply "u")
+        Assert.Equal(Some Lower, LadderOperatorUnit.Apply "d")

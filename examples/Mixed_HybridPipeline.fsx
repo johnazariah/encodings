@@ -9,6 +9,8 @@
 
 open System.Numerics
 open Encodings
+open Encodings.MixedSystems
+open Encodings.MajoranaEncoding
 
 let nQubits = 6u
 

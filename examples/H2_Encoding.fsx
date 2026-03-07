@@ -11,6 +11,7 @@
 
 open System.Numerics
 open Encodings
+open Encodings.Hamiltonian
 
 // H₂ at R = 0.7414 Å, STO-3G basis
 // Spin-orbitals: 0=σ_g↑, 1=σ_g↓, 2=σ_u↑, 3=σ_u↓

@@ -130,3 +130,29 @@ module LadderOperatorSequence =
         Assert.Contains("(d, 1)", sum.ToString())
         Assert.Contains("(u, 0)", product.ToString())
         Assert.Contains("(d, 1)", product.ToString())
+
+    [<Fact>]
+    let ``ConstructNormalOrdered handles multi-term non-normal expression`` () =
+        // Multiple unsorted product terms in a single sum
+        let candidate = parseSumExpression "{[(d, 0) | (u, 0)]; [(d, 1) | (u, 1)]}"
+        Assert.True(candidate.IsSome)
+        let normalOrdered = LadderOperatorSumExpr<FermionicAlgebra>.ConstructNormalOrdered candidate.Value
+        Assert.True(normalOrdered.IsSome)
+        Assert.True(normalOrdered.Value.AllTermsNormalOrdered)
+
+    [<Fact>]
+    let ``ConstructIndexOrdered reorders normal-ordered but not index-ordered expression`` () =
+        // Already normal (all raises before lowers) but indices not in canonical order
+        let candidate = parseSumExpression "{[(u, 5) | (u, 2) | (d, 0) | (d, 3)]}"
+        Assert.True(candidate.IsSome)
+        let ordered = LadderOperatorSumExpr<FermionicAlgebra>.ConstructIndexOrdered candidate.Value
+        Assert.True(ordered.IsSome)
+        Assert.True(ordered.Value.AllTermsIndexOrdered)
+
+    [<Fact>]
+    let ``ConstructNormalOrdered with bosonic algebra`` () =
+        let candidate = parseSumExpression "{[(d, 0) | (u, 0)]}"
+        Assert.True(candidate.IsSome)
+        let normalOrdered = LadderOperatorSumExpr<BosonicAlgebra>.ConstructNormalOrdered candidate.Value
+        Assert.True(normalOrdered.IsSome)
+        Assert.True(normalOrdered.Value.AllTermsNormalOrdered)

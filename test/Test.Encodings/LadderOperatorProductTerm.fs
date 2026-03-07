@@ -104,7 +104,38 @@ module LadderOperatorProductTerm =
     let ``LadderOperatorProductTerm detects non-normal ordering`` () =
         let term = LadderOperatorProductTerm.FromTuples [| (Lower, 1u); (Raise, 0u) |]
         Assert.False(term.IsInNormalOrder)
-    //let ``FromString creates a round-trippable ladder operator``(input : string, expected : string) =
-    //    match LadderOperatorProductTerm.TryCreateFromString input with
-    //    | Some l -> Assert.Equal(expected, l.ToString())
-    //    | None   -> Assert.Equal(expected, "")
+
+    [<Fact>]
+    let ``isInNormalOrder: Lower then Raise is out of order`` () =
+        let term = LadderOperatorProductTerm.FromTuples [| (Lower, 0u); (Raise, 1u) |]
+        Assert.False(term.IsInNormalOrder)
+
+    [<Fact>]
+    let ``isInNormalOrder: Raise then Lower is in order`` () =
+        let term = LadderOperatorProductTerm.FromTuples [| (Raise, 0u); (Lower, 1u) |]
+        Assert.True(term.IsInNormalOrder)
+
+    [<Fact>]
+    let ``isInNormalOrder: all Raise is in order`` () =
+        let term = LadderOperatorProductTerm.FromTuples [| (Raise, 0u); (Raise, 1u) |]
+        Assert.True(term.IsInNormalOrder)
+
+    [<Fact>]
+    let ``isInNormalOrder: all Lower is in order`` () =
+        let term = LadderOperatorProductTerm.FromTuples [| (Lower, 0u); (Lower, 1u) |]
+        Assert.True(term.IsInNormalOrder)
+
+    [<Fact>]
+    let ``isInIndexOrder: raises ascending and lowers descending`` () =
+        let term = LadderOperatorProductTerm.FromTuples [| (Raise, 0u); (Raise, 2u); (Lower, 5u); (Lower, 3u) |]
+        Assert.True(term.IsInIndexOrder)
+
+    [<Fact>]
+    let ``isInIndexOrder: raises not ascending fails`` () =
+        let term = LadderOperatorProductTerm.FromTuples [| (Raise, 2u); (Raise, 0u); (Lower, 5u); (Lower, 3u) |]
+        Assert.False(term.IsInIndexOrder)
+
+    [<Fact>]
+    let ``isInIndexOrder: lowers not descending fails`` () =
+        let term = LadderOperatorProductTerm.FromTuples [| (Raise, 0u); (Raise, 2u); (Lower, 3u); (Lower, 5u) |]
+        Assert.False(term.IsInIndexOrder)

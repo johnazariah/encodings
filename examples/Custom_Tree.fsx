@@ -15,6 +15,7 @@
 #r "../src/Encodings/bin/Debug/net10.0/Encodings.dll"
 
 open Encodings
+open Encodings.TreeEncoding
 open System.Numerics
 
 // Helper: count non-identity Paulis in a register

@@ -9,7 +9,6 @@ namespace Encodings
 /// independent generator selection over GF(2), Clifford rotation synthesis,
 /// and a unified tapering pipeline.</para>
 /// </remarks>
-[<AutoOpen>]
 module Tapering =
     open System
     open System.Numerics
@@ -523,49 +522,6 @@ module Tapering =
                             gs.[i] <- applyGateToSymplectic h2 gs.[i] |> fun sv -> { sv with N = n }
 
         (gates, targets)
-
-    /// <summary>
-    /// Apply a Clifford gate to a PauliRegister symbolically (conjugation: P → U P U†).
-    /// Returns a new PauliRegister with updated operators and coefficient.
-    /// </summary>
-    let private applyGateToPauliRegister (gate : CliffordGate) (reg : PauliRegister) : PauliRegister =
-        let ops = Array.copy reg.Operators
-        let mutable coeff = reg.Coefficient
-        match gate with
-        | Had i ->
-            // H X H† = Z, H Z H† = X, H Y H† = -Y
-            match ops.[i] with
-            | X -> ops.[i] <- Z
-            | Z -> ops.[i] <- X
-            | Y -> coeff <- coeff * Complex(-1.0, 0.0)
-            | I -> ()
-        | Sgate i ->
-            // S X S† = Y, S Y S† = -X, S Z S† = Z
-            match ops.[i] with
-            | X -> ops.[i] <- Y
-            | Y -> ops.[i] <- X; coeff <- coeff * Complex(-1.0, 0.0)
-            | Z | I -> ()
-        | CNOT (c, t) ->
-            // CNOT conjugation rules:
-            // X_c → X_c X_t, X_t → X_t
-            // Z_c → Z_c,     Z_t → Z_c Z_t
-            // Y_c → Y_c X_t, Y_t → Z_c Y_t
-            // For each qubit, track what the combined operator becomes
-            let (cOp, tOp) = (ops.[c], ops.[t])
-            match (cOp, tOp) with
-            | (X, I) -> ops.[t] <- X                          // X_c I_t → X_c X_t
-            | (X, X) -> ops.[t] <- I                          // X_c X_t → X_c I_t  (XX·CNOT = XI)
-            | (X, Y) -> ops.[t] <- Z; coeff <- coeff * Complex(-1.0, 0.0)  // careful with phases
-                        ops.[c] <- Y  // effectively Y_c Z_t with sign
-                        coeff <- coeff * Complex(-1.0, 0.0)  // net: no sign actually — let me use symplectic
-            | _ -> ()
-            // The direct per-case approach is error-prone for all 16 combos.
-            // Use the symplectic method for correctness:
-            ignore (cOp, tOp)  // reset
-            ops.[c] <- cOp
-            ops.[t] <- tOp
-            // Fall through to symplectic-based approach below
-        PauliRegister(ops, coeff)
 
     /// <summary>
     /// Apply a sequence of Clifford gates to a PauliRegisterSequence.

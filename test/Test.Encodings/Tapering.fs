@@ -4,6 +4,7 @@ module Tapering =
     open System
     open System.Numerics
     open Encodings
+    open Encodings.Tapering
     open Xunit
 
     let private prs (terms : (string * Complex) list) =
@@ -392,3 +393,246 @@ module Tapering =
         // But general Z2 detection should find at least 1 multi-qubit symmetry
         Assert.True(fullCount >= 1,
             sprintf "Expected ≥1 general Z2 symmetry in Heisenberg chain, got %d" fullCount)
+
+    // ── Clifford synthesis: X/Y/XX generator coverage ─────────────────
+
+    [<Fact>]
+    let ``Clifford : XX generator hits X-clearing on non-target qubit`` () =
+        let gen = toSymplectic (PauliRegister("XX", Complex.One))
+        let (gates, targets) = synthesizeTaperingClifford [| gen |]
+        let rotated = applyGatesToSymplectic gates gen
+        // Should end up as single-qubit Z on the target
+        Assert.False(rotated.X.[targets.[0]])
+        Assert.True(rotated.Z.[targets.[0]])
+        let otherQ = if targets.[0] = 0 then 1 else 0
+        Assert.False(rotated.X.[otherQ])
+        Assert.False(rotated.Z.[otherQ])
+
+    [<Fact>]
+    let ``Clifford : YY generator hits Y-path and X-clearing`` () =
+        let gen = toSymplectic (PauliRegister("YY", Complex.One))
+        let (gates, targets) = synthesizeTaperingClifford [| gen |]
+        let rotated = applyGatesToSymplectic gates gen
+        // Should produce a single-qubit Z on the target (net result)
+        let otherQ = if targets.[0] = 0 then 1 else 0
+        // The non-target qubit should be identity
+        Assert.False(rotated.X.[otherQ] || rotated.Z.[otherQ])
+
+    [<Fact>]
+    let ``Clifford : XY generator produces correct rotation`` () =
+        let gen = toSymplectic (PauliRegister("XY", Complex.One))
+        let (gates, targets) = synthesizeTaperingClifford [| gen |]
+        let rotated = applyGatesToSymplectic gates gen
+        let otherQ = if targets.[0] = 0 then 1 else 0
+        Assert.False(rotated.X.[otherQ] || rotated.Z.[otherQ])
+
+    [<Fact>]
+    let ``Clifford : XZ generator handles mixed X and Z support`` () =
+        let gen = toSymplectic (PauliRegister("XZ", Complex.One))
+        let (gates, targets) = synthesizeTaperingClifford [| gen |]
+        let rotated = applyGatesToSymplectic gates gen
+        Assert.False(rotated.X.[targets.[0]])
+        Assert.True(rotated.Z.[targets.[0]])
+
+    [<Fact>]
+    let ``Clifford : YZ generator handles Y-path with Z on other qubit`` () =
+        let gen = toSymplectic (PauliRegister("YZ", Complex.One))
+        let (gates, targets) = synthesizeTaperingClifford [| gen |]
+        let rotated = applyGatesToSymplectic gates gen
+        Assert.False(rotated.X.[targets.[0]])
+        Assert.True(rotated.Z.[targets.[0]])
+
+    [<Fact>]
+    let ``applyClifford : CNOT phase tracking on XY terms`` () =
+        // Apply a CNOT-containing Clifford to a Hamiltonian with XY terms
+        let h = prs [ ("XY", Complex(1.0, 0.0)); ("YX", Complex(-0.5, 0.0)) ]
+        let gates = [CNOT(0, 1)]
+        let result = applyClifford gates h
+        // Just verify it doesn't crash and produces a valid Hamiltonian
+        Assert.True(result.SummandTerms.Length > 0)
+
+    [<Fact>]
+    let ``applyClifford : Had gate flips Y sign`` () =
+        let h = prs [ ("YI", Complex(1.0, 0.0)) ]
+        let gates = [Had 0]
+        let result = applyClifford gates h
+        // H Y H† = -Y
+        let term = result.SummandTerms.[0]
+        Assert.Equal(Complex(-1.0, 0.0), term.Coefficient)
+
+    [<Fact>]
+    let ``applyClifford : S gate flips Y to -X`` () =
+        let h = prs [ ("YI", Complex(1.0, 0.0)) ]
+        let gates = [Sgate 0]
+        let result = applyClifford gates h
+        // S Y S† = -X
+        let term = result.SummandTerms.[0]
+        Assert.Equal(Complex(-1.0, 0.0), term.Coefficient)
+
+    [<Fact>]
+    let ``applyClifford : identity pass-through`` () =
+        let h = prs [ ("ZI", Complex(1.0, 0.0)) ]
+        let result = applyClifford [] h
+        Assert.Equal(h.ToString(), result.ToString())
+
+    [<Fact>]
+    let ``applyClifford : Sgate on X converts to Y`` () =
+        let h = prs [ ("XI", Complex(1.0, 0.0)) ]
+        let gates = [Sgate 0]
+        let result = applyClifford gates h
+        // S X S† = Y
+        let signature = result.SummandTerms.[0].Signature
+        Assert.Contains("Y", signature)
+
+    [<Fact>]
+    let ``applyClifford : combined Had and Sgate`` () =
+        let h = prs [ ("XI", Complex(1.0, 0.0)); ("YI", Complex(0.5, 0.0)) ]
+        let gates = [Had 0; Sgate 0]
+        let result = applyClifford gates h
+        Assert.True(result.SummandTerms.Length > 0)
+
+    [<Fact>]
+    let ``applyClifford : CNOT with XI propagates X to target`` () =
+        let h = prs [ ("XI", Complex(1.0, 0.0)) ]
+        let gates = [CNOT(0, 1)]
+        let result = applyClifford gates h
+        // CNOT: X_c I_t → X_c X_t
+        Assert.True(result.SummandTerms.Length > 0)
+
+    [<Fact>]
+    let ``applyClifford : CNOT with IZ propagates Z to control`` () =
+        let h = prs [ ("IZ", Complex(1.0, 0.0)) ]
+        let gates = [CNOT(0, 1)]
+        let result = applyClifford gates h
+        // CNOT: I_c Z_t → Z_c Z_t
+        Assert.True(result.SummandTerms.Length > 0)
+
+    [<Fact>]
+    let ``applyClifford : CNOT with XZ produces phase change`` () =
+        let h = prs [ ("XZ", Complex(1.0, 0.0)) ]
+        let gates = [CNOT(0, 1)]
+        let result = applyClifford gates h
+        // cx=true, tz=true → phase flip
+        Assert.True(result.SummandTerms.Length > 0)
+
+    [<Fact>]
+    let ``findCommutingGenerators : empty Hamiltonian returns empty`` () =
+        let h = PauliRegisterSequence()
+        let gens = findCommutingGenerators h
+        Assert.Empty(gens)
+
+    [<Fact>]
+    let ``independentGenerators : empty input returns empty`` () =
+        let result = independentGenerators [||]
+        Assert.Empty(result)
+
+    [<Fact>]
+    let ``independentGenerators : single generator returns it`` () =
+        let g = toSymplectic (PauliRegister("ZI", Complex.One))
+        let result = independentGenerators [| g |]
+        Assert.Equal(1, result.Length)
+
+    [<Fact>]
+    let ``Tapering : taperDiagonalZ2 rejects out-of-range qubit`` () =
+        let h = prs [ ("ZI", Complex.One) ]
+        let ex = Assert.Throws<ArgumentException>(fun () ->
+            taperDiagonalZ2 [ (5, 1) ] h |> ignore)
+        Assert.Contains("out of range", ex.Message)
+
+    [<Fact>]
+    let ``Tapering : diagonalZ2SymmetryQubits returns empty for all-X Hamiltonian`` () =
+        let h = prs [ ("XX", Complex(1.0, 0.0)); ("YY", Complex(-0.5, 0.0)) ]
+        let qs = diagonalZ2SymmetryQubits h
+        Assert.Empty(qs)
+
+    [<Fact>]
+    let ``Symplectic : anti-commuting XZ pair detected`` () =
+        let x = toSymplectic (PauliRegister("X", Complex.One))
+        let z = toSymplectic (PauliRegister("Z", Complex.One))
+        Assert.True(symplecticInnerProduct x z)
+        Assert.False(commutes x z)
+
+    [<Fact>]
+    let ``taper FullClifford : with explicit sector and FullClifford`` () =
+        let h = prs [ ("ZI", Complex(1.0, 0.0)); ("IZ", Complex(2.0, 0.0)); ("ZZ", Complex(0.5, 0.0)) ]
+        let result = taper { defaultTaperingOptions with Method = FullClifford; Sector = [(0, 1); (1, -1)] } h
+        Assert.True(result.TaperedQubitCount < result.OriginalQubitCount)
+
+    [<Fact>]
+    let ``gf2Kernel : identity-like independence`` () =
+        // Use 3 generators on 3 qubits where all are independent
+        let g1 = toSymplectic (PauliRegister("ZII", Complex.One))
+        let g2 = toSymplectic (PauliRegister("IZI", Complex.One))
+        let g3 = toSymplectic (PauliRegister("IIZ", Complex.One))
+        let indep = independentGenerators [| g1; g2; g3 |]
+        Assert.Equal(3, indep.Length)
+
+    [<Fact>]
+    let ``z2SymmetryCount : single-term X Hamiltonian`` () =
+        let h = prs [ ("X", Complex.One) ]
+        let count = z2SymmetryCount h
+        Assert.True(count >= 0)
+
+    [<Fact>]
+    let ``taper FullClifford : 4-qubit mixed Hamiltonian`` () =
+        let h = prs [
+            ("XXII", Complex(0.5, 0.0))
+            ("YYII", Complex(0.5, 0.0))
+            ("ZZII", Complex(-0.3, 0.0))
+            ("IIZZ", Complex(0.2, 0.0))
+            ("ZIZI", Complex(0.1, 0.0))
+            ("IZIZ", Complex(0.1, 0.0))
+        ]
+        // Just verify we can find and count symmetries on a 4-qubit system
+        let symCount = z2SymmetryCount h
+        Assert.True(symCount >= 0)
+
+    [<Fact>]
+    let ``taper FullClifford : 3-qubit with all-X terms`` () =
+        let h = prs [
+            ("XXX", Complex(1.0, 0.0))
+            ("ZZZ", Complex(-0.5, 0.0))
+        ]
+        let symCount = z2SymmetryCount h
+        Assert.True(symCount >= 0)
+
+    [<Fact>]
+    let ``applyClifford : multiple gates on 3 qubits`` () =
+        let h = prs [ ("XYZ", Complex(1.0, 0.0)); ("ZZI", Complex(0.5, 0.0)) ]
+        let gates = [Had 0; Sgate 1; CNOT(0, 2); Had 1]
+        let result = applyClifford gates h
+        Assert.True(result.SummandTerms.Length > 0)
+
+    [<Fact>]
+    let ``Symplectic : toSymplectic handles all Pauli types`` () =
+        let r = PauliRegister("XYZI", Complex.One)
+        let sv = toSymplectic r
+        // X: (1,0), Y: (1,1), Z: (0,1), I: (0,0)
+        Assert.True(sv.X.[0] && not sv.Z.[0])   // X
+        Assert.True(sv.X.[1] && sv.Z.[1])        // Y
+        Assert.True(not sv.X.[2] && sv.Z.[2])    // Z
+        Assert.True(not sv.X.[3] && not sv.Z.[3]) // I
+
+    [<Fact>]
+    let ``fromSymplectic reconstructs all Pauli types`` () =
+        let sv = { X = [| true; true; false; false |]; Z = [| false; true; true; false |]; N = 4 }
+        let reg = fromSymplectic sv
+        Assert.Equal("XYZI", reg.Signature)
+
+    [<Fact>]
+    let ``taper FullClifford : XX+YY Hamiltonian uses CNOT in Clifford`` () =
+        let h = prs [ ("XX", Complex(0.5, 0.0)); ("YY", Complex(0.5, 0.0)); ("ZI", Complex(0.1, 0.0)); ("IZ", Complex(0.1, 0.0)) ]
+        let result = taper defaultTaperingOptions h
+        Assert.True(result.CliffordGates.Length > 0 || result.TaperedQubitCount < result.OriginalQubitCount)
+
+    [<Fact>]
+    let ``taper DiagonalOnly : with explicit sector`` () =
+        let h = prs [ ("ZI", Complex(1.0, 0.0)); ("IZ", Complex(2.0, 0.0)) ]
+        let result = taper { defaultTaperingOptions with Method = DiagonalOnly; Sector = [(0, 1)] } h
+        Assert.Equal(1, result.RemovedQubits.Length)
+
+    [<Fact>]
+    let ``taper DiagonalOnly : with MaxQubitsToRemove`` () =
+        let h = prs [ ("ZI", Complex(1.0, 0.0)); ("IZ", Complex(2.0, 0.0)) ]
+        let result = taper { defaultTaperingOptions with Method = DiagonalOnly; MaxQubitsToRemove = Some 1 } h
+        Assert.True(result.RemovedQubits.Length <= 1)

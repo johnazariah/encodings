@@ -2,6 +2,9 @@ namespace Tests
 
 module Parity =
     open Encodings
+    open Encodings.MajoranaEncoding
+    open Encodings.JordanWigner
+    open Encodings.BravyiKitaev
     open Xunit
     open System.Numerics
 

@@ -9,7 +9,6 @@ namespace Encodings
 /// operator representation as the fermionic path, but uses CCR instead of CAR
 /// when constructing normal order.
 /// </remarks>
-[<AutoOpen>]
 module Bosonic =
 
     /// <summary>

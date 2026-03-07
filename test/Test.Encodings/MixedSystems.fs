@@ -2,6 +2,7 @@ namespace Tests
 
 module MixedSystems =
     open Encodings
+    open Encodings.MixedSystems
     open Xunit
     open System.Numerics
 
@@ -124,3 +125,36 @@ module MixedSystems =
             Assert.True(isSectorBlockOrdered t)
             let fermionCount = t.Units |> Array.filter (fun c -> c.Item.Op.Sector = Fermionic) |> Array.length
             Assert.True(fermionCount = 0 || t.Units |> Array.exists (fun c -> c.Item.Op.Operator = Identity)))
+
+    [<Fact>]
+    let ``Mixed normal ordering handles identity-only candidate`` () =
+        let identityOnly =
+            mkProduct
+                [|
+                    fermion Raise 0u
+                    fermion Lower 0u
+                |]
+            |> S<IxOp<uint32, SectorLadderOperatorUnit>>.Apply
+
+        let ordered = constructMixedNormalOrdered identityOnly
+        Assert.True(ordered.IsSome)
+
+    [<Fact>]
+    let ``Sector block ordering returns true for all-fermionic sequence`` () =
+        let allFermions =
+            mkProduct
+                [|
+                    fermion Raise 0u
+                    fermion Lower 1u
+                |]
+        Assert.True(isSectorBlockOrdered allFermions)
+
+    [<Fact>]
+    let ``Sector block ordering returns true for all-bosonic sequence`` () =
+        let allBosons =
+            mkProduct
+                [|
+                    boson Raise 0u
+                    boson Lower 1u
+                |]
+        Assert.True(isSectorBlockOrdered allBosons)

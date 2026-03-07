@@ -76,3 +76,48 @@ module CombiningAlgebra =
         Assert.Equal<(LadderOperatorUnit * uint32)[]>(
             [| (Identity, 0u) |],
             operatorSequence combined.[0])
+
+    // ── Bosonic algebra ─────────────────────────────────────────────
+
+    [<Fact>]
+    let ``Bosonic: Combine swaps Lower Raise at different indices (no sign flip)`` () =
+        let algebra = BosonicAlgebra() :> ICombiningAlgebra<LadderOperatorUnit>
+        let productTerm = makeProduct [| (Raise, 0u); (Lower, 1u); (Lower, 2u) |]
+        let nextUnit = makeUnit Raise 5u
+        let combined = algebra.Combine productTerm nextUnit
+        Assert.Equal(1, combined.Length)
+        Assert.Equal(Complex.One, combined.[0].Coeff)
+
+    [<Fact>]
+    let ``Bosonic: same index generates identity and reordered terms`` () =
+        let algebra = BosonicAlgebra() :> ICombiningAlgebra<LadderOperatorUnit>
+        let productTerm = makeProduct [| (Raise, 0u); (Lower, 1u); (Lower, 2u) |]
+        let nextUnit = makeUnit Raise 2u
+        let combined = algebra.Combine productTerm nextUnit
+        Assert.Equal(2, combined.Length)
+        Assert.Equal(Complex.One, combined.[0].Coeff)
+        Assert.Equal(Complex.One, combined.[1].Coeff)
+
+    [<Fact>]
+    let ``Bosonic: appends operator for non Lower Raise pair`` () =
+        let algebra = BosonicAlgebra() :> ICombiningAlgebra<LadderOperatorUnit>
+        let productTerm = makeProduct [| (Raise, 0u); (Raise, 1u) |]
+        let nextUnit = makeUnit Lower 3u
+        let combined = algebra.Combine productTerm nextUnit
+        Assert.Equal(1, combined.Length)
+
+    [<Fact>]
+    let ``Bosonic: short prefix with nUnits=2 uses identity sentinel`` () =
+        let algebra = BosonicAlgebra() :> ICombiningAlgebra<LadderOperatorUnit>
+        let productTerm = makeProduct [| (Lower, 2u) |]
+        let nextUnit = makeUnit Raise 5u
+        let combined = algebra.Combine productTerm nextUnit
+        Assert.Equal(1, combined.Length)
+
+    [<Fact>]
+    let ``Bosonic: short prefix same index generates two terms`` () =
+        let algebra = BosonicAlgebra() :> ICombiningAlgebra<LadderOperatorUnit>
+        let productTerm = makeProduct [| (Lower, 2u) |]
+        let nextUnit = makeUnit Raise 2u
+        let combined = algebra.Combine productTerm nextUnit
+        Assert.Equal(2, combined.Length)

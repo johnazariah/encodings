@@ -86,3 +86,49 @@ module IndexedTerms_Extra =
         Assert.True(parsed.IsSome)
         Assert.Contains("(X, 0)", parsed.Value.ToString())
         Assert.Contains("(Z, 1)", parsed.Value.ToString())
+
+    // ── Parsing edge cases ──────────────────────────────────────────
+
+    [<Fact>]
+    let ``LadderOperatorUnit TryCreateFromString returns None for empty`` () =
+        let result = LadderOperatorUnit.TryCreateFromString ""
+        Assert.True(result.IsNone)
+
+    [<Fact>]
+    let ``LadderOperatorUnit TryCreateFromString returns None for invalid operator`` () =
+        let result = LadderOperatorUnit.TryCreateFromString "(Q, 0)"
+        Assert.True(result.IsNone)
+
+    [<Fact>]
+    let ``LadderOperatorUnit TryCreateFromString returns None for invalid index`` () =
+        let result = LadderOperatorUnit.TryCreateFromString "(u, abc)"
+        Assert.True(result.IsNone)
+
+    [<Fact>]
+    let ``LadderOperatorUnit TryCreateFromString parses valid input`` () =
+        let result = LadderOperatorUnit.TryCreateFromString "(u, 5)"
+        Assert.True(result.IsSome)
+        Assert.Equal(Raise, result.Value.Op)
+        Assert.Equal(5u, result.Value.Index)
+
+    // ── isOrdered edge cases ────────────────────────────────────────
+
+    [<Fact>]
+    let ``isOrdered returns true for empty sequence`` () =
+        Assert.True(isOrdered (<=) Seq.empty<int>)
+
+    [<Fact>]
+    let ``isOrdered returns true for single-element sequence`` () =
+        Assert.True(isOrdered (<=) (seq { 42 }))
+
+    // ── IndicesInOrder Descending ────────────────────────────────────
+
+    [<Fact>]
+    let ``IndicesInOrder Descending detects correct order`` () =
+        let ops = [| IxOp<uint32, LadderOperatorUnit>.Apply(3u, Raise); IxOp<uint32, LadderOperatorUnit>.Apply(2u, Raise); IxOp<uint32, LadderOperatorUnit>.Apply(1u, Raise) |]
+        Assert.True(IxOp<uint32, LadderOperatorUnit>.IndicesInOrder Descending (ops |> Array.toSeq))
+
+    [<Fact>]
+    let ``IndicesInOrder Descending detects wrong order`` () =
+        let ops = [| IxOp<uint32, LadderOperatorUnit>.Apply(1u, Raise); IxOp<uint32, LadderOperatorUnit>.Apply(2u, Raise); IxOp<uint32, LadderOperatorUnit>.Apply(3u, Raise) |]
+        Assert.False(IxOp<uint32, LadderOperatorUnit>.IndicesInOrder Descending (ops |> Array.toSeq))

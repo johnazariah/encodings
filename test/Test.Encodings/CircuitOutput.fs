@@ -118,3 +118,55 @@ module CircuitOutput =
         Assert.Contains("H(qs[", qs)
         Assert.Contains("CNOT(qs[", qs)
         Assert.Contains("Rz(", qs)
+
+    // ── JSON: individual gate types ─────────────────────────────────
+
+    [<Fact>]
+    let ``JSON: S gate serializes correctly`` () =
+        let json = toCircuitJson 2 Map.empty [| Gate.S 0 |]
+        let doc = JsonDocument.Parse(json)
+        let gate = doc.RootElement.GetProperty("gates").[0]
+        Assert.Equal("S", gate.GetProperty("gate").GetString())
+
+    [<Fact>]
+    let ``JSON: Sdg gate serializes correctly`` () =
+        let json = toCircuitJson 2 Map.empty [| Gate.Sdg 1 |]
+        let doc = JsonDocument.Parse(json)
+        let gate = doc.RootElement.GetProperty("gates").[0]
+        Assert.Equal("Sdg", gate.GetProperty("gate").GetString())
+
+    [<Fact>]
+    let ``JSON: Rz gate includes angle`` () =
+        let json = toCircuitJson 2 Map.empty [| Gate.Rz(0, 1.5) |]
+        let doc = JsonDocument.Parse(json)
+        let gate = doc.RootElement.GetProperty("gates").[0]
+        Assert.Equal("Rz", gate.GetProperty("gate").GetString())
+        Assert.Equal(1.5, gate.GetProperty("angle").GetDouble())
+
+    [<Fact>]
+    let ``JSON: CNOT gate has control and target`` () =
+        let json = toCircuitJson 3 Map.empty [| Gate.CNOT(0, 2) |]
+        let doc = JsonDocument.Parse(json)
+        let gate = doc.RootElement.GetProperty("gates").[0]
+        Assert.Equal("CNOT", gate.GetProperty("gate").GetString())
+        Assert.Equal(0, gate.GetProperty("control").GetInt32())
+        Assert.Equal(2, gate.GetProperty("target").GetInt32())
+
+    [<Fact>]
+    let ``JSON: empty gate array produces valid JSON`` () =
+        let json = toCircuitJson 2 Map.empty [||]
+        let doc = JsonDocument.Parse(json)
+        Assert.Equal(0, doc.RootElement.GetProperty("gateCount").GetInt32())
+        Assert.Equal(0, doc.RootElement.GetProperty("gates").GetArrayLength())
+
+    // ── QASM: S / Sdg gates ─────────────────────────────────────────
+
+    [<Fact>]
+    let ``QASM: S gate renders correctly`` () =
+        let qasm = toOpenQasm { defaultOpenQasmOptions with IncludeHeader = false } 2 [| Gate.S 0 |]
+        Assert.Contains("s q[0];", qasm)
+
+    [<Fact>]
+    let ``QASM: Sdg gate renders correctly`` () =
+        let qasm = toOpenQasm { defaultOpenQasmOptions with IncludeHeader = false } 2 [| Gate.Sdg 1 |]
+        Assert.Contains("sdg q[1];", qasm)

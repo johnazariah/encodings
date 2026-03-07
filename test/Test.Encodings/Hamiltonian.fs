@@ -3,6 +3,10 @@
 module Hamiltonian =
     open System.Numerics
     open Encodings
+    open Encodings.Hamiltonian
+    open Encodings.JordanWigner
+    open Encodings.BravyiKitaev
+    open Encodings.TreeEncoding
     open Xunit
 
     [<Theory>]

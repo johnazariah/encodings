@@ -21,7 +21,6 @@ namespace Encodings
 /// for photonic, vibrational, and spin-s Hamiltonians" (arXiv:1909.05820).
 /// </para>
 /// </remarks>
-[<AutoOpen>]
 module BosonicEncoding =
     open System
     open System.Numerics

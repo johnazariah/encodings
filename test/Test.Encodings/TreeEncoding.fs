@@ -2,6 +2,11 @@ namespace Tests
 
 module TreeEncoding =
     open Encodings
+    open Encodings.TreeEncoding
+    open Encodings.MajoranaEncoding
+    open Encodings.JordanWigner
+    open Encodings.BravyiKitaev
+    open Encodings.Hamiltonian
     open Xunit
     open System.Numerics
 

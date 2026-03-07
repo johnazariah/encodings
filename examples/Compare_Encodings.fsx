@@ -13,6 +13,10 @@
 #r "../src/Encodings/bin/Debug/net10.0/Encodings.dll"
 
 open Encodings
+open Encodings.JordanWigner
+open Encodings.BravyiKitaev
+open Encodings.MajoranaEncoding
+open Encodings.TreeEncoding
 
 // ════════════════════════════════════════════════════════════════════
 //  Setup: Encode creation operator a†₂ on 8 modes

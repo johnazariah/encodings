@@ -10,8 +10,8 @@ namespace Encodings
 /// Reference:
 ///   Seeley, Richard, Love — "The Bravyi-Kitaev transformation for quantum
 ///   computation of electronic structure" (arXiv:1208.5986)
-[<AutoOpen>]
 module BravyiKitaev =
+    open Encodings.MajoranaEncoding
 
     /// Compute the Bravyi-Kitaev encoding of a single ladder operator
     /// at mode index j within a register of n qubits.

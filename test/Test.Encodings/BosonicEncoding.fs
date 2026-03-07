@@ -2,6 +2,7 @@ namespace Tests
 
 module BosonicEncoding =
     open Encodings
+    open Encodings.BosonicEncoding
     open Xunit
     open System.Numerics
 
@@ -481,3 +482,33 @@ module BosonicEncoding =
         // Mode 1 terms should have identity on qubit 0 (signatures like "IX", "IY")
         for t in cr1.SummandTerms do
             Assert.Equal('I', t.Signature.[0])
+
+    [<Fact>]
+    let ``Binary Identity operator returns empty`` () =
+        let result = binaryBosonTerms Identity 0u 1u 2u
+        Assert.Equal(0, result.SummandTerms.Length)
+
+    [<Fact>]
+    let ``Unary Identity operator returns empty`` () =
+        let result = unaryBosonTerms Identity 0u 1u 2u
+        Assert.Equal(0, result.SummandTerms.Length)
+
+    [<Fact>]
+    let ``Binary d=1 returns empty`` () =
+        let result = binaryBosonTerms Raise 0u 1u 1u
+        Assert.Equal(0, result.SummandTerms.Length)
+
+    [<Fact>]
+    let ``Binary out-of-range mode returns empty`` () =
+        let result = binaryBosonTerms Raise 5u 2u 2u
+        Assert.Equal(0, result.SummandTerms.Length)
+
+    [<Fact>]
+    let ``Unary d=1 returns empty`` () =
+        let result = unaryBosonTerms Raise 0u 1u 1u
+        Assert.Equal(0, result.SummandTerms.Length)
+
+    [<Fact>]
+    let ``Unary out-of-range mode returns empty`` () =
+        let result = unaryBosonTerms Raise 5u 2u 2u
+        Assert.Equal(0, result.SummandTerms.Length)

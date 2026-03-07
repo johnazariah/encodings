@@ -112,6 +112,30 @@ module TypeExtensions =
         for (value, expected) in cases do
             Assert.Equal(expected, value.ToPhaseConjunction)
 
+    [<Theory>]
+    [<InlineData(System.Double.NaN, 0.0, false)>]
+    [<InlineData(System.Double.PositiveInfinity, 0.0, false)>]
+    [<InlineData(0.0, System.Double.NaN, false)>]
+    [<InlineData(0.0, System.Double.PositiveInfinity, false)>]
+    [<InlineData(System.Double.NegativeInfinity, 0.0, false)>]
+    [<InlineData(0.0, System.Double.NegativeInfinity, false)>]
+    [<InlineData(1.0, 2.0, true)>]
+    let ``IsFinite covers all non-finite branches`` (realPart : float, imaginaryPart : float, expected : bool) =
+        let value = Complex(realPart, imaginaryPart)
+        Assert.Equal(expected, Complex.IsFinite value)
+
+    [<Theory>]
+    [<InlineData(System.Double.NaN, 0.0, false)>]
+    [<InlineData(0.0, System.Double.NaN, false)>]
+    [<InlineData(System.Double.PositiveInfinity, 0.0, false)>]
+    [<InlineData(0.0, System.Double.PositiveInfinity, false)>]
+    [<InlineData(0.0, 0.0, false)>]
+    [<InlineData(1.0, 0.0, true)>]
+    [<InlineData(0.0, 1.0, true)>]
+    let ``IsNonZero covers all branches`` (realPart : float, imaginaryPart : float, expected : bool) =
+        let value = Complex(realPart, imaginaryPart)
+        Assert.Equal(expected, value.IsNonZero)
+
     [<Fact>]
     let ``Generated TypeExtensions static members are invocable`` () =
         let moduleType = typeof<C<int>>.Assembly.GetType("Encodings.TypeExtensions")

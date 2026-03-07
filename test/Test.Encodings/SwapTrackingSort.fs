@@ -107,3 +107,27 @@ module SwapTrackingSort =
 
         Assert.Equal<int[]>([| 1; 2; 3 |], sorted)
         Assert.Equal(3, phase)
+
+    [<Fact>]
+    let ``IsSorted returns true for empty array`` () =
+        Assert.True(ascendingSort.IsSorted [||])
+
+    [<Fact>]
+    let ``IsSorted returns true for single element`` () =
+        Assert.True(ascendingSort.IsSorted [| 42 |])
+
+    [<Fact>]
+    let ``Sort handles single-element array`` () =
+        let (sorted, phase) = ascendingSort.Sort 0 [| 7 |]
+        Assert.Equal<int[]>([| 7 |], sorted)
+        Assert.Equal(0, phase)
+
+    [<Fact>]
+    let ``Sort minimum at position 0 takes pre-branch`` () =
+        let (sorted, _) = ascendingSort.Sort 0 [| 1; 5; 3 |]
+        Assert.Equal<int[]>([| 1; 3; 5 |], sorted)
+
+    [<Fact>]
+    let ``Sort minimum at last position takes post-branch`` () =
+        let (sorted, _) = ascendingSort.Sort 0 [| 5; 3; 1 |]
+        Assert.Equal<int[]>([| 1; 3; 5 |], sorted)

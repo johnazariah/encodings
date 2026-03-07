@@ -6,6 +6,7 @@
 #r "../src/Encodings/bin/Debug/net10.0/Encodings.dll"
 
 open Encodings
+open Encodings.MixedSystems
 open System.Numerics
 
 let hopping : P<IxOp<uint32, SectorLadderOperatorUnit>> =

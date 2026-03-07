@@ -20,9 +20,9 @@ namespace Encodings
 ///   Jordan-Wigner :  U = ∅,              P = {0…j−1},     Occ = {j}
 ///   Parity        :  U = {j+1…n−1},      P = {j−1}?,      Occ = {j−1,j}?
 ///   Bravyi-Kitaev :  U, P, Occ from Fenwick tree structure
-[<AutoOpen>]
 module MajoranaEncoding =
     open System.Numerics
+    open Encodings.FenwickTree
 
     /// Defines the three index-set functions that characterise an encoding.
     type EncodingScheme =

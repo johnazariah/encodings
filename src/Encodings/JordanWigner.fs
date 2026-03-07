@@ -20,7 +20,6 @@
 /// </remarks>
 /// <seealso cref="T:Encodings.EncodingScheme">Index-set scheme abstraction shared by JW, BK, and Parity encodings.</seealso>
 /// <seealso cref="T:Encodings.FenwickTree">Fenwick tree used by the Bravyi-Kitaev encoding for O(log n) weight.</seealso>
-[<AutoOpen>]
 module JordanWigner =
     open System.Numerics
 

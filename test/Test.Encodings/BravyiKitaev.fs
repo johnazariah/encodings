@@ -2,6 +2,8 @@ namespace Tests
 
 module BravyiKitaev =
     open Encodings
+    open Encodings.JordanWigner
+    open Encodings.BravyiKitaev
     open Xunit
     open System.Numerics
 

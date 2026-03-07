@@ -8,6 +8,9 @@
 open System
 open System.Numerics
 open Encodings
+open Encodings.MixedSystems
+open Encodings.JordanWigner
+open Encodings.BravyiKitaev
 
 let nQubits = 8u
 

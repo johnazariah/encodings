@@ -124,3 +124,28 @@ module VariationalCircuits =
         let est3 = qpeResources 3 h 0.1
         let est5 = qpeResources 5 h 0.1
         Assert.True(est5.TotalCnots > est3.TotalCnots)
+
+    [<Fact>]
+    let ``single-term Hamiltonian with all non-commuting terms gets separate groups`` () =
+        let h = prs [ ("X", c 1.0); ("Z", c 1.0); ("Y", c 1.0) ]
+        let program = groupCommutingTerms h
+        Assert.True(program.GroupCount >= 2)
+
+    [<Fact>]
+    let ``groupCommutingTerms places each term into exactly one group`` () =
+        let h = prs [ ("XI", c 0.5); ("ZI", c 0.3); ("IX", c 0.2); ("IZ", c 0.1) ]
+        let program = groupCommutingTerms h
+        let totalInBases = program.Bases |> Array.sumBy (fun b -> b.Terms.Length)
+        Assert.Equal(4, totalInBases)
+
+    [<Fact>]
+    let ``groupCommutingTerms with single term produces one group`` () =
+        let h = prs [ ("XZ", c 1.0) ]
+        let program = groupCommutingTerms h
+        Assert.Equal(1, program.GroupCount)
+
+    [<Fact>]
+    let ``different-length registers commute via padding`` () =
+        let a = PauliRegister("X", Complex.One)
+        let b = PauliRegister("IX", Complex.One)
+        Assert.True(qubitWiseCommutes a b)

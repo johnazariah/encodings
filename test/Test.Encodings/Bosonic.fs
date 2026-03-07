@@ -2,6 +2,7 @@ namespace Tests
 
 module Bosonic =
     open Encodings
+    open Encodings.Bosonic
     open Xunit
     open System.Numerics
 

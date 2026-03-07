@@ -13,6 +13,7 @@
 
 open System.Numerics
 open Encodings
+open Encodings.BosonicEncoding
 
 // ══════════════════════════════════════════════
 //  Part 1: Single-mode encodings at a glance

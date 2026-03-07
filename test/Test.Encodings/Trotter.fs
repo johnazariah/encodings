@@ -125,6 +125,23 @@ module Trotter =
         Assert.Equal(Gate.H 0,   gates.[1])
 
     [<Fact>]
+    let ``Y position gets Sdg-H basis change and H-S restoration`` () =
+        let r = { Operator = PauliRegister("YI", Complex.One); Angle = 0.5 }
+        let gates = decomposeRotation r
+        Assert.Equal(Gate.Sdg 0, gates.[0])
+        Assert.Equal(Gate.H 0,   gates.[1])
+        let rzIdx = gates |> Array.findIndex (function Gate.Rz _ -> true | _ -> false)
+        Assert.Equal(Gate.H 0, gates.[rzIdx + 1])
+        Assert.Equal(Gate.S 0, gates.[rzIdx + 2])
+
+    [<Fact>]
+    let ``Z-only positions get no basis-change gates`` () =
+        let r = { Operator = PauliRegister("ZZ", Complex.One); Angle = 0.5 }
+        let gates = decomposeRotation r
+        let hs = gates |> Array.filter (function Gate.H _ | Gate.S _ | Gate.Sdg _ -> true | _ -> false)
+        Assert.Equal(0, hs.Length)
+
+    [<Fact>]
     let ``Rz angle is twice the rotation angle`` () =
         let r = { Operator = PauliRegister("ZI", Complex.One); Angle = 0.25 }
         let gates = decomposeRotation r
@@ -179,3 +196,28 @@ module Trotter =
         Assert.Equal(2, results.Length)
         Assert.Equal("enc1", fst results.[0])
         Assert.Equal("enc2", fst results.[1])
+
+    [<Fact>]
+    let ``trotterStepStats handles empty Hamiltonian`` () =
+        let h = prs [ ("II", c 1.0) ]
+        let step = firstOrderTrotter 0.1 h
+        let stats = trotterStepStats step
+        Assert.Equal(0, stats.MaxWeight)
+        Assert.Equal(0.0, stats.MeanWeight)
+
+    [<Fact>]
+    let ``decomposeRotation handles all-identity as zero gates`` () =
+        let r = { Operator = PauliRegister("IIII", Complex.One); Angle = 0.5 }
+        Assert.Empty(decomposeRotation r)
+
+    [<Fact>]
+    let ``decomposeRotation with mixed XYZ produces correct gate sequence`` () =
+        let r = { Operator = PauliRegister("XYZ", Complex.One); Angle = 0.5 }
+        let gates = decomposeRotation r
+        // Should contain: H(0), Sdg(1), H(1) for basis change, CNOTs, Rz, reverse CNOTs, restore
+        let hasH0 = gates |> Array.exists (fun g -> g = Gate.H 0)
+        let hasSdg1 = gates |> Array.exists (fun g -> g = Gate.Sdg 1)
+        let hasS1 = gates |> Array.exists (fun g -> g = Gate.S 1)
+        Assert.True(hasH0)
+        Assert.True(hasSdg1)
+        Assert.True(hasS1)

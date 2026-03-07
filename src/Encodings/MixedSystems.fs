@@ -14,7 +14,6 @@ namespace Encodings
 /// Cross-sector swaps are treated as commuting and therefore do not introduce
 /// sign changes.
 /// </remarks>
-[<AutoOpen>]
 module MixedSystems =
     open System.Numerics
 

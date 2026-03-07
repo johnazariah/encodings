@@ -6,6 +6,7 @@
 #r "../src/Encodings/bin/Debug/net10.0/Encodings.dll"
 
 open Encodings
+open Encodings.MixedSystems
 
 let show title (expr : S<IxOp<uint32, SectorLadderOperatorUnit>>) =
     printfn "\n=== %s ===" title
