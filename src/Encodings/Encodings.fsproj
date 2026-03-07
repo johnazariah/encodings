@@ -70,6 +70,9 @@
     <Compile Include="BravyiKitaev.fs" />
     <Compile Include="TreeEncoding.fs" />
     <Compile Include="Tapering.fs" />
+    <Compile Include="Trotter.fs" />
+    <Compile Include="CircuitOutput.fs" />
+    <Compile Include="VariationalCircuits.fs" />
     <Compile Include="Hamiltonian.fs" />
   </ItemGroup>
 

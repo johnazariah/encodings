@@ -32,6 +32,8 @@ module CombiningAlgebra =
     /// returning all terms that result from the combination (including any terms generated
     /// by anti-commutation relations).</para>
     /// </remarks>
+    /// <seealso cref="T:Encodings.FermionicAlgebra">CAR implementation for fermions.</seealso>
+    /// <seealso cref="T:Encodings.BosonicAlgebra">CCR implementation for bosons.</seealso>
     type ICombiningAlgebra<'op when 'op : equality> =
         interface
             /// <summary>
@@ -63,6 +65,8 @@ module CombiningAlgebra =
     /// <para>This algebra is used by the normal ordering algorithm to properly account
     /// for all terms generated during operator rearrangement.</para>
     /// </remarks>
+    /// <seealso cref="T:Encodings.BosonicAlgebra">Bosonic counterpart using CCR.</seealso>
+    /// <seealso cref="T:Encodings.ICombiningAlgebra`1">The interface this type implements.</seealso>
     type FermionicAlgebra () =
         class
             interface ICombiningAlgebra<LadderOperatorUnit> with
@@ -132,9 +136,21 @@ module CombiningAlgebra =
     /// <item><description>If i = j: aᵢ a†ᵢ = 1 + a†ᵢ aᵢ (identity term plus reordered term)</description></item>
     /// </list>
     /// </remarks>
+    /// <seealso cref="T:Encodings.FermionicAlgebra">Fermionic counterpart using CAR.</seealso>
+    /// <seealso cref="T:Encodings.ICombiningAlgebra`1">The interface this type implements.</seealso>
     type BosonicAlgebra () =
         class
             interface ICombiningAlgebra<LadderOperatorUnit> with
+                /// <summary>
+                /// Combines a product term with the next operator using bosonic commutation.
+                /// </summary>
+                /// <param name="productTerm">The current product of operators.</param>
+                /// <param name="nextUnit">The next operator to combine.</param>
+                /// <returns>
+                /// If the last operator in productTerm is Lower and nextUnit is Raise with the same index,
+                /// returns two terms: the identity contribution and the reordered term (no sign flip).
+                /// Otherwise returns a single term with the operator appended.
+                /// </returns>
                 member __.Combine productTerm nextUnit =
                     let nUnits = productTerm.Units.Length
                     let prefix =

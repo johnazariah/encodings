@@ -18,6 +18,8 @@
 /// Reference: P. Jordan and E. Wigner, "Über das Paulische Äquivalenzverbot,"
 /// Z. Phys. 47, 631 (1928).
 /// </remarks>
+/// <seealso cref="T:Encodings.EncodingScheme">Index-set scheme abstraction shared by JW, BK, and Parity encodings.</seealso>
+/// <seealso cref="T:Encodings.FenwickTree">Fenwick tree used by the Bravyi-Kitaev encoding for O(log n) weight.</seealso>
 [<AutoOpen>]
 module JordanWigner =
     open System.Numerics
@@ -35,6 +37,15 @@ module JordanWigner =
     /// factors from the Majorana decomposition. Returns empty sequence for Identity or
     /// if j >= n.
     /// </remarks>
+    /// <example>
+    /// Encode a†₀ in a 2-qubit register:
+    /// <code>
+    /// jordanWignerTerms Raise 0u 2u
+    /// // X term: "XI" with coefficient  0.5
+    /// // Y term: "YI" with coefficient -0.5i
+    /// </code>
+    /// </example>
+    /// <seealso cref="T:Encodings.EncodingScheme">For the equivalent index-set formulation of Jordan-Wigner.</seealso>
     let jordanWignerTerms (op : LadderOperatorUnit) (j : uint32) (n : uint32) : PauliRegisterSequence =
         let jw_components () =
             let _zs_ = if j = 0u then "" else System.String ('Z', (int j))
