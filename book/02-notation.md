@@ -32,6 +32,8 @@ The bracket $[pq\mid$ contains the two orbitals that share electron 1's coordina
 
 **Why chemists like it:** The indices are grouped the way charge densities are: $\rho_1(\mathbf{r}_1) = \phi_p^*(\mathbf{r}_1)\phi_q(\mathbf{r}_1)$, and the integral is just the Coulomb interaction between two charge distributions. It makes the *physics* of repulsion visually clear.
 
+> I first encountered this notation in Dr. Robert Ditchfield's Quantum Chemistry course (Chem 81) at Dartmouth in 1992. He would write the charge-density form on the blackboard and say, "This is the natural way to think about it." He was right — it *is* the natural way to think about it. It's just not the way the second-quantized Hamiltonian is written.
+
 **Where you'll encounter it:** Most quantum chemistry codes (PySCF, Gaussian, ORCA, NWChem) output integrals natively in chemist's notation. OpenFermion's `MolecularData` object stores them this way. If you import integrals from a chemistry pipeline, assume chemist's notation unless the documentation explicitly says otherwise.
 
 ---
