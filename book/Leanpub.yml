@@ -3,6 +3,7 @@ subtitle: A Computational Guide to Fermion-to-Qubit Encodings
 authors: John S Azariah
 language: en
 has_sample: true
+cover_image: cover.png
 about: |
   **From Molecules to Quantum Circuits** is a self-contained computational
   guide covering the complete pipeline from molecular electronic structure

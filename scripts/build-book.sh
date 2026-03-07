@@ -55,6 +55,17 @@ done < "$BOOK_DIR/Book.txt"
 cp "$BOOK_DIR/Book.txt" "$OUTPUT_DIR/manuscript/"
 cp "$BOOK_DIR/Sample.txt" "$OUTPUT_DIR/manuscript/"
 
+# Copy cover image if present
+if [[ -f "$BOOK_DIR/cover.png" ]]; then
+    cp "$BOOK_DIR/cover.png" "$OUTPUT_DIR/manuscript/"
+    echo "  Cover image included."
+fi
+
+# Copy Leanpub config if present
+if [[ -f "$BOOK_DIR/Leanpub.yml" ]]; then
+    cp "$BOOK_DIR/Leanpub.yml" "$OUTPUT_DIR/manuscript/"
+fi
+
 # ── Build ZIP for Leanpub upload ────────────────────────────────
 echo "Building manuscript.zip..."
 (cd "$OUTPUT_DIR" && zip -r manuscript.zip manuscript/ -x '*.DS_Store')
