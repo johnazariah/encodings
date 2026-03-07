@@ -5,7 +5,7 @@ open System.Text.Json
 open Encodings.Trotterization
 
 /// <summary>
-/// Renders Gate arrays into OpenQASM 3.0, Q#, and JSON circuit formats.
+/// Renders Gate arrays into OpenQASM (2.0 and 3.0), Q#, and JSON circuit formats.
 /// </summary>
 /// <remarks>
 /// Uses a <c>CodeFragment</c> computation expression for structured text
@@ -63,7 +63,20 @@ module CircuitOutput =
     /// <summary>Computation expression instance for building code fragments.</summary>
     let code = CodeBuilder()
 
-    // ── OpenQASM 3.0 ────────────────────────────────────────────────
+    // ── OpenQASM ──────────────────────────────────────────────────────
+
+    /// <summary>OpenQASM language version.</summary>
+    /// <remarks>
+    /// QASM 2.0 is required by Quokka, older Qiskit, and many hardware backends.
+    /// QASM 3.0 is the modern standard with richer control flow and typing.
+    /// Gate names (h, cx, rz, s, sdg) are identical across both versions.
+    /// </remarks>
+    [<RequireQualifiedAccess>]
+    type QasmVersion =
+        /// <summary>OpenQASM 2.0 — uses <c>qreg</c> declarations and <c>qelib1.inc</c>.</summary>
+        | V2
+        /// <summary>OpenQASM 3.0 — uses <c>qubit[]</c> declarations and <c>stdgates.inc</c>.</summary>
+        | V3
 
     /// <summary>Options controlling OpenQASM output.</summary>
     type OpenQasmOptions =
@@ -72,13 +85,19 @@ module CircuitOutput =
           /// <summary>Name of the qubit register.</summary>
           QubitName : string
           /// <summary>Number of decimal places for floating-point angles.</summary>
-          Precision : int }
+          Precision : int
+          /// <summary>OpenQASM version (2.0 or 3.0). Default: V3.</summary>
+          Version : QasmVersion }
 
-    /// <summary>Sensible defaults for OpenQASM generation.</summary>
+    /// <summary>Sensible defaults for OpenQASM 3.0 generation.</summary>
     let defaultOpenQasmOptions =
-        { IncludeHeader = true; QubitName = "q"; Precision = 6 }
+        { IncludeHeader = true; QubitName = "q"; Precision = 6; Version = QasmVersion.V3 }
 
-    /// Render a single gate to QASM.
+    /// <summary>Defaults for OpenQASM 2.0 (Quokka-compatible).</summary>
+    let defaultOpenQasm2Options =
+        { IncludeHeader = true; QubitName = "q"; Precision = 6; Version = QasmVersion.V2 }
+
+    /// Render a single gate to QASM (syntax is identical across 2.0 and 3.0).
     let private gateToQasm (opts : OpenQasmOptions) (gate : Gate) =
         let q = opts.QubitName
         let fmt (a : float) = a.ToString($"F{opts.Precision}")
@@ -89,17 +108,24 @@ module CircuitOutput =
         | Gate.Rz(i, a)   -> $"rz({fmt a}) {q}[{i}];"
         | Gate.CNOT(c, t) -> $"cx {q}[{c}], {q}[{t}];"
 
-    /// <summary>Render a gate array to an OpenQASM 3.0 program.</summary>
-    /// <param name="opts">Formatting options.</param>
+    /// <summary>Render a gate array to an OpenQASM program (2.0 or 3.0).</summary>
+    /// <param name="opts">Formatting options including version selection.</param>
     /// <param name="numQubits">Number of qubits in the register declaration.</param>
     /// <param name="gates">Gate sequence to render.</param>
     let toOpenQasm (opts : OpenQasmOptions) (numQubits : int) (gates : Gate[]) =
         code {
             if opts.IncludeHeader then
-                "OPENQASM 3.0;"
-                "include \"stdgates.inc\";"
+                match opts.Version with
+                | QasmVersion.V2 ->
+                    "OPENQASM 2.0;"
+                    "include \"qelib1.inc\";"
+                | QasmVersion.V3 ->
+                    "OPENQASM 3.0;"
+                    "include \"stdgates.inc\";"
                 ""
-            $"qubit[{numQubits}] {opts.QubitName};"
+            match opts.Version with
+            | QasmVersion.V2 -> $"qreg {opts.QubitName}[{numQubits}];"
+            | QasmVersion.V3 -> $"qubit[{numQubits}] {opts.QubitName};"
             ""
             for gate in gates do
                 yield! CodeFragment.line (gateToQasm opts gate)
@@ -217,8 +243,8 @@ module CircuitOutput =
             |> Array.max
             |> (+) 1
 
-    /// <summary>Render a TrotterStep to OpenQASM 3.0, inferring numQubits from the gates.</summary>
-    /// <param name="opts">Formatting options.</param>
+    /// <summary>Render a TrotterStep to OpenQASM (2.0 or 3.0), inferring numQubits from the gates.</summary>
+    /// <param name="opts">Formatting options including version selection.</param>
     /// <param name="step">The Trotter step to render.</param>
     let trotterStepToOpenQasm (opts : OpenQasmOptions) (step : TrotterStep) =
         let gates = decomposeTrotterStep step

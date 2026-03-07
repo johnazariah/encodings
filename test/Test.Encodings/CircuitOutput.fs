@@ -170,3 +170,43 @@ module CircuitOutput =
     let ``QASM: Sdg gate renders correctly`` () =
         let qasm = toOpenQasm { defaultOpenQasmOptions with IncludeHeader = false } 2 [| Gate.Sdg 1 |]
         Assert.Contains("sdg q[1];", qasm)
+
+    // ── OpenQASM 2.0 (Quokka-compatible) ────────────────────────────
+
+    [<Fact>]
+    let ``QASM2: header uses version 2.0 and qelib1`` () =
+        let qasm = toOpenQasm defaultOpenQasm2Options 2 [| Gate.H 0 |]
+        Assert.Contains("OPENQASM 2.0;", qasm)
+        Assert.Contains("include \"qelib1.inc\";", qasm)
+        Assert.DoesNotContain("stdgates", qasm)
+
+    [<Fact>]
+    let ``QASM2: uses qreg declaration`` () =
+        let qasm = toOpenQasm defaultOpenQasm2Options 4 [| Gate.H 0 |]
+        Assert.Contains("qreg q[4];", qasm)
+        Assert.DoesNotContain("qubit[", qasm)
+
+    [<Fact>]
+    let ``QASM2: gate names are identical to v3`` () =
+        let gates = [| Gate.H 0; Gate.S 1; Gate.Sdg 2; Gate.Rz(0, 0.5); Gate.CNOT(0, 1) |]
+        let qasm = toOpenQasm defaultOpenQasm2Options 3 gates
+        Assert.Contains("h q[0];", qasm)
+        Assert.Contains("s q[1];", qasm)
+        Assert.Contains("sdg q[2];", qasm)
+        Assert.Contains("rz(", qasm)
+        Assert.Contains("cx q[0], q[1];", qasm)
+
+    [<Fact>]
+    let ``QASM2: header can be omitted`` () =
+        let opts = { defaultOpenQasm2Options with IncludeHeader = false }
+        let qasm = toOpenQasm opts 2 [| Gate.H 0 |]
+        Assert.DoesNotContain("OPENQASM", qasm)
+        Assert.Contains("qreg q[2];", qasm)
+
+    [<Fact>]
+    let ``QASM2: TrotterStep convenience produces v2 output`` () =
+        let h = prs [ ("XZ", c 1.0) ]
+        let step = firstOrderTrotter 0.1 h
+        let qasm = trotterStepToOpenQasm defaultOpenQasm2Options step
+        Assert.Contains("OPENQASM 2.0;", qasm)
+        Assert.Contains("qreg q[", qasm)
