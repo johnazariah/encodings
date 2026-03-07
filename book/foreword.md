@@ -9,8 +9,6 @@ University of Technology Sydney
 
 ---
 
-This book is dedicated to **Dr. Guang Hao Low**, whose encouragement
-to study Bravyi-Kitaev encodings set this entire journey in motion.
 
 ---
 
