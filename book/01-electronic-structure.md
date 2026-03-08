@@ -118,6 +118,8 @@ Is STO-3G a good basis set? No — it is the smallest possible choice, and it ca
 
 > **Common Mistake #2:** Confusing "basis set" with "basis states." The basis set (STO-3G) determines which *orbitals* we use. The basis states (the 6 configurations in the table below) are the many-electron states built from those orbitals. A bigger basis set gives more orbitals, which gives exponentially more configurations — and this is where the computational hardness lives.
 
+> **What "exact" means in this book:** When we say a computation is "exact" (e.g., Full Configuration Interaction), we mean exact *within the chosen basis set*. STO-3G H₂ has only 4 spin-orbitals and 6 configurations, so FCI is trivial and gives the exact answer for that basis. But STO-3G itself is a crude approximation to the true electronic wavefunction — a larger basis set (cc-pVDZ, cc-pVTZ) would give a more accurate energy. The quantum simulation pipeline operates at the basis-set level: it solves the finite-dimensional problem exactly, but the finite-dimensional problem is only as good as the basis set that defines it. Throughout this book, "exact" always means "exact within the basis."
+
 ---
 
 ## Molecular Orbitals for H₂

@@ -93,6 +93,7 @@ The ratio grows monotonically because JW's worst-case weight scales as $O(n)$ wh
 - For large molecules ($n \sim 100$), the savings are ~25× — potentially enabling experiments that would otherwise be infeasible.
 - The complete optimization stack is: **taper → encode → Trotterize**. Each stage compounds multiplicatively.
 - The CNOT count is the single most important feasibility metric for near-term quantum simulation.
+- **Measurement cost matters too**: on near-term hardware running VQE, the total experimental cost includes both circuit depth (CNOT count per shot) and shot count (repetitions needed for statistical precision). The shot count scales as $N \sim (\sum_k |c_k|)^2 / \epsilon^2$, where the 1-norm $\sum |c_k|$ depends on encoding and tapering. Tapering reduces the 1-norm, so it saves both gate cost *and* measurement cost. Chapter 19 covers this in detail.
 
 ## Common Mistakes
 

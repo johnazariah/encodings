@@ -78,7 +78,7 @@ let indep = independentGenerators generators
 // The number of independent generators = max qubits taperable
 ```
 
-The null space computation uses Gaussian elimination with XOR instead of subtraction — the same row-reduction you learned in linear algebra, but in binary arithmetic. It runs in $O(n^3)$ time.
+The null space computation uses Gaussian elimination with XOR instead of subtraction — the same row-reduction you learned in linear algebra, but in binary arithmetic. It runs in $O(n^3)$ time in the number of qubits $n$, where the matrix has $L$ rows (one per Hamiltonian term) and $2n$ columns (the symplectic vector length). In practice, this is dominated by the $O(n^4)$ cost of integral processing and is never the bottleneck. See Bravyi et al. (arXiv:1701.08213, §III) for the formal analysis.
 
 ---
 
@@ -89,6 +89,21 @@ Once we have independent generators, we need a Clifford circuit $U$ such that:
 $$U g_i U^\dagger = Z_{q_i} \quad \text{for each generator } g_i$$
 
 This rotates each multi-qubit generator onto a single-qubit $Z$, making the system diagonally taperable.
+
+> **Algorithm: Clifford Tapering**
+>
+> **Input:** A Pauli Hamiltonian $\hat{H} = \sum_k c_k P_k$ on $n$ qubits.
+>
+> **Output:** A reduced Hamiltonian on $n - m$ qubits, where $m$ is the number of independent Z₂ symmetries.
+>
+> 1. **Represent** each term $P_k$ as a $2n$-bit symplectic vector.
+> 2. **Build** the $L \times 2n$ commutation check matrix (one row per term).
+> 3. **Compute** its null space via binary Gaussian elimination → independent generators $g_1, \ldots, g_m$.
+> 4. **For each** generator $g_i$: find a qubit $q_i$ where $g_i$ has support. If the support is X, apply H to convert to Z. If Y, apply S then H. Use CNOTs to clear all other qubits, leaving $g_i \to Z_{q_i}$. Collect the gate list.
+> 5. **Conjugate** every term $P_k$ by the collected Clifford gates (symbolically — substitution rules on symplectic vectors).
+> 6. **Fix** each target qubit $q_i$ to eigenvalue $\pm 1$ (the sector choice) and remove it.
+>
+> **Complexity:** Step 3 is $O(n^3)$; step 5 is $O(Lm)$ where $L$ is the number of terms. Total is dominated by Hamiltonian construction, not tapering.
 
 FockMap synthesizes this circuit using three elementary gates:
 
@@ -221,10 +236,6 @@ printfn "%d → %d qubits" result.OriginalQubitCount result.TaperedQubitCount
 ```
 
 A 2-qubit problem reduced to 1 qubit — a 2× Hilbert space reduction that diagonal-only tapering would have missed entirely.
-
-let result = taper defaultTaperingOptions heis
-// 2 → 1 qubit
-```
 
 ---
 

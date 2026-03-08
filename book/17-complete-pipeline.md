@@ -18,6 +18,8 @@ In Chapter 1, we started with a molecule and asked: *what is its ground-state en
 
 Now we put the whole chain together. The script below takes the H₂ molecular integrals and produces a quantum circuit — ready to run on a simulator or real hardware. Five function calls. Under fifty lines of code. Under a second of runtime.
 
+> **A note on energy evaluation:** In this chapter and the next, we use **exact diagonalisation** (classical matrix eigensolving) as the energy-evaluation backend. For H₂ (4 qubits, $2^4 = 16$-dimensional matrix) and H₂O in minimal basis (~11 qubits after tapering, $2^{11} = 2{,}048$-dimensional matrix), this is trivially feasible on a laptop. The pipeline constructs the *circuit*; exact diagonalisation is a stand-in for the quantum measurement step. Chapter 19 explains the quantum algorithms (VQE, QPE) that replace exact diagonalisation when the system is too large for classical solution.
+
 ---
 
 ## The Script

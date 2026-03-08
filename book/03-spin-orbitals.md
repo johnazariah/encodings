@@ -266,7 +266,7 @@ But first, Chapter 4 will introduce the encoding itself: what is a Pauli string,
 
 ## Common Mistakes
 
-1. **Omitting cross-spin blocks.** The $\alpha\beta$ and $\beta\alpha$ blocks produce the off-diagonal Pauli terms (XX, YY) that create entanglement. Without them, your quantum simulation is classical.
+1. **Omitting cross-spin blocks.** The $\alpha\beta$ and $\beta\alpha$ blocks produce the off-diagonal Pauli terms (XX, YY) that create entanglement. Without them, your quantum simulation is classical. **This is the single most common implementation failure at the integral stage** — if your encoded Hamiltonian has no off-diagonal terms, check the cross-spin blocks first.
 
 2. **Wrong spin-orbital ordering.** Interleaved ($0\alpha, 0\beta, 1\alpha, 1\beta$) vs blocked ($0\alpha, 1\alpha, 0\beta, 1\beta$) indexing produces different integral tables. The eigenvalues are independent of indexing, but the Pauli string structure changes. Always check your convention.
 

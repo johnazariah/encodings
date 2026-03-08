@@ -103,6 +103,8 @@ $$\lvert 0, 1\rangle_{\text{qubit}} = +\lvert 0, 1\rangle_{\text{qubit}}$$
 
 This minus sign is not optional bookkeeping. It affects interference patterns, bonding energies, and reaction rates. A faithful encoding must reproduce it.
 
+> **The fermion sign, operationally:** Consider the occupation state $\lvert 1010\rangle$ (orbitals 0 and 2 occupied). To create an electron in orbital 3, we apply $a_3^\dagger$. No other occupied orbitals lie between positions 2 and 3 (positions are counted from the right), so the sign is $(-1)^0 = +1$. But to create an electron in orbital 1, we must "pass through" the electron in orbital 2. The anti-commutation rule charges one factor of $-1$ for each occupied orbital we pass: the sign is $(-1)^1 = -1$. This is the **fermion sign** — the net parity of occupied orbitals below the target position. Every encoding must inject this sign into the qubit representation.
+
 The mathematical statement is the anti-commutation relation:
 
 $$a_p^\dagger a_q^\dagger = -a_q^\dagger a_p^\dagger$$

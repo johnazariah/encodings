@@ -159,6 +159,8 @@ The last two rows are the entire argument for encoding choice, in two numbers.
 - The set $\{R_z, R_x, \text{CNOT}\}$ is **universal**: it can implement any quantum operation, including everything we need for quantum simulation.
 - The **CNOT staircase** decomposes a Pauli rotation into $2(w-1)$ CNOTs, where $w$ is the Pauli weight. This is the conversion factor from encoding choice to circuit cost.
 
+> **Multi-qubit states and tensor products:** An $n$-qubit state is described by the **tensor product** (Kronecker product) of individual qubit states: $\lvert\psi\rangle = \lvert q_0\rangle \otimes \lvert q_1\rangle \otimes \cdots \otimes \lvert q_{n-1}\rangle$. A Pauli string like $X_0 Z_1 I_2$ means "apply $X$ to qubit 0, $Z$ to qubit 1, and $I$ to qubit 2" — formally, the $4 \times 4 \times 2 = 8$-dimensional matrix $X \otimes Z \otimes I$. When we say two operators "commute" ($[A, B] = AB - BA = 0$) or "anti-commute" ($\{A, B\} = AB + BA = 0$), we mean these tensor-product matrices. The encoding problem (next chapter) is precisely the challenge of translating anti-commuting fermionic operators into operators built from commuting qubit tensor products.
+
 ## Common Mistakes
 
 1. **"A quantum computer tries all possibilities at once."** It doesn't. It maintains a superposition and uses interference to amplify the right answer. The exponential speedup comes from interference, not parallelism.

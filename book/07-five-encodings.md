@@ -20,6 +20,8 @@ This is the motivation for alternative encodings: **can we represent the same ph
 
 Chapter 5 showed that Bravyi–Kitaev achieves $O(\log_2 n)$ weight using a Fenwick tree, and ternary tree encodings achieve $O(\log_3 n)$. But a natural question arises: if the Pauli strings are different, how do we know we're still computing the same molecule?
 
+The answer is that all valid encodings preserve the **canonical anti-commutation relations** (CAR): $\{a_p^\dagger, a_q\} = \delta_{pq}$. Any encoding that faithfully maps the CAR from fermionic operators to Pauli operators must produce a Hamiltonian with the same spectrum — because the eigenvalues of the Hamiltonian depend only on the algebraic relations among the operators, not on the specific matrix form. Different encodings are related by a unitary change of basis on the qubit Hilbert space, and unitary transformations preserve eigenvalues. This is the mathematical guarantee that the physics is encoding-independent.
+
 ---
 
 ## Do Different Encodings Give the Same Answer?
@@ -75,7 +77,7 @@ FockMap's test suite verifies the CAR at the Pauli string level for every encodi
 
 $$(\text{encoded } a_i^\dagger)(\text{encoded } a_j) + (\text{encoded } a_j)(\text{encoded } a_i^\dagger) = \delta_{ij} \cdot I$$
 
-for all pairs $(i, j)$, using symbolic Pauli multiplication. If this check passes, the encoding is valid and the eigenvalues are guaranteed to match. No numerical eigenvalue comparison is needed — the algebraic verification is sufficient.
+for all pairs $(i, j)$, using symbolic Pauli multiplication. If this check passes, the encoding is algebraically valid and the encoded Hamiltonian is guaranteed to preserve the spectrum in principle. In practice, we still compare eigenvalues numerically in Chapter 8 to verify the full pipeline implementation — because algebraic correctness of the encoding does not protect against bugs in integral processing, coefficient assembly, or like-term combination.
 
 This is not just a theoretical nicety. It is what makes encoding choice a **free optimization**: you can pick the encoding that minimizes circuit cost, knowing — with mathematical certainty, not just empirical evidence — that the physics is preserved.
 

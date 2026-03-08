@@ -1,18 +1,20 @@
 # Chapter 19: Algorithms — VQE and QPE
 
-_The Hamiltonian is built, tapered, and Trotterized. Now: what does the quantum computer actually do with it?_
+_Chapters 17 and 18 used exact diagonalisation as a stand-in energy oracle. This chapter replaces that stand-in with the quantum algorithms that run on real hardware._
 
 ## In This Chapter
 
 - **What you'll learn:** How the two major quantum chemistry algorithms — VQE (variational, near-term) and QPE (phase estimation, fault-tolerant) — consume the encoded Hamiltonian, and what measurement infrastructure they require.
 - **Why this matters:** FockMap produces the *input* to these algorithms. Understanding what the algorithms need helps you make better encoding and tapering choices — and understand why the CNOT counts from Chapter 16 matter so much.
-- **Prerequisites:** Chapters 17–18 (the complete pipeline and bond angle scan).
+- **Prerequisites:** Chapters 16–18 (cost analysis, pipeline, bond angle scan).
 
 ---
 
 ## Two Algorithms, One Input
 
-In Chapter 18, we sidestepped a question. When we scanned the bond angle, we said "compute the ground-state energy at each angle" — but we didn't say *how*. For small systems (H₂, H₂O in minimal basis), we can diagonalise the Hamiltonian matrix classically. For larger systems, we need a quantum algorithm.
+In Chapters 17 and 18, we computed ground-state energies by exact diagonalisation — building the Hamiltonian as a matrix and finding its smallest eigenvalue classically. For H₂ ($2^4 = 16$-dimensional matrix) and H₂O in minimal basis ($2^{11} = 2{,}048$-dimensional after tapering), exact diagonalisation is trivially feasible on a laptop. But for larger systems — N₂ (20 qubits → $2^{20} \approx 10^6$) or FeMo-co (108 qubits → $2^{108} \approx 10^{32}$) — the matrix does not fit in any existing memory.
+
+This is where quantum algorithms enter. Instead of building the exponentially large matrix, a quantum computer prepares the state directly in $n$ qubits and extracts the energy through measurement. The pipeline output — the Pauli Hamiltonian $\hat{H} = \sum_k c_k P_k$ — is exactly what these algorithms consume.
 
 There are two main approaches, and they make very different demands on the hardware.
 
@@ -70,7 +72,9 @@ Each measurement gives a binary outcome ($\pm 1$). To estimate the expectation v
 
 $$N_\text{shots} \sim \frac{1}{\epsilon^2}\left(\sum_k \lvert c_k\rvert\right)^2$$
 
-The sum $\sum_k |c_k|$ is called the **1-norm** of the Hamiltonian, and it determines the measurement cost. Tapering reduces this norm (fewer terms, smaller coefficients), which is yet another benefit that compounds with the qubit reduction.
+The sum $\sum_k |c_k|$ is called the **1-norm** of the Hamiltonian, and it determines the measurement cost. This estimate assumes each Pauli term is measured independently (or in qubit-wise commuting groups) and that the dominant error source is finite sampling. In practice, correlated measurement strategies (classical shadows, derandomisation) can improve the scaling, but the 1-norm estimate provides a useful and widely-cited baseline (Wecker et al., Phys. Rev. A 92, 042303, 2015).
+
+Tapering reduces this norm (fewer terms, smaller coefficients), which is yet another benefit that compounds with the qubit reduction.
 
 ```fsharp
 let shots = estimateShots 0.0016 hamiltonian  // chemical accuracy = 1.6 mHa
@@ -153,7 +157,7 @@ The 50× jump from H₂ to H₂O is driven by two factors: more qubits (more ter
 | **Bottleneck** | Shot count, barren plateaus | Circuit depth, error correction |
 | **FockMap provides** | Hamiltonian + measurement groups | Hamiltonian + Trotter circuits |
 
-For the bond angle scan in Chapter 18, we used exact diagonalisation — which is equivalent to running QPE with a perfect quantum computer. On real near-term hardware, you would use VQE at each angle, accumulating enough shots to estimate the energy to chemical accuracy. The structure of the scan is the same; only the energy-evaluation subroutine changes.
+For the bond angle scan in Chapter 18, we used exact diagonalisation to obtain the same target quantity that an ideal QPE calculation would produce: the ground-state energy at each geometry. On real near-term hardware, you would use VQE at each angle, accumulating enough shots to estimate the energy to chemical accuracy. The structure of the scan is the same; only the energy-evaluation subroutine changes.
 
 ---
 
@@ -186,6 +190,20 @@ A typical grouping might look like:
 Group 1 contains all the diagonal (Z-only) terms — they can all be measured in the standard computational basis. The off-diagonal groups each require basis rotations (Hadamard and S gates) before measurement.
 
 This is the bridge between FockMap's algebraic output and the experimental reality of a quantum computer: each group becomes a circuit variant, each circuit runs thousands of times, and the statistics are combined to estimate the energy.
+
+---
+
+## What FockMap Does — and What It Doesn't
+
+FockMap's scope ends at circuit generation. It is important to be clear about what lies *outside* that scope:
+
+- **Ansatz design**: VQE requires a parameterized circuit (ansatz). FockMap does not design ansätze — it provides Trotter circuits and Pauli operator pools that downstream tools (Qiskit, tket, PennyLane) can use as building blocks.
+- **Classical optimisation**: the VQE optimisation loop (choosing $\boldsymbol{\theta}$, handling barren plateaus, selecting an optimizer like L-BFGS or COBYLA) is handled by the execution framework, not FockMap.
+- **Hardware execution**: submitting circuits to real devices, managing job queues, handling device calibration — all downstream.
+- **Error mitigation**: ZNE, PEC, symmetry verification — these operate on measurement outcomes and are handled by execution frameworks. (FockMap's tapering symmetries are useful *inputs* to symmetry verification, but FockMap doesn't implement the mitigation itself.)
+- **Noise modelling**: hardware noise interacts with both Trotter error and measurement error. FockMap's cost estimates are for *ideal* (noiseless) circuits; real performance depends on device characteristics.
+
+> **Barren plateaus**, briefly: as the number of qubits grows, randomly initialized VQE ansätze tend to produce cost function landscapes where the gradient vanishes exponentially — a phenomenon called a barren plateau. This is a fundamental challenge for VQE at scale, and it is one reason why adaptive methods (ADAPT-VQE) and physically motivated ansätze (e.g., UCCSD) are preferred over hardware-efficient random circuits.
 
 ---
 

@@ -60,6 +60,8 @@ This is the same separation of concerns that makes compiled languages fast: sepa
 
 For H₂ we had 4 spin-orbitals and 16 integrals. For H₂O in a minimal basis (STO-3G), we have 14 spin-orbitals and hundreds of integrals — too many to type by hand. In practice, you generate them with PySCF:
 
+> **Active space and frozen core:** H₂O has 10 electrons, but the oxygen 1s core electrons are tightly bound and contribute negligibly to chemical bonding. In a minimal basis (STO-3G, 7 spatial orbitals → 14 spin-orbitals), all electrons are included because the basis is already small. In larger basis sets, practitioners typically "freeze" the core electrons — removing them from the active space and treating their contribution as a constant energy offset. This reduces the number of spin-orbitals (and therefore qubits) without significantly affecting the bond angle or other valence properties. The integrals generated below include all electrons because STO-3G is minimal; for larger-basis production calculations, the PySCF `mc.CASCI` or `mc.CASSCF` interface would be used to define the active space explicitly.
+
 ```python
 from pyscf import gto, scf
 import numpy as np

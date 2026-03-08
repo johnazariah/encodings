@@ -227,16 +227,29 @@ The gate array is the same in all three cases. Only the serialisation differs.
 
 ---
 
-## Verification
+## What Export Does Not Solve
 
-Whichever format you choose, verify the output by:
+FockMap's circuit export produces *logical* circuits — abstract sequences of ideal gates. Before a logical circuit can run on real hardware, several additional steps are required. These are handled by platform-specific compilers (Qiskit transpiler, tket, Q# resource estimator), not by FockMap:
 
-1. Loading the circuit in a simulator
-2. Running a statevector simulation
-3. Computing $\langle\hat{H}\rangle$ from the statevector
-4. Comparing against the exact ground-state energy from Chapter 8
+- **Native gate lowering**: hardware devices implement a small native gate set (e.g., $\{\sqrt{X}, R_z, \text{CZ}\}$ for IBM, $\{R_{xx}, GPI, GPI2\}$ for IonQ). The logical gates must be decomposed into the native set.
+- **Qubit routing**: physical qubits have limited connectivity (e.g., heavy-hex topology on IBM devices). SWAP gates must be inserted to bring non-adjacent qubits together for two-qubit gates. This can increase CNOT count by 2–5×.
+- **Circuit optimisation**: transpilers cancel redundant gates, commute operations to reduce depth, and apply template-matching identities. This typically reduces gate count by 20–40% beyond FockMap's unoptimised output.
+- **Verification after import**: hardware compilers may reorder or decompose gates. Always verify that the transpiled circuit still produces the correct expectation values on a simulator before submitting to hardware.
 
-For H₂, the exact energy is $-1.8572$ Ha (including nuclear repulsion). The Trotterised circuit should produce an energy within $O(\Delta t^2)$ of this — about $-1.856$ Ha at $\Delta t = 0.1$. If the numbers match, the pipeline is correct from integrals to circuit.
+---
+
+## Verification Checklist
+
+Whichever format you choose, verify the output end-to-end:
+
+1. **Import** the circuit into the target platform (Qiskit, Q#, Cirq)
+2. **Simulate** with a statevector backend (zero noise, exact amplitudes)
+3. **Compute** $\langle\hat{H}\rangle$ from the statevector and compare against the exact eigenvalue from Chapter 8
+4. **Transpile** to the target hardware's native gate set
+5. **Re-simulate** the transpiled circuit and check that the energy is unchanged (within Trotter error)
+6. **Only then** submit to real hardware or a noisy simulator
+
+For H₂, the exact FCI energy is $-1.1373$ Ha (electronic only) or $-1.8572$ Ha (including nuclear repulsion). The Trotterised circuit should produce an energy within $O(\Delta t^2)$ of this — typically within 0.01 Ha at $\Delta t = 0.1$. If the deviation is larger, check the integral convention (Chapter 2) and the encoding consistency (Chapter 8).
 
 ---
 

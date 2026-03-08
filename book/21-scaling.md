@@ -40,7 +40,9 @@ At 4 qubits, all encodings cost the same (Chapter 17). At 14 qubits, the differe
 | N₂ | 20 | ~8,000 | ~2,000 | 4.0× |
 | FeMo-co | ~108 | ~$10^7$ | ~$10^5$ | ~100× |
 
-The ratio grows because JW's Pauli weights grow linearly while TT's grow logarithmically. At FeMo-co scale, the difference is roughly two orders of magnitude. That's not a minor optimisation — it's the difference between a circuit that might run on early fault-tolerant hardware and one that certainly cannot.
+The ratio grows because JW's Pauli weights grow linearly while TT's grow logarithmically. At FeMo-co scale, the difference is roughly two orders of magnitude for the *logical* (pre-transpilation) circuit. After hardware-specific transpilation (qubit routing, native gate decomposition), the absolute gate counts increase for all encodings, but the *relative* advantage of lighter Pauli weights is preserved.
+
+> **Caveat on the estimates:** The CNOT counts in this table are for *unoptimised logical circuits* — the direct output of FockMap's CNOT staircase decomposition. Hardware transpilers typically reduce these by 20–40% through gate cancellation, commutation, and template matching. The estimates for N₂ and FeMo-co are order-of-magnitude projections based on scaling trends, not computed values.
 
 ### Why the Ratio Matters
 
@@ -48,7 +50,7 @@ On near-term hardware, each CNOT gate has a finite error rate — typically 0.1�
 
 $$P_\text{success} \approx (1 - \varepsilon)^{C_\text{CNOT}}$$
 
-At $\varepsilon = 0.5\%$ and 1,800 CNOTs (JW for H₂O), $P_\text{success} \approx 0.01\%$. At 600 CNOTs (TT for H₂O), $P_\text{success} \approx 5\%$. That's a 500× improvement in success probability from encoding choice alone — before error mitigation, before hardware improvements, before anything else.
+At $\varepsilon = 0.5\%$ and 1,800 CNOTs (JW for H₂O), $P_\text{success} \approx 0.01\%$. At 600 CNOTs (TT for H₂O), $P_\text{success} \approx 5\%$. Under these typical assumptions, that's roughly a 500× improvement in success probability from encoding choice alone — before error mitigation, before hardware improvements, before anything else. (In practice, error mitigation techniques like zero-noise extrapolation can partially compensate for low success rates, but they impose their own sampling overhead.)
 
 This is why the chapters on encoding (5–8), tapering (9–12), and cost analysis (16) matter. They're not academic exercises. They directly determine whether a simulation succeeds or fails on real hardware.
 

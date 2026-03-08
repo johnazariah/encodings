@@ -186,6 +186,25 @@ These guards prevent the two most common tapering bugs: applying tapering to a q
 - For the global ground state, sweep all $2^k$ sectors.
 - FockMap validates inputs to prevent silent errors.
 
+## Sector Selection: A Practical Workflow
+
+Choosing the correct sector is a common source of confusion for first-time practitioners. Here is a concrete decision procedure:
+
+1. **If you know the conserved quantities** (e.g., particle number parity, spin projection), compute the expected eigenvalue for each generator and set the sector accordingly. For molecular ground states, the particle number is fixed, so parity-related generators should be set to match the electron count.
+
+2. **If the physical sector is unclear**, sweep all $2^k$ sectors. For each sector, diagonalise (or VQE-evaluate) the tapered Hamiltonian and record the ground-state energy. The global minimum across sectors is the ground-state energy. For H₂ with 2 diagonal qubits, this means 4 sector evaluations — trivial. For larger systems with $k = 3$ or $4$, it means 8–16 evaluations — still cheap compared to the Hamiltonian construction.
+
+3. **For production workflows**, always verify: compare the tapered ground-state energy against the untapered eigenvalue (if computable) or against a known reference. A sector mismatch shows up as a ground-state energy that is *higher* than the correct value — never lower.
+
+```fsharp
+// Sweep all sectors for a 2-generator system
+for s0 in [+1; -1] do
+    for s1 in [+1; -1] do
+        let result = taperDiagonalZ2 [(q0, s0); (q1, s1)] hamiltonian
+        let e0 = exactGroundStateEnergy result.Hamiltonian
+        printfn "Sector (%+d, %+d): E₀ = %.6f Ha" s0 s1 e0
+```
+
 ## Common Mistakes
 
 1. **Assuming the $+1$ sector always contains the ground state.** It may not — the ground state could be in any sector.
