@@ -1,4 +1,4 @@
-# Chapter 12: From Hamiltonian to Time Evolution
+# Chapter 13: From Hamiltonian to Time Evolution
 
 _We have a Pauli-sum Hamiltonian. A quantum computer doesn't execute Hamiltonians — it executes gates. This chapter bridges the gap._
 

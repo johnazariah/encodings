@@ -1,4 +1,4 @@
-# Chapter 16: OpenQASM Generation
+# Chapter 17: OpenQASM Generation
 
 > **DRAFT — This chapter will be finalized after the circuit output module is implemented.**
 > **The API examples below reflect the planned design; the code is not yet available.**

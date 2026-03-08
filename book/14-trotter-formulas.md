@@ -1,4 +1,4 @@
-# Chapter 13: First and Second Order Trotter in FockMap
+# Chapter 14: First and Second Order Trotter in FockMap
 
 _From Hamiltonian to rotation list — the FockMap Trotterization API._
 

@@ -1,4 +1,4 @@
-# Chapter 10: General Clifford Tapering
+# Chapter 11: General Clifford Tapering
 
 _When no single qubit is diagonal, multi-qubit Z₂ symmetries may still exist. A Clifford rotation reveals them._
 

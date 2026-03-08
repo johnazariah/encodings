@@ -1,4 +1,4 @@
-# Chapter 14: The CNOT Staircase
+# Chapter 15: The CNOT Staircase
 
 _Every Pauli rotation becomes a sequence of elementary gates. This chapter shows exactly how — and why Pauli weight determines circuit cost._
 

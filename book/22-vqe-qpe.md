@@ -1,4 +1,4 @@
-# Chapter 21: VQE, QPE, and Beyond
+# Chapter 22: VQE, QPE, and Beyond
 
 _The Hamiltonian is encoded, tapered, Trotterized, and exported. Now what? This chapter connects the pipeline to the quantum algorithms that use it._
 

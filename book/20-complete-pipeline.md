@@ -1,4 +1,4 @@
-# Chapter 19: The Complete Pipeline — H₂ End to End
+# Chapter 20: The Complete Pipeline — H₂ End to End
 
 _Every step, one molecule, one script. From geometry to quantum circuit in under 50 lines of code._
 

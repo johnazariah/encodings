@@ -1,4 +1,4 @@
-# Chapter 18: Python Bridge
+# Chapter 19: Python Bridge
 
 _FockMap is an F# library. The quantum computing ecosystem is largely Python. This chapter bridges the gap._
 

@@ -1,4 +1,4 @@
-# Chapter 15: Cost Analysis Across Encodings
+# Chapter 16: Cost Analysis Across Encodings
 
 _Bringing it all together: a quantitative comparison of encoding + tapering + Trotterization cost for real molecules._
 

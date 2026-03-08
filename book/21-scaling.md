@@ -1,4 +1,4 @@
-# Chapter 20: Scaling — From H₂ to FeMo-co
+# Chapter 21: Scaling — From H₂ to FeMo-co
 
 > **TODO: The bond angle and vibrational mode computations need real FCI eigenvalues**
 > **from our encoded Hamiltonians, not just HF energies from PySCF.**

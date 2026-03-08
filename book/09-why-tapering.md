@@ -1,4 +1,4 @@
-# Chapter 8: Why Tapering?
+# Chapter 9: Why Tapering?
 
 _The Hamiltonian is correct and verified. But it may be bigger than it needs to be. This chapter shows why encoded Hamiltonians often contain redundant qubits — and how to detect them._
 
@@ -88,13 +88,15 @@ We'll develop the diagonal case in Chapter 9, the Clifford generalization in Cha
 
 ---
 
-## A Physical Analogy
+## Why Tapering Is Free
 
-Think of tapering as removing gauge degrees of freedom.
+It's worth emphasizing: tapering does not approximate. It does not truncate. It does not discard information.
 
-In classical electromagnetism, the vector potential $\mathbf{A}$ has a gauge freedom — you can add the gradient of any scalar field without changing the physics. Fixing the gauge (Coulomb gauge, Lorenz gauge) reduces the number of independent variables without losing information.
+When we remove a tapered qubit, we are removing a degree of freedom whose value was *already determined* — fixed by a conservation law (like particle number or spin parity) that the Hamiltonian respects. The qubit was never free to vary in the first place; it was constrained by symmetry to a single eigenvalue in the sector we're studying. Removing it simply acknowledges this constraint explicitly.
 
-Tapering does something analogous: it identifies qubits whose value is fixed by symmetry (the "gauge") and removes them from the representation. The remaining qubits carry all the physical information.
+The eigenvalues of the tapered Hamiltonian are a *subset* of the eigenvalues of the original — specifically, the eigenvalues in the chosen symmetry sector. No eigenvalue is lost; we just stop tracking the ones that belong to other sectors.
+
+This is why we taper *before* Trotterization, not after: the circuit should operate on the physically relevant Hilbert space from the start, not carry redundant qubits through every gate layer.
 
 ---
 

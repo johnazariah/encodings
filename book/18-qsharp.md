@@ -1,4 +1,4 @@
-# Chapter 17: Q# Integration
+# Chapter 18: Q# Integration
 
 _Azure Quantum's native language. FockMap generates Q# operations from the same gate sequences._
 

@@ -1,4 +1,4 @@
-# Chapter 11: Tapering Benchmarks
+# Chapter 12: Tapering Benchmarks
 
 _Numbers, not promises. This chapter measures exactly how much tapering saves on real Hamiltonians._
 

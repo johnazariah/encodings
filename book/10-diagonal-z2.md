@@ -1,4 +1,4 @@
-# Chapter 9: Diagonal Z₂ Symmetries
+# Chapter 10: Diagonal Z₂ Symmetries
 
 _The simplest form of tapering: find qubits that are always I or Z, fix their eigenvalue, and remove them._
 
