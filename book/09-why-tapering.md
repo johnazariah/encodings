@@ -68,23 +68,23 @@ And these savings **compound** with encoding choice. A ternary-tree encoding on 
 
 FockMap implements two levels of increasing generality:
 
-### Level 1: Diagonal Z₂ (v1)
+### Level 1: Diagonal Z₂
 
-A qubit $j$ is *diagonally taperable* if every term in the Hamiltonian has only I or Z at position $j$. This means qubit $j$ is a conserved quantity — its eigenvalue ($+1$ or $-1$) never changes during time evolution. We can fix it to a chosen value and remove it.
+A qubit $j$ is *diagonally taperable* if every term in the Hamiltonian has only I or Z at position $j$ — never X or Y. This means qubit $j$'s value is determined by symmetry: it is always $+1$ or always $-1$ in the sector we care about, and it never gets flipped during the simulation. We can fix it to that value and remove it from the problem entirely.
 
-**Detection:** Scan every Pauli term, check position $j$. If all are I or Z → taperable.
+**How you detect it:** Look at each qubit position across all Pauli terms. If you never see X or Y in that column, the qubit is taperable. It's a simple scan — FockMap checks this in one pass over the Hamiltonian.
 
-**Cost:** $O(n \times m)$ where $m$ is the number of terms. Fast.
+### Level 2: General Clifford
 
-### Level 2: General Clifford (v2)
+Sometimes no *single* qubit is purely diagonal, but a *combination* of qubits is. For example, $Z_0 Z_1$ might commute with every Hamiltonian term even though $Z_0$ alone does not. This means the *product* of qubits 0 and 1 is conserved, even though neither one is individually.
 
-Some symmetries involve multiple qubits. The operator $Z_0 Z_1$ might commute with every Hamiltonian term even though $Z_0$ alone does not. Such a multi-qubit generator can be rotated onto a single qubit using a Clifford circuit (Hadamard, S, and CNOT gates), after which it becomes diagonally taperable.
+In this case, we can apply a small rotation circuit (built from Hadamard, S, and CNOT gates — the same gates from Chapter 4) that rearranges the Hamiltonian so that the conserved combination ends up on a single qubit. After the rotation, that qubit is diagonally taperable, and we remove it just like in Level 1.
 
-**Detection:** Compute the null space of a commutation check matrix over GF(2) using the symplectic representation of Pauli strings.
+**How you detect it:** FockMap searches for Pauli operators that commute with every term in the Hamiltonian — these are the symmetry generators. The mathematical machinery behind this search involves binary linear algebra, which we'll develop step by step in Chapter 11.
 
-**Cost:** $O(n^2 \times m)$ for the commutation matrix, $O(n^3)$ for Gaussian elimination. Still fast for molecules up to ~100 qubits.
+The important thing at this stage is the *idea*: even when the symmetry isn't visible on a single qubit, it may be hiding in a combination of qubits, and a rotation can expose it.
 
-We'll develop the diagonal case in Chapter 9, the Clifford generalization in Chapter 10, and benchmarks in Chapter 11.
+We'll work through the diagonal case in Chapter 10, the Clifford generalization in Chapter 11, and concrete benchmarks in Chapter 12.
 
 ---
 
