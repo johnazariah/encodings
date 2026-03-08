@@ -1,12 +1,52 @@
 # Chapter 13: From Hamiltonian to Time Evolution
 
-_We have a Pauli-sum Hamiltonian. A quantum computer doesn't execute Hamiltonians — it executes gates. This chapter bridges the gap._
+_We have a Hamiltonian — a complete description of the molecule's physics. But a quantum computer can't execute a description. It needs instructions. This chapter is about turning the description into instructions._
 
 ## In This Chapter
 
-- **What you'll learn:** Why quantum simulation requires time evolution $e^{-iHt}$, why this is hard to implement directly, and how product formulas (Trotterization) provide a practical approximation.
-- **Why this matters:** Trotterization is the standard method for converting a Hamiltonian into a gate sequence. Without it, the entire pipeline from molecule to circuit is incomplete.
-- **Prerequisites:** Chapters 1–11 (you have a verified, optionally tapered, Pauli-sum Hamiltonian).
+- **What you'll learn:** Why quantum simulation boils down to implementing time evolution $e^{-iHt}$, what this operator physically represents, why it's hard to implement when the Hamiltonian has many non-commuting terms, and how Trotterization provides the practical bridge.
+- **Why this matters:** Without this bridge, the pipeline from molecule to circuit is incomplete. This is the chapter that turns a symbolic object into something a quantum processor can actually run.
+- **Prerequisites:** Chapters 1–12 (you have a verified, optionally tapered, Pauli-sum Hamiltonian and understand gates from Chapter 4).
+
+---
+
+## What We Have, and What We Need
+
+After twelve chapters, our pipeline has produced a remarkable object: a symbolic Pauli-sum Hamiltonian
+
+$$\hat{H} = \sum_{k=1}^{L} c_k P_k$$
+
+verified to give the correct eigenvalues, potentially tapered to use fewer qubits, with encoding choice optimizing the Pauli weight. This object captures *everything* about the molecule's electronic structure — every orbital energy, every Coulomb repulsion, every quantum exchange interaction.
+
+But it is a *description*, not a *program*. A quantum computer doesn't accept descriptions. It accepts a sequence of gates — Hadamard, CNOT, $R_z$ — applied to specific qubits in a specific order. The Hamiltonian tells us *what* to compute; the circuit tells the machine *how* to compute it.
+
+To cross this gap, we need to understand a deep idea: the connection between the Hamiltonian (which describes energy) and time evolution (which describes change).
+
+---
+
+## Energy and Time: Two Sides of the Same Operator
+
+Here is a fact that physics students learn early but whose implications take years to fully appreciate:
+
+> **The Hamiltonian does double duty.** It tells you the energy of a system *and* it tells you how the system evolves in time. The same operator. Both roles.
+
+The Schrödinger equation makes this precise:
+
+$$i\hbar \frac{d}{dt}\lvert\psi(t)\rangle = \hat{H}\lvert\psi(t)\rangle$$
+
+Read it as: "the rate at which the quantum state changes equals the Hamiltonian applied to that state." The Hamiltonian is both the *energy observable* (its eigenvalues are the energies) and the *generator of time evolution* (it drives the dynamics).
+
+The formal solution for a time-independent Hamiltonian is:
+
+$$\lvert\psi(t)\rangle = e^{-i\hat{H}t/\hbar}\lvert\psi(0)\rangle$$
+
+Setting $\hbar = 1$ (as is standard in atomic units), the **time-evolution operator** is:
+
+$$U(t) = e^{-i\hat{H}t}$$
+
+This operator is unitary — it preserves probabilities, as any physical evolution must. Its eigenvalues are $e^{-iE_k t}$, where $E_k$ are the energy eigenvalues. The energies are *encoded as phases* of the time-evolution operator.
+
+This dual role is what makes quantum simulation work: if you can implement $U(t)$ on a quantum computer, you can extract the energies by reading the phases. That's the core idea behind both QPE (which reads the phases directly) and VQE (which estimates $\langle H \rangle$ by measuring individual Pauli terms).
 
 ---
 
@@ -34,20 +74,14 @@ But a quantum computer doesn't accept a Hamiltonian as input. It accepts a seque
 
 $$\text{Hamiltonian } \hat{H} \;\xrightarrow{\;?\;}\; \text{Gate sequence}$$
 
-### What does "simulating a molecule" actually mean?
+### An important clarification
 
-This is worth being precise about, because the phrase "quantum simulation" is misleading. We are **not** watching electrons move around in real time. We are not running the chemistry forward like a molecular dynamics simulation. We are doing something more subtle.
+The phrase "quantum simulation" is misleading. We are **not** watching electrons move in real time, like a molecular dynamics animation. We are not running the chemistry forward. Instead, we are using time evolution as a *mathematical tool*: implement $U(t) = e^{-iHt}$, then extract the energies from its phases.
 
-The ground-state energy is the lowest eigenvalue of $\hat{H}$. The quantum algorithms that extract it — VQE and QPE — both work by manipulating the **time-evolution operator**:
+- **QPE** (Quantum Phase Estimation) applies controlled-$U(t)$ and reads the energy eigenvalue directly as a binary phase, written into an ancilla register.
+- **VQE** (Variational Quantum Eigensolver) doesn't use $U(t)$ as a whole, but measures $\langle\hat{H}\rangle = \sum_k c_k \langle P_k\rangle$ term by term — and each measurement involves a Pauli rotation $e^{-i\theta P_k}$, which is a single-term slice of the time-evolution operator.
 
-$$U(t) = e^{-i\hat{H}t}$$
-
-This operator describes how a quantum state evolves under the Hamiltonian for time $t$. It is unitary (preserves probabilities), and its eigenvalues are $e^{-iE_k t}$ — phases that encode the energies $E_k$. Both VQE and QPE are, at their core, methods for extracting those phases.
-
-- **QPE** applies controlled-$U(t)$ to read the phase directly: the eigenvalue $E_0$ appears as a binary fraction in an ancilla register.
-- **VQE** doesn't use $U(t)$ explicitly, but measures $\langle\hat{H}\rangle = \sum_k c_k \langle P_k\rangle$ by measuring each Pauli term — and each measurement involves a Pauli rotation $e^{-i\theta P_k}$, which is a single term of the time evolution.
-
-In both cases, the primitive operation is a **Pauli rotation**: $e^{-i\theta P}$ for a single Pauli string $P$. The question is: how do we implement $e^{-i\hat{H}t}$ when $\hat{H}$ is a sum of many such terms?
+In both cases, the primitive operation is a **Pauli rotation**: $e^{-i\theta P}$ for a single Pauli string $P$. The question is: how do we implement the full $e^{-i\hat{H}t}$ when $\hat{H}$ is a sum of many such terms that don't commute with each other?
 
 ---
 
@@ -155,9 +189,10 @@ Each rotation $e^{-i\theta P}$ must then be decomposed into elementary gates (H,
 - Trotter, H. F. "On the product of semi-groups of operators." *Proc. Am. Math. Soc.* 10, 545 (1959). The original product formula.
 - Suzuki, M. "General theory of fractal path integrals with applications to many-body theories and statistical physics." *J. Math. Phys.* 32, 400 (1991). Higher-order product formulas.
 - Childs, A. M. and Su, Y. "Nearly optimal lattice simulation by product formulas." *Phys. Rev. Lett.* 123, 050503 (2019). Modern error bounds for Trotter formulas.
+- Low, G. H. and Chuang, I. L. "Hamiltonian Simulation by Qubitization." *Quantum* 3, 163 (2019); arXiv:1610.06546 (2016). The optimal-complexity alternative to Trotterization, encoding the Hamiltonian directly into a quantum walk operator.
 
 ---
 
-**Previous:** [Chapter 11 — Tapering Benchmarks](11-tapering-benchmarks.html)
+**Previous:** [Chapter 12 — Tapering Benchmarks](12-tapering-benchmarks.html)
 
-**Next:** [Chapter 13 — First and Second Order Trotter](13-trotter-formulas.html)
+**Next:** [Chapter 14 — Trotterization in Practice](14-trotter-formulas.html)
