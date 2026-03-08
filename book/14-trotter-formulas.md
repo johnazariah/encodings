@@ -104,7 +104,7 @@ A practical rule of thumb: $\Delta t \leq 1 / \lVert\hat{H}\rVert_1$, where the 
 
 For H₂: $\lVert\hat{H}\rVert_1 \approx 3.7$ Ha, giving $\Delta t \lesssim 0.27$. Our choice of $\Delta t = 0.1$ is comfortably within this bound.
 
-For H₂O (12 qubits): $\lVert\hat{H}\rVert_1$ is larger (~30 Ha), so $\Delta t$ must be smaller — around $0.03$. This means more Trotter steps per unit time, which means more CNOTs. This is another reason larger molecules are harder to simulate.
+For H₂O (14 spin-orbitals, or about 11 qubits after tapering): $\lVert\hat{H}\rVert_1$ is larger (~30 Ha), so $\Delta t$ must be smaller — around $0.03$. This means more Trotter steps per unit time, which means more CNOTs. This is another reason larger molecules are harder to simulate.
 
 ---
 
