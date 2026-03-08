@@ -68,11 +68,23 @@ The grouping matters because each distinct circuit must be run many times (to ac
 
 ### Shot Counts
 
-Each measurement gives a binary outcome ($\pm 1$). To estimate the expectation value $\langle P_k \rangle$ to precision $\delta$, you need approximately $1/\delta^2$ repetitions ("shots"). The total shot count for estimating $\langle\hat{H}\rangle$ to energy precision $\epsilon$ is:
+Each measurement gives a binary outcome ($\pm 1$). To estimate the expectation value $\langle P_k \rangle$ to precision $\delta$, you need approximately $1/\delta^2$ repetitions ("shots"). But where does the total shot count formula come from? Let's derive it.
 
-$$N_\text{shots} \sim \frac{1}{\epsilon^2}\left(\sum_k \lvert c_k\rvert\right)^2$$
+**The energy estimator.** The energy is $\langle\hat{H}\rangle = \sum_k c_k \langle P_k \rangle$. Each $\langle P_k \rangle$ is estimated from $N_k$ measurement shots, giving an estimator $\hat{m}_k$ with variance $\text{Var}(\hat{m}_k) \leq 1/N_k$ (since each shot yields $\pm 1$, the variance of a single outcome is at most 1).
 
-The sum $\sum_k |c_k|$ is called the **1-norm** of the Hamiltonian, and it determines the measurement cost. This estimate assumes each Pauli term is measured independently (or in qubit-wise commuting groups) and that the dominant error source is finite sampling. In practice, correlated measurement strategies (classical shadows, derandomisation) can improve the scaling, but the 1-norm estimate provides a useful and widely-cited baseline (Wecker et al., Phys. Rev. A 92, 042303, 2015).
+**Error propagation.** The variance of the total energy estimate is:
+
+$$\text{Var}(\hat{E}) = \sum_k c_k^2 \,\text{Var}(\hat{m}_k) \leq \sum_k \frac{c_k^2}{N_k}$$
+
+**Optimal allocation.** If we have a total shot budget $N_\text{total} = \sum_k N_k$ and want to minimise $\text{Var}(\hat{E})$, Lagrange optimisation gives the optimal allocation $N_k \propto |c_k|$. Substituting back:
+
+$$\text{Var}(\hat{E}) = \frac{1}{N_\text{total}} \left(\sum_k |c_k|\right)^2$$
+
+**Setting the target.** For energy precision $\epsilon$ (meaning standard deviation $\leq \epsilon$), we need $\text{Var}(\hat{E}) \leq \epsilon^2$, giving:
+
+$$N_\text{total} \geq \frac{1}{\epsilon^2}\left(\sum_k \lvert c_k\rvert\right)^2$$
+
+This is the shot-count formula. The key quantity is the **1-norm** $\sum_k |c_k|$ — it determines the measurement cost because terms with larger coefficients contribute more variance and demand more shots. This estimate assumes each Pauli term is measured independently (or in qubit-wise commuting groups) and that the dominant error source is finite sampling. In practice, correlated measurement strategies (classical shadows, derandomisation) can improve the scaling, but the 1-norm estimate provides a useful and widely-cited baseline (Wecker et al., Phys. Rev. A 92, 042303, 2015).
 
 Tapering reduces this norm (fewer terms, smaller coefficients), which is yet another benefit that compounds with the qubit reduction.
 

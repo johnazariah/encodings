@@ -187,11 +187,13 @@ let bondLengths = [| 0.4; 0.5; 0.6; 0.7; 0.74; 0.8; 0.9; 1.0;
                      1.2; 1.4; 1.6; 1.8; 2.0; 2.5; 3.0; 4.0 |]
 
 for R in bondLengths do
-    let integrals = loadH2Integrals R   // from precomputed file
-    let Vnn = nuclearRepulsion R         // 1/R in atomic units
+    let integrals = loadH2Integrals R   // from precomputed JSON (see below)
+    let Vnn = 1.0 / (R * 1.8897259886)  // nuclear repulsion: 1/R in atomic units
     let Etotal = energyAt integrals + Vnn
     printfn "R = %.2f Å   E = %.6f Ha" R Etotal
 ```
+
+> **Where do `loadH2Integrals` and `exactGroundStateEnergy` come from?** They are helper functions defined in the companion script `book/code/ch17-dissociation-scan.py` (which generates the integral JSON files) and `book/code/ch17-pipeline.fsx` (which reads them). `loadH2Integrals R` reads a JSON file mapping integral keys like `"0,1"` to complex values — the same `Map<string, Complex>` format our `factory` function expects. `exactGroundStateEnergy` constructs the $2^n \times 2^n$ Hamiltonian matrix from the Pauli terms and returns its smallest eigenvalue via standard linear algebra. Both are thin wrappers — the real work is done by the FockMap API calls shown in the text.
 
 ### The Result
 

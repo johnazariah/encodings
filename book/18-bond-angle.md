@@ -92,7 +92,19 @@ def h2o_integrals(angle_degrees, bond_length=0.9584):
 
 The PySCF script runs on a laptop in seconds. For each angle, it produces the nuclear repulsion energy $V_{nn}$, the one-body integrals $h_{pq}$, and the two-body integrals $h_{pqrs}$. We export these as a JSON map with keys like `"0,1"` and `"0,1,2,3"` — the same format our `factory` function expects.
 
-The companion script `book/code/ch18-bond-angle.fsx` has the full workflow: read the integral files, build the skeleton, scan the angles, and print the energy curve.
+The companion script `book/code/ch18-bond-angle-scan.py` has the full workflow: generate integrals at each angle, write CSVs, and produce the bond angle plot.
+
+The data flows through a simple two-stage pipeline:
+
+```mermaid
+flowchart LR
+    PY["PySCF (Python)<br/>Generate integrals"] -->|"JSON files<br/>(one per angle)"| FM["FockMap (F#)<br/>Encode → Taper → Diagonalise"]
+    FM --> CSV["CSV / Plot<br/>Energy vs angle"]
+    style PY fill:#e8ecf1,stroke:#6b7280
+    style FM fill:#d1fae5,stroke:#059669
+```
+
+PySCF produces the molecular integrals (one JSON file per geometry); FockMap reads them, applies the encoding pipeline, and outputs energies. The JSON format is the same `Map<string, Complex>` (keys like `"0,1"` for one-body and `"0,1,2,3"` for two-body) that every companion script uses.
 
 ---
 
@@ -121,6 +133,7 @@ for angle in angles do
 
     // The ground-state energy is the smallest eigenvalue of the Hamiltonian matrix.
     // For 14 qubits (or ~11 after tapering), exact diagonalisation is still feasible.
+    // exactGroundStateEnergy builds the 2^n × 2^n matrix and returns min(eigenvalues).
     let energy = exactGroundStateEnergy tapered.Hamiltonian
 
     printfn "%.0f°  %.6f Ha" angle energy

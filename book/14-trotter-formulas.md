@@ -134,6 +134,50 @@ These are small numbers — easily within reach of current hardware for H₂. Fo
 
 ---
 
+## How Many Trotter Steps Do I Need?
+
+The Trotter approximation introduces error. How much error, and how many steps are needed to keep it below a target $\epsilon$?
+
+### The error bound
+
+For first-order Trotter with $N$ steps of size $\Delta t = t/N$, the total error is bounded by:
+
+$$\epsilon_\text{Trotter} \leq \frac{t^2}{2N} \sum_{j < k} \lVert [c_j P_j,\; c_k P_k] \rVert$$
+
+The commutator sum $\Lambda = \sum_{j<k} \lVert [c_j P_j, c_k P_k] \rVert$ measures how "badly" the terms fail to commute. If all terms commuted, $\Lambda = 0$ and there would be no Trotter error at all — the product formula would be exact.
+
+For the second-order formula, the error bound improves to:
+
+$$\epsilon_\text{Trotter} \leq \frac{t^3}{12N^2} \sum_{j,k,l} \lVert [[c_j P_j, c_k P_k], c_l P_l] \rVert$$
+
+In practice, practitioners use a simpler (looser) bound: the 1-norm $\lVert H \rVert_1 = \sum_k |c_k|$ provides a conservative estimate:
+
+$$N \geq \frac{t^2 \lVert H \rVert_1^2}{2\epsilon} \quad \text{(first-order)} \qquad N \geq t \sqrt{\frac{t \lVert H \rVert_1^3}{12\epsilon}} \quad \text{(second-order)}$$
+
+### Worked example: H₂ at chemical accuracy
+
+For H₂: $\lVert H \rVert_1 \approx 3.7$ Ha. Target precision: $\epsilon = 1.6 \times 10^{-3}$ Ha (chemical accuracy). Total evolution time: $t = 1$ (one unit of atomic time).
+
+**First-order:**
+
+$$N \geq \frac{(1)^2 \times (3.7)^2}{2 \times 0.0016} = \frac{13.69}{0.0032} \approx 4{,}278 \text{ steps}$$
+
+At 36 CNOTs per step: ~154,000 total CNOTs. That's conservative — the actual commutator-based bound is much tighter because many H₂ terms commute.
+
+**Second-order:**
+
+$$N \geq 1 \times \sqrt{\frac{1 \times (3.7)^3}{12 \times 0.0016}} = \sqrt{\frac{50.65}{0.0192}} \approx \sqrt{2{,}638} \approx 52 \text{ steps}$$
+
+At 72 CNOTs per step: ~3,700 total CNOTs. This is why second-order Trotter is the standard choice — the step count drops by nearly 100×.
+
+### The practical message
+
+For H₂, even the conservative estimate says ~52 second-order steps suffice for chemical accuracy — about 3,700 CNOTs. For H₂O ($\lVert H \rVert_1 \approx 30$ Ha), the step count grows and the per-step cost is higher, pushing the total to ~500,000 CNOTs. These numbers match the resource estimates in Chapter 19.
+
+The tighter commutator-based bounds (Childs and Su, PRL 2019) typically improve on the 1-norm estimate by a factor of 5–50×, because real molecular Hamiltonians have significant commuting structure. But the 1-norm bound is safe, easy to compute, and gives the right order of magnitude.
+
+---
+
 ## Key Takeaways
 
 - A Trotter step converts a Hamiltonian into a list of **Pauli rotations** — each with a Pauli string and an angle.
