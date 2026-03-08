@@ -22,6 +22,8 @@ This is not obvious. It is a theorem, and it follows from the fact that every va
 
 What this means practically: you can pick the encoding that minimizes your circuit cost, knowing you are not sacrificing accuracy. Encoding choice is a **free optimization**.
 
+Recall from Chapter 5 that the H₂ Hamiltonian splits into 11 diagonal terms (classical) and 4 off-diagonal exchange terms (quantum). It is those 4 terms — the ones that generate coherences in the density matrix — whose Pauli weight the encoding controls. All encodings produce the same diagonal terms; they differ only in how they handle the off-diagonal ones. This chapter shows you the differences and when they matter.
+
 ---
 
 ## Five Encodings in Five Lines
@@ -162,7 +164,7 @@ let reverseJW : EncodingScheme =
 let ham = computeHamiltonianWith (encodeOperator reverseJW) h2Factory 4u
 ```
 
-This is what the JOSS paper means by "define a new encoding in 3–5 lines." You can test novel encoding ideas — custom parity structures, hybrid schemes, application-specific topologies — without writing hundreds of lines of infrastructure.
+> **Warning:** Not every set of three functions produces a valid encoding. A valid encoding must preserve the canonical anti-commutation relations $\{a_i, a_j^\dagger\} = \delta_{ij}$. The example above is illustrative — to verify correctness, use FockMap's anti-commutation test infrastructure before trusting results from a custom scheme.
 
 ---
 
