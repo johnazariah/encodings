@@ -1,27 +1,39 @@
 # Chapter 14: Trotterization in Practice
 
-_Chapter 13 gave us the theory. Now we compute: from Hamiltonian to rotation list to gate count._
+_Chapter 13 explained why we need to break the time-evolution operator into small, implementable pieces. This chapter actually does it — and reveals something satisfying: the structure of the Hamiltonian we've been studying since Chapter 6 determines the structure of the circuit._
 
 ## In This Chapter
 
-- **What you'll learn:** How to apply first-order and second-order Trotter decomposition to a real Hamiltonian, what the rotation list looks like, and how to estimate circuit cost before generating a single gate.
-- **Why this matters:** The rotation list is the bridge between the symbolic Hamiltonian and the physical circuit. Getting the angles and ordering right is where theory meets implementation.
+- **What you'll learn:** How to apply first-order and second-order Trotter decomposition to the H₂ Hamiltonian, what the rotation list looks like, how to choose a time step, and how to estimate circuit cost before generating a single gate.
+- **Why this matters:** The rotation list is the bridge between the symbolic Hamiltonian (the physicist's object) and the physical circuit (the engineer's object). This is where the two worlds meet.
 - **Prerequisites:** Chapter 13 (you understand the Trotter–Suzuki formula and why it's needed).
 
 ---
 
-## From Theory to Concrete Rotations
+## What Happens When Theory Meets H₂
 
-Chapter 13 established the idea: break $e^{-i\hat{H}t}$ into a product of single-term rotations $e^{-ic_k P_k \Delta t}$. Now let's apply this to the H₂ Hamiltonian we've been carrying since Chapter 6 and see exactly what comes out.
+In Chapter 13, we developed the Trotter formula in general terms: break $e^{-i\hat{H}t}$ into a product of single-term rotations. The formula looked clean and abstract. Now let's apply it to the actual 15-term Hamiltonian we've been carrying since Chapter 6 — the one we built integral by integral, verified against eigenvalues, and (optionally) tapered.
 
-Recall the 15-term Hamiltonian:
+What comes out the other end is a **rotation list** — an ordered sequence of Pauli rotations, each with:
+- a **Pauli string** (the "axis" of rotation: $XXYY$, $IIZZ$, etc.)
+- a **rotation angle** (the coefficient times the time step)
 
-| # | Pauli String | Coefficient (Ha) |
-|:---:|:---:|:---:|
-| 1 | $IIII$ | $-1.0704$ |
-| 2–5 | $IIIZ$, $IIZI$, $IZII$, $ZIII$ | $\pm 0.09$ to $\pm 0.30$ |
-| 6–11 | $IIZZ$, $IZIZ$, ... | $\pm 0.01$ to $\pm 0.17$ |
-| 12–15 | $XXYY$, $XYYX$, $YXXY$, $YYXX$ | $\pm 0.1744$ |
+This list is the intermediate representation between the symbolic world (where the Hamiltonian lives) and the gate world (where the quantum computer lives). Chapter 15 will decompose each rotation into elementary gates; here, we focus on producing the list and understanding its structure.
+
+Remember what we learned in Chapter 6: the Hamiltonian's terms split into diagonal (classical) and off-diagonal (quantum). That split carries through to the rotation list — the diagonal rotations are cheap ($Z$-only, no CNOTs), and the off-diagonal rotations are expensive ($XXYY$-type, 6 CNOTs each). Trotterization doesn't change this fundamental economics; it just makes it executable.
+
+---
+
+## The H₂ Hamiltonian, One Last Time
+
+Here are our 15 terms, grouped by character:
+
+| Group | Pauli Strings | Coefficients (Ha) | Weight | Character |
+|:---:|:---|:---|:---:|:---|
+| 1 | $IIII$ | $-1.0704$ | 0 | Global phase (drop) |
+| 2–5 | $IIIZ$, $IIZI$, $IZII$, $ZIII$ | $\pm 0.09$ to $\pm 0.30$ | 1 | Orbital energies |
+| 6–11 | $IIZZ$, $IZIZ$, $IZZI$, $ZIIZ$, $ZIZI$, $ZZII$ | $\pm 0.01$ to $\pm 0.17$ | 2 | Coulomb |
+| 12–15 | $XXYY$, $XYYX$, $YXXY$, $YYXX$ | $\pm 0.1744$ | 4 | Exchange (quantum) |
 
 The identity term ($IIII$) contributes a global phase $e^{-i(-1.0704)t}$ which has no observable effect — it shifts all eigenvalues equally. We drop it from the circuit, leaving **14 non-identity terms** to Trotterize.
 
