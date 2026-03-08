@@ -1,0 +1,33 @@
+% Unicode symbol fallback for Latin Modern
+% DejaVu has box-drawing, subscripts, Greek, and check marks that LM lacks
+\usepackage{newunicodechar}
+\newfontfamily{\fallbackfont}{DejaVu Serif}
+\newfontfamily{\fallbackmono}{DejaVu Sans Mono}
+\newunicodechar{✓}{{\fallbackfont ✓}}
+\newunicodechar{✗}{{\fallbackfont ✗}}
+\newunicodechar{✘}{{\fallbackfont ✘}}
+\newunicodechar{₀}{{\fallbackfont ₀}}
+\newunicodechar{₂}{{\fallbackfont ₂}}
+\newunicodechar{₃}{{\fallbackfont ₃}}
+\newunicodechar{₄}{{\fallbackfont ₄}}
+\newunicodechar{≈}{{\fallbackfont ≈}}
+\newunicodechar{≤}{{\fallbackfont ≤}}
+\newunicodechar{≥}{{\fallbackfont ≥}}
+\newunicodechar{↔}{{\fallbackfont ↔}}
+\newunicodechar{μ}{{\fallbackfont μ}}
+\newunicodechar{θ}{{\fallbackfont θ}}
+\newunicodechar{⟨}{{\fallbackfont ⟨}}
+\newunicodechar{⟩}{{\fallbackfont ⟩}}
+\newunicodechar{═}{{\fallbackmono ═}}
+\newunicodechar{α}{{\fallbackfont α}}
+\newunicodechar{β}{{\fallbackfont β}}
+\newunicodechar{σ}{{\fallbackfont σ}}
+\newunicodechar{→}{{\fallbackfont →}}
+
+% Better table formatting
+\usepackage{booktabs}
+\usepackage{longtable}
+
+% Prevent overfull hboxes in tables
+\usepackage{array}
+\setlength{\tabcolsep}{4pt}
