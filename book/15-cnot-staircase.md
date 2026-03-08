@@ -141,6 +141,6 @@ The 6× ratio between JW and TT at $n=32$ is entirely due to the CNOT staircase 
 
 ---
 
-**Previous:** [Chapter 13 — Trotter Formulas](13-trotter-formulas.html)
+**Previous:** [Chapter 14 — Trotterization in Practice](14-trotter-formulas.html)
 
-**Next:** [Chapter 15 — Cost Analysis Across Encodings](15-cost-analysis.html)
+**Next:** [Chapter 16 — Cost Analysis Across Encodings](16-cost-analysis.html)

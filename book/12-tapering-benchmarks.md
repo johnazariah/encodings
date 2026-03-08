@@ -150,6 +150,6 @@ We now have a verified, tapered qubit Hamiltonian — smaller than what encoding
 
 ---
 
-**Previous:** [Chapter 10 — General Clifford Tapering](10-clifford-tapering.html)
+**Previous:** [Chapter 11 — General Clifford Tapering](11-clifford-tapering.html)
 
-**Next:** [Chapter 12 — From Hamiltonian to Time Evolution](12-time-evolution.html)
+**Next:** [Chapter 13 — From Hamiltonian to Time Evolution](13-time-evolution.html)
