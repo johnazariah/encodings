@@ -53,6 +53,28 @@ diagonalZ2SymmetryQubits h
 
 Every term has only I or Z at every position. This is a fully diagonal Hamiltonian — entirely classical. It's a toy, but it illustrates the detection perfectly.
 
+### A more realistic example
+
+In practice, molecular Hamiltonians are *mixed*: some qubits are diagonal, others are not. Consider a Hamiltonian where qubits 0 and 2 are always I/Z, but qubits 1 and 3 have X and Y terms:
+
+```fsharp
+let hmixed =
+    [| PauliRegister("ZIZI", Complex(0.5, 0.0))   // q0=Z, q1=I, q2=Z, q3=I
+       PauliRegister("IXIX", Complex(-0.3, 0.0))   // q0=I, q1=X, q2=I, q3=X
+       PauliRegister("ZIIZ", Complex(0.2, 0.0))    // q0=Z, q1=I, q2=I, q3=Z
+       PauliRegister("IYIY", Complex(0.1, 0.0)) |] // q0=I, q1=Y, q2=I, q3=Y
+    |> PauliRegisterSequence
+
+diagonalZ2SymmetryQubits hmixed
+// → [| 0; 2 |]
+```
+
+Qubit 0 has Z, I, Z, I across the four terms — all diagonal. Qubit 2 has Z, I, I, I — also all diagonal. But qubit 1 has I, X, I, Y — the X and Y disqualify it. Qubit 3 has I, X, Z, Y — also disqualified.
+
+Only qubits 0 and 2 can be tapered. The off-diagonal terms (the ones with X and Y that generate coherences, as we discussed in Chapter 6) survive on qubits 1 and 3 — which is exactly right, because the quantum physics lives in those off-diagonal terms and we must not discard them.
+
+> **The intuition:** tapering removes qubits whose value is *classically determined* — they contribute only to the diagonal part of the Hamiltonian. The qubits we keep are the ones that carry the off-diagonal (quantum) physics.
+
 ---
 
 ## Sectors: Choosing Eigenvalues
@@ -67,6 +89,12 @@ let sector = [ (1, +1); (3, -1) ]
 ```
 
 **Physical interpretation:** Different sectors correspond to different quantum numbers. If the diagonal qubits encode particle-number parity or spin projection, then sector $+1$ vs $-1$ selects different electron counts or spin states.
+
+For example, if qubit $j$ represents the parity of the total electron number (even vs odd), then:
+- Sector $+1$ → even number of electrons
+- Sector $-1$ → odd number of electrons
+
+If you know your molecule has 2 electrons (even), you choose sector $+1$ for that qubit. This projects the Hamiltonian onto the physically relevant subspace.
 
 For $k$ diagonal qubits, there are $2^k$ possible sectors. Each gives a valid tapered Hamiltonian with the correct eigenvalues for that sector — but different sectors may have different ground-state energies. To find the global ground state, you must check all sectors and take the minimum.
 

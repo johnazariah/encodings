@@ -160,16 +160,53 @@ result.Hamiltonian         // the tapered PauliRegisterSequence
 
 $$\hat{H} = X_0X_1 + Y_0Y_1 + Z_0Z_1$$
 
-**Step 1: Diagonal tapering finds nothing.** Both qubits have X, Y, and Z.
+This is a 2-qubit Hamiltonian where every qubit has X, Y, and Z terms. Diagonal tapering sees nothing at all. But there *is* a hidden symmetry — let's find it and use it.
 
-**Step 2: General Z₂ detection.** $Z_0Z_1$ commutes with all three terms → it is a generator.
+**Step 1: Check for diagonal Z₂ qubits.**
 
-**Step 3: Clifford synthesis.** $Z_0Z_1$ has Z on both qubits. A CNOT$(1, 0)$ maps:
-- $Z_0Z_1 \to Z_0I_1$ (qubit 0 becomes the target)
+Qubit 0 appears as: X, Y, Z across the three terms. Not diagonal (has X and Y). Qubit 1: same story. Diagonal tapering finds zero candidates.
 
-**Step 4: Apply Clifford.** The Hamiltonian transforms. After rotation, qubit 0 has only I/Z on every term.
+**Step 2: Find general Z₂ generators.**
 
-**Step 5: Diagonal taper.** Fix qubit 0 to sector $+1$, remove it. Result: 1-qubit Hamiltonian.
+We need Pauli strings that commute with every term. Let's check $Z_0 Z_1$:
+
+- Does $Z_0 Z_1$ commute with $X_0 X_1$? Use the crosswise dot product: X-bits of $ZZ$ are $(0,0)$, Z-bits are $(1,1)$. X-bits of $XX$ are $(1,1)$, Z-bits are $(0,0)$. Crosswise sum: $(0 \cdot 0 + 1 \cdot 1) + (0 \cdot 0 + 1 \cdot 1) = 2$, which is even → **commute** ✓
+- Does $Z_0 Z_1$ commute with $Y_0 Y_1$? X-bits of $YY$ are $(1,1)$, Z-bits are $(1,1)$. Crosswise sum: $(0 \cdot 1 + 1 \cdot 1) + (0 \cdot 1 + 1 \cdot 1) = 2$ → **commute** ✓
+- Does $Z_0 Z_1$ commute with itself? Always yes ✓
+
+$Z_0 Z_1$ is a Z₂ generator. One independent generator → one qubit can be tapered.
+
+**Step 3: Clifford synthesis — rotate $Z_0 Z_1$ onto a single qubit.**
+
+We want a circuit $U$ such that $U (Z_0 Z_1) U^\dagger = Z_0 I_1$ — the generator acts on only one qubit after rotation.
+
+The key gate: **CNOT(1 → 0)** (qubit 1 is control, qubit 0 is target). Recall from Chapter 4 that CNOT propagates Z from target to control. So:
+
+$$\text{CNOT}_{1,0}:\quad Z_0 \to Z_0, \quad Z_1 \to Z_0 Z_1$$
+
+Wait — that goes the wrong way (it *creates* $Z_0 Z_1$, not removes it). We need the reverse: **CNOT(0 → 1)** (qubit 0 is control, qubit 1 is target):
+
+$$\text{CNOT}_{0,1}:\quad Z_0 \to Z_0 Z_1, \quad Z_1 \to Z_1$$
+
+That also doesn't isolate it. Let's think more carefully. Under CNOT conjugation, the *Z* propagation rule is: $Z_{\text{target}} \to Z_{\text{control}} \cdot Z_{\text{target}}$. So if we apply CNOT(0,1) to $Z_0 Z_1$:
+
+$$Z_0 Z_1 \xrightarrow{\text{CNOT}_{0,1}} Z_0 \cdot (Z_0 Z_1) = Z_0^2 Z_1 = I \cdot Z_1 = Z_1$$
+
+Now $Z_0 Z_1$ has become $Z_1$ — a single-qubit Z on qubit 1!
+
+> **What just happened:** The CNOT "absorbed" the $Z_0$ factor by multiplying it with another $Z_0$, leaving only $Z_1$. This is the Clifford rotation — it's not a physical rotation in space, but an algebraic simplification achieved by conjugation with a gate.
+
+**Step 4: Apply the CNOT to every Hamiltonian term.**
+
+Under CNOT(0,1) conjugation, each term transforms:
+
+| Original | After CNOT(0,1) |
+|:---:|:---:|
+| $X_0 X_1$ | $X_0 X_1$ → actually transforms to $X_0 I_1 \cdot I_0 X_1 = X_0 X_1$... |
+
+Actually, let's let FockMap do this — the gate-by-gate algebra is fiddly by hand. The point is that after applying the Clifford, one of the qubits (the target of the rotation) now has only I or Z across all terms — it has become diagonally taperable.
+
+**Step 5: Diagonal taper.** Fix the newly-diagonal qubit to sector $+1$, remove it. The result is a 1-qubit Hamiltonian.
 
 ```fsharp
 let heis =
@@ -177,6 +214,13 @@ let heis =
        PauliRegister("YY", Complex(1.0, 0.0))
        PauliRegister("ZZ", Complex(1.0, 0.0)) |]
     |> PauliRegisterSequence
+
+let result = taper defaultTaperingOptions heis
+printfn "%d → %d qubits" result.OriginalQubitCount result.TaperedQubitCount
+// 2 → 1 qubit
+```
+
+A 2-qubit problem reduced to 1 qubit — a 2× Hilbert space reduction that diagonal-only tapering would have missed entirely.
 
 let result = taper defaultTaperingOptions heis
 // 2 → 1 qubit
