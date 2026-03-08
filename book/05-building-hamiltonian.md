@@ -51,7 +51,29 @@ The diagonal entries $\lvert c_i\rvert^2$ are probabilities — same as the clas
 
 > **The off-diagonal elements of the density matrix are the quantum difference.**
 
-A classical mixture with the same occupation probabilities would have a *higher* energy. The coherences destructively interfere with high-energy contributions and constructively interfere with low-energy ones. The energy difference between the quantum ground state and the best classical approximation is the **correlation energy** — the ~1% that Hartree–Fock misses, the ~12 kcal/mol that determines whether a reaction happens.
+A classical mixture with the same occupation probabilities would have a *higher* energy. But why? To see this, we need to understand how energy is actually computed from a density matrix.
+
+### The trace: a machine for computing averages
+
+The expected energy of a system in state $\rho$ is:
+
+$$\langle H \rangle = \text{Tr}(\rho H)$$
+
+The **trace** of a matrix is the sum of its diagonal elements. But $\text{Tr}(\rho H)$ is not just summing the diagonal of $\rho$ — it's summing the diagonal of the *product* $\rho H$. And the product of two matrices mixes their rows and columns:
+
+$$\text{Tr}(\rho H) = \sum_i (\rho H)_{ii} = \sum_i \sum_j \rho_{ij} H_{ji}$$
+
+We can split this into two parts:
+
+$$\langle H \rangle = \underbrace{\sum_i \rho_{ii} H_{ii}}_{\text{classical}} + \underbrace{\sum_{i \neq j} \rho_{ij} H_{ji}}_{\text{quantum}}$$
+
+The first sum is the **classical energy**: each configuration's probability times its diagonal energy. This is what Hartree–Fock computes — a single $\rho_{ii} = 1$, everything else zero, and $\langle H \rangle = H_{ii}$.
+
+The second sum is the **quantum correction**: the off-diagonal elements of $\rho$ (the coherences) multiplied by the off-diagonal elements of $H$ (the exchange terms). This sum can be *negative* — it can lower the energy below the classical minimum. This is the correlation energy.
+
+But notice: for this second sum to be nonzero, **both** $\rho$ and $H$ must have off-diagonal elements. If the Hamiltonian is diagonal (no X or Y terms), then $H_{ji} = 0$ for $i \neq j$, and the quantum correction vanishes regardless of what $\rho$ looks like. If $\rho$ is diagonal (no coherences), the correction vanishes regardless of $H$.
+
+The trace formula makes the thesis mathematically precise: quantum advantage requires off-diagonal elements in *both* the state and the Hamiltonian, working together through the trace to produce an energy that no diagonal (classical) computation can reach.
 
 ### What generates coherences?
 
@@ -136,6 +158,52 @@ $$a_0^\dagger a_1^\dagger a_1 a_0 = \frac{1}{4}(IIII - IIIZ - IIZI + IIZZ)$$
 Scaled by the integral: four diagonal Pauli contributions. This is a Coulomb term — pure classical electrostatics, no off-diagonal structure. Exactly as the density matrix framework predicted.
 
 The **exchange** integrals $\langle 02 \mid 20\rangle$ tell a different story. They produce terms like $a_0^\dagger a_2^\dagger a_0 a_2$, where electrons swap orbitals. Under JW, these don't simplify to pure Z — they leave XX and YY Pauli operators. These are the off-diagonal terms. They generate coherences. They produce the correlation energy.
+
+Let's see this happen explicitly.
+
+### One exchange term, fully expanded
+
+Consider $\frac{1}{2}\langle 02 \mid 20\rangle\; a_0^\dagger a_2^\dagger a_2 a_0$, with integral value $\langle 02 \mid 20\rangle = 0.1809$ Ha. This is an exchange integral — electron 1 scatters from orbital 0 to orbital 2, electron 2 scatters from orbital 2 to orbital 0.
+
+**Encode under Jordan–Wigner:**
+
+$$a_0^\dagger = \frac{1}{2}(X_0 - iY_0) \otimes I_1 \otimes I_2 \otimes I_3$$
+
+$$a_2^\dagger = \frac{1}{2}\,Z_0 Z_1 \otimes (X_2 - iY_2) \otimes I_3$$
+
+$$a_2 = \frac{1}{2}\,Z_0 Z_1 \otimes (X_2 + iY_2) \otimes I_3$$
+
+$$a_0 = \frac{1}{2}(X_0 + iY_0) \otimes I_1 \otimes I_2 \otimes I_3$$
+
+Note: $a_2^\dagger$ has a Z-chain of length 2 ($Z_0 Z_1$), not length 1.
+
+**Multiply.**
+
+$$a_0^\dagger a_2^\dagger a_2 a_0 = \frac{1}{16}(X_0 - iY_0)\,Z_0 Z_1(X_2 - iY_2)\,Z_0 Z_1(X_2 + iY_2)\,(X_0 + iY_0)$$
+
+**Simplify.** The Z-chains cancel on qubits 0 and 1: $Z_0 Z_0 = I$, $Z_1 Z_1 = I$. The qubit-2 pair simplifies as before: $(X_2 - iY_2)(X_2 + iY_2) = 2(I - Z_2)$. But now qubit 0 has something new:
+
+$$(X_0 - iY_0) \cdot (X_0 + iY_0) = 2(I - Z_0)$$
+
+Wait — that's the same identity as the Coulomb case. So where do the XX/YY terms come from?
+
+They come from a *different* index combination. Consider instead:
+
+$$\frac{1}{2}\langle 02 \mid 02\rangle\; a_0^\dagger a_2^\dagger a_0 a_2$$
+
+Here the operator ordering is $a_0^\dagger a_2^\dagger a_0 a_2$ — note the annihilation operators are $a_0 a_2$, not $a_2 a_0$. When we encode and multiply:
+
+$$a_0^\dagger a_2^\dagger a_0 a_2 = \frac{1}{16}(X_0 - iY_0)\,Z_0 Z_1(X_2 - iY_2)\,(X_0 + iY_0)\,Z_0 Z_1(X_2 + iY_2)$$
+
+Now the Z-chains don't cancel cleanly — the $(X_0 + iY_0)$ sits *between* the two Z₀ factors instead of outside them. Expanding qubit 0:
+
+$$(X_0 - iY_0)\,Z_0\,(X_0 + iY_0)\,Z_0$$
+
+Using $X Z = -iY$, $Y Z = iX$, and carefully tracking the phases, this produces terms proportional to $X_0 X_2$, $Y_0 Y_2$, $X_0 Y_2$, and $Y_0 X_2$ — the off-diagonal Pauli operators.
+
+The full expansion (which FockMap performs symbolically) yields contributions to $XXYY$, $XYYX$, $YXXY$, and $YYXX$ — precisely the four exchange terms in the final Hamiltonian, with coefficient $\pm 0.1744$.
+
+> **What just happened:** When the annihilation operators are in a different order from the creation operators (electrons change orbitals), the Z-chains interleave with the X/Y flips instead of cancelling. The result is an off-diagonal Pauli string — exactly the structure that generates coherences in the density matrix.
 
 ---
 
