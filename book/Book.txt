@@ -15,11 +15,11 @@ foreword.md
 14-trotter-formulas.md
 15-cnot-staircase.md
 16-cost-analysis.md
-17-openqasm.md
-18-qsharp.md
-19-python-bridge.md
-20-complete-pipeline.md
+17-complete-pipeline.md
+18-bond-angle.md
+19-algorithms.md
+20-circuit-export.md
 21-scaling.md
-22-vqe-qpe.md
+22-whats-next.md
 appendix-cookbook.md
 appendix-theory.md

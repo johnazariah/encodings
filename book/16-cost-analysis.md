@@ -114,4 +114,4 @@ The ratio grows monotonically because JW's worst-case weight scales as $O(n)$ wh
 
 **Previous:** [Chapter 15 — The CNOT Staircase](15-cnot-staircase.html)
 
-**Next:** [Chapter 17 — OpenQASM Generation](17-openqasm.html)
+**Next:** [Chapter 17 — The Complete Pipeline](17-complete-pipeline.html)
