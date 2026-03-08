@@ -1,4 +1,4 @@
-# Chapter 6: Five Encodings, One Interface
+# Chapter 7: Five Encodings, One Interface
 
 _We built the H₂ Hamiltonian with Jordan–Wigner. But JW has a problem — its Z-chains grow linearly with system size. This chapter asks: can we do better? And if we use a different encoding, do we get the same physics?_
 
@@ -6,19 +6,19 @@ _We built the H₂ Hamiltonian with Jordan–Wigner. But JW has a problem — it
 
 - **What you'll learn:** Why we need alternatives to Jordan–Wigner, whether different encodings give the same answer (they do — and we'll see why), and how to compare their costs.
 - **Why this matters:** Encoding choice is the single biggest lever you have for reducing circuit depth before you write a single gate. But only if you trust that all encodings produce the same physics.
-- **Prerequisites:** Chapters 1–5 (you have the 15-term JW Hamiltonian and understand the diagonal/off-diagonal structure).
+- **Prerequisites:** Chapters 1–6 (you have the 15-term JW Hamiltonian and understand the diagonal/off-diagonal structure).
 
 ---
 
 ## Why Would We Want a Different Encoding?
 
-In Chapter 5, we saw that 4 of the 15 Pauli terms — the exchange terms XXYY, XYYX, YXXY, YYXX — are off-diagonal. These are the terms that generate coherences in the density matrix and produce the correlation energy. They are also the terms that are expensive to simulate on a quantum computer, because each one requires a CNOT staircase proportional to its Pauli weight.
+In Chapter 6, we saw that 4 of the 15 Pauli terms — the exchange terms XXYY, XYYX, YXXY, YYXX — are off-diagonal. These are the terms that generate coherences in the density matrix and produce the correlation energy. They are also the terms that are expensive to simulate on a quantum computer, because each one requires a CNOT staircase proportional to its Pauli weight.
 
 Under Jordan–Wigner, the worst-case Pauli weight of an operator grows linearly with system size: $O(n)$. For H₂ with 4 qubits, the maximum weight is 4 — manageable. But for H₂O with 12 qubits, it's 12. For the FeMo-co nitrogen-fixation catalyst with ~100 qubits, it's ~100. Each off-diagonal term would require ~200 CNOT gates.
 
 This is the motivation for alternative encodings: **can we represent the same physics with shorter Pauli strings?**
 
-Chapter 4 showed that Bravyi–Kitaev achieves $O(\log_2 n)$ weight using a Fenwick tree, and ternary tree encodings achieve $O(\log_3 n)$. But a natural question arises: if the Pauli strings are different, how do we know we're still computing the same molecule?
+Chapter 5 showed that Bravyi–Kitaev achieves $O(\log_2 n)$ weight using a Fenwick tree, and ternary tree encodings achieve $O(\log_3 n)$. But a natural question arises: if the Pauli strings are different, how do we know we're still computing the same molecule?
 
 ---
 
@@ -43,7 +43,7 @@ Balanced Binary Tree       15 terms
 Balanced Ternary Tree      15 terms
 ```
 
-Same number of terms. Same identity coefficient ($-1.0704$ Ha in every case). And if we diagonalize each — as we'll do in Chapter 7 — the eigenvalues agree to machine precision ($< 5 \times 10^{-16}$ Ha).
+Same number of terms. Same identity coefficient ($-1.0704$ Ha in every case). And if we diagonalize each — as we'll do in Chapter 8 — the eigenvalues agree to machine precision ($< 5 \times 10^{-16}$ Ha).
 
 For H₂ with 4 qubits, the Pauli strings are actually identical across all five encodings. With only 4 qubits, there isn't enough room for the different encodings to diverge — the Z-chain is at most length 3, and BK's tree structure on 4 nodes provides at most a marginal improvement.
 
@@ -110,9 +110,9 @@ The differences show up in Pauli weight at larger system sizes:
 | 16 | 16 | 5 | 5 | 3.2× |
 | 32 | 32 | 6 | 5 | 6.4× |
 
-At 32 spin-orbitals, JW's worst-case operator touches 32 qubits. The ternary tree touches 5. Since each Pauli rotation costs $2(w-1)$ CNOT gates, this is the difference between 62 CNOTs and 8 CNOTs *per term* — compounded across every term and every Trotter step.
+At 32 spin-orbitals, JW's worst-case operator touches 32 qubits. The ternary tree touches 5. Since each Pauli rotation costs $2(w-1)$ CNOT gates (Chapter 4), this is the difference between 62 CNOTs and 8 CNOTs *per term* — compounded across every term and every Trotter step.
 
-Recall from Chapter 5 that the off-diagonal terms are the expensive ones. The encoding determines how many qubits those off-diagonal terms touch — and therefore the circuit depth required to create and maintain the coherences that capture the correlation energy.
+Recall from Chapter 6 that the off-diagonal terms are the expensive ones. The encoding determines how many qubits those off-diagonal terms touch — and therefore the circuit depth required to create and maintain the coherences that capture the correlation energy.
 
 ---
 
@@ -212,6 +212,6 @@ let ham = computeHamiltonianWith (encodeOperator myScheme) h2Factory 4u
 
 ---
 
-**Previous:** [Chapter 5 — Building the Qubit Hamiltonian](05-building-hamiltonian.html)
+**Previous:** [Chapter 6 — Building the Qubit Hamiltonian](06-building-hamiltonian.html)
 
-**Next:** [Chapter 7 — Checking Our Answer](07-verification.html)
+**Next:** [Chapter 8 — Checking Our Answer](08-verification.html)

@@ -6,7 +6,7 @@ _This is where the pipeline pays off. We take the integral tables from Chapter 3
 
 - **What you'll learn:** Why the distinction between diagonal and off-diagonal Hamiltonian terms is the central idea of quantum simulation, how to systematically encode fermionic terms into Pauli strings, and how to read the resulting 15-term H₂ Hamiltonian as a map of classical vs quantum physics.
 - **Why this matters:** This is the exact object used by VQE, QPE, and every other quantum simulation algorithm. Understanding its structure — which parts are classical, which parts are quantum — is the key to understanding why quantum computing matters for chemistry.
-- **Prerequisites:** Chapters 1–4 (integrals, notation, spin-orbitals, encoding concepts).
+- **Prerequisites:** Chapters 1–5 (integrals, notation, spin-orbitals, gates, encoding concepts).
 
 ---
 
@@ -108,7 +108,8 @@ Chapters 1–4 gave us everything we need:
 - **The chemistry** (Chapter 1): H₂ in STO-3G, 4 spin-orbitals, the second-quantized Hamiltonian.
 - **The notation** (Chapter 2): physicist's convention, the conversion rule, the traps to avoid.
 - **The numbers** (Chapter 3): complete spin-orbital integral tables and a coefficient factory in F#.
-- **The encoding** (Chapter 4): Jordan–Wigner's Z-chain mechanism for translating fermionic operators to Pauli strings.
+- **The quantum computer** (Chapter 4): qubits, gates, CNOT cost, and the $2(w-1)$ formula.
+- **The encoding** (Chapter 5): Jordan–Wigner's Z-chain mechanism for translating fermionic operators to Pauli strings.
 
 The procedure from here is mechanical. Once you see it done for one term, you can do it for any term, for any molecule, in any encoding. The insight is behind us; what remains is careful bookkeeping.
 
@@ -338,6 +339,6 @@ All four produce different Pauli strings but the **same eigenvalues**. We'll ver
 
 ---
 
-**Previous:** [Chapter 4 — A Visual Guide to Encodings](04-visual-encodings.html)
+**Previous:** [Chapter 5 — A Visual Guide to Encodings](05-visual-encodings.html)
 
-**Next:** [Chapter 6 — Five Encodings, One Interface](06-five-encodings.html)
+**Next:** [Chapter 7 — Five Encodings, One Interface](07-five-encodings.html)

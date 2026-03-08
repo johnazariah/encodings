@@ -372,6 +372,6 @@ In the next chapter, we will use all five encodings to build the complete 15-ter
 
 ---
 
-**Previous:** [Chapter 3 — From Spatial to Spin-Orbital Integrals](03-spin-orbitals.html)
+**Previous:** [Chapter 4 — The Quantum Computer's Vocabulary](04-qubits-gates-circuits.html)
 
-**Next:** [Chapter 5 — Building the Qubit Hamiltonian](05-building-hamiltonian.html)
+**Next:** [Chapter 6 — Building the Qubit Hamiltonian](06-building-hamiltonian.html)

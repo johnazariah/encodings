@@ -291,4 +291,4 @@ But first, Chapter 4 will introduce the encoding itself: what is a Pauli string,
 
 **Previous:** [Chapter 2 — The Notation Minefield](02-notation.html)
 
-**Next:** [Chapter 4 — A Visual Guide to Encodings](04-visual-encodings.html)
+**Next:** [Chapter 4 — The Quantum Computer's Vocabulary](04-qubits-gates-circuits.html)
