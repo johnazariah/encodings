@@ -24,18 +24,20 @@ If we could rotate $Z_0 Z_1$ onto a single-qubit $Z$ — say, $Z_0 I_1$ — then
 
 ---
 
-## The Symplectic Representation
+## The Binary Pauli Representation
 
-To find all Z₂ generators systematically, we need a representation that makes commutativity a linear operation. The **symplectic representation** encodes each $n$-qubit Pauli string as a binary vector of length $2n$:
+To find all Z₂ generators systematically, we need a way to represent Pauli strings that makes commutativity easy to check. The trick is to encode each Pauli operator as **two binary bits**:
+
+| Pauli | X bit | Z bit | Think of it as... |
+|:---:|:---:|:---:|:---|
+| I | 0 | 0 | No flip, no phase |
+| X | 1 | 0 | Bit-flip only |
+| Y | 1 | 1 | Both flip and phase |
+| Z | 0 | 1 | Phase-flip only |
+
+An $n$-qubit Pauli string becomes a binary vector of length $2n$ — the X-bits followed by the Z-bits:
 
 $$\sigma \;\leftrightarrow\; (\underbrace{x_0, x_1, \ldots, x_{n-1}}_{\text{X bits}} \mid \underbrace{z_0, z_1, \ldots, z_{n-1}}_{\text{Z bits}})$$
-
-| Pauli | X bit | Z bit |
-|:---:|:---:|:---:|
-| I | 0 | 0 |
-| X | 1 | 0 |
-| Y | 1 | 1 |
-| Z | 0 | 1 |
 
 ```fsharp
 let sv = toSymplectic (PauliRegister("XYZ", Complex.One))
@@ -43,13 +45,15 @@ let sv = toSymplectic (PauliRegister("XYZ", Complex.One))
 // sv.Z = [| false; true; true |]   — X has z=0, Y has z=1, Z has z=1
 ```
 
-### Why symplectic?
+> **On the name "symplectic":** The quantum computing literature calls this the *symplectic representation*, and the commutativity check below a *symplectic inner product*. The word "symplectic" comes from Greek for "intertwined" — it refers to the fact that commutativity depends on a *crosswise* pairing between the X-bits of one string and the Z-bits of the other (and vice versa). This crosswise structure is what mathematicians call a symplectic form. We'll use the name "binary Pauli representation" when the intuition matters and "symplectic" when referencing the literature.
 
-Two Pauli strings commute if and only if their **symplectic inner product** is zero (mod 2):
+### Why this representation?
 
-$$\langle a, b \rangle_s = \sum_{i=0}^{n-1} (a_{x_i} \cdot b_{z_i} + a_{z_i} \cdot b_{x_i}) \mod 2$$
+The payoff: two Pauli strings commute if and only if their **crosswise dot product** is zero (mod 2):
 
-If this sum is even → commute. If odd → anti-commute. This reduces commutativity checking to a **dot product over GF(2)** — a single bitwise operation.
+$$\text{commute?} \quad \sum_{i=0}^{n-1} (a_{x_i} \cdot b_{z_i} + a_{z_i} \cdot b_{x_i}) \stackrel{?}{=} 0 \pmod{2}$$
+
+Notice the crosswise structure: we pair the X-bits of $a$ with the Z-bits of $b$, and vice versa. If the sum is even, they commute. If odd, they anti-commute. This reduces commutativity checking to a **binary dot product** — something a computer can do in nanoseconds.
 
 ```fsharp
 let a = toSymplectic (PauliRegister("XX", Complex.One))
@@ -63,18 +67,18 @@ commutes a b  // true — XX and ZZ commute
 
 A Pauli string $g$ is a Z₂ symmetry of $\hat{H}$ if it commutes with every term and squares to the identity. Since every Pauli string squares to $\pm I$, the squaring condition is automatic.
 
-The commutation condition $\langle g, t_k \rangle_s = 0$ for all terms $t_k$ is a system of linear equations over GF(2). The solution set — the **null space** of the commutation check matrix — gives all Z₂ generators.
+The commutation condition $\text{crosswise dot product} = 0$ for all terms $t_k$ is a system of linear equations where the arithmetic is binary (0 and 1, with addition meaning XOR). The solution set — the **null space** of the commutation check matrix — gives all Z₂ generators.
 
 ```fsharp
 let generators = findCommutingGenerators hamiltonian
 // Returns SymplecticVector[] — all Pauli strings that commute with every term
 
 let indep = independentGenerators generators
-// Selects a maximal linearly independent subset over GF(2)
+// Selects a maximal linearly independent subset (binary linear algebra)
 // The number of independent generators = max qubits taperable
 ```
 
-The null space computation uses Gaussian elimination over GF(2) — the same algorithm as regular Gaussian elimination, but with XOR instead of subtraction. It runs in $O(n^3)$ time.
+The null space computation uses Gaussian elimination with XOR instead of subtraction — the same row-reduction you learned in linear algebra, but in binary arithmetic. It runs in $O(n^3)$ time.
 
 ---
 
@@ -182,8 +186,8 @@ let result = taper defaultTaperingOptions heis
 
 ## Key Takeaways
 
-- **Symplectic representation** turns commutativity into GF(2) linear algebra — fast and exact.
-- **Null space** of the commutation check matrix gives all Z₂ generators; Gaussian elimination selects independent ones.
+- The **binary Pauli representation** (two bits per qubit) turns commutativity checking into a crosswise binary dot product — fast and exact.
+- The **null space** of the commutation check matrix (computed by binary Gaussian elimination) gives all Z₂ generators.
 - **Clifford synthesis** rotates multi-qubit generators onto single-qubit Zs using H, S, and CNOT — no matrices needed.
 - **The unified `taper` function** handles both diagonal and Clifford tapering with one API.
 - Everything is symbolic and exact — no approximation, no eigensolvers, no numerical instability.
