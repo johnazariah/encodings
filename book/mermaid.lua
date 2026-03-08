@@ -69,10 +69,11 @@ function CodeBlock(block)
     f:close()
 
     -- Output as PNG (universally supported by LaTeX, no rsvg-convert needed)
-    -- Use -w 800 for consistent width across all diagrams, -s 2 for 2x resolution
+    -- Use -w 1600 for high-resolution renders that scale well on portrait pages
+    -- -s 3 gives 3x pixel density for crisp text after downscaling
     local out_file = img_dir .. "/diagram-" .. string.format("%02d", img_counter) .. ".png"
 
-    local cmd = "mmdc -i " .. src_file .. " -o " .. out_file .. " -b white -s 2 -w 800"
+    local cmd = "mmdc -i " .. src_file .. " -o " .. out_file .. " -b white -s 3 -w 1600"
     if config and config ~= "" then
         cmd = cmd .. " -p " .. config
     end
@@ -91,4 +92,14 @@ function CodeBlock(block)
         io.stderr:write("  ✗ " .. out_file .. ": " .. result .. "\n")
         return nil  -- Keep original code block on failure
     end
+end
+
+-- Strip "Previous:" / "Next:" / "Back to:" nav links (useless in PDF)
+function Para(para)
+    local text = pandoc.utils.stringify(para)
+    if text:match("^%*%*Previous:%*%*") or text:match("^%*%*Next:%*%*") or text:match("^%*%*Back to:%*%*") then
+        return {}
+    end
+    -- Also strip the horizontal rule right before nav links
+    return nil
 end

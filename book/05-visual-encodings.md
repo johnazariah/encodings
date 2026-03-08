@@ -127,11 +127,11 @@ To create an electron in orbital $j$, we apply $Z$ to every qubit below $j$ and 
 
 ```mermaid
 flowchart LR
-    subgraph JW["Jordan-Wigner: create electron in orbital 2"]
+    subgraph JW["JW: create in orbital 2"]
         direction LR
         Z0["Qubit 0<br/>Z"] --> Z1["Qubit 1<br/>Z"]
-        Z1 --> Flip["Qubit 2<br/>X/Y<br/>(flip)"]
-        Flip --> I3["Qubit 3<br/>I<br/>(nothing)"]
+        Z1 --> Flip["Qubit 2<br/>X/Y (flip)"]
+        Flip --> I3["Qubit 3<br/>I"]
     end
     style Z0 fill:#e8ecf1,stroke:#6b7280
     style Z1 fill:#e8ecf1,stroke:#6b7280
@@ -143,25 +143,12 @@ The Z-chain grows linearly: for orbital $j$, we need $j$ extra Z operations. Thi
 
 ### JW Pauli weight for all four orbitals
 
-```mermaid
-flowchart TB
-    subgraph Create0["a†₀ — weight 1"]
-        direction LR
-        A0["X/Y"] ~~~ A1["I"] ~~~ A2["I"] ~~~ A3["I"]
-    end
-    subgraph Create1["a†₁ — weight 2"]
-        direction LR
-        B0["Z"] ~~~ B1["X/Y"] ~~~ B2["I"] ~~~ B3["I"]
-    end
-    subgraph Create2["a†₂ — weight 3"]
-        direction LR
-        C0["Z"] ~~~ C1["Z"] ~~~ C2["X/Y"] ~~~ C3["I"]
-    end
-    subgraph Create3["a†₃ — weight 4"]
-        direction LR
-        D0["Z"] ~~~ D1["Z"] ~~~ D2["Z"] ~~~ D3["X/Y"]
-    end
-```
+| Operator | q0 | q1 | q2 | q3 | Weight |
+|:---:|:---:|:---:|:---:|:---:|:---:|
+| $a_0^\dagger$ | **X/Y** | I | I | I | 1 |
+| $a_1^\dagger$ | Z | **X/Y** | I | I | 2 |
+| $a_2^\dagger$ | Z | Z | **X/Y** | I | 3 |
+| $a_3^\dagger$ | Z | Z | Z | **X/Y** | 4 |
 
 For a molecule with $n$ spin-orbitals, the worst-case Pauli weight under JW is $n$. For FeMo-co (the iron-molybdenum cofactor of nitrogenase — the enzyme that fixes atmospheric nitrogen) with ~100 spin-orbitals, that's a chain of 99 Z gates for the last orbital — a very deep circuit on quantum hardware.
 
@@ -196,18 +183,11 @@ flowchart LR
 In BK, some qubits store **cumulative parity** — the XOR of multiple orbital occupations:
 
 ```mermaid
-flowchart LR
-    subgraph BKStorage["Bravyi-Kitaev storage (8 orbitals)"]
-        direction TB
-        Q0["q0: orbital 0"]
-        Q1["q1: orbital 0 ⊕ 1"]
-        Q2["q2: orbital 2"]
-        Q3["q3: orbital 0 ⊕ 1 ⊕ 2 ⊕ 3"]
-        Q4["q4: orbital 4"]
-        Q5["q5: orbital 4 ⊕ 5"]
-        Q6["q6: orbital 6"]
-        Q7["q7: orbital 0 ⊕ 1 ⊕ ... ⊕ 7"]
-    end
+flowchart TD
+    Q0["q0: orbital 0"] ~~~ Q1["q1: parity 0⊕1"]
+    Q2["q2: orbital 2"] ~~~ Q3["q3: parity 0⊕1⊕2⊕3"]
+    Q4["q4: orbital 4"] ~~~ Q5["q5: parity 4⊕5"]
+    Q6["q6: orbital 6"] ~~~ Q7["q7: parity 0⊕1⊕...⊕7"]
 ```
 
 The pattern comes from a Fenwick tree. Each node stores the parity of the orbitals in its subtree:
