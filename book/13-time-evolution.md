@@ -12,37 +12,42 @@ _We have a Pauli-sum Hamiltonian. A quantum computer doesn't execute Hamiltonian
 
 ## The Gap in Our Pipeline
 
-So far, our pipeline produces a symbolic object:
+Let's pause and take stock. Here's the complete pipeline so far:
+
+```mermaid
+flowchart LR
+    MOL["Molecule<br/>(Ch 1-3)"] --> GATES["Gates<br/>(Ch 4)"]
+    GATES --> ENC["Encoding<br/>(Ch 5-7)"]
+    ENC --> VER["Verified<br/>(Ch 8)"]
+    VER --> TAP["Tapered<br/>(Ch 9-12)"]
+    TAP --> |"?"| CIRC["Circuit"]
+    style CIRC fill:#fde68a,stroke:#d97706
+```
+
+We have a verified, optionally tapered Hamiltonian:
 
 $$\hat{H} = \sum_{k=1}^{L} c_k P_k$$
 
-where each $P_k$ is a Pauli string (like $XXYY$) and $c_k$ is a real coefficient. This is the qubit Hamiltonian — verified in Chapter 7, optionally tapered in Chapters 8–11.
+where each $P_k$ is a Pauli string (like $XXYY$) and $c_k$ is a real coefficient. This is a complete, exact symbolic description of the molecule's physics.
 
-But a quantum computer doesn't accept a Hamiltonian as input. It accepts a sequence of **quantum gates** — unitary operations that act on specific qubits. The gap is:
+But a quantum computer doesn't accept a Hamiltonian as input. It accepts a sequence of **quantum gates**. We need to cross the last gap:
 
 $$\text{Hamiltonian } \hat{H} \;\xrightarrow{\;?\;}\; \text{Gate sequence}$$
 
-The bridge is **Hamiltonian simulation**: implementing the time-evolution operator $e^{-i\hat{H}t}$ as a circuit of elementary gates.
+### What does "simulating a molecule" actually mean?
 
----
+This is worth being precise about, because the phrase "quantum simulation" is misleading. We are **not** watching electrons move around in real time. We are not running the chemistry forward like a molecular dynamics simulation. We are doing something more subtle.
 
-## Why Time Evolution?
+The ground-state energy is the lowest eigenvalue of $\hat{H}$. The quantum algorithms that extract it — VQE and QPE — both work by manipulating the **time-evolution operator**:
 
-The Schrödinger equation governs how a quantum state evolves:
+$$U(t) = e^{-i\hat{H}t}$$
 
-$$i\hbar \frac{d}{dt}\lvert\psi(t)\rangle = \hat{H}\lvert\psi(t)\rangle$$
+This operator describes how a quantum state evolves under the Hamiltonian for time $t$. It is unitary (preserves probabilities), and its eigenvalues are $e^{-iE_k t}$ — phases that encode the energies $E_k$. Both VQE and QPE are, at their core, methods for extracting those phases.
 
-The solution for time-independent $\hat{H}$ is:
+- **QPE** applies controlled-$U(t)$ to read the phase directly: the eigenvalue $E_0$ appears as a binary fraction in an ancilla register.
+- **VQE** doesn't use $U(t)$ explicitly, but measures $\langle\hat{H}\rangle = \sum_k c_k \langle P_k\rangle$ by measuring each Pauli term — and each measurement involves a Pauli rotation $e^{-i\theta P_k}$, which is a single term of the time evolution.
 
-$$\lvert\psi(t)\rangle = e^{-i\hat{H}t/\hbar}\lvert\psi(0)\rangle$$
-
-The operator $U(t) = e^{-i\hat{H}t}$ (setting $\hbar = 1$) is the **time-evolution operator**. It is unitary, and implementing it as a quantum circuit is the fundamental task of Hamiltonian simulation.
-
-Both major quantum chemistry algorithms use this:
-- **VQE** measures $\langle\psi\rvert\hat{H}\lvert\psi\rangle$ by measuring each Pauli term separately — each measurement requires a basis rotation that involves a Pauli rotation $e^{-i\theta P_k}$.
-- **QPE** applies controlled-$U(t)$ to extract eigenvalues by phase kickback.
-
-In both cases, the primitive operation is a **Pauli rotation**: $e^{-i\theta P}$ for a single Pauli string $P$.
+In both cases, the primitive operation is a **Pauli rotation**: $e^{-i\theta P}$ for a single Pauli string $P$. The question is: how do we implement $e^{-i\hat{H}t}$ when $\hat{H}$ is a sum of many such terms?
 
 ---
 

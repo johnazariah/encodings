@@ -1,12 +1,20 @@
 # Chapter 15: The CNOT Staircase
 
-_Every Pauli rotation becomes a sequence of elementary gates. This chapter shows exactly how — and why Pauli weight determines circuit cost._
+_Every Pauli rotation becomes a sequence of elementary gates. This chapter shows exactly how — and connects the dots from encoding choice to circuit cost._
 
 ## In This Chapter
 
-- **What you'll learn:** The gate decomposition of $e^{-i\theta P}$ for an arbitrary Pauli string $P$, the CNOT staircase pattern, and why weight $w$ requires exactly $2(w-1)$ CNOT gates.
-- **Why this matters:** This is where encoding choice, tapering, and Trotterization all converge into a single number: the gate count.
-- **Prerequisites:** Chapter 13 (you have a list of Pauli rotations).
+- **What you'll learn:** How $e^{-i\theta P}$ decomposes into basis-change gates, a CNOT chain, and an $R_z$ rotation. Why the cost is exactly $2(w-1)$ CNOTs. How to trace a complete decomposition for the $XXYY$ exchange term.
+- **Why this matters:** This is where everything converges. Encoding choice (Chapter 7), tapering (Chapters 9–12), and Trotterization (Chapters 13–14) all reduce to one question: how many times do we run this staircase, and how tall is it?
+- **Prerequisites:** Chapters 4 (gates), 13–14 (Trotter decomposition).
+
+---
+
+## The Big Picture
+
+Recall from Chapter 4 the CNOT staircase formula: a Pauli rotation with weight $w$ costs $2(w-1)$ CNOT gates. We stated this without proof. Now let's see *why* — by building the decomposition step by step.
+
+The intuition: a weight-$w$ Pauli rotation $e^{-i\theta P}$ applies a phase rotation that depends on the *collective parity* of $w$ qubits. No single qubit carries enough information — we need to temporarily entangle the $w$ qubits (using CNOTs) so that their joint parity lives on one qubit, apply the rotation there, and then disentangle. The "staircase" is the entangling chain.
 
 ---
 

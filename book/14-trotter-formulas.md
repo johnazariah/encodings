@@ -1,124 +1,153 @@
-# Chapter 14: First and Second Order Trotter in FockMap
+# Chapter 14: Trotterization in Practice
 
-_From Hamiltonian to rotation list — the FockMap Trotterization API._
+_Chapter 13 gave us the theory. Now we compute: from Hamiltonian to rotation list to gate count._
 
 ## In This Chapter
 
-- **What you'll learn:** How FockMap decomposes a Pauli-sum Hamiltonian into a sequence of Pauli rotations using first-order and second-order Trotter formulas.
-- **Why this matters:** The rotation list is the intermediate representation between the symbolic Hamiltonian and the gate-level circuit.
-- **Prerequisites:** Chapter 12 (Trotter theory).
+- **What you'll learn:** How to apply first-order and second-order Trotter decomposition to a real Hamiltonian, what the rotation list looks like, and how to estimate circuit cost before generating a single gate.
+- **Why this matters:** The rotation list is the bridge between the symbolic Hamiltonian and the physical circuit. Getting the angles and ordering right is where theory meets implementation.
+- **Prerequisites:** Chapter 13 (you understand the Trotter–Suzuki formula and why it's needed).
 
 ---
 
-## The Rotation List
+## From Theory to Concrete Rotations
 
-A Trotter step converts a Hamiltonian $\hat{H} = \sum_k c_k P_k$ and a time step $\Delta t$ into a list of **Pauli rotations**:
+Chapter 13 established the idea: break $e^{-i\hat{H}t}$ into a product of single-term rotations $e^{-ic_k P_k \Delta t}$. Now let's apply this to the H₂ Hamiltonian we've been carrying since Chapter 6 and see exactly what comes out.
 
-$$e^{-ic_k P_k \Delta t} \quad \text{for each term } k$$
+Recall the 15-term Hamiltonian:
 
-Each rotation is characterized by two things:
-- **The Pauli string** $P_k$ (e.g., $XXYY$)
-- **The rotation angle** $\theta_k = c_k \Delta t$
+| # | Pauli String | Coefficient (Ha) |
+|:---:|:---:|:---:|
+| 1 | $IIII$ | $-1.0704$ |
+| 2–5 | $IIIZ$, $IIZI$, $IZII$, $ZIII$ | $\pm 0.09$ to $\pm 0.30$ |
+| 6–11 | $IIZZ$, $IZIZ$, ... | $\pm 0.01$ to $\pm 0.17$ |
+| 12–15 | $XXYY$, $XYYX$, $YXXY$, $YYXX$ | $\pm 0.1744$ |
 
-FockMap represents this as a `PauliRotation` record:
+The identity term ($IIII$) contributes a global phase $e^{-i(-1.0704)t}$ which has no observable effect — it shifts all eigenvalues equally. We drop it from the circuit, leaving **14 non-identity terms** to Trotterize.
 
-```fsharp
-type PauliRotation =
-    { Operator : PauliRegister    // The Pauli string
-      Angle    : float }          // θ = c_k × Δt
-```
+### First-order Trotter with $\Delta t = 0.1$
 
----
-
-## First-Order Trotter
-
-First-order Trotter simply lists the rotations in order:
-
-$$\prod_{k=1}^{L} e^{-ic_k P_k \Delta t}$$
+Each term produces one Pauli rotation. The angle is $\theta_k = c_k \times \Delta t$:
 
 ```fsharp
+open Encodings
+
 let step = firstOrderTrotter 0.1 hamiltonian
-// step.Rotations : PauliRotation[]
-// step.Order : First
-// step.TimeStep : 0.1
-```
 
-For our 15-term H₂ Hamiltonian with $\Delta t = 0.1$:
-
-```fsharp
 printfn "Rotations: %d" step.Rotations.Length
-// → 14 (the identity term IIII contributes a global phase, typically dropped)
-
 for r in step.Rotations do
-    printfn "  %+.4f  %s" r.Angle r.Operator.Signature
+    printfn "  angle=%+.6f  Pauli=%s  weight=%d"
+        r.Angle
+        r.Operator.Signature
+        (r.Operator.Signature |> Seq.filter (fun c -> c <> 'I') |> Seq.length)
 ```
 
-Each rotation angle is the product of the Hamiltonian coefficient and the time step. The identity term ($IIII$) contributes only a global phase and is usually omitted from the circuit.
+The output will show 14 rotations — one per non-identity Hamiltonian term. The angles are small (all less than 0.04 in magnitude) because we chose $\Delta t = 0.1$ and the coefficients are all less than 0.35 Ha.
+
+### What the rotation list tells us
+
+Each entry says: "rotate the quantum state by angle $\theta$ around the axis defined by Pauli string $P$." In physical terms, this evolves the state under the influence of one term of the Hamiltonian for a short time.
+
+The key observation from Chapter 6 carries through: the **diagonal rotations** (weights 1–2, Z-only terms) are cheap and classical. The **off-diagonal rotations** (weight 4, XXYY-type) are expensive and quantum. The Trotter decomposition separates them — each gets its own rotation — and the encoding determines how expensive each one is.
 
 ---
 
-## Second-Order Trotter
+## Second-Order Trotter: Symmetry for Accuracy
 
-Second-order Trotter (Suzuki) uses the symmetric decomposition:
+First-order Trotter applies the rotations in one direction:
 
-$$\prod_{k=1}^{L} e^{-ic_k P_k \Delta t/2} \cdot \prod_{k=L}^{1} e^{-ic_k P_k \Delta t/2}$$
+$$e^{-ic_1 P_1 \Delta t} \cdot e^{-ic_2 P_2 \Delta t} \cdot \ldots \cdot e^{-ic_L P_L \Delta t}$$
+
+Second-order Trotter applies them forward at half-angle, then backward at half-angle:
+
+$$\underbrace{e^{-ic_1 P_1 \Delta t/2} \cdots e^{-ic_L P_L \Delta t/2}}_{\text{forward, half angle}} \cdot \underbrace{e^{-ic_L P_L \Delta t/2} \cdots e^{-ic_1 P_1 \Delta t/2}}_{\text{reverse, half angle}}$$
 
 ```fsharp
 let step2 = secondOrderTrotter 0.1 hamiltonian
-printfn "Rotations: %d" step2.Rotations.Length
-// → 28 (2 × 14, forward then reverse at half angle)
+
+printfn "Rotations: %d (vs %d for first-order)"
+    step2.Rotations.Length
+    step.Rotations.Length
+// → 28 rotations (2 × 14)
 ```
 
-The angles are halved ($\theta_k = c_k \Delta t / 2$), and the reverse pass mirrors the sequence. The total rotation count is $2L$ instead of $L$, but the approximation error decreases from $O(\Delta t^2)$ to $O(\Delta t^3)$ per step.
+The symmetrization cancels the leading-order error terms. Intuitively: the forward pass over-approximates by a small amount, and the reverse pass under-approximates by the same amount. The errors cancel, leaving a much smaller residual.
+
+| Property | First-order | Second-order |
+|:---|:---:|:---:|
+| Rotations per step | $L$ (14 for H₂) | $2L$ (28 for H₂) |
+| Rotation angles | $c_k \Delta t$ | $c_k \Delta t / 2$ |
+| Error per step | $O(\Delta t^2)$ | $O(\Delta t^3)$ |
+| Total error for $N$ steps | $O(t^2/N)$ | $O(t^3/N^2)$ |
+
+For the same target accuracy, second-order Trotter typically needs $\sqrt{N}$ fewer steps than first-order — which more than compensates for the doubled rotation count per step.
 
 ---
 
-## Choosing a Time Step
+## Choosing the Time Step
 
-The time step $\Delta t$ controls the accuracy–depth trade-off:
+The time step $\Delta t$ is the key knob in Trotterization. Too large → bad approximation. Too small → too many steps → too deep a circuit.
 
-| Smaller $\Delta t$ | Larger $\Delta t$ |
-|:---|:---|
-| Better Trotter approximation | Larger Trotter error |
-| More steps needed for same total $t$ | Fewer total steps |
-| Deeper total circuit | Shallower total circuit |
+A practical rule of thumb: $\Delta t \leq 1 / \lVert\hat{H}\rVert_1$, where the 1-norm is $\lVert\hat{H}\rVert_1 = \sum_k |c_k|$.
 
-For molecular Hamiltonians, a common heuristic: $\Delta t \leq 1 / \lVert\hat{H}\rVert$ where $\lVert\hat{H}\rVert = \sum_k \lvert c_k\rvert$ is the 1-norm. For H₂, $\lVert\hat{H}\rVert \approx 3.7$ Ha, giving $\Delta t \lesssim 0.27$.
+For H₂: $\lVert\hat{H}\rVert_1 \approx 3.7$ Ha, giving $\Delta t \lesssim 0.27$. Our choice of $\Delta t = 0.1$ is comfortably within this bound.
+
+For H₂O (12 qubits): $\lVert\hat{H}\rVert_1$ is larger (~30 Ha), so $\Delta t$ must be smaller — around $0.03$. This means more Trotter steps per unit time, which means more CNOTs. This is another reason larger molecules are harder to simulate.
 
 ---
 
-## Quick Cost Estimate
+## Quick CNOT Estimate (Before Gate Decomposition)
 
-Without decomposing into gates (that's Chapter 14), we can already count CNOTs:
+We can estimate the CNOT cost without actually building the gate circuit, using the formula from Chapter 4:
+
+$$\text{CNOTs per Trotter step} = \sum_{k=1}^{L} 2(w_k - 1)$$
 
 ```fsharp
-let cnotEstimate = trotterCnotCount step
-// Each rotation of weight w costs 2(w-1) CNOTs
-// Sum over all rotations
+let cnots = trotterCnotCount step
+printfn "Estimated CNOTs per first-order step: %d" cnots
 ```
 
-For H₂ (first-order, $L = 14$ non-identity terms):
+For H₂ (14 non-identity terms):
 
-| Term type | Count | Typical weight | CNOTs per rotation | Total CNOTs |
+| Term type | Count | Weight | CNOTs each | Subtotal |
 |:---:|:---:|:---:|:---:|:---:|
-| Single-Z | 4 | 1 | 0 | 0 |
-| Double-Z | 6 | 2 | 2 | 12 |
-| XXYY-type | 4 | 4 | 6 | 24 |
+| Single-Z ($IIIZ$, etc.) | 4 | 1 | 0 | 0 |
+| Double-Z ($IIZZ$, etc.) | 6 | 2 | 2 | 12 |
+| Exchange ($XXYY$, etc.) | 4 | 4 | 6 | 24 |
 | **Total** | **14** | — | — | **36** |
 
-36 CNOTs per first-order Trotter step. Second-order doubles this to 72, but may need fewer total steps for the same precision.
+36 CNOTs per first-order Trotter step. Second-order: 72. For a 100-step simulation: 3,600 (first-order) or 7,200 (second-order) CNOTs total.
+
+These are small numbers — easily within reach of current hardware for H₂. For H₂O with ~600 terms and higher weights, the numbers grow into the thousands per step — which is where encoding choice and tapering make the difference between feasible and infeasible.
 
 ---
 
 ## Key Takeaways
 
-- A Trotter step converts a Hamiltonian into a list of `PauliRotation` records — each with a Pauli string and a rotation angle.
-- First-order: $L$ rotations at angle $c_k \Delta t$. Second-order: $2L$ rotations at half angle.
+- A Trotter step converts a Hamiltonian into a list of **Pauli rotations** — each with a Pauli string and an angle.
+- First-order: $L$ rotations. Second-order: $2L$ rotations at half angle, with quadratically better error scaling.
+- The time step $\Delta t$ is bounded by $1/\lVert H \rVert_1$ — larger Hamiltonians need smaller steps.
 - CNOT cost is estimable from Pauli weights alone: $\sum_k 2(w_k - 1)$.
-- The time step $\Delta t$ trades circuit depth for approximation accuracy.
+- For H₂: 36 CNOTs per first-order step. Feasible. For H₂O: thousands. That's where optimization matters.
+
+## Common Mistakes
+
+1. **Including the identity term.** The $IIII$ term contributes only a global phase — include it and you waste one rotation per step on something unobservable.
+
+2. **Using first-order Trotter for production.** First-order is fine for learning but second-order is almost always better in practice — the error improvement outweighs the doubled rotation count.
+
+3. **Choosing $\Delta t$ too large.** If $\Delta t \cdot \lVert H \rVert_1 > 1$, the Trotter approximation breaks down and the circuit does not approximate the correct time evolution.
+
+## Exercises
+
+1. **Rotation count.** For H₂O with 600 non-identity terms, how many rotations does a single second-order Trotter step have?
+
+2. **Time step.** If $\lVert H \rVert_1 = 30$ Ha and you want $\Delta t = 0.01$, how many Trotter steps do you need for total evolution time $t = 1$?
+
+3. **CNOT scaling.** If every term in a Hamiltonian has weight 5 (ternary tree on a 27-orbital system), and there are 200 non-identity terms, what is the CNOT count per first-order step?
 
 ---
 
-**Previous:** [Chapter 12 — From Hamiltonian to Time Evolution](12-time-evolution.html)
+**Previous:** [Chapter 13 — From Hamiltonian to Time Evolution](13-time-evolution.html)
 
-**Next:** [Chapter 14 — The CNOT Staircase](14-cnot-staircase.html)
+**Next:** [Chapter 15 — The CNOT Staircase](15-cnot-staircase.html)

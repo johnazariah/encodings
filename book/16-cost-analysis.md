@@ -1,12 +1,34 @@
 # Chapter 16: Cost Analysis Across Encodings
 
-_Bringing it all together: a quantitative comparison of encoding + tapering + Trotterization cost for real molecules._
+_Everything we've done — encoding, tapering, Trotterization — converges to one number: the CNOT count. This chapter computes it._
 
 ## In This Chapter
 
-- **What you'll learn:** Complete CNOT cost tables for H₂ and H₂O across all five encodings, with and without tapering, at multiple system sizes.
-- **Why this matters:** This is the chapter that answers "which encoding should I use for my molecule?"
-- **Prerequisites:** Chapters 12–14 (Trotter decomposition and CNOT staircase).
+- **What you'll learn:** The complete CNOT cost for H₂ and H₂O across all five encodings, with and without tapering, and how the optimization stack compounds.
+- **Why this matters:** This answers the practical question: "which encoding should I use for my molecule?" The answer depends on the system size, and the numbers tell the story.
+- **Prerequisites:** Chapters 13–15 (Trotter decomposition and CNOT staircase).
+
+---
+
+## The Optimization Stack
+
+Before we compute anything, here is the complete pipeline showing every optimization we've developed:
+
+```mermaid
+flowchart TD
+    RAW["Raw JW Hamiltonian<br/>n qubits, O(n) weight"]
+    RAW --> |"Tapering<br/>(Ch 9–12)"| TAP["Tapered Hamiltonian<br/>n-k qubits"]
+    TAP --> |"Encoding choice<br/>(Ch 7)"| ENC["Ternary tree encoding<br/>O(log₃ n) weight"]
+    ENC --> |"2nd-order Trotter<br/>(Ch 13–14)"| TROT["Gate sequence<br/>2L rotations × 2(w-1) CNOTs each"]
+    style TROT fill:#d1fae5,stroke:#059669
+```
+
+Each stage contributes multiplicatively:
+- **Tapering** reduces qubit count by $k$, often reduces term count
+- **Encoding choice** reduces worst-case weight from $O(n)$ to $O(\log n)$
+- **Trotter order** trades rotations per step for error convergence rate
+
+The order matters: **taper first** (on any encoding), then choose the encoding for the tapered system, then Trotterize.
 
 ---
 
@@ -89,11 +111,27 @@ The order matters: taper first (on any encoding), then choose the encoding for t
 - For small molecules ($n \leq 6$), encoding choice barely matters. JW is often cheapest.
 - For medium molecules ($n = 12$–$20$), ternary tree encoding saves 3–5× CNOTs over JW.
 - For large molecules ($n \sim 100$), the savings are ~25× — potentially enabling experiments that would otherwise be infeasible.
-- Tapering and encoding choice compound multiplicatively.
-- The complete optimization stack: taper → encode → Trotterize.
+- The complete optimization stack is: **taper → encode → Trotterize**. Each stage compounds multiplicatively.
+- The CNOT count is the single most important feasibility metric for near-term quantum simulation.
+
+## Common Mistakes
+
+1. **Encoding before tapering.** Taper first — the encoding then operates on a smaller qubit count, which can change which encoding is optimal.
+
+2. **Comparing encodings at $n = 4$.** The differences are negligible at small $n$. Scale to $n \geq 12$ to see real savings.
+
+3. **Ignoring the time step.** CNOT count per step is only half the story — the number of Trotter steps (determined by $\Delta t$ and $\lVert H \rVert_1$) multiplies everything.
+
+## Exercises
+
+1. **H₂ by hand.** Verify the 36-CNOT figure for H₂ first-order Trotter by summing $2(w_k - 1)$ over all 14 non-identity terms.
+
+2. **Tapering impact.** If tapering removes 3 qubits from a 14-qubit system and reduces the term count from 630 to 420, estimate the CNOT savings assuming average weight drops from 4 to 3.
+
+3. **Run it.** Use the companion script `book/code/ch07-five-encodings.fsx` to compute the weight scaling table for $n = 4, 8, 16, 32, 64$. At what $n$ does the ternary tree first beat JW?
 
 ---
 
-**Previous:** [Chapter 14 — The CNOT Staircase](14-cnot-staircase.html)
+**Previous:** [Chapter 15 — The CNOT Staircase](15-cnot-staircase.html)
 
-**Next:** [Chapter 16 — OpenQASM Generation](16-openqasm.html)
+**Next:** [Chapter 17 — OpenQASM Generation](17-openqasm.html)
