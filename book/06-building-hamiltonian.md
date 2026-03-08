@@ -1,4 +1,4 @@
-# Chapter 5: Building the Qubit Hamiltonian
+# Chapter 6: Building the Qubit Hamiltonian
 
 _This is where the pipeline pays off. We take the integral tables from Chapter 3, the encoding from Chapter 4, and produce the actual qubit Hamiltonian — the object that a quantum computer will simulate._
 

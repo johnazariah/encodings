@@ -1,4 +1,4 @@
-# Chapter 4: A Visual Guide to Encodings
+# Chapter 5: A Visual Guide to Encodings
 
 _We have a Hamiltonian written in terms of electrons and orbitals. A quantum computer only has qubits. This chapter explains why the translation is not as obvious as it looks, and introduces three ways to do it._
 
