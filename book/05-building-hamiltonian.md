@@ -4,48 +4,116 @@ _This is where the pipeline pays off. We take the integral tables from Chapter 3
 
 ## In This Chapter
 
-- **What you'll learn:** How to systematically encode every one-body and two-body fermionic term into Pauli strings, combine like terms, and arrive at the complete 15-term H₂ Hamiltonian.
-- **Why this matters:** This is the exact object used by VQE, QPE, and every other quantum simulation algorithm. If you can build this correctly, you can build it for any molecule.
+- **What you'll learn:** Why the distinction between diagonal and off-diagonal Hamiltonian terms is the central idea of quantum simulation, how to systematically encode fermionic terms into Pauli strings, and how to read the resulting 15-term H₂ Hamiltonian as a map of classical vs quantum physics.
+- **Why this matters:** This is the exact object used by VQE, QPE, and every other quantum simulation algorithm. Understanding its structure — which parts are classical, which parts are quantum — is the key to understanding why quantum computing matters for chemistry.
 - **Prerequisites:** Chapters 1–4 (integrals, notation, spin-orbitals, encoding concepts).
+
+---
+
+## The Density Matrix: Where Classical Ends and Quantum Begins
+
+Before we compute anything, we need to understand what we're looking for — because the structure of the qubit Hamiltonian will tell us exactly where classical physics ends and quantum physics begins.
+
+### Classical: a probability distribution
+
+If electrons were classical particles, we could describe their state as a **probability distribution** over configurations:
+
+$$\text{Prob}(\lvert 1100\rangle) = 0.95, \quad \text{Prob}(\lvert 0011\rangle) = 0.03, \quad \text{Prob}(\lvert 1010\rangle) = 0.02, \quad \ldots$$
+
+This tells us: "if we look, there's a 95% chance both electrons are in the bonding orbital, a 3% chance both are in the antibonding orbital," and so on. The expected energy is just a weighted average: $E_{\text{classical}} = \sum_i p_i \, E_i$.
+
+Mathematically, this is a **diagonal** density matrix — numbers along the diagonal (the probabilities) and zeros everywhere else:
+
+$$\rho_{\text{classical}} = \begin{pmatrix}
+0.95 & 0 & 0 & \cdots \\
+0 & 0.03 & 0 & \cdots \\
+0 & 0 & 0.02 & \cdots \\
+\vdots & \vdots & \vdots & \ddots
+\end{pmatrix}$$
+
+Hartree–Fock is essentially this picture: the electrons are in $\lvert 1100\rangle$ with probability 1. One non-zero diagonal entry. No mixing, no uncertainty beyond what's already baked into the orbital structure.
+
+### Quantum: coherences change everything
+
+A quantum state is fundamentally different. The ground state of H₂ is not "95% chance of $\lvert 1100\rangle$." It is a **superposition**:
+
+$$\lvert\Psi\rangle = c_1\lvert 1100\rangle + c_2\lvert 0011\rangle + \cdots$$
+
+The density matrix $\rho = \lvert\Psi\rangle\langle\Psi\rvert$ now has off-diagonal elements:
+
+$$\rho_{\text{quantum}} = \begin{pmatrix}
+\lvert c_1\rvert^2 & c_1 c_2^* & \cdots \\
+c_2 c_1^* & \lvert c_2\rvert^2 & \cdots \\
+\vdots & \vdots & \ddots
+\end{pmatrix}$$
+
+The diagonal entries $\lvert c_i\rvert^2$ are probabilities — same as the classical case. But the off-diagonal entries $c_i c_j^*$ are **coherences**. They have no classical analogue. They encode the *phase relationships* between configurations — the interference patterns that allow the quantum state to have a lower energy than any classical mixture of the same configurations.
+
+> **The off-diagonal elements of the density matrix are the quantum difference.**
+
+A classical mixture with the same occupation probabilities would have a *higher* energy. The coherences destructively interfere with high-energy contributions and constructively interfere with low-energy ones. The energy difference between the quantum ground state and the best classical approximation is the **correlation energy** — the ~1% that Hartree–Fock misses, the ~12 kcal/mol that determines whether a reaction happens.
+
+### What generates coherences?
+
+**Diagonal Hamiltonian terms** (built from I and Z only) do not mix configurations. They assign energies — "configuration $\lvert 1100\rangle$ costs this much, configuration $\lvert 0011\rangle$ costs that much." Under time evolution, they rotate phases but never create superpositions. A diagonal Hamiltonian cannot generate off-diagonal density matrix elements. Its ground state is always a single configuration.
+
+**Off-diagonal Hamiltonian terms** (containing X or Y) *mix* configurations. They connect $\lvert 1100\rangle$ to $\lvert 0011\rangle$, creating the superposition — the coherences — that lower the energy below the classical minimum.
+
+The chain of implications is absolute:
+
+$$\text{No off-diagonal } H \;\Rightarrow\; \text{no coherences in } \rho \;\Rightarrow\; \text{no correlation energy} \;\Rightarrow\; \text{HF is exact} \;\Rightarrow\; \text{no quantum computer needed}$$
+
+### What this means for encoding
+
+Now we can state precisely what the encoding must accomplish:
+
+The **diagonal part** of the Hamiltonian (orbital energies, Coulomb repulsion) is cheap. It maps to I and Z Pauli operators, diagonal in the computational basis. Measuring them is trivial. Simulating their time evolution requires only single-qubit Z-rotations. No entanglement, no deep circuits.
+
+The **off-diagonal part** (exchange interactions) is expensive. It maps to X and Y Pauli operators, which flip qubits and create entanglement. Simulating these terms requires multi-qubit gates — CNOT staircases, as we'll see in Stage 4. The Pauli weight of these off-diagonal terms directly determines the circuit depth.
+
+**The encoding choice determines the cost of the off-diagonal terms.** JW, BK, and tree encodings all produce the same diagonal terms — they differ only in how they handle the Z-chains that accompany the off-diagonal X/Y operators.
+
+**This is the thesis of the entire book:** the correlation energy lives in the off-diagonal coherences of the density matrix, and the encoding determines how expensive it is to create and maintain those coherences on quantum hardware.
+
+With this lens in place, let's build the Hamiltonian and see the structure emerge.
+
+---
+
+## What We Have and What We'll Do
+
+Chapters 1–4 gave us everything we need:
+
+- **The chemistry** (Chapter 1): H₂ in STO-3G, 4 spin-orbitals, the second-quantized Hamiltonian.
+- **The notation** (Chapter 2): physicist's convention, the conversion rule, the traps to avoid.
+- **The numbers** (Chapter 3): complete spin-orbital integral tables and a coefficient factory in F#.
+- **The encoding** (Chapter 4): Jordan–Wigner's Z-chain mechanism for translating fermionic operators to Pauli strings.
+
+The procedure from here is mechanical. Once you see it done for one term, you can do it for any term, for any molecule, in any encoding. The insight is behind us; what remains is careful bookkeeping.
 
 ---
 
 ## The Recipe
 
-The procedure is mechanical — no insight required beyond what we've already developed. For a Hamiltonian with $n$ spin-orbitals:
-
 ```mermaid
 flowchart TD
-    OB["For each non-zero h_pq:<br/>encode a†_p and a_q as Pauli strings,<br/>multiply them, scale by h_pq"]
-    TB["For each non-zero ⟨pq|rs⟩:<br/>encode all four operators,<br/>multiply the Pauli strings,<br/>scale by ½⟨pq|rs⟩"]
-    OB --> SUM["Sum all terms,<br/>collect Pauli strings with same signature,<br/>add their coefficients"]
+    OB["One-body terms:<br/>For each non-zero one-body integral,<br/>encode the two ladder operators as Pauli strings,<br/>multiply them, and scale by the integral value"]
+    TB["Two-body terms:<br/>For each non-zero two-body integral,<br/>encode all four ladder operators,<br/>multiply the Pauli strings,<br/>and scale by half the integral value"]
+    OB --> SUM["Combine like terms:<br/>collect Pauli strings with the same signature<br/>and sum their coefficients"]
     TB --> SUM
-    SUM --> NR["Add V_nn · IIII<br/>(nuclear repulsion)"]
-    NR --> HAM["The qubit Hamiltonian:<br/>H = Σ c_k P_k"]
+    SUM --> NR["Add nuclear repulsion<br/>as a contribution to the identity term"]
+    NR --> HAM["The qubit Hamiltonian"]
     style HAM fill:#d1fae5,stroke:#059669
 ```
 
-Each step is a pattern: look up the integral, encode the operators, multiply the Pauli strings (using the exact Pauli multiplication table), and accumulate. FockMap does this symbolically — no matrices, no floats in the intermediate algebra.
+FockMap does this symbolically — no matrices, no floats in the intermediate algebra. We'll work through one representative term by hand, then show the complete result.
 
----
+### One-body terms: number operators
 
-## One-Body Terms: Number Operators
-
-The non-zero one-body integrals for H₂ in STO-3G are all diagonal (Chapter 3): $h_{00} = h_{11} = -1.2563$ Ha and $h_{22} = h_{33} = -0.4719$ Ha. The one-body Hamiltonian is therefore a sum of number operators:
-
-$$\hat{H}_1 = \sum_j h_{jj}\, a_j^\dagger a_j = \sum_j h_{jj}\, \hat{n}_j$$
-
-Under Jordan–Wigner, the number operator has a beautiful simplification. Recall from Chapter 4 that $a_j^\dagger$ carries a Z-chain below position $j$, and $a_j$ carries the same chain. When we multiply them, the chains cancel:
+The non-zero one-body integrals for H₂ are all diagonal (Chapter 3): $h_{00} = h_{11} = -1.2563$ Ha and $h_{22} = h_{33} = -0.4719$ Ha. Under Jordan–Wigner, the number operator simplifies — the Z-chains cancel:
 
 $$\hat{n}_j = a_j^\dagger a_j = \frac{1}{2}(I - Z_j)$$
 
-This is weight 1 — just a single $Z$ on qubit $j$ — regardless of the system size. The Z-chain overhead that makes JW expensive for creation operators simply vanishes for number operators.
-
-Substituting our integral values:
-
-$$\hat{H}_1 = \sum_{j=0}^{3} h_{jj} \cdot \frac{1}{2}(I - Z_j)$$
-
-$$= \frac{1}{2}\bigl(h_{00} + h_{11} + h_{22} + h_{33}\bigr) \cdot IIII - \frac{h_{00}}{2}\,IIIZ - \frac{h_{11}}{2}\,IIZI - \frac{h_{22}}{2}\,IZII - \frac{h_{33}}{2}\,ZIII$$
+Weight 1, regardless of system size. The one-body Hamiltonian produces five terms — all diagonal, all classical:
 
 | Pauli term | Coefficient (Ha) | Origin |
 |:---:|:---:|:---|
@@ -55,107 +123,63 @@ $$= \frac{1}{2}\bigl(h_{00} + h_{11} + h_{22} + h_{33}\bigr) \cdot IIII - \frac{
 | $IZII$ | $+0.2359$ | $-h_{22}/2$ (energy of $\sigma_u, \alpha$) |
 | $ZIII$ | $+0.2359$ | $-h_{33}/2$ (energy of $\sigma_u, \beta$) |
 
-Five terms. All diagonal (I and Z only). If the Hamiltonian were only these terms, a classical computer could solve it trivially — just read off the diagonal entries. The interesting physics comes from the two-body terms.
+All I and Z. No off-diagonal terms. No coherences generated. If this were the whole Hamiltonian, a laptop would suffice.
 
----
+### Two-body terms: one by hand
 
-## Two-Body Terms: Where It Gets Real
+Consider the Coulomb repulsion between two electrons in $\sigma_g$ with opposite spins: $\frac{1}{2}\langle 01 \mid 01\rangle\; a_0^\dagger a_1^\dagger a_1 a_0$, with integral value $0.6745$ Ha.
 
-The two-body contribution is:
+Encode each operator under JW, multiply the four Pauli strings, and simplify. Three observations make the algebra tractable: the Z-chains cancel ($Z_0 \cdot Z_0 = I$), and each raising-lowering pair simplifies via $(X - iY)(X + iY) = 2(I - Z)$.
 
-$$\hat{H}_2 = \frac{1}{2}\sum_{pqrs} \langle pq \mid rs\rangle\, a_p^\dagger a_q^\dagger a_s a_r$$
+$$a_0^\dagger a_1^\dagger a_1 a_0 = \frac{1}{4}(IIII - IIIZ - IIZI + IIZZ)$$
 
-For H₂ with 4 spin-orbitals, this sum has $4^4 = 256$ index combinations, of which 32 have non-zero integrals (Chapter 3). Each non-zero term requires encoding four operators, multiplying four Pauli strings, and scaling by the integral value. FockMap does all 32 in parallel; here, we'll work through one representative term by hand.
+Scaled by the integral: four diagonal Pauli contributions. This is a Coulomb term — pure classical electrostatics, no off-diagonal structure. Exactly as the density matrix framework predicted.
 
-### One term, fully expanded
-
-Consider the Coulomb repulsion between two electrons in $\sigma_g$ with opposite spins:
-
-$$\frac{1}{2}\langle 0\alpha,\, 0\beta \mid 0\alpha,\, 0\beta\rangle\; a_0^\dagger a_1^\dagger a_1 a_0$$
-
-In our spin-orbital indexing: $p=0, q=1, r=0, s=1$, with integral value $\langle 01 \mid 01\rangle = 0.6745$ Ha.
-
-**Step 1: Encode the operators under Jordan–Wigner.**
-
-$$a_0^\dagger = \frac{1}{2}(X_0 - iY_0) \otimes I_1 \otimes I_2 \otimes I_3$$
-
-$$a_1^\dagger = \frac{1}{2}\,Z_0 \otimes (X_1 - iY_1) \otimes I_2 \otimes I_3$$
-
-$$a_1 = \frac{1}{2}\,Z_0 \otimes (X_1 + iY_1) \otimes I_2 \otimes I_3$$
-
-$$a_0 = \frac{1}{2}(X_0 + iY_0) \otimes I_1 \otimes I_2 \otimes I_3$$
-
-Note the $Z_0$ on $a_1^\dagger$ and $a_1$ — that's the Z-chain from JW, tracking the parity of orbital 0.
-
-**Step 2: Multiply the four operators.**
-
-$$a_0^\dagger a_1^\dagger a_1 a_0 = \frac{1}{16}(X_0 - iY_0)\; Z_0(X_1 - iY_1)\; Z_0(X_1 + iY_1)\; (X_0 + iY_0)$$
-
-**Step 3: Simplify using the Pauli multiplication table.**
-
-This looks like a wall of algebra, but three observations make it tractable:
-
-1. **$Z_0 \cdot Z_0 = I_0$** — the two Z-chains cancel.
-2. **$(X_1 - iY_1)(X_1 + iY_1) = X_1^2 + Y_1^2 + iX_1Y_1 - iY_1X_1 = 2I_1 - 2Z_1$** — using $X^2 = I$, $Y^2 = I$, and $XY - YX = 2iZ$.
-3. **$(X_0 - iY_0)(X_0 + iY_0) = 2I_0 - 2Z_0$** — same identity on qubit 0.
-
-Therefore:
-
-$$a_0^\dagger a_1^\dagger a_1 a_0 = \frac{1}{16} \cdot (2I_0 - 2Z_0)(2I_1 - 2Z_1) = \frac{1}{4}(I - Z_0)(I - Z_1)$$
-
-$$= \frac{1}{4}(IIII - IIIZ - IIZI + IIZZ)$$
-
-**Step 4: Scale by the integral.**
-
-$$\frac{1}{2} \cdot 0.6745 \cdot \frac{1}{4}(IIII - IIIZ - IIZI + IIZZ)$$
-
-$$= 0.08431 \cdot IIII - 0.08431 \cdot IIIZ - 0.08431 \cdot IIZI + 0.08431 \cdot IIZZ$$
-
-This one term contributes to four Pauli strings: $IIII$, $IIIZ$, $IIZI$, and $IIZZ$.
-
-> **What we just saw:** The product $a_0^\dagger a_1^\dagger a_1 a_0$ is a number-number interaction ($\hat{n}_0 \hat{n}_1$). It produces only diagonal (I, Z) Pauli terms. The off-diagonal XX/YY terms come from *exchange* integrals — terms like $a_0^\dagger a_2^\dagger a_0 a_2$ where electrons swap orbitals.
-
-### Where the XX and YY terms come from
-
-The exchange integrals $\langle 02 \mid 20\rangle$ produce terms like $a_0^\dagger a_2^\dagger a_0 a_2$, where electron 1 moves from orbital 2 to orbital 0 and electron 2 moves from orbital 0 to orbital 2. Under JW, these generate products that *don't* simplify to pure Z — they leave XX and YY Pauli operators on the qubits involved.
-
-These are the terms that create **entanglement** between computational basis states. Without them, the Hamiltonian would be classical and any configuration-interaction calculation would be trivial. Their presence is why quantum simulation is necessary — and why their correct treatment is the essential test of any encoding implementation.
+The **exchange** integrals $\langle 02 \mid 20\rangle$ tell a different story. They produce terms like $a_0^\dagger a_2^\dagger a_0 a_2$, where electrons swap orbitals. Under JW, these don't simplify to pure Z — they leave XX and YY Pauli operators. These are the off-diagonal terms. They generate coherences. They produce the correlation energy.
 
 ---
 
 ## The Complete 15-Term Hamiltonian
 
-After processing all 32 non-zero two-body integrals, combining like terms, and adding the nuclear repulsion $V_{nn} = 0.7151$ Ha as a contribution to $IIII$:
+After processing all 32 non-zero two-body integrals, combining like terms, and adding $V_{nn} = 0.7151$ Ha:
 
 | # | Pauli String | Coefficient (Ha) | Character |
 |:---:|:---:|:---:|:---|
 | 1 | $IIII$ | $-1.0704$ | Energy offset |
-| 2 | $IIIZ$ | $-0.0958$ | $\sigma_g\alpha$ energy |
-| 3 | $IIZI$ | $-0.0958$ | $\sigma_g\beta$ energy |
-| 4 | $IZII$ | $+0.3021$ | $\sigma_u\alpha$ energy |
-| 5 | $ZIII$ | $+0.3021$ | $\sigma_u\beta$ energy |
-| 6 | $IIZZ$ | $+0.1743$ | Coulomb: $\sigma_g\alpha$–$\sigma_g\beta$ |
-| 7 | $IZIZ$ | $-0.0085$ | Coulomb: $\sigma_g\alpha$–$\sigma_u\alpha$ |
-| 8 | $IZZI$ | $+0.1659$ | Coulomb: $\sigma_g\beta$–$\sigma_u\alpha$ |
-| 9 | $ZIIZ$ | $+0.1659$ | Coulomb: $\sigma_g\alpha$–$\sigma_u\beta$ |
-| 10 | $ZIZI$ | $-0.0085$ | Coulomb: $\sigma_g\beta$–$\sigma_u\beta$ |
-| 11 | $ZZII$ | $+0.1686$ | Coulomb: $\sigma_u\alpha$–$\sigma_u\beta$ |
-| 12 | $XXYY$ | $-0.1744$ | Exchange |
-| 13 | $XYYX$ | $+0.1744$ | Exchange |
-| 14 | $YXXY$ | $+0.1744$ | Exchange |
-| 15 | $YYXX$ | $-0.1744$ | Exchange |
+| 2 | $IIIZ$ | $-0.0958$ | Orbital energy |
+| 3 | $IIZI$ | $-0.0958$ | Orbital energy |
+| 4 | $IZII$ | $+0.3021$ | Orbital energy |
+| 5 | $ZIII$ | $+0.3021$ | Orbital energy |
+| 6 | $IIZZ$ | $+0.1743$ | Coulomb repulsion |
+| 7 | $IZIZ$ | $-0.0085$ | Coulomb repulsion |
+| 8 | $IZZI$ | $+0.1659$ | Coulomb repulsion |
+| 9 | $ZIIZ$ | $+0.1659$ | Coulomb repulsion |
+| 10 | $ZIZI$ | $-0.0085$ | Coulomb repulsion |
+| 11 | $ZZII$ | $+0.1686$ | Coulomb repulsion |
+| 12 | $XXYY$ | $-0.1744$ | **Exchange** |
+| 13 | $XYYX$ | $+0.1744$ | **Exchange** |
+| 14 | $YXXY$ | $+0.1744$ | **Exchange** |
+| 15 | $YYXX$ | $-0.1744$ | **Exchange** |
 
-This is the H₂ qubit Hamiltonian. Fifteen Pauli strings with real coefficients. Every quantum simulation of H₂ in the STO-3G basis starts with this object.
+---
 
-### What the table tells us
+## Reading the Hamiltonian: What's Hartree–Fock, What's Quantum
 
-**Terms 1–5** (weight 0–1, I and Z only): the "classical" part — orbital energies and a constant offset. Together they account for the Hartree–Fock energy.
+Now we read this table through the density matrix lens.
 
-**Terms 6–11** (weight 2, ZZ pairs): Coulomb repulsion between pairs of orbitals. Still diagonal — measurable without entanglement.
+**Terms 1–5** (weight 0–1, I and Z only): orbital energies and a constant offset. These are eigenvalues of the number operators — the energy cost of occupying each orbital. Purely diagonal. This is the one-body part of Hartree–Fock.
 
-**Terms 12–15** (weight 4, XXYY-type): quantum exchange. These four terms are the entire reason we need a quantum computer. They couple different electron configurations and produce the correlation energy that Hartree–Fock misses.
+**Terms 6–11** (weight 2, ZZ pairs): Coulomb repulsion between pairs of orbitals. Still diagonal — they refine the classical energy by accounting for pairwise electron-electron repulsion. Measurable by reading qubit values, no entanglement needed. This is the two-body part of Hartree–Fock.
 
-Note the structure of the exchange terms: they come in two pairs with equal magnitude and opposite sign ($\pm 0.1744$). This is a consequence of the antisymmetry of fermionic wavefunctions — the exchange integral changes sign when you swap electrons.
+**Terms 12–15** (weight 4, XXYY-type): **quantum exchange**. These are the off-diagonal terms — the ones that mix configurations, generate coherences in $\rho$, and produce the correlation energy.
+
+Four terms out of fifteen. They come in two pairs with equal magnitude and opposite sign ($\pm 0.1744$) — a consequence of fermionic antisymmetry.
+
+**Delete terms 12–15** and the ground state would be $\lvert 1100\rangle$ with a purely diagonal density matrix — a classical probability distribution, not a quantum state. The quantum advantage vanishes.
+
+**Keep them** and the ground state becomes a superposition with coherences. The energy drops by ~12 kcal/mol — the correlation energy that no classical single-reference method can capture. This is the energy that determines whether a bond breaks, whether a reaction goes forward, whether a drug binds.
+
+Four Pauli strings. That's where quantum computing earns its keep.
 
 ---
 
@@ -198,7 +222,7 @@ Output:
 -0.1744  YYXX
 ```
 
-Every coefficient matches the table. The library performed the same procedure we did by hand — encode, multiply, combine — but for all 32 two-body integrals simultaneously.
+Every coefficient matches the table.
 
 ### Trying a different encoding
 
@@ -210,40 +234,39 @@ let h2_tt  = computeHamiltonianWith ternaryTreeTerms    h2Factory 4u
 let h2_par = computeHamiltonianWith parityTerms         h2Factory 4u
 ```
 
-All four Hamiltonians have different Pauli strings but the **same eigenvalues** — the same physics. We'll verify this in Chapter 7.
+All four produce different Pauli strings but the **same eigenvalues**. We'll verify this in Chapter 7.
 
 ---
 
 ## Key Takeaways
 
-- **One-body terms** produce diagonal (I, Z) Pauli operators via the number operator $\hat{n}_j = \frac{1}{2}(I - Z_j)$. The Z-chain cancels in the product.
-- **Two-body Coulomb terms** produce ZZ-type diagonal operators — still classical, no entanglement.
-- **Two-body exchange terms** produce XX/YY operators — the quantum part that creates entanglement and captures correlation energy.
-- The complete H₂ Hamiltonian has 15 Pauli terms: 1 identity, 4 single-Z, 6 double-Z, and 4 exchange (XXYY-type).
-- All encodings produce the same eigenvalues. The choice of encoding affects only the Pauli weight (circuit cost), not the physics.
+- The **density matrix** distinguishes classical from quantum: diagonal entries are probabilities (classical); off-diagonal entries are coherences (quantum).
+- Off-diagonal Hamiltonian terms **generate** those coherences. No off-diagonal terms → no correlation energy → no quantum advantage.
+- The H₂ Hamiltonian has 11 diagonal terms (Hartree–Fock) and 4 off-diagonal terms (quantum exchange). The correlation energy lives entirely in those 4 terms.
+- The encoding determines how many qubits each off-diagonal term touches — and therefore the circuit cost of quantum simulation.
 
 ## Common Mistakes
 
-1. **Forgetting $V_{nn}$.** The nuclear repulsion contributes to the $IIII$ coefficient. Without it, the ground-state energy will be off by 0.7151 Ha — unmistakably wrong, but if you're not checking against a known value you won't notice.
+1. **Forgetting $V_{nn}$.** The nuclear repulsion contributes to the $IIII$ coefficient. Without it, the ground-state energy will be off by 0.7151 Ha.
 
-2. **Wrong operator ordering.** The second-quantized Hamiltonian has $a_p^\dagger a_q^\dagger a_s a_r$ — annihilation operators in *reverse* order. Writing $a_r a_s$ instead of $a_s a_r$ flips signs on exchange terms.
+2. **Wrong operator ordering.** The annihilation operators in $a_p^\dagger a_q^\dagger a_s a_r$ are in *reverse* order. Writing $a_r a_s$ instead of $a_s a_r$ flips signs on exchange terms.
 
-3. **Not combining like terms.** Before combination, the 32 two-body integrals produce many duplicate Pauli signatures. The Hamiltonian construction must sum their coefficients. Missing this step gives too many terms with wrong individual coefficients (but the sum would accidentally be correct if computed term by term — a very confusing bug to diagnose).
+3. **Not combining like terms.** The 32 two-body integrals produce many duplicate Pauli signatures that must be summed.
 
 ## Exercises
 
-1. **Number operator by hand.** Verify that $a_2^\dagger a_2 = \frac{1}{2}(I - Z_2)$ by expanding the JW-encoded operators and using the Pauli multiplication table.
+1. **Number operator by hand.** Verify that $a_2^\dagger a_2 = \frac{1}{2}(I - Z_2)$ by expanding the JW-encoded operators.
 
-2. **Exchange term sign.** The coefficient of $XXYY$ is $-0.1744$ and the coefficient of $XYYX$ is $+0.1744$. Explain why these have opposite signs in terms of the antisymmetry of the electron wavefunction.
+2. **Exchange term sign.** Explain why $XXYY$ has coefficient $-0.1744$ and $XYYX$ has $+0.1744$ in terms of fermionic antisymmetry.
 
-3. **Term count prediction.** For H₂O with 12 spin-orbitals (after frozen core), how many Pauli terms would you expect in the JW Hamiltonian? (Hint: it's much more than 15. The scaling is roughly $O(n^4)$ before combination and $O(n^4)$ after, but with significant cancellation.)
+3. **Diagonal-only energy.** Delete terms 12–15. What is the ground-state energy of the remaining diagonal Hamiltonian? Compare with $E_{\text{HF}} = -1.1168$ Ha.
 
-4. **Encoding comparison.** Run the FockMap code above with all five encodings. Verify that they all produce the same number of terms (15) for H₂. Do they always have the same number of terms for larger molecules?
+4. **Encoding comparison.** Run the code with all five encodings. Do they all produce the same number of terms for H₂?
 
 ## Further Reading
 
-- Whitfield, J. D., Biamonte, J., and Aspuru-Guzik, A. "Simulation of electronic structure Hamiltonians using quantum computers." *Mol. Phys.* 109, 735 (2011). A thorough treatment of the Hamiltonian construction procedure for JW, including explicit Pauli string derivations.
-- McArdle, S. et al. "Quantum computational chemistry." *Rev. Mod. Phys.* 92, 015003 (2020). Section III covers Hamiltonian encoding with a comparison of JW and BK term structures.
+- Whitfield, J. D., Biamonte, J., and Aspuru-Guzik, A. "Simulation of electronic structure Hamiltonians using quantum computers." *Mol. Phys.* 109, 735 (2011).
+- McArdle, S. et al. "Quantum computational chemistry." *Rev. Mod. Phys.* 92, 015003 (2020). Section III.
 
 ---
 

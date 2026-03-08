@@ -160,37 +160,21 @@ The **exact** ground state of H₂ is a *superposition* of some of these configu
 
 This 1% sounds small. It isn't. The correlation energy determines whether a reaction happens, which isomer is more stable, and what the dissociation curve looks like. Classical methods that capture correlation (CCSD(T), full CI) scale exponentially. This is precisely the gap that quantum simulation aims to fill.
 
-> **The punchline, stated early:** Those occupation vectors $\lvert n_0 n_1 n_2 n_3\rangle$ look exactly like qubit computational basis states $\lvert q_0 q_1 q_2 q_3\rangle$. Four spin-orbitals → four qubits. Six configurations → a 16-dimensional Hilbert space (of which 6 states have two electrons). A quantum computer can represent superpositions of these configurations natively.
+> **A hint of what's coming:** Those occupation vectors $\lvert n_0 n_1 n_2 n_3\rangle$ look exactly like qubit computational basis states $\lvert q_0 q_1 q_2 q_3\rangle$. Four spin-orbitals → four qubits. Six configurations → a 16-dimensional Hilbert space (of which 6 states have two electrons). A quantum computer can represent superpositions of these configurations natively.
 >
-> But the correspondence is *not* as simple as "qubit $j$ = orbital $j$," because fermions anti-commute and qubits don't. The encoding — Jordan–Wigner, Bravyi–Kitaev, or something else — is how we bridge that gap. That's Chapter 4 onward.
+> The mapping is less straightforward than it appears, though — we'll see why in Chapter 4.
 
 ---
 
-## Second Quantization: Operators Instead of Wavefunctions
+## Second Quantization: A Preview
 
 At this point we could write down the $6 \times 6$ Hamiltonian matrix in the configuration basis and diagonalize it. For H₂, that would work fine. But it wouldn't scale — for H₂O with 14 spin-orbitals, the configuration space has $\binom{14}{10} = 1001$ states, and for larger molecules the dimension grows combinatorially.
 
-**Second quantization** provides a more compact representation. Instead of tracking which electrons are in which orbitals, we work with **creation and annihilation operators** that add or remove an electron from a specific orbital:
-
-- $a_p^\dagger$ — creates an electron in spin-orbital $p$
-- $a_p$ — removes an electron from spin-orbital $p$
-
-The crucial property of these operators is that they **anti-commute**:
-
-$$\{a_p^\dagger, a_q\} \equiv a_p^\dagger a_q + a_q a_p^\dagger = \delta_{pq}$$
-
-$$\{a_p^\dagger, a_q^\dagger\} = \{a_p, a_q\} = 0$$
-
-These are the **canonical anti-commutation relations (CAR)**. They encode the Pauli exclusion principle: trying to create two electrons in the same orbital gives zero ($a_p^\dagger a_p^\dagger = 0$), and swapping two creation operators flips a sign ($a_p^\dagger a_q^\dagger = -a_q^\dagger a_p^\dagger$).
-
-In this language, the electronic Hamiltonian becomes:
+There is a more compact way to write the Hamiltonian — using **creation and annihilation operators** rather than wavefunctions. We will develop this formalism properly in Chapter 4, where we'll need it to understand encoding. For now, the key result is that the electronic Hamiltonian can be written as:
 
 $$\hat{H} = \sum_{pq} h_{pq}\, a_p^\dagger a_q + \frac{1}{2}\sum_{pqrs} \langle pq \mid rs\rangle\, a_p^\dagger a_q^\dagger a_s a_r + V_{nn}$$
 
-where:
-- $h_{pq}$ are **one-body integrals** — kinetic energy plus electron–nucleus attraction
-- $\langle pq \mid rs\rangle$ are **two-body integrals** — electron–electron repulsion, in physicist's notation
-- $V_{nn}$ is the nuclear repulsion constant
+where $h_{pq}$ are **one-body integrals**, $\langle pq \mid rs\rangle$ are **two-body integrals**, and $V_{nn}$ is the nuclear repulsion constant. The operators $a_p^\dagger$ and $a_p$ create and destroy electrons in specific spin-orbitals, and they obey algebraic rules (the canonical anti-commutation relations) that automatically enforce the Pauli exclusion principle.
 
 This is the object that the rest of the book operates on. Everything that follows — encoding, tapering, Trotterization — takes this Hamiltonian and transforms it into something a quantum computer can execute.
 

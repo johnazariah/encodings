@@ -14,7 +14,41 @@ _Every electron has a spin. Every integral must account for it. This chapter dou
 
 In Chapter 1, we worked with **spatial orbitals** — the molecular orbitals $\sigma_g$ and $\sigma_u$, described by their spatial wavefunctions. There were two of them, and the integrals were $2 \times 2$ matrices and $2 \times 2 \times 2 \times 2$ tensors.
 
-But an electron is not just a spatial wavefunction. It also has **spin** — either $\alpha$ (spin-up) or $\beta$ (spin-down). The Pauli exclusion principle says that two electrons can occupy the same spatial orbital only if they have opposite spins. The orbital $\sigma_g$ can hold one $\alpha$ electron and one $\beta$ electron — two spin-orbitals from one spatial orbital.
+But an electron is not just a spatial wavefunction. It also has **spin**.
+
+### What spin is (and isn't)
+
+Electron spin is an intrinsic angular momentum that has no classical analogue. It is not the electron "spinning on its axis" — that mental picture, while universal in introductory courses, breaks down immediately under scrutiny (the electron would need to rotate faster than light). Spin is a purely quantum-mechanical degree of freedom that happens to behave like angular momentum: it has a magnitude ($s = 1/2$) and a projection along any chosen axis.
+
+For a spin-$1/2$ particle, the projection along the $z$-axis can take only two values:
+- $m_s = +1/2$, which we call $\alpha$ or "spin-up" ($\uparrow$)
+- $m_s = -1/2$, which we call $\beta$ or "spin-down" ($\downarrow$)
+
+This is not a choice of convention — it is a consequence of the mathematics of angular momentum in quantum mechanics. The state space of a single electron's spin is exactly two-dimensional: $\{\lvert\alpha\rangle, \lvert\beta\rangle\}$. This is, not coincidentally, the same dimension as a qubit.
+
+### Why spin doubles the orbital space
+
+The **Pauli exclusion principle** says that no two electrons can occupy exactly the same quantum state. A quantum state is specified by *both* the spatial orbital *and* the spin. So the spatial orbital $\sigma_g$ can hold:
+- one electron with spin $\alpha$ (the spin-orbital $\sigma_g, \alpha$)
+- one electron with spin $\beta$ (the spin-orbital $\sigma_g, \beta$)
+- but NOT two electrons with the same spin
+
+Each spatial orbital produces **two** spin-orbitals. Two spatial orbitals give four spin-orbitals. Seven spatial orbitals (H₂O in STO-3G) give fourteen spin-orbitals. The spin degree of freedom doubles the index space — and quadruples the two-body integral tensor.
+
+### Spin-orbit coupling: when spin and space talk to each other
+
+In the non-relativistic Hamiltonian we've been using, spin and spatial degrees of freedom are completely independent — the Hamiltonian contains no term that couples them. An electron in $\sigma_g$ with spin $\alpha$ has exactly the same energy as one with spin $\beta$. The one-body integrals are spin-independent, and the two-body integrals only require each electron to conserve its own spin (as we'll see below).
+
+This is an approximation. In reality, **spin-orbit coupling** — the interaction between an electron's spin angular momentum and its orbital angular momentum — mixes the spin and spatial degrees of freedom. The coupling strength scales as $Z^4$ (the fourth power of the nuclear charge), so it is negligible for hydrogen ($Z=1$) and small for light elements like carbon and oxygen, but significant for heavy atoms (iodine, lead, actinides).
+
+For the molecules in this book (H₂, H₂O), spin-orbit coupling is negligible and we work with the non-relativistic Hamiltonian throughout. This means:
+- One-body integrals are diagonal in spin: $\langle \alpha \mid \beta \rangle = 0$
+- Two-body integrals conserve each electron's spin independently
+- The total spin quantum numbers ($S$, $M_S$) are good quantum numbers
+
+When spin-orbit coupling matters (heavy-element chemistry, relativistic quantum chemistry), the spin-orbital structure becomes more complex — spin is no longer a good quantum number, and the integral expansion rules in this chapter must be modified. We won't need that here, but it's worth knowing the boundary of our approximation.
+
+### The upshot for encoding
 
 The second-quantized Hamiltonian
 
@@ -210,7 +244,7 @@ let h2Factory key = h2Integrals |> Map.tryFind key
 let h2Hamiltonian = computeHamiltonianWith jordanWignerTerms h2Factory 4u
 ```
 
-This is the first time code appears in the book. Notice the pattern: we built the chemistry understanding (Chapter 1), pinned down the notation (Chapter 2), expanded to spin-orbitals (this chapter), and *only now* convert to code. The code is evidence that the tables are correct, not a substitute for understanding them.
+This is our first substantial code block — the coefficient factory that will feed the entire encoding pipeline. Notice the pattern: we built the chemistry understanding (Chapter 1), pinned down the notation (Chapter 2), expanded to spin-orbitals (this chapter), and only now convert to code. The code is evidence that the tables are correct, not a substitute for understanding them.
 
 ---
 

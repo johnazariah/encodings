@@ -10,6 +10,56 @@ _We have a Hamiltonian written in terms of electrons and orbitals. A quantum com
 
 ---
 
+## Where We Stand
+
+Let's take stock of what the first three chapters gave us.
+
+**Chapter 1** told us the chemistry: a molecule is a collection of charged particles, and its ground-state energy is the lowest eigenvalue of the electronic Hamiltonian. We introduced a finite basis set (STO-3G) that turned the continuous problem into a finite one: 2 spatial orbitals, 4 spin-orbitals, 6 two-electron configurations.
+
+**Chapters 2–3** told us the numbers: one-body integrals $h_{pq}$, two-body integrals $\langle pq \mid rs\rangle$, and the nuclear repulsion constant $V_{nn}$. We navigated the notation minefield, expanded to spin-orbitals, and ended up with a complete set of tables.
+
+But we glossed over something important. Let's go back and address it now.
+
+### The problem with wavefunctions
+
+The *natural* way to describe the quantum state of two electrons in four spin-orbitals is as a superposition of configurations:
+
+$$\lvert \Psi \rangle = c_{1100}\lvert 1100\rangle + c_{1010}\lvert 1010\rangle + c_{1001}\lvert 1001\rangle + \cdots$$
+
+where each $\lvert n_0 n_1 n_2 n_3\rangle$ is an **occupation vector** — a list of 0s and 1s telling us which spin-orbitals have an electron and which don't. The $c$ coefficients are complex amplitudes. Finding the ground state means finding the $c$ values that minimize the energy.
+
+For H₂ with 4 spin-orbitals, this is a vector with 6 components (the 6 two-electron configurations from Chapter 1). We could write down the $6 \times 6$ Hamiltonian matrix, plug in our integrals, and diagonalize it. Done. No quantum computer needed.
+
+For H₂O with 14 spin-orbitals and 10 electrons, the number of configurations is $\binom{14}{10} = 1{,}001$. A $1{,}001 \times 1{,}001$ matrix is trivial for a laptop.
+
+For a modest catalyst with 50 electrons in 100 spin-orbitals: $\binom{100}{50} \approx 10^{29}$ configurations. That matrix will not fit in any computer that will ever be built.
+
+This is the **exponential wall**: the dimension of the configuration space grows combinatorially with the number of orbitals. Classical methods (Hartree–Fock, DFT, coupled cluster) get around this by approximating — they never build the full matrix. But those approximations break down for strongly correlated systems, which are precisely the systems where quantum simulation promises an advantage.
+
+### Why operators instead of wavefunctions
+
+Rather than tracking the full wavefunction vector (exponentially many coefficients), **second quantization** lets us write the Hamiltonian as a polynomial in creation and annihilation operators:
+
+$$\hat{H} = \sum_{pq} h_{pq}\, a_p^\dagger a_q + \frac{1}{2}\sum_{pqrs} \langle pq \mid rs\rangle\, a_p^\dagger a_q^\dagger a_s a_r$$
+
+The operators $a_p^\dagger$ (create an electron in spin-orbital $p$) and $a_p$ (remove one) obey the **canonical anti-commutation relations**:
+
+$$\{a_p^\dagger, a_q\} = \delta_{pq}, \qquad \{a_p^\dagger, a_q^\dagger\} = 0, \qquad \{a_p, a_q\} = 0$$
+
+These three rules encode the Pauli exclusion principle algebraically: you can't create two electrons in the same orbital ($a_p^\dagger a_p^\dagger = 0$), and swapping the order of two creation operators flips a sign ($a_p^\dagger a_q^\dagger = -a_q^\dagger a_p^\dagger$).
+
+The beauty of this formulation is that the Hamiltonian is written as a sum of $O(n^4)$ terms — polynomial in the number of orbitals, not exponential. A classical computer can *write down* the Hamiltonian easily. The hard part is *solving* it — finding the eigenvalues of the operator that this polynomial represents.
+
+### Why quantum computing
+
+A quantum computer can represent the exponentially large state vector $\lvert \Psi \rangle$ using only $n$ qubits — one per spin-orbital. The $2^n$-dimensional Hilbert space of $n$ qubits matches the $\binom{n}{N_e}$-dimensional configuration space (embedded in the full $2^n$-dimensional space). Superpositions of configurations are *native* to quantum hardware.
+
+But there's a catch: the operators $a_p^\dagger$ and $a_p$ anti-commute, and qubit operations don't. We need a **translation** — an encoding — that maps the fermionic operators to qubit operators while preserving the anti-commutation relations.
+
+That's what this chapter is about.
+
+---
+
 ## The Tempting (Wrong) Idea
 
 At the end of Chapter 1, we noticed something suggestive: the occupation vector $\lvert 1010\rangle$ looks exactly like a 4-qubit computational basis state. Four spin-orbitals, four qubits, each qubit storing the occupation of one orbital. Simple.
@@ -111,7 +161,7 @@ flowchart TB
     end
 ```
 
-For a molecule with $n$ spin-orbitals, the worst-case Pauli weight under JW is $n$. For FeMo-co with ~100 spin-orbitals, that's a chain of 99 Z gates for the last orbital — a very deep circuit on quantum hardware.
+For a molecule with $n$ spin-orbitals, the worst-case Pauli weight under JW is $n$. For FeMo-co (the iron-molybdenum cofactor of nitrogenase — the enzyme that fixes atmospheric nitrogen) with ~100 spin-orbitals, that's a chain of 99 Z gates for the last orbital — a very deep circuit on quantum hardware.
 
 ### When JW is the right choice
 
