@@ -86,26 +86,6 @@ The ratio grows monotonically because JW's worst-case weight scales as $O(n)$ wh
 
 ---
 
-## The Complete Optimization Stack
-
-```mermaid
-flowchart TD
-    RAW["Raw JW Hamiltonian<br/>n qubits, O(n) weight"]
-    RAW --> |"Tapering"| TAP["Tapered Hamiltonian<br/>n-k qubits"]
-    TAP --> |"Encoding choice"| ENC["Ternary tree encoding<br/>O(log₃ n) weight"]
-    ENC --> |"2nd-order Trotter"| TROT["Gate sequence<br/>2L rotations × 2(w-1) CNOTs each"]
-    style TROT fill:#d1fae5,stroke:#059669
-```
-
-Each stage contributes multiplicatively:
-- **Tapering:** reduces qubit count by $k$, often reduces term count
-- **Encoding choice:** reduces worst-case weight from $O(n)$ to $O(\log n)$
-- **Trotter order:** 2nd order needs more rotations but fewer total steps for same precision
-
-The order matters: taper first (on any encoding), then choose the encoding for the tapered system, then Trotterize.
-
----
-
 ## Key Takeaways
 
 - For small molecules ($n \leq 6$), encoding choice barely matters. JW is often cheapest.
