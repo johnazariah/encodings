@@ -199,6 +199,6 @@ let result = taper defaultTaperingOptions heis
 
 ---
 
-**Previous:** [Chapter 9 — Diagonal Z₂ Symmetries](09-diagonal-z2.html)
+**Previous:** [Chapter 10 — Diagonal Z₂ Symmetries](10-diagonal-z2.html)
 
-**Next:** [Chapter 11 — Tapering Benchmarks](11-tapering-benchmarks.html)
+**Next:** [Chapter 12 — Tapering Benchmarks](12-tapering-benchmarks.html)

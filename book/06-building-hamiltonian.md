@@ -1,6 +1,6 @@
 # Chapter 6: Building the Qubit Hamiltonian
 
-_This is where the pipeline pays off. We take the integral tables from Chapter 3, the encoding from Chapter 4, and produce the actual qubit Hamiltonian — the object that a quantum computer will simulate._
+_This is where the pipeline pays off. We take the integral tables from Chapter 3, the encoding from Chapter 5, and produce the actual qubit Hamiltonian — the object that a quantum computer will simulate._
 
 ## In This Chapter
 
@@ -303,7 +303,7 @@ let h2_tt  = computeHamiltonianWith ternaryTreeTerms    h2Factory 4u
 let h2_par = computeHamiltonianWith parityTerms         h2Factory 4u
 ```
 
-All four produce different Pauli strings but the **same eigenvalues**. We'll verify this in Chapter 7.
+All four produce different Pauli strings but the **same eigenvalues**. We'll verify this in Chapter 8.
 
 ---
 

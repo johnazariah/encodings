@@ -12,7 +12,7 @@ _The Hamiltonian is correct and verified. But it may be bigger than it needs to 
 
 ## The Observation
 
-Look again at the 15-term H₂ Hamiltonian from Chapter 5. Focus on the Pauli operators at each qubit position:
+Look again at the 15-term H₂ Hamiltonian from Chapter 6. Focus on the Pauli operators at each qubit position:
 
 | Qubit 0 | Qubit 1 | Qubit 2 | Qubit 3 |
 |:---:|:---:|:---:|:---:|
@@ -129,6 +129,6 @@ This is why we taper *before* Trotterization, not after: the circuit should oper
 
 ---
 
-**Previous:** [Chapter 7 — Checking Our Answer](07-verification.html)
+**Previous:** [Chapter 8 — Checking Our Answer](08-verification.html)
 
-**Next:** [Chapter 9 — Diagonal Z₂ Symmetries](09-diagonal-z2.html)
+**Next:** [Chapter 10 — Diagonal Z₂ Symmetries](10-diagonal-z2.html)

@@ -168,6 +168,6 @@ These guards prevent the two most common tapering bugs: applying tapering to a q
 
 ---
 
-**Previous:** [Chapter 8 — Why Tapering?](08-why-tapering.html)
+**Previous:** [Chapter 9 — Why Tapering?](09-why-tapering.html)
 
-**Next:** [Chapter 10 — General Clifford Tapering](10-clifford-tapering.html)
+**Next:** [Chapter 11 — General Clifford Tapering](11-clifford-tapering.html)
