@@ -15,7 +15,7 @@ _The pipeline is complete. The book is almost over. But the field is just gettin
 Let's take a final inventory. Over twenty-one chapters, we constructed a complete pipeline:
 
 ```mermaid
-flowchart LR
+flowchart TD
     MOL["Molecule"]
     INT["Integrals"]
     HAM["Hamiltonian"]

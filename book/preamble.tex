@@ -31,3 +31,14 @@
 % Prevent overfull hboxes in tables
 \usepackage{array}
 \setlength{\tabcolsep}{4pt}
+
+% Pagination: prevent widows and orphans
+\widowpenalty=10000
+\clubpenalty=10000
+
+% Image sizing: scale all included graphics to text width max
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\makeatother
+\setkeys{Gin}{width=\maxwidth,keepaspectratio}

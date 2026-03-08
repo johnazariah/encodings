@@ -69,9 +69,10 @@ function CodeBlock(block)
     f:close()
 
     -- Output as PNG (universally supported by LaTeX, no rsvg-convert needed)
+    -- Use -w 800 for consistent width across all diagrams, -s 2 for 2x resolution
     local out_file = img_dir .. "/diagram-" .. string.format("%02d", img_counter) .. ".png"
 
-    local cmd = "mmdc -i " .. src_file .. " -o " .. out_file .. " -b white -s 2"
+    local cmd = "mmdc -i " .. src_file .. " -o " .. out_file .. " -b white -s 2 -w 800"
     if config and config ~= "" then
         cmd = cmd .. " -p " .. config
     end

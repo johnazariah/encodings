@@ -217,6 +217,8 @@ Notice how Hartree–Fock and FCI agree near equilibrium but diverge at large $R
 
 The companion script `book/code/ch17-dissociation-scan.py` generates the data and a publication-quality plot saved to `book/code/h2_dissociation.png`.
 
+![H₂ dissociation curve (STO-3G): Hartree–Fock vs Full CI. The FCI curve correctly dissociates while HF fails at large bond lengths.](code/h2_dissociation.png)
+
 This is the same kind of scan we'll do for H₂O's bond angle in Chapter 18 — but the structural parameter will be an angle instead of a distance. The machinery is identical: skeleton precomputation, integral swap, energy evaluation.
 
 ### What the Curve Tells You

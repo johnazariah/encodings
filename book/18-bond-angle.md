@@ -186,6 +186,8 @@ The minimum is at **99°** with an energy of **−75.01408654 Ha**. The curve is
 
 The companion script `book/code/ch18-bond-angle-scan.py` generates both scans, writes CSVs, and produces a side-by-side plot saved to `book/code/h2o_bond_angle.png`.
 
+![H₂O bond angle scan (STO-3G, FCI): coarse scan (left) identifies the minimum near 100°; fine scan (right) pinpoints it at 99°.](code/h2o_bond_angle.png)
+
 ---
 
 ## What Do the Numbers Mean?

@@ -126,7 +126,7 @@ If check 4 fails (no exchange terms), the most likely cause is the cross-spin bu
 With verification done, we have walked the complete path from molecule to validated qubit Hamiltonian:
 
 ```mermaid
-flowchart LR
+flowchart TD
     CH1["Ch.1<br/>Molecule → Integrals"]
     CH2["Ch.2<br/>Notation fixed"]
     CH3["Ch.3<br/>Spin-orbital tables"]

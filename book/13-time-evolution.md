@@ -55,7 +55,7 @@ This dual role is what makes quantum simulation work: if you can implement $U(t)
 Let's pause and take stock. Here's the complete pipeline so far:
 
 ```mermaid
-flowchart LR
+flowchart TD
     MOL["Molecule<br/>(Ch 1-3)"] --> GATES["Gates<br/>(Ch 4)"]
     GATES --> ENC["Encoding<br/>(Ch 5-7)"]
     ENC --> VER["Verified<br/>(Ch 8)"]

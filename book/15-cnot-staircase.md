@@ -23,7 +23,7 @@ The intuition: a weight-$w$ Pauli rotation $e^{-i\theta P}$ applies a phase rota
 A Pauli rotation $e^{-i\theta P}$ for a weight-$w$ Pauli string $P$ is implemented in three phases:
 
 ```mermaid
-flowchart LR
+flowchart TD
     BC["1. Basis change<br/>(single-qubit gates)"]
     CS["2. CNOT staircase<br/>(entangling)"]
     RZ["3. Rz(2θ)<br/>(rotation)"]
