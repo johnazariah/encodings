@@ -97,9 +97,8 @@ end
 -- Strip "Previous:" / "Next:" / "Back to:" nav links (useless in PDF)
 function Para(para)
     local text = pandoc.utils.stringify(para)
-    if text:match("^%*%*Previous:%*%*") or text:match("^%*%*Next:%*%*") or text:match("^%*%*Back to:%*%*") then
+    if text:match("^Previous:") or text:match("^Next:") or text:match("^Back to:") then
         return {}
     end
-    -- Also strip the horizontal rule right before nav links
     return nil
 end
