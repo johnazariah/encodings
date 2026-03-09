@@ -145,22 +145,18 @@ The inner loop — `applyCoefficients`, `taper`, diagonalise — runs in millise
 
 ## The Result: Coarse Scan
 
-The coarse scan produces a table of FCI energies — the exact ground-state energy at each geometry:
+The coarse scan produces FCI energies at each geometry:
 
-| Angle (°) | $E$ (Ha) | | Angle (°) | $E$ (Ha) |
-|:---:|:---:|:---:|:---:|:---:|
-| 60 | −74.927720 | | 110 | −75.008946 |
-| 70 | −74.969743 | | 115 | −75.003590 |
-| 80 | −74.996296 | | 120 | −74.996605 |
-| 85 | −75.004751 | | 130 | −74.978530 |
-| 90 | −75.010371 | | 140 | −74.956492 |
-| 95 | −75.013394 | | 150 | −74.932806 |
-| 100 | −75.014034 | | 160 | −74.910675 |
-| 105 | −75.012488 | | 180 | −74.888213 |
+| Angle (°) | $E$ (Ha) | Angle (°) | $E$ (Ha) |
+|:---:|:---:|:---:|:---:|
+| 60 | −74.9277 | 110 | −75.0089 |
+| 70 | −74.9697 | 120 | −74.9966 |
+| 80 | −74.9963 | 130 | −74.9785 |
+| 90 | −75.0104 | 150 | −74.9328 |
+| 100 | −75.0140 | 180 | −74.8882 |
+| 105 | −75.0125 | | |
 
-The energy drops as the angle increases from 60° (the hydrogen atoms are cramped), reaches a minimum somewhere around 100°, then rises again toward 180° (linear geometry). The coarse scan tells us *where to look* — but the minimum could be anywhere between 95° and 105°.
-
-This is exactly how a computational chemist works: coarse grid first, then refine.
+The minimum is near **100°**, with energy dropping steeply on both sides. The coarse scan tells us *where to look* — but the minimum could be anywhere between 95° and 105°. This is exactly how a computational chemist works: coarse grid first, then refine.
 
 ---
 
@@ -168,23 +164,19 @@ This is exactly how a computational chemist works: coarse grid first, then refin
 
 We re-run the scan from 95° to 115° in 1° steps. The skeleton is already computed — only the integrals change at each angle — so this second pass costs almost nothing:
 
-| Angle (°) | $E$ (Ha) | | Angle (°) | $E$ (Ha) |
-|:---:|:---:|:---:|:---:|:---:|
-| 95 | −75.01339394 | | 106 | −75.01193367 |
-| 96 | −75.01370596 | | 107 | −75.01130071 |
-| 97 | −75.01392434 | | 108 | −75.01059082 |
-| 98 | −75.01405068 | | 109 | −75.00980546 |
-| **99** | **−75.01408654** | | 110 | −75.00894610 |
-| 100 | −75.01403351 | | 111 | −75.00801419 |
-| 101 | −75.01389312 | | 112 | −75.00701118 |
-| 102 | −75.01366689 | | 113 | −75.00593855 |
-| 103 | −75.01335633 | | 114 | −75.00479776 |
-| 104 | −75.01296296 | | 115 | −75.00359029 |
-| 105 | −75.01248824 | | | |
+| Angle (°) | $E$ (Ha) | Angle (°) | $E$ (Ha) |
+|:---:|:---:|:---:|:---:|
+| 95 | −75.013394 | 106 | −75.011934 |
+| 96 | −75.013706 | 107 | −75.011301 |
+| 97 | −75.013924 | 108 | −75.010591 |
+| 98 | −75.014051 | 109 | −75.009805 |
+| **99** | **−75.014087** | 110 | −75.008946 |
+| 100 | −75.014034 | 112 | −75.007011 |
+| 101 | −75.013893 | 114 | −75.004798 |
+| 103 | −75.013356 | 115 | −75.003590 |
+| 105 | −75.012488 | | |
 
-The minimum is at **99°** with an energy of **−75.01408654 Ha**. The curve is clearly parabolic — the energy changes by only 0.00005 Ha between 98° and 100°, then drops away more steeply on either side.
-
-The companion script `book/code/ch18-bond-angle-scan.py` generates both scans, writes CSVs, and produces a side-by-side plot saved to `book/code/h2o_bond_angle.png`.
+The minimum is at **99°** with energy **−75.0141 Ha**. The curve is clearly parabolic — the energy changes by only 0.00005 Ha between 98° and 100°, then drops away more steeply on either side.
 
 ![H₂O bond angle scan (STO-3G, FCI): coarse scan (left) identifies the minimum near 100°; fine scan (right) pinpoints it at 99°.](code/h2o_bond_angle.png)
 

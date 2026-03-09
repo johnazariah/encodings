@@ -36,9 +36,10 @@
 \widowpenalty=10000
 \clubpenalty=10000
 
-% Image sizing: scale all included graphics to text width max
+% Image sizing: scale to text width but cap height at 40% of text height
 \usepackage{graphicx}
 \makeatletter
 \def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>0.4\textheight 0.4\textheight\else\Gin@nat@height\fi}
 \makeatother
-\setkeys{Gin}{width=\maxwidth,keepaspectratio}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
