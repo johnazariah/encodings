@@ -4,14 +4,18 @@
 #
 # Usage:
 #   make              Build manuscript.pdf
+#   make sample       Build sample.pdf (first 7 chapters)
 #   make clean        Remove generated files
 #   make word-count   Print word counts per chapter
 #   make diagrams     Render mermaid diagrams only (no PDF)
 #   make data         Generate H₂ and H₂O data files
+#   make leanpub      Push manuscript to Leanpub via API
+#   make preview      Trigger a Leanpub preview build
 #
 # Prerequisites:
 #   pandoc, xelatex, mmdc (mermaid-cli), python3, pyscf (for data)
 #   Playwright chromium: python3 -m playwright install chromium
+#   Leanpub API key in LEANPUB_API_KEY env var (for push targets)
 
 SHELL := /bin/bash
 
@@ -20,9 +24,14 @@ BOOK_DIR    := book
 CODE_DIR    := $(BOOK_DIR)/code
 IMG_DIR     := $(BOOK_DIR)/mermaid-images
 OUT         := $(BOOK_DIR)/manuscript.pdf
+SAMPLE_OUT  := $(BOOK_DIR)/sample.pdf
 
-# ── Source files (from Book.txt) ──
+# ── Leanpub settings ──
+LEANPUB_SLUG := from-molecules-to-quantum-circuits
+
+# ── Source files (from Book.txt / Sample.txt) ──
 CHAPTERS    := $(shell cat $(BOOK_DIR)/Book.txt | sed 's|^|$(BOOK_DIR)/|')
+SAMPLE_CHAPS := $(shell cat $(BOOK_DIR)/Sample.txt | sed 's|^|$(BOOK_DIR)/|')
 
 # ── Pandoc settings ──
 PANDOC      := pandoc
@@ -57,7 +66,7 @@ PANDOC_OPTS := \
 #  Targets
 # ══════════════════════════════════════════════════════════════
 
-.PHONY: all clean word-count diagrams data
+.PHONY: all clean word-count diagrams data sample leanpub preview
 
 all: $(OUT)
 
@@ -68,8 +77,17 @@ $(OUT): $(CHAPTERS) $(LUA_FILTER) $(PREAMBLE) $(BOOK_DIR)/Book.txt
 	@echo "Done: $$(python3 -c "import pymupdf; d=pymupdf.open('$(OUT)'); print(f'{d.page_count} pages'); d.close()" 2>/dev/null || echo '(install pymupdf for page count)')"
 	@ls -lh $(OUT)
 
+sample: $(SAMPLE_OUT)
+
+$(SAMPLE_OUT): $(SAMPLE_CHAPS) $(LUA_FILTER) $(PREAMBLE) $(BOOK_DIR)/Sample.txt
+	@echo "Building sample..."
+	@rm -rf $(IMG_DIR)
+	$(PANDOC) $(SAMPLE_CHAPS) -o $(SAMPLE_OUT) $(PANDOC_OPTS)
+	@echo "Done: $$(python3 -c "import pymupdf; d=pymupdf.open('$(SAMPLE_OUT)'); print(f'{d.page_count} pages'); d.close()" 2>/dev/null || echo '(install pymupdf for page count)')"
+	@ls -lh $(SAMPLE_OUT)
+
 clean:
-	rm -rf $(IMG_DIR) $(OUT)
+	rm -rf $(IMG_DIR) $(OUT) $(SAMPLE_OUT)
 
 word-count:
 	@echo "Chapter word counts:"
@@ -93,3 +111,37 @@ $(CODE_DIR)/h2_dissociation.csv: $(CODE_DIR)/ch17-dissociation-scan.py
 
 $(CODE_DIR)/h2o_bond_angle_coarse.csv: $(CODE_DIR)/ch18-bond-angle-scan.py
 	python3 $<
+
+# ── Leanpub ──
+# Requires LEANPUB_API_KEY environment variable.
+# Set it with: export LEANPUB_API_KEY=your-key-here
+
+.PHONY: leanpub-check
+leanpub-check:
+	@if [ -z "$(LEANPUB_API_KEY)" ]; then \
+	  echo "Error: LEANPUB_API_KEY not set"; \
+	  echo "  export LEANPUB_API_KEY=your-key-here"; \
+	  exit 1; \
+	fi
+
+leanpub: $(OUT) $(SAMPLE_OUT) leanpub-check
+	@echo "Pushing to Leanpub ($(LEANPUB_SLUG))..."
+	@# Push manuscript files via Leanpub API
+	@curl -s -X POST \
+	  "https://leanpub.com/$(LEANPUB_SLUG)/publish.json" \
+	  -d "api_key=$(LEANPUB_API_KEY)" \
+	  | python3 -c "import sys,json; r=json.load(sys.stdin); print(r.get('message', r))"
+	@echo "Publish triggered. Check https://leanpub.com/$(LEANPUB_SLUG)"
+
+preview: leanpub-check
+	@echo "Triggering Leanpub preview ($(LEANPUB_SLUG))..."
+	@curl -s -X POST \
+	  "https://leanpub.com/$(LEANPUB_SLUG)/preview.json" \
+	  -d "api_key=$(LEANPUB_API_KEY)" \
+	  | python3 -c "import sys,json; r=json.load(sys.stdin); print(r.get('message', r))"
+	@echo "Preview triggered. Check https://leanpub.com/$(LEANPUB_SLUG)"
+
+leanpub-status: leanpub-check
+	@curl -s \
+	  "https://leanpub.com/$(LEANPUB_SLUG)/job_status.json?api_key=$(LEANPUB_API_KEY)" \
+	  | python3 -c "import sys,json; r=json.load(sys.stdin); print(json.dumps(r, indent=2))"
