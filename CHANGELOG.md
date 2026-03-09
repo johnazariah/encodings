@@ -2,6 +2,54 @@
 
 All notable changes to FockMap will be documented in this file.
 
+## [0.7.0] - 2026-03-09
+
+### ✨ Features
+
+- feat: add Trotterization module — first-order and second-order Trotter decomposition, Pauli rotation sequences, CNOT staircase gate decomposition
+- feat: add CircuitOutput module — export gate sequences as OpenQASM 3.0, OpenQASM 2.0 (Quokka-compatible), Q#, and JSON
+- feat: add VariationalCircuits module — measurement grouping (qubit-wise commuting), shot count estimation, QPE resource estimation
+- feat: add `compareTrotterCosts` for side-by-side encoding cost analysis
+- feat: add `trotterStepToOpenQasm` and `trotterStepToQSharp` convenience functions
+
+### 📚 Documentation
+
+- docs: complete README rewrite reflecting full pipeline (encode → taper → Trotter → export)
+- docs: add 3 cookbook chapters (16-Trotterization, 17-CircuitOutput, 18-Measurement)
+- docs: redesign GitHub Pages site with sidebar navigation
+- docs: remove duplicated content (tutorials, labs, examples moved to encodings-book repo)
+- docs: add encodings-book as git submodule
+
+### 📖 Book
+
+- book: published "From Molecules to Quantum Circuits" (22 chapters, ~44,000 words, 160 pages)
+- book: created separate repo (encodings-book) with devcontainer, CI, Zenodo DOI
+- book: computed results — H₂ dissociation curve (18 FCI points), H₂O bond angle scan (min at 99° STO-3G)
+- book: reviewer remediation across 14 chapters
+- book: Mermaid diagram rendering via pandoc Lua filter + mmdc
+
+### 🔧 Maintenance
+
+- ci: 711 tests passing
+- chore: bump version to 0.7.0
+
+## [0.6.0] - 2026-03-05
+
+### ✨ Features
+
+- feat: qubit tapering v1 — diagonal Z₂ symmetry detection, sector selection, qubit removal
+- feat: qubit tapering v2 — general Clifford tapering with symplectic representation, binary Gaussian elimination, Clifford rotation synthesis
+- feat: unified `taper` function combining diagonal and Clifford methods
+- feat: `TaperingOptions` with method selection, sector control, `MaxQubitsToRemove`
+
+### 🔧 Maintenance
+
+- chore: upgrade to .NET 10 GA across entire repo
+- chore: bump version to 0.5.1 for Zenodo DOI minting
+- chore: separate research content for JOSS submission
+- ci: fix release and draft workflows
+- ci: set artifact retention to 30 days
+
 ## [0.5.0] - 2026-03-01
 
 ### ✨ Features
