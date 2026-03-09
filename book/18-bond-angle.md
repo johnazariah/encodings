@@ -178,7 +178,7 @@ We re-run the scan from 95° to 115° in 1° steps. The skeleton is already comp
 
 The minimum is at **99°** with energy **−75.0141 Ha**. The curve is clearly parabolic — the energy changes by only 0.00005 Ha between 98° and 100°, then drops away more steeply on either side.
 
-![H₂O bond angle scan (STO-3G, FCI): coarse scan (left) identifies the minimum near 100°; fine scan (right) pinpoints it at 99°.](code/h2o_bond_angle.png)
+![H₂O bond angle scan (STO-3G, FCI): coarse scan (left) identifies the minimum near 100°; fine scan (right) pinpoints it at 99°.](book/code/h2o_bond_angle.png)
 
 ---
 
