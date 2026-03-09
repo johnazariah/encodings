@@ -125,18 +125,19 @@ FockMap implements encodings through two complementary frameworks (plus one spec
 ```mermaid
 flowchart TD
     subgraph ISF["Index-Set Framework"]
-        direction TB
-        JW["Jordan-Wigner<br/>U={}, P={0..j-1}, O={j}"]
-        BK["Bravyi-Kitaev<br/>from Fenwick tree"]
-        PAR["Parity<br/>U={j+1..n-1}, P={j-1}, O={j-1,j}"]
+        JW["Jordan-Wigner"]
+        BK["Bravyi-Kitaev"]
+        PAR["Parity"]
     end
+
+    ISF --> PS["PauliRegisterSequence"]
+
     subgraph PBF["Path-Based Framework"]
-        direction TB
         BBT["Balanced Binary Tree"]
         BTT["Balanced Ternary Tree"]
         CT["Custom Tree"]
     end
-    ISF --> PS["PauliRegisterSequence"]
+
     PBF --> PS
     style PS fill:#d1fae5,stroke:#059669
 ```
