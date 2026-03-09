@@ -57,52 +57,27 @@ Written in [F#](https://fsharp.org/), fully open-source under the [F# Software F
 
 ## Learn More
 
-- **Start here:** [Library Cookbook](guides/cookbook/index.html) — every type and function, step by step
-- **Molecules → qubits:** [From Molecules to Qubits](from-molecules-to-qubits/index.html) — complete H₂ pipeline
-- **Theory first:** [Why Encodings?](theory/01-why-encodings.html)
-- **Hands-on first:** [Your First Encoding](labs/01-first-encoding.html)
-- **Library internals:** [Architecture Guide](guides/architecture.html)
+- **The Book:** [*From Molecules to Quantum Circuits*](https://github.com/johnazariah/encodings-book) — 22-chapter guide from molecular integrals to quantum circuits, with interactive labs and computed results (H₂ dissociation curve, H₂O bond angle scan)
+- **API Cookbook:** [Library Cookbook](guides/cookbook/index.html) — every type and function, step by step
+- **Library Internals:** [Architecture Guide](guides/architecture.html) — two-framework design
+- **Cross-Platform:** [Running on Windows, macOS, Linux](guides/cross-platform.html)
 - **API Reference:** [All types and functions](reference/index.html)
 
-## Explore the Docs
+## Documentation
 
-### Qubit Tapering
-A compact guide to reducing qubit count via diagonal Z₂ symmetry.
-- [Overview](qubit-tapering/index.html) — The tapering pipeline at a glance
-- [Why Tapering?](qubit-tapering/01-why-tapering.html) — How encoding creates removable qubits
-- [The Diagonal Z₂ Approach](qubit-tapering/02-diagonal-z2-approach.html) — Detection, sectors, and fixing eigenvalues
-- [FockMap Implementation](qubit-tapering/03-fockmap-implementation.html) — The v1 API in practice
-- [General Z₂ and Clifford Tapering](qubit-tapering/04-clifford-tapering.html) — Symplectic representation and the unified pipeline
-
-### From Molecules to Qubits
-A step-by-step guide using H₂ as a worked example.
-- [Overview](from-molecules-to-qubits/index.html) — The complete pipeline at a glance
-- [The Electronic Structure Problem](from-molecules-to-qubits/01-electronic-structure.html) — Born–Oppenheimer, basis sets, configurations
-- [The Notation Minefield](from-molecules-to-qubits/02-notation.html) — Chemist's vs. physicist's integrals
-- [Spatial to Spin-Orbital Integrals](from-molecules-to-qubits/03-spin-orbitals.html) — Doubling the index space
-- [Building the H₂ Hamiltonian](from-molecules-to-qubits/04-building-hamiltonian.html) — The 15-term qubit Hamiltonian
-- [Checking Our Answer](from-molecules-to-qubits/05-verification.html) — Diagonalisation and cross-encoding comparison
-- [What Comes Next](from-molecules-to-qubits/06-outlook.html) — VQE, QPE, and scaling
-
-### Theory
-- [Why Encodings?](theory/01-why-encodings.html) — The problem encodings solve
-- [Second Quantization](theory/02-second-quantization.html) — Fock space, creation/annihilation operators
-- [Pauli Algebra](theory/03-pauli-algebra.html) — Pauli matrices and strings
-- [Jordan-Wigner](theory/04-jordan-wigner.html) — The classic encoding
-- [Beyond Jordan-Wigner](theory/05-beyond-jordan-wigner.html) — BK, trees, and O(log n) scaling
-- [Bosonic Operators](theory/06-bosonic-preview.html) — CCR algebra and truncation strategies
-- [Mixed Systems](theory/07-mixed-systems.html) — Canonical sector ordering and hybrid workflows
-
-### Interactive Labs
-- [First Encoding](labs/01-first-encoding.html) — Encode your first operator (5 min)
-- [H₂ Molecule](labs/02-h2-molecule.html) — Full molecular Hamiltonian
-- [Compare Encodings](labs/03-compare-encodings.html) — Side-by-side comparison
-- [Custom Encoding](labs/04-custom-encoding.html) — Define your own scheme
-- [Custom Tree](labs/05-custom-tree.html) — Build tree-based encodings
-- [Scaling Analysis](labs/06-scaling.html) — Pauli weight scaling with system size
-- [Qubit Tapering](labs/09-qubit-tapering.html) — Diagonal Z2 symmetry reduction
+### API Cookbook
+A step-by-step guide to every FockMap type and function.
+- [Overview](guides/cookbook/index.html)
+- [Building Expressions](guides/cookbook/02-building-expressions.html) — the `C`, `P`, `S` type hierarchy
+- [Indexed Operators](guides/cookbook/03-indexed-operators.html) — `IxOp` and operator sequences
+- [Creation & Annihilation](guides/cookbook/04-creation-annihilation.html) — ladder operators
+- [Normal Ordering](guides/cookbook/05-normal-ordering.html) — CAR and CCR algebras
+- [Encodings](guides/cookbook/06-first-encoding.html) — JW, BK, Parity, trees
+- [Building Hamiltonians](guides/cookbook/10-building-hamiltonian.html) — from integrals to Pauli sums
+- [Mixed Systems](guides/cookbook/11-mixed-systems.html) — fermion-boson hybrids
+- [Bosonic Encodings](guides/cookbook/14-bosonic-encodings.html) — unary, binary, Gray code
+- [Qubit Tapering](guides/cookbook/15-qubit-tapering.html) — Z₂ symmetry reduction
 
 ### Guides
-- [Library Cookbook](guides/cookbook/index.html) — Every type and function, step by step
-- [Architecture](guides/architecture.html) — Two-framework design
+- [Architecture](guides/architecture.html) — two-framework design (index-set + path-based)
 - [Cross-Platform](guides/cross-platform.html) — .NET 10 and F# on all platforms
