@@ -83,7 +83,9 @@ QASM 2.0 differs in syntax (e.g., `qreg q[2];` instead of `qubit[2] q;`) but the
 
 ## Q#: Azure Quantum
 
-Q# is Microsoft's quantum programming language, designed from the ground up for expressing quantum algorithms (Svore et al., "Q#: Enabling Scalable Quantum Computing and Development with a High-level DSL", arXiv:1803.00652). Full disclosure: the author was part of the team at Microsoft that created Q# — so the export format here isn't a reverse-engineering exercise, it's a homecoming. FockMap generates a complete Q# operation — namespace, open statements, qubit allocation, gate calls — that you can compile and run on Azure Quantum or the local QDK simulator.
+Q# is Microsoft's quantum programming language, designed from the ground up for expressing quantum algorithms.[^qsharp] FockMap generates a complete Q# operation — namespace, open statements, qubit allocation, gate calls — that you can compile and run on Azure Quantum or the local QDK simulator.
+
+[^qsharp]: The author was part of the team at Microsoft that created Q#.
 
 ```fsharp
 let qsharp = toQSharp defaultQSharpOptions numQubits gates
@@ -259,6 +261,11 @@ For H₂, the exact FCI energy is $-1.1373$ Ha (electronic only) or $-1.8572$ Ha
 - The gate sequence is platform-independent; only the serialisation differs.
 - **OpenQASM** for portability, **Q#** for Azure integration, **JSON** for Python workflows.
 - Always verify by comparing simulated expectation values against known eigenvalues.
+
+## Further Reading
+
+- Svore, K. M. et al. "Q#: Enabling Scalable Quantum Computing and Development with a High-level DSL." arXiv:1803.00652 (2018). The design paper for Q#.
+- Cross, A. W. et al. "OpenQASM 3: A Broader and Deeper Quantum Assembly Language." ACM Transactions on Quantum Computing 3(3), 1–50 (2022). The QASM 3.0 specification.
 
 ---
 
