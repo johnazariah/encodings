@@ -2,9 +2,9 @@
 	<img src="content/img/fockmap-logo.svg" alt="FockMap logo" width="520" />
 </p>
 
-A composable functional framework for symbolic operator algebra, including fermionic and bosonic normal ordering, mixed-sector canonicalization, and fermion-to-qubit encodings.
+A composable F# framework for the complete quantum simulation pipeline: operator algebra → encoding → tapering → Trotterization → circuit export.
 
-> Build, normalize, and encode operator expressions on Fock space using algebraic data types, pure functions, and zero dependencies.
+> Encode, taper, Trotterize, and export quantum circuits from molecular integrals — with five fermionic encodings, three bosonic encodings, symbolic qubit tapering, and output to OpenQASM, Q#, and JSON. Zero dependencies.
 
 ## Install
 

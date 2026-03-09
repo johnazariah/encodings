@@ -9,13 +9,13 @@
 ![.NET 10](https://img.shields.io/badge/.NET-10.0%20GA-512BD4)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)
 
-**A practical F# library for symbolic operator algebra on Fock space — fermionic and bosonic — with fermion-to-qubit encodings.**
+**A practical F# library for symbolic operator algebra on Fock space — fermionic and bosonic — with fermion-to-qubit encodings, qubit tapering, Trotterization, and circuit export.**
 
-> Learn by doing: pick an encoding, map operators to Pauli strings, and compare results. Supports both fermionic (CAR) and bosonic (CCR) statistics, including mixed fermion–boson systems.
+> The complete pipeline: molecular integrals → encoding → tapering → Trotter decomposition → OpenQASM / Q# / JSON circuit output.
 
-📖 **New here?** Read the [Visual Guide to Fermion-to-Qubit Encodings](https://johnazariah.github.io/encodings/guides/visual-encodings.html) — a diagram-rich introduction for scientists who know chemistry but not quantum computing.
+📖 **The Book:** [*From Molecules to Quantum Circuits*](https://github.com/johnazariah/encodings-book) — 22-chapter guide with interactive labs, computed results (H₂ dissociation curve, H₂O bond angle scan), and companion code.
 
-🍳 **Ready to code?** Work through the [Cookbook](https://johnazariah.github.io/encodings/guides/cookbook/) — 15 progressive chapters covering every type and function.
+🍳 **API Cookbook:** [15 progressive chapters](https://johnazariah.github.io/encodings/guides/cookbook/) covering every type and function.
 
 ---
 
@@ -23,23 +23,29 @@
 
 If you're exploring quantum chemistry on qubits, you usually hit this question quickly: **how do I map fermions to Pauli operators?** And increasingly: **what about phonons and other bosonic modes?**
 
-FockMap gives you one small, consistent API for both. You can:
-- use built-in encodings (Jordan-Wigner, Bravyi-Kitaev, Parity, tree-based)
-- compare them side-by-side
-- define your own encoding with a few lines of F#
-- work with bosonic (CCR) operators and mixed fermion–boson systems
+FockMap gives you one small, consistent API for the complete quantum simulation pipeline:
+- **Encode** fermionic or bosonic operators as Pauli strings (5 fermionic + 3 bosonic encodings)
+- **Taper** qubits via Z₂ symmetry detection and Clifford rotation (diagonal + general)
+- **Trotterize** a Pauli Hamiltonian into gate sequences (first and second order)
+- **Export** circuits as OpenQASM 3.0, Q#, or JSON for any quantum platform
+- **Define** custom encodings with a few lines of F#
+- **Compare** encodings side-by-side — same eigenvalues, different circuit costs
 
 | Feature | OpenFermion | Qiskit Nature | PennyLane | **FockMap** |
 |---------|:-----------:|:------------:|:---------:|:-----------:|
 | Define a new encoding | ~200 lines Python | Not supported | Not supported | **3–5 lines F#** |
 | Tree → encoding pipeline | ❌ | ❌ | ❌ | **✅** |
+| Qubit tapering (Z₂ + Clifford) | ❌ | Partial | ❌ | **✅** |
+| Trotter decomposition | ❌ | ✅ | ✅ | **✅ (1st + 2nd order)** |
+| Circuit export (QASM, Q#, JSON) | ❌ | QASM only | ❌ | **✅ (all three)** |
+| Hamiltonian skeleton (PES scans) | ❌ | ❌ | ❌ | **✅** |
+| Measurement grouping + shot estimates | ❌ | ✅ | ✅ | **✅** |
+| QPE resource estimation | ❌ | ❌ | ❌ | **✅** |
 | Bosonic operator algebra (CCR) | ❌ | ❌ | ✅ | **✅** |
 | Bosonic-to-qubit encodings | ❌ | ❌ | ❌ | **✅ (Unary, Binary, Gray)** |
 | Mixed fermion–boson normal ordering | ❌ | ❌ | ❌ | **✅** |
 | Type-safe operator algebra | ❌ | ❌ | ❌ | **✅** |
 | Pure functional, zero mutation | ❌ | ❌ | ❌ | **✅** |
-| Symbolic Pauli algebra (no matrices) | ❌ | Partial | ✅ | **✅** |
-| Symbolic qubit tapering (Z₂ + Clifford) | ❌ | Partial | ❌ | **✅** |
 | Runtime dependencies | NumPy, SciPy | Many | NumPy, autograd, … | **None** |
 
 Internally, the library uses exact symbolic Pauli algebra (not floating-point matrix multiplication), so encoded operator manipulation stays fast and predictable.
@@ -99,122 +105,75 @@ Everything is pre-configured, so you can start coding immediately.
 ## Quick Start
 
 ```fsharp
+open System.Numerics
 open Encodings
 
-// Encode the creation operator a†₂ on 4 modes using Jordan-Wigner
-let pauliJW = jordanWignerTerms Raise 2u 4u
-// → ½(ZZXI) − ½i(ZZYI)
+// 1. Define molecular integrals (H₂ in STO-3G)
+let integrals = Map [
+    ("0,0", Complex(-1.2563, 0.0)); ("1,1", Complex(-1.2563, 0.0))
+    ("2,2", Complex(-0.4719, 0.0)); ("3,3", Complex(-0.4719, 0.0))
+    // ... (two-body integrals)
+]
+let factory key = integrals |> Map.tryFind key
 
-// Same operator under Bravyi-Kitaev (O(log n) weight)
-let pauliBK = bravyiKitaevTerms Raise 2u 4u
+// 2. Encode → 15-term Pauli Hamiltonian
+let ham = computeHamiltonianWith jordanWignerTerms factory 4u
 
-// Or Parity encoding
-let pauliP = parityTerms Raise 2u 4u
+// 3. Taper → remove symmetry-redundant qubits
+let tapered = taper defaultTaperingOptions ham
+// 4 → 2 qubits
 
-// Tree-based encodings
-let pauliBBT = balancedBinaryTreeTerms Raise 2u 4u
-let pauliBTT = ternaryTreeTerms Raise 2u 4u
-```
+// 4. Trotterize → gate sequence
+let step = firstOrderTrotter 0.1 tapered.Hamiltonian
+let gates = decomposeTrotterStep step
 
-### Encode a Full Hamiltonian
+// 5. Export → OpenQASM 3.0
+let qasm = toOpenQasm defaultOpenQasmOptions tapered.TaperedQubitCount gates
+// Ready to run on IBM Quantum, IonQ, Rigetti, Amazon Braket
 
-```fsharp
-open Encodings
-
-// One-electron (h) and two-electron (g) integrals for H₂ in STO-3G basis
-let h = Array2D.init 4 4 (fun i j -> (* your integrals *) 0.0)
-let g = Array4D.init 4 4 4 4 (fun i j k l -> (* your integrals *) 0.0)
-
-// Encode with any scheme
-let hamiltonian = computeHamiltonianWith jordanWignerTerms h g 4u
-```
-
-### Define a Custom Encoding
-
-```fsharp
-open Encodings
-
-// Build a custom tree and derive an encoding from it
-let myTree = balancedBinaryTree 8
-let myScheme = treeEncodingScheme myTree
-let myEncode op j n = encodeOperator myScheme op j n
+// Also available: Q# and JSON export
+let qs   = toQSharp defaultQSharpOptions tapered.TaperedQubitCount gates
+let json = toCircuitJson tapered.TaperedQubitCount Map.empty gates
 ```
 
 ## Where to Start
 
-- New to this topic? Start with [Why Encodings?](https://johnazariah.github.io/encodings/theory/01-why-encodings.html)
-- Want a progressive walkthrough? Try the [Cookbook](https://johnazariah.github.io/encodings/guides/cookbook/) — 13 chapters covering every type and function
-- Want a full worked example? Go to [From Molecules to Qubits](https://johnazariah.github.io/encodings/from-molecules-to-qubits/index.html)
-- Prefer hands-on? Try [Your First Encoding](https://johnazariah.github.io/encodings/labs/01-first-encoding.html)
-- Need API details? Browse [All types and functions](https://johnazariah.github.io/encodings/reference/index.html)
+- **The Book:** [*From Molecules to Quantum Circuits*](https://github.com/johnazariah/encodings-book) — 22 chapters, from molecular integrals to quantum circuits
+- **Interactive Labs:** [9 F# scripts](https://github.com/johnazariah/encodings-book/tree/main/labs) — run with `dotnet fsi`
+- **API Cookbook:** [15-chapter tutorial](https://johnazariah.github.io/encodings/guides/cookbook/) — every type and function
+- **Architecture:** [How the library works](https://johnazariah.github.io/encodings/guides/architecture.html)
+- **API Reference:** [All types and functions](https://johnazariah.github.io/encodings/reference/index.html)
 
 ## Documentation
 
-- **Site**: [johnazariah.github.io/encodings](https://johnazariah.github.io/encodings/)
-- **Cookbook**: [15-chapter progressive tutorial](https://johnazariah.github.io/encodings/guides/cookbook/) — covers every type and function with runnable examples
-- **Qubit Tapering**: [4-chapter tapering guide](https://johnazariah.github.io/encodings/qubit-tapering/) — symmetry detection, Clifford rotation, qubit removal
-- **Tutorial**: [From Molecules to Qubits](https://johnazariah.github.io/encodings/from-molecules-to-qubits/index.html) — end-to-end worked example
-- **Theory**: [Why Encodings?](https://johnazariah.github.io/encodings/theory/01-why-encodings.html) — mathematical foundations
-- **Labs**: [Your First Encoding](https://johnazariah.github.io/encodings/labs/01-first-encoding.html) — hands-on F# scripts
-- **Architecture**: [Architecture guide](https://johnazariah.github.io/encodings/guides/architecture.html) — module and pipeline overview
-- **API Reference**: [All types and functions](https://johnazariah.github.io/encodings/reference/index.html) — generated from source XML docs
-- **Test Register**: [What is tested](.project/test-register.md) — plain-English catalogue of all 557 automated tests
+- **Site**: [johnazariah.github.io/encodings](https://johnazariah.github.io/encodings/) — API cookbook, architecture guide, cross-platform notes
+- **Book**: [github.com/johnazariah/encodings-book](https://github.com/johnazariah/encodings-book) — full narrative with labs and companion code
 
-Build docs locally (with logo/icon + Mermaid/MathJax runtime injection):
+## How it Works
 
-```bash
-./scripts/build-docs.sh
-```
+FockMap implements the complete quantum simulation pipeline:
 
-## How it Works (briefly)
+1. **Encoding** — Map fermionic/bosonic ladder operators to Pauli strings via index-set schemes (JW, BK, Parity) or path-based tree encodings (binary, ternary, custom)
+2. **Hamiltonian Assembly** — Combine encoded operators with molecular integrals to build a qubit Hamiltonian (`PauliRegisterSequence`)
+3. **Tapering** — Detect Z₂ symmetries (diagonal or general via Clifford rotation), fix sectors, and remove redundant qubits
+4. **Trotterization** — Decompose the Hamiltonian into Pauli rotations (first or second order), then into elementary gates (H, S, CNOT, Rz)
+5. **Circuit Output** — Export gate sequences as OpenQASM 3.0, Q#, or JSON
+6. **Analysis** — Measurement grouping, shot estimation, QPE resource estimation, cost comparison across encodings
 
-FockMap exposes two fermionic encoding styles:
-- **Index-set encodings** (Jordan-Wigner, Bravyi-Kitaev, Parity)
-- **Tree/path encodings** (balanced binary and ternary trees, plus custom trees)
+Everything is symbolic and exact — no floating-point matrix multiplication, no approximation until the Trotter step.
 
-It also supports **bosonic ladder-operator normal ordering** via canonical commutation relations (CCR), alongside the fermionic CAR workflow.
-
-For models with both statistics, use sector-tagged operators (`fermion`, `boson`) and `constructMixedNormalOrdered` to canonicalize mixed expressions.
-
-For the full derivations and internals, jump to the [Cookbook](https://johnazariah.github.io/encodings/guides/cookbook/) or the [Architecture guide](https://johnazariah.github.io/encodings/guides/architecture.html).
-
-## Examples
-
-Runnable F# scripts in the [`examples/`](examples/) directory:
-
-| Script | What it does |
-|--------|-------------|
-| [`H2_Encoding.fsx`](examples/H2_Encoding.fsx) | Encode the H₂ molecular Hamiltonian with all 5 encodings |
-| [`Compare_Encodings.fsx`](examples/Compare_Encodings.fsx) | Side-by-side Pauli weight comparison across encodings |
-| [`Custom_Encoding.fsx`](examples/Custom_Encoding.fsx) | Build a custom Majorana encoding from index-set functions |
-| [`Custom_Tree.fsx`](examples/Custom_Tree.fsx) | Construct a custom tree and derive an encoding from it |
-| [`Mixed_NormalOrdering.fsx`](examples/Mixed_NormalOrdering.fsx) | Canonical mixed boson+fermion normal ordering with sector blocks |
-| [`Mixed_ElectronPhonon_Toy.fsx`](examples/Mixed_ElectronPhonon_Toy.fsx) | Toy electron-phonon style mixed symbolic workflow |
-| [`Mixed_HybridPipeline.fsx`](examples/Mixed_HybridPipeline.fsx) | Encode fermion sector to Pauli while keeping boson sector symbolic |
-| [`Mixed_HybridCompare.fsx`](examples/Mixed_HybridCompare.fsx) | Compare JW vs BK on extracted fermionic blocks in mixed terms |
-| [`Bosonic_Encoding.fsx`](examples/Bosonic_Encoding.fsx) | Encode bosonic operators using Unary, Binary, and Gray encodings |
-| [`Qubit_Tapering.fsx`](examples/Qubit_Tapering.fsx) | Detect diagonal Z2 symmetries and taper qubits symbolically |
-
-Run any example with:
-```bash
-dotnet fsi examples/H2_Encoding.fsx
-```
+For the full API walkthrough, see the [Cookbook](https://johnazariah.github.io/encodings/guides/cookbook/) (18 chapters) or the [Architecture guide](https://johnazariah.github.io/encodings/guides/architecture.html).
 
 ## Testing
 
 ```bash
-# Run all tests
-dotnet test
-
-# With detailed output
-dotnet test --logger "console;verbosity=detailed"
-
-# With coverage
-dotnet test --collect:"XPlat Code Coverage"
+dotnet test                                          # all tests
+dotnet test --logger "console;verbosity=detailed"    # verbose
+dotnet test --collect:"XPlat Code Coverage"          # with coverage
 ```
 
-The test suite covers encoding behavior, Pauli algebra laws, qubit tapering, and cross-encoding consistency checks.
-See the **[Test Register](.project/test-register.md)** for a plain-English catalogue of all 557 automated tests.
+The test suite covers encoding correctness, Pauli algebra laws, tapering, Trotterization, circuit output, and cross-encoding consistency.
+See the **[Test Register](.project/test-register.md)** for a plain-English catalogue of all 700+ automated tests.
 
 ## Cross-Platform
 

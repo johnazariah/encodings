@@ -28,6 +28,9 @@ a complete molecular Hamiltonian by the end.
 | 13 | [Grand Finale](13-grand-finale.html) | Three encodings, one molecule — a capstone script |
 | 14 | [Bosonic-to-Qubit Encodings](14-bosonic-encodings.html) | Unary, Binary, and Gray code truncation encodings |
 | 15 | [Qubit Tapering](15-qubit-tapering.html) | Diagonal Z₂ and Clifford tapering for qubit reduction |
+| 16 | [Trotterization](16-trotterization.html) | Trotter decomposition, gate sequences, CNOT cost analysis |
+| 17 | [Circuit Output](17-circuit-output.html) | Export to OpenQASM 3.0, Q#, and JSON |
+| 18 | [Measurement & Resources](18-measurement-resources.html) | Measurement grouping, shot estimates, QPE resources, skeleton API |
 
 ## Quick Reference
 
@@ -64,13 +67,20 @@ a complete molecular Hamiltonian by the end.
 | `FenwickTree<'a>` | Immutable binary indexed tree |
 | `SectorLadderOperatorUnit` | Sector-tagged ladder operator (mixed systems) |
 | `BosonicEncoderFn` | `LadderOperatorUnit → uint32 → uint32 → uint32 → PauliRegisterSequence` |
+| `TrotterStep` | Ordered list of Pauli rotations with time step |
+| `Gate` | `H \| S \| Sdg \| Rz \| CNOT` — elementary quantum gates |
+| `CircuitStats` | Rotation count, CNOT count, total gates, weight stats |
+| `OpenQasmOptions` | QASM export configuration (version, precision, qubit name) |
+| `QSharpOptions` | Q# export configuration (namespace, operation name) |
+| `MeasurementProgram` | Grouped commuting Pauli terms for VQE measurement |
+| `QPEResourceEstimate` | System/ancilla qubits, CNOT count, circuit depth |
+| `HamiltonianSkeleton` | Precomputed Pauli structure for PES scans |
 
 ## Where to Go Next
 
 - [Architecture Guide](../architecture.html) — the two-framework design in depth
-- [Interactive Labs](../../labs/01-first-encoding.html) — focused hands-on exercises
-- [From Molecules to Qubits](../../from-molecules-to-qubits/index.html) — complete H₂ pipeline with real integrals
-- [Theory: Why Encodings?](../../theory/01-why-encodings.html) — background on the problem encodings solve
+- [The Book](https://github.com/johnazariah/encodings-book) — 22-chapter narrative with labs and computed results
+- [API Reference](../../reference/index.html) — generated from source XML docs
 
 ## PDF Version
 
