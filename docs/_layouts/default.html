@@ -5,23 +5,77 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{{ page.title | default: site.title }}</title>
     <link rel="icon" href="{{ '/content/img/fockmap-icon.svg' | relative_url }}" type="image/svg+xml" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.8.1/github-markdown.min.css" />
     <style>
-      body { margin: 0; background: #f6f8fa; }
-      .shell { max-width: 980px; margin: 0 auto; padding: 24px; }
-      .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
-      .brand img { height: 42px; }
-      .markdown-body { box-sizing: border-box; min-width: 200px; max-width: 980px; margin: 0 auto; padding: 24px; background: #fff; border-radius: 8px; }
-      @media (max-width: 767px) { .markdown-body { padding: 16px; } .shell { padding: 12px; } }
-      .mermaid { overflow-x: auto; }
+      :root {
+        --bg: #ffffff;
+        --bg-alt: #f8f9fb;
+        --text: #24292f;
+        --text-muted: #57606a;
+        --accent: #0969da;
+        --accent-light: #ddf4ff;
+        --border: #d0d7de;
+        --code-bg: #f6f8fa;
+        --sidebar-w: 260px;
+        --content-w: 780px;
+        --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+        --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; font-family: var(--font); color: var(--text); background: var(--bg-alt); line-height: 1.6; }
+
+      /* Layout */
+      .page { display: flex; min-height: 100vh; }
+      .sidebar {
+        width: var(--sidebar-w); padding: 24px 20px; background: var(--bg);
+        border-right: 1px solid var(--border); position: sticky; top: 0;
+        height: 100vh; overflow-y: auto; flex-shrink: 0;
+      }
+      .main { flex: 1; max-width: var(--content-w); padding: 32px 40px; margin: 0 auto; }
+
+      /* Sidebar */
+      .sidebar .logo { display: block; margin-bottom: 24px; }
+      .sidebar .logo img { height: 32px; }
+      .sidebar nav { font-size: 14px; }
+      .sidebar nav a {
+        display: block; padding: 4px 8px; margin: 2px 0; border-radius: 6px;
+        color: var(--text-muted); text-decoration: none; transition: all 0.15s;
+      }
+      .sidebar nav a:hover { background: var(--accent-light); color: var(--accent); }
+      .sidebar nav .section-title {
+        font-size: 11px; font-weight: 600; text-transform: uppercase;
+        letter-spacing: 0.5px; color: var(--text-muted); margin: 16px 0 6px 8px;
+      }
+
+      /* Content */
+      .main h1 { font-size: 28px; border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-top: 0; }
+      .main h2 { font-size: 22px; margin-top: 32px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+      .main h3 { font-size: 18px; margin-top: 24px; }
+      .main a { color: var(--accent); text-decoration: none; }
+      .main a:hover { text-decoration: underline; }
+      .main code { background: var(--code-bg); padding: 2px 6px; border-radius: 4px; font-family: var(--font-mono); font-size: 85%; }
+      .main pre { background: var(--code-bg); padding: 16px; border-radius: 8px; overflow-x: auto; border: 1px solid var(--border); }
+      .main pre code { background: none; padding: 0; font-size: 13px; }
+      .main table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+      .main th, .main td { padding: 8px 12px; border: 1px solid var(--border); text-align: left; }
+      .main th { background: var(--code-bg); font-weight: 600; }
+      .main blockquote { border-left: 3px solid var(--accent); margin: 16px 0; padding: 8px 16px; background: var(--accent-light); border-radius: 0 6px 6px 0; }
+      .main img { max-width: 100%; border-radius: 8px; }
+      .main .mermaid { overflow-x: auto; }
+
+      /* Badge */
+      .badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+      .badge-blue { background: var(--accent-light); color: var(--accent); }
+
+      /* Responsive */
+      @media (max-width: 900px) {
+        .page { flex-direction: column; }
+        .sidebar { width: 100%; height: auto; position: static; border-right: none; border-bottom: 1px solid var(--border); }
+        .main { padding: 20px; }
+      }
     </style>
     <script>
       window.MathJax = {
-        tex: {
-          inlineMath: [['$', '$'], ['\\(', '\\)']],
-          displayMath: [['$$', '$$'], ['\\[', '\\]']],
-          processEscapes: true
-        }
+        tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']], processEscapes: true }
       };
     </script>
     <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -29,19 +83,7 @@
     <script>
       document.addEventListener('DOMContentLoaded', function () {
         if (!window.mermaid) return;
-        mermaid.initialize({
-          startOnLoad: false,
-          securityLevel: 'loose',
-          theme: 'neutral',
-          themeVariables: {
-            primaryColor: '#e8ecf1',
-            primaryBorderColor: '#9ca3af',
-            primaryTextColor: '#1f2937',
-            lineColor: '#6b7280',
-            secondaryColor: '#f3f4f6',
-            tertiaryColor: '#ffffff'
-          }
-        });
+        mermaid.initialize({ startOnLoad: false, securityLevel: 'loose', theme: 'neutral' });
         var blocks = document.querySelectorAll('pre > code.language-mermaid');
         blocks.forEach(function (code, index) {
           var pre = code.parentElement;
@@ -57,13 +99,38 @@
     </script>
   </head>
   <body>
-    <div class="shell">
-      <a class="brand" href="{{ '/' | relative_url }}">
-        <img src="{{ '/content/img/fockmap-logo.svg' | relative_url }}" alt="FockMap" />
-      </a>
-      <article class="markdown-body">
+    <div class="page">
+      <aside class="sidebar">
+        <a class="logo" href="{{ '/' | relative_url }}">
+          <img src="{{ '/content/img/fockmap-logo.svg' | relative_url }}" alt="FockMap" />
+        </a>
+        <nav>
+          <div class="section-title">Getting Started</div>
+          <a href="{{ '/' | relative_url }}">Overview</a>
+          <a href="https://github.com/johnazariah/encodings-book">📖 The Book</a>
+
+          <div class="section-title">API Cookbook</div>
+          <a href="{{ '/guides/cookbook/' | relative_url }}">Index</a>
+          <a href="{{ '/guides/cookbook/02-building-expressions.html' | relative_url }}">Expressions</a>
+          <a href="{{ '/guides/cookbook/04-creation-annihilation.html' | relative_url }}">Ladder Operators</a>
+          <a href="{{ '/guides/cookbook/06-first-encoding.html' | relative_url }}">Encodings</a>
+          <a href="{{ '/guides/cookbook/10-building-hamiltonian.html' | relative_url }}">Hamiltonians</a>
+          <a href="{{ '/guides/cookbook/14-bosonic-encodings.html' | relative_url }}">Bosonic</a>
+          <a href="{{ '/guides/cookbook/15-qubit-tapering.html' | relative_url }}">Tapering</a>
+
+          <div class="section-title">Guides</div>
+          <a href="{{ '/guides/architecture.html' | relative_url }}">Architecture</a>
+          <a href="{{ '/guides/cross-platform.html' | relative_url }}">Cross-Platform</a>
+
+          <div class="section-title">Links</div>
+          <a href="https://www.nuget.org/packages/FockMap">NuGet Package</a>
+          <a href="https://github.com/johnazariah/encodings">GitHub</a>
+          <a href="https://github.com/johnazariah/encodings-book">Book + Labs</a>
+        </nav>
+      </aside>
+      <main class="main">
         {{ content }}
-      </article>
+      </main>
     </div>
   </body>
 </html>
