@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, buildbeast, podman, ci]
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

@@ -23,7 +23,7 @@ permissions:
 
 jobs:
   prepare-release:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, buildbeast, podman, release]
     outputs:
       version: ${{ steps.version.outputs.new_version }}
       tag: ${{ steps.version.outputs.tag }}

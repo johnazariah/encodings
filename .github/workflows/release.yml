@@ -17,9 +17,7 @@ jobs:
       matrix:
         include:
           - os: linux
-            runner: ubuntu-latest
-          - os: windows
-            runner: [self-hosted, Windows, X64, buildbeast]
+            runner: [self-hosted, Linux, X64, buildbeast, podman, release]
           - os: macos
             runner: [self-hosted, macOS, ARM64]
 
@@ -45,7 +43,7 @@ jobs:
   # Publish NuGet package (parallel with papers, only needs tests)
   publish-library:
     needs: test
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, buildbeast, podman, release]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -74,7 +72,7 @@ jobs:
   # Create GitHub Release with all artifacts
   create-release:
     needs: [publish-library, papers]
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, buildbeast, podman, release]
     steps:
       - name: Download NuGet package
         uses: actions/download-artifact@v4
