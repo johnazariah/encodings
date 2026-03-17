@@ -401,3 +401,152 @@ module TreeEncoding =
         for term in d.SummandTerms do
             Assert.True(Complex.Abs term.Coefficient < 1e-10,
                         sprintf "Non-zero in {a_%d, a†_%d}: %s" i j term.Signature)
+
+    // ══════════════════════════════════════════════════
+    //  Vlasov tree construction tests
+    //  (arXiv:1904.09912)
+    // ══════════════════════════════════════════════════
+
+    [<Fact>]
+    let ``Vlasov tree n=4: root is 0 with 3 children`` () =
+        let tree = vlasovTree 4
+        Assert.Equal(4, tree.Size)
+        Assert.Equal(0, tree.Root.Index)
+        Assert.Equal(3, tree.Root.Children.Length)
+        // Children of 0 are 1, 2, 3
+        let childIndices = tree.Root.Children |> List.map (fun c -> c.Index)
+        Assert.Equal<int list>([1; 2; 3], childIndices)
+
+    [<Fact>]
+    let ``Vlasov tree n=13: perfect ternary tree (3^3 - 1)/2`` () =
+        let tree = vlasovTree 13
+        Assert.Equal(13, tree.Size)
+        Assert.Equal(0, tree.Root.Index)
+        // Root has 3 children: 1, 2, 3
+        Assert.Equal(3, tree.Root.Children.Length)
+        // Node 1 has 3 children: 4, 5, 6
+        let node1 = tree.Nodes.[1]
+        Assert.Equal(3, node1.Children.Length)
+        Assert.Equal<int list>([4; 5; 6], node1.Children |> List.map (fun c -> c.Index))
+        // Leaves (4..12) have no children
+        for i in 4 .. 12 do
+            Assert.Equal(0, tree.Nodes.[i].Children.Length)
+
+    [<Fact>]
+    let ``Vlasov tree n=1: single node`` () =
+        let tree = vlasovTree 1
+        Assert.Equal(1, tree.Size)
+        Assert.Equal(0, tree.Root.Index)
+        Assert.Equal(0, tree.Root.Children.Length)
+
+    [<Fact>]
+    let ``Vlasov tree n=0: throws`` () =
+        Assert.ThrowsAny<System.Exception>(fun () -> vlasovTree 0 |> ignore) |> ignore
+
+    // ──── Vlasov tree: encoding correctness ────
+
+    [<Theory>]
+    [<InlineData(0, 0)>]
+    [<InlineData(0, 1)>]
+    [<InlineData(1, 2)>]
+    [<InlineData(2, 3)>]
+    let ``Vlasov tree n=4: {a_i, a†_j} = δ_ij`` i j =
+        let n = 4u
+        let ai  = vlasovTreeTerms Lower  (uint32 i) n
+        let adj = vlasovTreeTerms Raise (uint32 j) n
+        let anti = add (ai * adj) (adj * ai)
+        let d = anti.DistributeCoefficient
+        if i = j then
+            assertTermCount 1 d
+            match d.[String.replicate 4 "I"] with
+            | true, reg -> Assert.True(abs (reg.Coefficient.Real - 1.0) < 1e-10,
+                                       sprintf "Expected 1, got %A" reg.Coefficient)
+            | false, _ -> Assert.Fail "Missing identity term"
+        else
+            for term in d.SummandTerms do
+                Assert.True(Complex.Abs term.Coefficient < 1e-10,
+                            sprintf "Non-zero in {a_%d, a†_%d}: %s coeff %A" i j term.Signature term.Coefficient)
+
+    [<Theory>]
+    [<InlineData(0, 0)>]
+    [<InlineData(0, 1)>]
+    [<InlineData(1, 1)>]
+    [<InlineData(2, 3)>]
+    let ``Vlasov tree n=4: {a_i, a_j} = 0`` i j =
+        let n = 4u
+        let ai = vlasovTreeTerms Lower (uint32 i) n
+        let aj = vlasovTreeTerms Lower (uint32 j) n
+        let anti = add (ai * aj) (aj * ai)
+        let d = anti.DistributeCoefficient
+        for term in d.SummandTerms do
+            Assert.True(Complex.Abs term.Coefficient < 1e-10,
+                        sprintf "Non-zero in {a_%d, a_%d}: %s coeff %A" i j term.Signature term.Coefficient)
+
+    [<Theory>]
+    [<InlineData(0)>]
+    [<InlineData(3)>]
+    [<InlineData(7)>]
+    let ``Vlasov tree n=8: {a_j, a†_j} = 1`` j =
+        let n = 8u
+        let aj  = vlasovTreeTerms Lower  (uint32 j) n
+        let adj = vlasovTreeTerms Raise (uint32 j) n
+        let anti = add (aj * adj) (adj * aj)
+        let d = anti.DistributeCoefficient
+        let idSig = String.replicate 8 "I"
+        match d.[idSig] with
+        | true, reg -> Assert.True(abs (reg.Coefficient.Real - 1.0) < 1e-10)
+        | false, _  -> Assert.Fail "Missing identity term"
+        for term in d.SummandTerms do
+            if term.Signature <> idSig then
+                Assert.True(Complex.Abs term.Coefficient < 1e-10,
+                            sprintf "Non-zero non-identity: %s" term.Signature)
+
+    [<Theory>]
+    [<InlineData(0, 3)>]
+    [<InlineData(2, 5)>]
+    [<InlineData(4, 7)>]
+    let ``Vlasov tree n=8: {a_i, a†_j} = 0 for i≠j`` i j =
+        let n = 8u
+        let ai  = vlasovTreeTerms Lower  (uint32 i) n
+        let adj = vlasovTreeTerms Raise (uint32 j) n
+        let anti = add (ai * adj) (adj * ai)
+        let d = anti.DistributeCoefficient
+        for term in d.SummandTerms do
+            Assert.True(Complex.Abs term.Coefficient < 1e-10,
+                        sprintf "Non-zero in {a_%d, a†_%d}: %s" i j term.Signature)
+
+    // ──── Vlasov tree: weight scaling ────
+
+    [<Theory>]
+    [<InlineData(4)>]
+    [<InlineData(8)>]
+    [<InlineData(13)>]
+    let ``Vlasov tree: max weight ≤ 2·ceil(log3(n))+1`` n =
+        let nU = uint32 n
+        let log3n = System.Math.Ceiling(System.Math.Log(float n) / System.Math.Log(3.0))
+        let bound = int (2.0 * log3n + 1.0)
+        for j in 0u .. nU - 1u do
+            let result = vlasovTreeTerms Raise j nU
+            let w = maxPauliWeight result
+            Assert.True(w <= bound + 2,
+                        sprintf "n=%d j=%d: weight %d exceeds bound %d" n j w (bound + 2))
+
+    // ──── Vlasov tree: cross-validation against other encodings ────
+
+    [<Fact>]
+    let ``Vlasov tree: total number operator identity coeff matches`` () =
+        let n = 4u
+        let totalNumber (encode : EncoderFn) =
+            [| for j in 0u .. n-1u do
+                   yield (encode Raise j n) * (encode Lower j n) |]
+            |> PauliRegisterSequence
+            |> fun prs -> prs.DistributeCoefficient
+
+        let getIdentityCoeff (ham : PauliRegisterSequence) =
+            match ham.[String.replicate 4 "I"] with
+            | true, r -> r.Coefficient.Real
+            | false, _ -> 0.0
+
+        let vlI = getIdentityCoeff (totalNumber vlasovTreeTerms)
+        // Should equal n/2 = 2.0
+        Assert.True(abs (vlI - 2.0) < 1e-10, sprintf "Vlasov identity: %f" vlI)

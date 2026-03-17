@@ -52,11 +52,11 @@ Ladder Operators → Encoding → Pauli Strings → Hamiltonian Assembly
        │               │            │                │
        │               │            │                └─ Symbolic sum, coefficients
        │               │            └─ Exact phase tracking, no floats
-       │               └─ JW, BK, Parity, BinTree, TerTree, Custom
+       │               └─ JW, BK, Parity, BinTree, TerTree, Vlasov, Custom
        └─ Fermionic (CAR) or Bosonic (CCR)
 ```
 
-**Two encoding abstractions**: Index-set schemes (JW, BK, Parity) and path-based tree encodings (arbitrary trees).
+**Two encoding abstractions**: Index-set schemes (JW, BK, Parity) and path-based tree encodings (balanced binary, balanced ternary, Vlasov, arbitrary trees).
 
 ---
 
@@ -150,6 +150,7 @@ let bravyiKitaevScheme n : EncodingScheme = ...
 
 ```fsharp
 let balancedTernaryTreeTerms n : MajoranaTerms = ...
+let vlasovTreeTerms n : MajoranaTerms = ...
 ```
 
 ### Exact Phase Tracking

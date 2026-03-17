@@ -49,6 +49,7 @@ let pauliBK = bravyiKitaevTerms Raise 2u 4u
 | Parity | $O(n)$ | `parityTerms` |
 | Balanced Binary Tree | $O(\log_2 n)$ | `balancedBinaryTreeTerms` |
 | Balanced Ternary Tree | $O(\log_3 n)$ | `ternaryTreeTerms` |
+| Vlasov (Complete Ternary) | $O(\log_3 n)$ | `vlasovTreeTerms` |
 
 ## Cross-Platform
 

@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../encodings-book"
+		},
+		{
+			"path": "../encodings-research"
+		}
+	],
+	"settings": {}
+}

@@ -41,7 +41,8 @@ expresses Jordan--Wigner [@jordan1928], Bravyi--Kitaev
 [@bravyi2002; @seeley2012], and Parity in 3--5 lines each, while
 the path-based abstraction supports arbitrary tree topologies, including
 balanced binary and balanced ternary trees with optimal $O(\log n)$
-asymptotic Pauli weight [@jiang2020].
+asymptotic Pauli weight [@jiang2020], as well as the complete ternary
+tree of Vlasov [@vlasov2019].
 
 The operator-processing pipeline is implemented symbolically: Pauli
 strings are multiplied exactly with algebraic phase tracking, without
@@ -62,7 +63,7 @@ The library is implemented with algebraic data types and pure functions,
 includes a persistent Fenwick tree ADT, and is validated by an extensive
 xUnit + FsCheck test suite (497 passing tests), including both
 property-based algebraic checks and targeted edge-case regressions.  A
-complete H~2~/STO-3G example is provided and reproduced across all five
+complete H~2~/STO-3G example is provided and reproduced across all six
 built-in encodings.
 
 # Statement of need
@@ -139,7 +140,7 @@ bosonic-to-qubit encodings within a single symbolic algebra framework.
 | Feature                       | OpenFermion       | Qiskit Nature     | PennyLane     | FockMap           |
 |-------------------------------|:-----------------:|:-----------------:|:-------------:|:-----------------:|
 | JW / BK / Parity              | ✓/✓/✓            | ✓/✓/✓            | ✓/✓/---       | ✓/✓/✓            |
-| Tree encodings                | Steiner ext.      | ---               | ---           | Binary, Ternary   |
+| Tree encodings                | Steiner ext.      | ---               | ---           | Binary, Ternary, Vlasov |
 | Bosonic CCR algebra            | ---               | ---               | ✓             | ✓                 |
 | Bosonic-to-qubit encodings     | ---               | ---               | ---           | ✓                 |
 | Mixed fermion--boson ordering  | ---               | ---               | ---           | ✓                 |
@@ -185,8 +186,9 @@ $a^\dagger_j$ and $a_j$ by linear combination.
 ## Tree encodings (Path-based framework)
 
 Any rooted labelled tree defines a fermion-to-qubit encoding.  The
-library provides `balancedBinaryTree` and `balancedTernaryTree`
-constructors; users can build arbitrary trees from `TreeNode` values.
+The library provides `balancedBinaryTree`, `balancedTernaryTree`, and
+`vlasovTree` constructors; users can build arbitrary trees from
+`TreeNode` values.
 The path-based encoding function traverses the tree to construct Majorana
 operators without requiring an index-set monotonicity constraint, making
 it strictly more general than the index-set framework.

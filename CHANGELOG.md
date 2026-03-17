@@ -6,6 +6,7 @@ All notable changes to FockMap will be documented in this file.
 
 ### ✨ Features
 
+- feat: add Vlasov complete ternary tree encoding (`vlasovTree`, `vlasovTreeTerms`) — implements the Clifford-algebraic construction of Vlasov (arXiv:1904.09912) via level-order indexed ternary trees, achieving O(log₃ n) Pauli weight
 - feat: add Trotterization module — first-order and second-order Trotter decomposition, Pauli rotation sequences, CNOT staircase gate decomposition
 - feat: add CircuitOutput module — export gate sequences as OpenQASM 3.0, OpenQASM 2.0 (Quokka-compatible), Q#, and JSON
 - feat: add VariationalCircuits module — measurement grouping (qubit-wise commuting), shot count estimation, QPE resource estimation

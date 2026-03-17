@@ -61,6 +61,7 @@ Internally, the library uses exact symbolic Pauli algebra (not floating-point ma
 | Parity | $O(n)$ | Index-set | `parityTerms` |
 | Balanced Binary Tree | $O(\log_2 n)$ | Path-based | `balancedBinaryTreeTerms` |
 | Balanced Ternary Tree | $O(\log_3 n)$ | Path-based | `ternaryTreeTerms` |
+| Vlasov (Complete Ternary) | $O(\log_3 n)$ | Path-based | `vlasovTreeTerms` |
 
 ### Bosonic Encodings
 
@@ -153,7 +154,7 @@ let json = toCircuitJson tapered.TaperedQubitCount Map.empty gates
 
 FockMap implements the complete quantum simulation pipeline:
 
-1. **Encoding** — Map fermionic/bosonic ladder operators to Pauli strings via index-set schemes (JW, BK, Parity) or path-based tree encodings (binary, ternary, custom)
+1. **Encoding** — Map fermionic/bosonic ladder operators to Pauli strings via index-set schemes (JW, BK, Parity) or path-based tree encodings (binary, ternary, Vlasov, custom)
 2. **Hamiltonian Assembly** — Combine encoded operators with molecular integrals to build a qubit Hamiltonian (`PauliRegisterSequence`)
 3. **Tapering** — Detect Z₂ symmetries (diagonal or general via Clifford rotation), fix sectors, and remove redundant qubits
 4. **Trotterization** — Decompose the Hamiltonian into Pauli rotations (first or second order), then into elementary gates (H, S, CNOT, Rz)
