@@ -17,7 +17,7 @@ affiliations:
   - name: Centre for Quantum Software and Information, School of Computer Science, Faculty of Engineering & Information Technology, University of Technology Sydney, NSW 2007, Australia
     index: 1
     ror: 03f0f6041
-date: 5 March 2026
+date: 17 March 2026
 bibliography: paper.bib
 ---
 
@@ -61,7 +61,7 @@ in a single representation.
 
 The library is implemented with algebraic data types and pure functions,
 includes a persistent Fenwick tree ADT, and is validated by an extensive
-xUnit + FsCheck test suite (497 passing tests), including both
+xUnit + FsCheck test suite (733 passing tests), including both
 property-based algebraic checks and targeted edge-case regressions.  A
 complete H~2~/STO-3G example is provided and reproduced across all six
 built-in encodings.
@@ -237,7 +237,7 @@ fermion--boson Hamiltonian assembly in a single pipeline.
 ## Verification suite
 
 The verification strategy combines unit tests, property-based tests, and
-cross-encoding consistency checks.  At submission time, 497 tests pass,
+cross-encoding consistency checks.  At submission time, 733 tests pass,
 covering six categories: anti-commutation ($\{a_i, a^\dagger_j\} =
 \delta_{ij}$ verified symbolically), commutation ($[b_i, b^\dagger_j] =
 \delta_{ij}$), number conservation, cross-encoding eigenspectrum
@@ -251,13 +251,11 @@ robustness.
 `FockMap` ships with extensive documentation hosted at
 [johnazariah.github.io/encodings](https://johnazariah.github.io/encodings/):
 
-- A 14-chapter progressive *Cookbook* tutorial covering every public
+- A 17-chapter progressive *Cookbook* tutorial covering every public
   type, function, and workflow.
-- A complete pedagogical walkthrough (*From Molecules to Qubits*)
-  reproducing the H~2~ pipeline end-to-end.
-- Seven theory pages on second quantization, Pauli algebra, and encoding
-  theory.
-- Six runnable F# interactive lab scripts with guided exercises.
+- A companion textbook, *From Molecules to Quantum Circuits*
+  (23 chapters, available on arXiv), reproducing the full pipeline
+  end-to-end from molecular integrals to compiled circuits.
 - Full API reference generated from XML documentation comments.
 
 # AI usage disclosure
