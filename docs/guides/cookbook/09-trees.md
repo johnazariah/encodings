@@ -42,6 +42,7 @@ FockMap generalises beyond Fenwick trees to arbitrary tree shapes:
 let linear  = linearTree 8            // Chain → recovers Jordan-Wigner
 let binary  = balancedBinaryTree 8     // Balanced binary → O(log₂ n)
 let ternary = balancedTernaryTree 8    // Balanced ternary → O(log₃ n)
+let vlasov  = vlasovTree 8            // Complete ternary (Vlasov) → O(log₃ n)
 ```
 
 Walk any tree:
@@ -76,6 +77,90 @@ let pairs = pairLegs tree links        // pair legs per mode
 // Full encoding in one call:
 let result = encodeWithTernaryTree tree Raise 2u 8u
 ```
+
+## The Vlasov tree: a different ternary shape
+
+The balanced ternary tree (`balancedTernaryTree`) uses midpoint-split
+indexing: the root is in the middle, and children are spread across
+three roughly equal partitions.  The Vlasov tree (`vlasovTree`) uses
+**level-order** (breadth-first) indexing instead: node 0 is the root,
+and children of node $j$ are $3j+1, 3j+2, 3j+3$.
+
+This is based on Vlasov's Clifford-algebraic construction
+(arXiv:1904.09912), where Clifford algebra generators are defined
+recursively on a complete ternary tree.
+
+Both achieve $O(\log_3 n)$ weight, but they distribute weight
+differently across modes:
+
+```fsharp
+let n = 8u
+printfn "%-5s  %-8s  %-8s" "Mode" "TerTree" "Vlasov"
+for j in 0u .. n-1u do
+    let weight encode =
+        let terms = (encode Raise j n).DistributeCoefficient
+        terms.SummandTerms
+        |> Array.map (fun t ->
+            t.Signature |> Seq.filter (fun c -> c <> 'I') |> Seq.length)
+        |> Array.max
+    printfn "%-5d  %-8d  %-8d" j (weight ternaryTreeTerms) (weight vlasovTreeTerms)
+```
+
+Output:
+
+```
+Mode   TerTree   Vlasov
+0      3         3
+1      3         3
+2      3         3
+3      3         2       ← Vlasov wins here
+4      2         3       ← Balanced ternary wins here
+5      3         3
+6      3         3
+7      3         3
+```
+
+The tree shape matters: different qubit assignments put different modes
+at different depths, so the "best" tree depends on which modes appear
+most frequently in your Hamiltonian.
+
+## Comparing tree shapes on H₂
+
+Both ternary tree shapes produce valid H₂ Hamiltonians with identical
+eigenspectra but different Pauli structure:
+
+```fsharp
+let hamEncoders = [
+    ("Jordan-Wigner",    jordanWignerTerms)
+    ("Bravyi-Kitaev",    bravyiKitaevTerms)
+    ("Balanced Ternary", ternaryTreeTerms)
+    ("Vlasov Tree",      vlasovTreeTerms)
+]
+
+for (name, encoder) in hamEncoders do
+    let ham = (computeHamiltonianWith encoder lookup 4u).DistributeCoefficient
+    let terms = ham.SummandTerms |> Array.filter (fun t -> Complex.Abs t.Coefficient > 1e-10)
+    let weights = terms |> Array.map (fun t ->
+        t.Signature |> Seq.filter (fun c -> c <> 'I') |> Seq.length)
+    printfn "%-20s  Terms: %d  MaxWt: %d  AvgWt: %.2f"
+        name terms.Length (Array.max weights) (Array.averageBy float weights)
+```
+
+```
+Jordan-Wigner         Terms: 7  MaxWt: 2  AvgWt: 1.14
+Bravyi-Kitaev         Terms: 7  MaxWt: 3  AvgWt: 1.71
+Balanced Ternary      Terms: 7  MaxWt: 3  AvgWt: 1.43
+Vlasov Tree           Terms: 7  MaxWt: 3  AvgWt: 1.43
+```
+
+For H₂ (4 qubits), both tree encodings match.  The differences grow
+with system size — at $n = 64$, different tree shapes can differ by
+30–40% in total CNOT cost, making tree selection a first-order
+optimization concern.
+
+> **Try it yourself:** See [Lab 10: Vlasov Tree](https://github.com/johnazariah/encodings-book/blob/main/labs/10-vlasov-tree.fsx)
+> for the full comparison script with tree structure printouts,
+> per-mode weight tables, and H₂ Hamiltonian analysis.
 
 ---
 

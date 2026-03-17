@@ -364,3 +364,30 @@ module TreeEncoding =
         let tree = balancedBinaryTree (int n)
         encodeWithTernaryTree tree op j n
 
+    // ─────────────────────────────────────────────
+    //  Vlasov complete ternary tree
+    // ─────────────────────────────────────────────
+
+    /// Build a complete ternary tree with breadth-first (level-order) indexing.
+    /// Node 0 is the root; children of node j are 3j+1, 3j+2, 3j+3
+    /// (when they fall within n).
+    ///
+    /// Based on Vlasov, "Clifford algebras, Spin groups and qubit trees",
+    /// arXiv:1904.09912 (2019), Quanta 11:97-114 (2022).
+    ///
+    /// This achieves O(log₃ n) Pauli weight.
+    let vlasovTree (n : int) : EncodingTree =
+        if n <= 0 then failwith "n must be > 0"
+        let rec buildNode j parent =
+            let childIndices =
+                [3*j+1; 3*j+2; 3*j+3] |> List.filter (fun c -> c < n)
+            let children =
+                childIndices |> List.map (fun c -> buildNode c (Some j))
+            mkNode j children parent
+        mkTree (buildNode 0 None) n
+
+    /// Encode a ladder operator using the Vlasov complete ternary tree.
+    let vlasovTreeTerms (op : LadderOperatorUnit) (j : uint32) (n : uint32) =
+        let tree = vlasovTree (int n)
+        encodeWithTernaryTree tree op j n
+

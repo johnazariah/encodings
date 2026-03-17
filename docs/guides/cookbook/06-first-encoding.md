@@ -53,4 +53,4 @@ on real hardware, and it's why we need better encodings.
 
 ---
 
-**Next:** [Five Encodings, One Interface](07-five-encodings.html) — comparing all available encodings
+**Next:** [Six Encodings, One Interface](07-five-encodings.html) — comparing all available encodings

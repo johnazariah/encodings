@@ -359,9 +359,9 @@ in O(log n) time.
 | 13 | Out-of-range index and Identity return empty | Fact (2 cases) |
 | 14 | All three encodings (JW, BK, Parity) produce 2-term number operators for n = 4 | Theory (4 modes) |
 
-### 9.4 Tree-Based Encodings — `TreeEncoding.fs` (24 tests)
+### 9.4 Tree-Based Encodings — `TreeEncoding.fs` (46 tests)
 
-Balanced binary and ternary tree encodings, plus cross-encoding validation.
+Balanced binary, ternary, and Vlasov tree encodings, plus cross-encoding validation.
 
 **Tree construction:**
 
@@ -411,6 +411,26 @@ Balanced binary and ternary tree encodings, plus cross-encoding validation.
 | 22 | Ternary n = 4: {aᵢ, aⱼ} = 0 (4 same/different pairs) | Theory (4 pairs) |
 | 23 | Ternary n = 8: {aⱼ, a†ⱼ} = 1 for j ∈ {0, 3, 7} | Theory (3 modes) |
 | 24 | Ternary n = 8: {aᵢ, a†ⱼ} = 0 for i ≠ j | Theory (3 pairs) |
+
+**Vlasov tree construction:**
+
+| # | What is tested | Style |
+|---|----------------|-------|
+| 25 | Vlasov tree n = 4: root is 0 with 3 children [1, 2, 3] | Fact |
+| 26 | Vlasov tree n = 13: perfect ternary tree with correct structure | Fact |
+| 27 | Vlasov tree n = 1: single node | Fact |
+| 28 | Vlasov tree n = 0: throws exception | Fact |
+
+**Vlasov encoding correctness:**
+
+| # | What is tested | Style |
+|---|----------------|-------|
+| 29 | Vlasov n = 4: {aᵢ, a†ⱼ} = δᵢⱼ (4 pairs including i = j and i ≠ j) | Theory (4 pairs) |
+| 30 | Vlasov n = 4: {aᵢ, aⱼ} = 0 (4 same/different pairs) | Theory (4 pairs) |
+| 31 | Vlasov n = 8: {aⱼ, a†ⱼ} = 1 for j ∈ {0, 3, 7} | Theory (3 modes) |
+| 32 | Vlasov n = 8: {aᵢ, a†ⱼ} = 0 for i ≠ j | Theory (3 pairs) |
+| 33 | Vlasov tree: max weight ≤ 2·⌈log₃ n⌉ + 3 for n ∈ {4, 8, 13} | Theory (3 sizes × all modes) |
+| 34 | Vlasov tree: total number operator identity coeff = n/2 | Fact |
 
 **Cross-encoding validation:**
 

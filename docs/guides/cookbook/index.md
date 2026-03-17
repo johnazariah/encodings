@@ -19,7 +19,7 @@ a complete molecular Hamiltonian by the end.
 | 4 | [Creation and Annihilation](04-creation-annihilation.html) | Ladder operators and product terms |
 | 5 | [Normal Ordering](05-normal-ordering.html) | CAR / CCR rewriting and pluggable algebras |
 | 6 | [Your First Encoding](06-first-encoding.html) | Jordan–Wigner step by step |
-| 7 | [Five Encodings, One Interface](07-five-encodings.html) | Drop-in encoder comparison |
+| 7 | [Six Encodings, One Interface](07-five-encodings.html) | Drop-in encoder comparison |
 | 8 | [Encoding Internals](08-encoding-internals.html) | Majorana decomposition and `EncodingScheme` |
 | 9 | [Trees and Fenwick Trees](09-trees.html) | Tree-shaped parity structures |
 | 10 | [Building a Real Hamiltonian](10-building-hamiltonian.html) | End-to-end H₂ pipeline |
@@ -43,6 +43,7 @@ a complete molecular Hamiltonian by the end.
 | `parityTerms` | $O(n)$ | When parity is the natural basis |
 | `balancedBinaryTreeTerms` | $O(\log_2 n)$ | Logarithmic via binary tree |
 | `ternaryTreeTerms` | $O(\log_3 n)$ | Best asymptotic scaling |
+| `vlasovTreeTerms` | $O(\log_3 n)$ | Complete ternary tree (Vlasov) |
 | `encodeOperator scheme` | Varies | Your custom scheme |
 | `encodeWithTernaryTree tree` | Varies | Your custom tree shape |
 | `unaryBosonTerms` | $d$ qubits | Bosonic, weight ≤ 2 |

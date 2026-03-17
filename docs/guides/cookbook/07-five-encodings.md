@@ -1,4 +1,4 @@
-# Five Encodings, One Interface
+# Six Encodings, One Interface
 
 Every encoding function in FockMap has the exact same type signature:
 
@@ -19,6 +19,7 @@ let bk  = bravyiKitaevTerms       Raise mode n   // O(log₂ n)
 let par = parityTerms             Raise mode n   // O(n)
 let bt  = balancedBinaryTreeTerms Raise mode n   // O(log₂ n)
 let tt  = ternaryTreeTerms        Raise mode n   // O(log₃ n) — optimal
+let vl  = vlasovTreeTerms         Raise mode n   // O(log₃ n) — Vlasov tree
 ```
 
 ## Side-by-side comparison
@@ -30,6 +31,7 @@ let encodings = [
     ("Parity",            parityTerms)
     ("Binary Tree",       balancedBinaryTreeTerms)
     ("Ternary Tree",      ternaryTreeTerms)
+    ("Vlasov Tree",       vlasovTreeTerms)
 ]
 
 printfn "%-20s  %s" "Encoding" "Pauli weight of a†₂"

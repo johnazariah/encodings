@@ -7,8 +7,8 @@ authors:
     orcid: "https://orcid.org/0009-0007-9870-1970"
     affiliation: "Centre for Quantum Software and Information, School of Computer Science, Faculty of Engineering & Information Technology, University of Technology Sydney, NSW 2007, Australia"
     email: "john.azariah@student.uts.edu.au"
-version: 0.7.0
-date-released: 2026-03-09
+version: 0.5.1
+date-released: 2026-03-05
 license: MIT
 repository-code: https://github.com/johnazariah/encodings
 keywords:

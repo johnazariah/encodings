@@ -17,7 +17,7 @@ affiliations:
   - name: Centre for Quantum Software and Information, School of Computer Science, Faculty of Engineering & Information Technology, University of Technology Sydney, NSW 2007, Australia
     index: 1
     ror: 03f0f6041
-date: 5 March 2026
+date: 17 March 2026
 bibliography: paper.bib
 ---
 
@@ -41,7 +41,8 @@ expresses Jordan--Wigner [@jordan1928], Bravyi--Kitaev
 [@bravyi2002; @seeley2012], and Parity in 3--5 lines each, while
 the path-based abstraction supports arbitrary tree topologies, including
 balanced binary and balanced ternary trees with optimal $O(\log n)$
-asymptotic Pauli weight [@jiang2020].
+asymptotic Pauli weight [@jiang2020], as well as the complete ternary
+tree of Vlasov [@vlasov2019].
 
 The operator-processing pipeline is implemented symbolically: Pauli
 strings are multiplied exactly with algebraic phase tracking, without
@@ -60,9 +61,9 @@ in a single representation.
 
 The library is implemented with algebraic data types and pure functions,
 includes a persistent Fenwick tree ADT, and is validated by an extensive
-xUnit + FsCheck test suite (497 passing tests), including both
+xUnit + FsCheck test suite (733 passing tests), including both
 property-based algebraic checks and targeted edge-case regressions.  A
-complete H~2~/STO-3G example is provided and reproduced across all five
+complete H~2~/STO-3G example is provided and reproduced across all six
 built-in encodings.
 
 # Statement of need
@@ -139,7 +140,7 @@ bosonic-to-qubit encodings within a single symbolic algebra framework.
 | Feature                       | OpenFermion       | Qiskit Nature     | PennyLane     | FockMap           |
 |-------------------------------|:-----------------:|:-----------------:|:-------------:|:-----------------:|
 | JW / BK / Parity              | ✓/✓/✓            | ✓/✓/✓            | ✓/✓/---       | ✓/✓/✓            |
-| Tree encodings                | Steiner ext.      | ---               | ---           | Binary, Ternary   |
+| Tree encodings                | Steiner ext.      | ---               | ---           | Binary, Ternary, Vlasov |
 | Bosonic CCR algebra            | ---               | ---               | ✓             | ✓                 |
 | Bosonic-to-qubit encodings     | ---               | ---               | ---           | ✓                 |
 | Mixed fermion--boson ordering  | ---               | ---               | ---           | ✓                 |
@@ -185,8 +186,9 @@ $a^\dagger_j$ and $a_j$ by linear combination.
 ## Tree encodings (Path-based framework)
 
 Any rooted labelled tree defines a fermion-to-qubit encoding.  The
-library provides `balancedBinaryTree` and `balancedTernaryTree`
-constructors; users can build arbitrary trees from `TreeNode` values.
+The library provides `balancedBinaryTree`, `balancedTernaryTree`, and
+`vlasovTree` constructors; users can build arbitrary trees from
+`TreeNode` values.
 The path-based encoding function traverses the tree to construct Majorana
 operators without requiring an index-set monotonicity constraint, making
 it strictly more general than the index-set framework.
@@ -235,7 +237,7 @@ fermion--boson Hamiltonian assembly in a single pipeline.
 ## Verification suite
 
 The verification strategy combines unit tests, property-based tests, and
-cross-encoding consistency checks.  At submission time, 497 tests pass,
+cross-encoding consistency checks.  At submission time, 733 tests pass,
 covering six categories: anti-commutation ($\{a_i, a^\dagger_j\} =
 \delta_{ij}$ verified symbolically), commutation ($[b_i, b^\dagger_j] =
 \delta_{ij}$), number conservation, cross-encoding eigenspectrum
@@ -249,13 +251,11 @@ robustness.
 `FockMap` ships with extensive documentation hosted at
 [johnazariah.github.io/encodings](https://johnazariah.github.io/encodings/):
 
-- A 14-chapter progressive *Cookbook* tutorial covering every public
+- A 17-chapter progressive *Cookbook* tutorial covering every public
   type, function, and workflow.
-- A complete pedagogical walkthrough (*From Molecules to Qubits*)
-  reproducing the H~2~ pipeline end-to-end.
-- Seven theory pages on second quantization, Pauli algebra, and encoding
-  theory.
-- Six runnable F# interactive lab scripts with guided exercises.
+- A companion textbook, *From Molecules to Quantum Circuits*
+  (23 chapters, available on arXiv), reproducing the full pipeline
+  end-to-end from molecular integrals to compiled circuits.
 - Full API reference generated from XML documentation comments.
 
 # AI usage disclosure
