@@ -2,6 +2,24 @@
 
 All notable changes to FockMap will be documented in this file.
 
+## [0.8.0] - 2026-03-17
+
+### ✨ Features
+
+- feat: add Vlasov complete ternary tree encoding (`vlasovTree`, `vlasovTreeTerms`) — implements the Clifford-algebraic construction of Vlasov (arXiv:1904.09912) via level-order indexed ternary trees, achieving O(log₃ n) Pauli weight
+
+### 📖 Documentation
+
+- docs: update cookbook (five → six encodings), add Vlasov to README, docs site, and JOSS paper
+- docs: update JOSS paper for submission (test count 733, documentation references)
+- docs: archive theory pages to `.project/archive/theory/`
+- docs: add ADRs 015 (no Leanpub) and 016 (qubitization backend)
+
+### 🧪 Tests
+
+- test: 22 new Vlasov tree tests (construction, CAR verification, weight scaling, cross-validation)
+- Total: **733 tests** (was 711)
+
 ## [0.7.0] - 2026-03-09
 
 ### ✨ Features
