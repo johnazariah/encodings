@@ -13,7 +13,7 @@
 
 > The complete pipeline: molecular integrals → encoding → tapering → Trotter decomposition → OpenQASM / Q# / JSON circuit output.
 
-📖 **The Book:** [*From Molecules to Quantum Circuits*](https://github.com/johnazariah/encodings-book) — 22-chapter guide with interactive labs, computed results (H₂ dissociation curve, H₂O bond angle scan), and companion code.
+📖 **The Book:** [*From Molecules to Quantum Circuits*](https://johnazariah.github.io/encodings-book) — 23-chapter guide with interactive labs, computed results (H₂ dissociation curve, H₂O bond angle scan), and companion code.
 
 🍳 **API Cookbook:** [15 progressive chapters](https://johnazariah.github.io/encodings/guides/cookbook/) covering every type and function.
 
@@ -139,8 +139,8 @@ let json = toCircuitJson tapered.TaperedQubitCount Map.empty gates
 
 ## Where to Start
 
-- **The Book:** [*From Molecules to Quantum Circuits*](https://github.com/johnazariah/encodings-book) — 22 chapters, from molecular integrals to quantum circuits
-- **Interactive Labs:** [9 F# scripts](https://github.com/johnazariah/encodings-book/tree/main/labs) — run with `dotnet fsi`
+- **The Book:** [*From Molecules to Quantum Circuits*](https://johnazariah.github.io/encodings-book) — 23 chapters, from molecular integrals to quantum circuits
+- **Interactive Labs:** [10 F# scripts](https://github.com/johnazariah/encodings-book/tree/main/labs) — run with `dotnet fsi`
 - **API Cookbook:** [15-chapter tutorial](https://johnazariah.github.io/encodings/guides/cookbook/) — every type and function
 - **Architecture:** [How the library works](https://johnazariah.github.io/encodings/guides/architecture.html)
 - **API Reference:** [All types and functions](https://johnazariah.github.io/encodings/reference/index.html)
@@ -148,7 +148,7 @@ let json = toCircuitJson tapered.TaperedQubitCount Map.empty gates
 ## Documentation
 
 - **Site**: [johnazariah.github.io/encodings](https://johnazariah.github.io/encodings/) — API cookbook, architecture guide, cross-platform notes
-- **Book**: [github.com/johnazariah/encodings-book](https://github.com/johnazariah/encodings-book) — full narrative with labs and companion code
+- **Book**: [johnazariah.github.io/encodings-book](https://johnazariah.github.io/encodings-book) — full narrative with labs and companion code
 
 ## How it Works
 
