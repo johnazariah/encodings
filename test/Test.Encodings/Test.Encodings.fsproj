@@ -39,6 +39,7 @@
     <Compile Include="Hamiltonian.fs" />
     <Compile Include="CostAnalysis.fs" />
     <Compile Include="Optimization.fs" />
+    <Compile Include="Fcidump.fs" />
   </ItemGroup>
 
   <ItemGroup>
