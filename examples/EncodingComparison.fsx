@@ -128,6 +128,25 @@ let printMoleculeReport (title : string) (subtitle : string) (reports : Encoding
     printfn "  ║ %-84s ║" (sprintf "QPE queries (ε=0.001, t=1):  %s"
         (queries001.ToString("N0")))
 
+    // Trotter–Qubitization crossover analysis
+    printfn "  ╠%s╣" (thinDivider (w - 4))
+    printfn "  ║ %-84s ║" "Trotter vs Qubitization  (first-order, t=1)"
+    printfn "  ║ %-84s ║" "  Ratio = Trotter CNOTs / QSP queries  (>1 ⇒ qubitization wins)"
+    printfn "  ║ %-84s ║" ""
+
+    let bestRatio = reports |> Array.minBy (fun r -> trotterQubitizationRatio r.Hamiltonian 1.0)
+    let worstRatio = reports |> Array.maxBy (fun r -> trotterQubitizationRatio r.Hamiltonian 1.0)
+    for r in reports do
+        let ratio = trotterQubitizationRatio r.Hamiltonian 1.0
+        let marker = if r.Name = bestRatio.Name then "  ← closest" else ""
+        printfn "  ║ %-84s ║" (sprintf "  %-18s  ratio = %10s%s" r.Name (formatFloat 1 ratio) marker)
+
+    let bestR = trotterQubitizationRatio bestRatio.Hamiltonian 1.0
+    let worstR = trotterQubitizationRatio worstRatio.Hamiltonian 1.0
+    let improvement = (1.0 - bestR / worstR) * 100.0
+    printfn "  ║ %-84s ║" ""
+    printfn "  ║ %-84s ║" (sprintf "  Best encoding reduces Trotter/QSP ratio by %.0f%% vs worst" improvement)
+
     printfn "  ╠%s╣" (thinDivider (w - 4))
     printfn "  ║ %s ║" (("★λ = best λ-norm   ★W = best max weight   ★C = best CNOT count").PadRight(w - 6))
     printfn "  ╚%s╝" (divider (w - 4))

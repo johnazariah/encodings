@@ -182,3 +182,99 @@ module CostAnalysis =
         encodings
         |> Array.map (fun (name, h) -> name, qubitizationCosts h)
         |> Array.sortBy (fun (_, c) -> c.Lambda)
+
+    // ── Trotter–Qubitization Crossover ──────────────────────────────
+
+    /// <summary>
+    /// Simulation cost comparison at a given precision target.
+    /// </summary>
+    type SimulationCostComparison =
+        { /// <summary>Target precision ε.</summary>
+          Epsilon : float
+          /// <summary>Number of first-order Trotter steps needed: ⌈λ²t²/(2ε)⌉.</summary>
+          TrotterSteps : int
+          /// <summary>Total CNOTs across all Trotter steps.</summary>
+          TrotterCnots : int64
+          /// <summary>Qubitization queries: ⌈λt/ε⌉.</summary>
+          QubitizationQueries : int
+          /// <summary>Ratio: Trotter CNOTs / qubitization queries. &gt;1 means qubitization wins.</summary>
+          CostRatio : float }
+
+    /// <summary>
+    /// Compare Trotter and qubitization costs for a given Hamiltonian at
+    /// multiple precision targets.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Trotter step count uses the standard first-order bound:
+    /// r ≥ ⌈λ²t²/(2ε)⌉, where λ = Σ|cₖ| and ε is the target precision.
+    /// Each step contributes the CNOT count from the CNOT staircase decomposition.
+    /// </para>
+    /// <para>
+    /// Qubitization query count follows the QSP bound: ⌈λt/ε⌉.
+    /// </para>
+    /// <para>
+    /// The crossover precision ε* is the point where Trotter total CNOTs
+    /// equals qubitization queries — below ε*, qubitization dominates.
+    /// Since Trotter CNOTs per step are encoding-dependent but λ is
+    /// encoding-independent, the crossover point shifts with encoding choice.
+    /// </para>
+    /// </remarks>
+    /// <param name="hamiltonian">The encoded Hamiltonian.</param>
+    /// <param name="time">Evolution time t (default 1.0).</param>
+    /// <param name="epsilons">Array of precision targets to evaluate.</param>
+    /// <returns>Array of cost comparisons, one per epsilon.</returns>
+    let simulationCosts (hamiltonian : PauliRegisterSequence) (time : float) (epsilons : float[]) : SimulationCostComparison[] =
+        let terms = hamiltonian.DistributeCoefficient.SummandTerms
+        let lambda = terms |> Array.sumBy (fun t -> t.Coefficient.Magnitude)
+        let cnotsPerStep =
+            let step = Trotterization.firstOrderTrotter 1.0 hamiltonian
+            Trotterization.trotterCnotCount step
+
+        epsilons |> Array.map (fun eps ->
+            let trotterSteps = int (ceil (lambda * lambda * time * time / (2.0 * eps)))
+            let trotterCnots = int64 trotterSteps * int64 cnotsPerStep
+            let qspQueries = int (ceil (lambda * time / eps))
+            { Epsilon = eps
+              TrotterSteps = trotterSteps
+              TrotterCnots = trotterCnots
+              QubitizationQueries = qspQueries
+              CostRatio = float trotterCnots / float qspQueries })
+
+    /// <summary>
+    /// Estimate the crossover precision ε* where Trotter total CNOTs
+    /// equals qubitization queries.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// From the cost models:
+    ///   Trotter CNOTs = ⌈λ²t²/(2ε)⌉ × C   (C = CNOTs per step)
+    ///   Qubitization  = ⌈λt/ε⌉
+    /// </para>
+    /// <para>
+    /// Setting equal: λ²t²C/(2ε) = λt/ε  →  ε* = λtC/2.
+    /// Wait — that doesn't depend on ε! The ratio is:
+    ///   Trotter/Qubitization = λtC/2.
+    /// </para>
+    /// <para>
+    /// This means for first-order Trotter, the ratio is ε-independent:
+    /// qubitization wins whenever λtC/2 &gt; 1, i.e., when C &gt; 2/(λt).
+    /// For molecular Hamiltonians with large λ and C, qubitization
+    /// almost always wins — but reducing C (via better encoding)
+    /// narrows the gap, and for higher-order Trotter the crossover
+    /// becomes ε-dependent.
+    /// </para>
+    /// </remarks>
+    /// <param name="hamiltonian">The encoded Hamiltonian.</param>
+    /// <param name="time">Evolution time t.</param>
+    /// <returns>
+    /// The cost ratio (Trotter CNOTs / qubitization queries).
+    /// Values &gt;1 mean qubitization is more efficient.
+    /// </returns>
+    let trotterQubitizationRatio (hamiltonian : PauliRegisterSequence) (time : float) : float =
+        let terms = hamiltonian.DistributeCoefficient.SummandTerms
+        let lambda = terms |> Array.sumBy (fun t -> t.Coefficient.Magnitude)
+        let cnotsPerStep =
+            let step = Trotterization.firstOrderTrotter 1.0 hamiltonian
+            Trotterization.trotterCnotCount step
+        lambda * time * float cnotsPerStep / 2.0
