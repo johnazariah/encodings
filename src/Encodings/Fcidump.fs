@@ -231,3 +231,90 @@ module Fcidump =
     let parseToFactory (content : string) : (string -> Complex option) * float * int =
         let data = parse content
         (toCoefficientFactory data, data.CoreEnergy, data.Norb)
+
+    // ── Spin-Orbital Expansion ──────────────────────────────────────
+
+    /// <summary>
+    /// Build a spin-orbital coefficient factory from spatial-orbital FCIDUMP data.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Standard FCIDUMP files from RHF/ROHF calculations contain spatial-orbital
+    /// integrals. Fermion-to-qubit encodings operate on spin-orbitals, where
+    /// each spatial orbital p maps to spin-orbitals 2p (α) and 2p+1 (β).
+    /// </para>
+    /// <para>
+    /// <b>Spin-orbital mapping:</b>
+    /// </para>
+    /// <list type="bullet">
+    ///   <item><description>
+    ///     One-electron: h_{2p+σ, 2q+τ} = δ_{σ,τ} · h_{p,q}
+    ///   </description></item>
+    ///   <item><description>
+    ///     Two-electron (chemist): (2p+σ, 2q+τ | 2r+σ', 2s+τ') = δ_{σ,τ} · δ_{σ',τ'} · (pq|rs)
+    ///   </description></item>
+    /// </list>
+    /// <para>
+    /// The returned factory is indexed by spin-orbital indices and should be used
+    /// with <c>n = 2 * NORB</c> (number of spin-orbitals).
+    /// </para>
+    /// </remarks>
+    /// <param name="data">Parsed spatial-orbital FCIDUMP data.</param>
+    /// <returns>A coefficient factory for spin-orbital indices, and the number of spin-orbitals.</returns>
+    let toSpinOrbitalFactory (data : FcidumpData) : (string -> Complex option) * int =
+        let norb = data.Norb
+        let nso  = 2 * norb
+        let h1e  = data.H1e
+        let h2e  = data.H2e
+
+        let factory (key : string) =
+            let parts = key.Split(',')
+            match parts.Length with
+            | 2 ->
+                let p = int parts.[0]
+                let q = int parts.[1]
+                if p < nso && q < nso then
+                    let sp = p % 2
+                    let sq = q % 2
+                    if sp <> sq then None  // different spin → zero
+                    else
+                        let ip = p / 2
+                        let iq = q / 2
+                        let v = h1e.[ip, iq]
+                        if abs v > 1e-15 then Some (Complex(v, 0.0)) else None
+                else None
+            | 4 ->
+                let p = int parts.[0]
+                let q = int parts.[1]
+                let r = int parts.[2]
+                let s = int parts.[3]
+                if p < nso && q < nso && r < nso && s < nso then
+                    // Factory key "P,Q,R,S" → ½ × chemist_spinorb(P,S,Q,R)
+                    // chemist_spinorb(i,j,k,l) = δ_{spin(i),spin(j)} × δ_{spin(k),spin(l)} × chemist_spatial(i/2,j/2,k/2,l/2)
+                    let i, j, k, l = p, s, q, r
+                    let si = i % 2
+                    let sj = j % 2
+                    let sk = k % 2
+                    let sl = l % 2
+                    if si <> sj || sk <> sl then None
+                    else
+                        let v = 0.5 * h2e.[i/2, j/2, k/2, l/2]
+                        if abs v > 1e-15 then Some (Complex(v, 0.0)) else None
+                else None
+            | _ -> None
+
+        (factory, nso)
+
+    /// <summary>
+    /// Parse a spatial-orbital FCIDUMP and return a spin-orbital coefficient factory.
+    /// </summary>
+    /// <param name="content">FCIDUMP file content (spatial orbitals).</param>
+    /// <returns>
+    /// A tuple of (factory, coreEnergy, numSpinOrbitals).
+    /// Use numSpinOrbitals as the <c>n</c> parameter to
+    /// <see cref="Hamiltonian.computeHamiltonianWith"/>.
+    /// </returns>
+    let parseToSpinOrbitalFactory (content : string) : (string -> Complex option) * float * int =
+        let data = parse content
+        let (factory, nso) = toSpinOrbitalFactory data
+        (factory, data.CoreEnergy, nso)
