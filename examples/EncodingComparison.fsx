@@ -51,13 +51,16 @@ type EncodingReport =
       MaxWeight : int
       MeanWeight : float
       TotalWeight : int
-      CnotCount : int }
+      CnotCount : int
+      CnotCount2 : int }
 
 let analyzeEncoding (factory : string -> Complex option) (n : uint32) (name : string) (encoder : EncoderFn) =
     let hamiltonian = computeHamiltonianWithParallel encoder factory n
     let costs = hamiltonianCosts hamiltonian
-    let step = firstOrderTrotter 1.0 hamiltonian
-    let cnots = trotterCnotCount step
+    let step1 = firstOrderTrotter 1.0 hamiltonian
+    let step2 = secondOrderTrotter 1.0 hamiltonian
+    let cnots1 = trotterCnotCount step1
+    let cnots2 = trotterCnotCount step2
     { Name = name
       Hamiltonian = hamiltonian
       TermCount = costs.TermCount
@@ -66,7 +69,8 @@ let analyzeEncoding (factory : string -> Complex option) (n : uint32) (name : st
       MaxWeight = costs.MaxPauliWeight
       MeanWeight = costs.MeanPauliWeight
       TotalWeight = costs.TotalPauliWeight
-      CnotCount = cnots }
+      CnotCount = cnots1
+      CnotCount2 = cnots2 }
 
 let analyzeAllEncodings (factory : string -> Complex option) (n : uint32) =
     [| ("Jordan-Wigner",    JordanWigner.jordanWignerTerms)
@@ -80,7 +84,7 @@ let analyzeAllEncodings (factory : string -> Complex option) (n : uint32) =
 // ── Pretty Printing ─────────────────────────────────────────────────────
 
 let printMoleculeReport (title : string) (subtitle : string) (reports : EncodingReport[]) =
-    let w = 90
+    let w = 102
 
     printfn ""
     printfn "  ╔%s╗" (divider (w - 4))
@@ -89,8 +93,8 @@ let printMoleculeReport (title : string) (subtitle : string) (reports : Encoding
     printfn "  ╠%s╣" (divider (w - 4))
 
     // Column headers
-    printfn "  ║ %-18s │ %6s │ %5s │ %8s │ %6s │ %6s │ %9s ║"
-        "Encoding" "Qubits" "Terms" "λ-norm" "MaxWt" "MeanWt" "CNOT/step"
+    printfn "  ║ %-18s │ %6s │ %5s │ %8s │ %6s │ %6s │ %9s │ %9s ║"
+        "Encoding" "Qubits" "Terms" "λ-norm" "MaxWt" "MeanWt" "CNOT(S1)" "CNOT(S2)"
     printfn "  ╠%s╣" (thinDivider (w - 4))
 
     // Find the best (lowest) for each metric to mark with ★
@@ -105,10 +109,10 @@ let printMoleculeReport (title : string) (subtitle : string) (reports : Encoding
               if r.CnotCount = minCnot then "C" ]
             |> String.concat ""
         let star = if markers.Length > 0 then sprintf " ★%s" markers else ""
-        printfn "  ║ %-18s │ %6d │ %5d │ %8s │ %6d │ %6s │ %9d%s"
+        printfn "  ║ %-18s │ %6d │ %5d │ %8s │ %6d │ %6s │ %9d │ %9d%s"
             r.Name r.QubitCount r.TermCount
             (formatFloat 4 r.LambdaNorm) r.MaxWeight
-            (formatFloat 2 r.MeanWeight) r.CnotCount
+            (formatFloat 2 r.MeanWeight) r.CnotCount r.CnotCount2
             (star.PadRight(3))
 
     printfn "  ╠%s╣" (thinDivider (w - 4))
@@ -117,38 +121,38 @@ let printMoleculeReport (title : string) (subtitle : string) (reports : Encoding
     let jwH = reports.[0].Hamiltonian
     let symCount = z2SymmetryCount jwH
     let taperingResult = taper defaultTaperingOptions jwH
-    printfn "  ║ %-84s ║" (sprintf "Z₂ symmetries: %d detected → %d → %d qubits after tapering"
+    printfn "  ║ %-96s ║" (sprintf "Z₂ symmetries: %d detected → %d → %d qubits after tapering"
         symCount taperingResult.OriginalQubitCount taperingResult.TaperedQubitCount)
 
     // Qubitization resource estimate
     let qcosts = qubitizationCosts jwH
     let queries001 = qubitizationQueries qcosts 1.0 0.001
-    printfn "  ║ %-84s ║" (sprintf "Qubitization:  λ = %.4f  │  Ancillas: %d  │  Total: %d qubits"
+    printfn "  ║ %-96s ║" (sprintf "Qubitization:  λ = %.4f  │  Ancillas: %d  │  Total: %d qubits"
         qcosts.Lambda qcosts.SelectAncillas qcosts.TotalQubits)
-    printfn "  ║ %-84s ║" (sprintf "QPE queries (ε=0.001, t=1):  %s"
+    printfn "  ║ %-96s ║" (sprintf "QPE queries (ε=0.001, t=1):  %s"
         (queries001.ToString("N0")))
 
     // Trotter–Qubitization crossover analysis
     printfn "  ╠%s╣" (thinDivider (w - 4))
-    printfn "  ║ %-84s ║" "Trotter vs Qubitization  (first-order, t=1)"
-    printfn "  ║ %-84s ║" "  Ratio = Trotter CNOTs / QSP queries  (>1 ⇒ qubitization wins)"
-    printfn "  ║ %-84s ║" ""
+    printfn "  ║ %-96s ║" "Trotter vs Qubitization  (first-order, t=1)"
+    printfn "  ║ %-96s ║" "  Ratio = Trotter CNOTs / QSP queries  (>1 ⇒ qubitization wins)"
+    printfn "  ║ %-96s ║" ""
 
     let bestRatio = reports |> Array.minBy (fun r -> trotterQubitizationRatio r.Hamiltonian 1.0)
     let worstRatio = reports |> Array.maxBy (fun r -> trotterQubitizationRatio r.Hamiltonian 1.0)
     for r in reports do
         let ratio = trotterQubitizationRatio r.Hamiltonian 1.0
         let marker = if r.Name = bestRatio.Name then "  ← closest" else ""
-        printfn "  ║ %-84s ║" (sprintf "  %-18s  ratio = %10s%s" r.Name (formatFloat 1 ratio) marker)
+        printfn "  ║ %-96s ║" (sprintf "  %-18s  ratio = %10s%s" r.Name (formatFloat 1 ratio) marker)
 
     let bestR = trotterQubitizationRatio bestRatio.Hamiltonian 1.0
     let worstR = trotterQubitizationRatio worstRatio.Hamiltonian 1.0
     let improvement = (1.0 - bestR / worstR) * 100.0
-    printfn "  ║ %-84s ║" ""
-    printfn "  ║ %-84s ║" (sprintf "  Best encoding reduces Trotter/QSP ratio by %.0f%% vs worst" improvement)
+    printfn "  ║ %-96s ║" ""
+    printfn "  ║ %-96s ║" (sprintf "  Best encoding reduces Trotter/QSP ratio by %.0f%% vs worst" improvement)
 
     printfn "  ╠%s╣" (thinDivider (w - 4))
-    printfn "  ║ %s ║" (("★λ = best λ-norm   ★W = best max weight   ★C = best CNOT count").PadRight(w - 6))
+    printfn "  ║ %s ║" (("★λ = best λ-norm   ★W = best max weight   ★C = best CNOT count (S1)").PadRight(w - 6))
     printfn "  ╚%s╝" (divider (w - 4))
     printfn ""
 
@@ -178,10 +182,12 @@ let examplesDir = Path.Combine(__SOURCE_DIRECTORY__)
 let molecules =
     match fsi.CommandLineArgs |> Array.tail with
     | [||] ->
-        // Default: run example FCIDUMPs (skip N₂ by default — takes ~15 min)
-        [| ("H₂ / STO-3G",  Path.Combine(examplesDir, "H2_STO-3G.fcidump"))
-           ("LiH / STO-3G", Path.Combine(examplesDir, "LiH_STO-3G.fcidump"))
-           ("H₂O / STO-3G", Path.Combine(examplesDir, "H2O_STO-3G.fcidump")) |]
+        // Default: run STO-3G benchmark set
+        [| ("H₂ / STO-3G",   Path.Combine(examplesDir, "H2_STO-3G.fcidump"))
+           ("LiH / STO-3G",  Path.Combine(examplesDir, "LiH_STO-3G.fcidump"))
+           ("BeH₂ / STO-3G", Path.Combine(examplesDir, "BeH2_STO-3G.fcidump"))
+           ("H₂O / STO-3G",  Path.Combine(examplesDir, "H2O_STO-3G.fcidump"))
+           ("NH₃ / STO-3G",  Path.Combine(examplesDir, "NH3_STO-3G.fcidump")) |]
         |> Array.filter (fun (_, p) -> File.Exists p)
     | paths ->
         paths |> Array.map (fun p ->
