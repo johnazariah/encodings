@@ -151,6 +151,25 @@ let printMoleculeReport (title : string) (subtitle : string) (reports : Encoding
     printfn "  ║ %-96s ║" ""
     printfn "  ║ %-96s ║" (sprintf "  Best encoding reduces Trotter/QSP ratio by %.0f%% vs worst" improvement)
 
+    // Post-tapering comparison
+    printfn "  ╠%s╣" (thinDivider (w - 4))
+    printfn "  ║ %-96s ║" "Post-Tapering Comparison  (diagonal Z₂, +1 sector)"
+    printfn "  ║ %-96s ║" ""
+
+    let taperResults =
+        reports |> Array.map (fun r ->
+            let tr = taperAllDiagonalZ2WithPositiveSector r.Hamiltonian
+            let costs = hamiltonianCosts tr.Hamiltonian
+            let step = firstOrderTrotter 1.0 tr.Hamiltonian
+            let cnots = trotterCnotCount step
+            (r.Name, tr.TaperedQubitCount, costs.TermCount, costs.LambdaNorm, costs.MaxPauliWeight, cnots))
+
+    let minTapCnot = taperResults |> Array.minBy (fun (_, _, _, _, _, c) -> c) |> fun (_, _, _, _, _, c) -> c
+    for (name, nq, nt, lam, mw, cnots) in taperResults do
+        let mark = if cnots = minTapCnot then " ★" else ""
+        printfn "  ║ %-96s ║" (sprintf "  %-18s  %2dq │ %5d terms │ λ=%8s │ MaxWt=%2d │ CNOT=%7d%s"
+            name nq nt (formatFloat 4 lam) mw cnots mark)
+
     printfn "  ╠%s╣" (thinDivider (w - 4))
     printfn "  ║ %s ║" (("★λ = best λ-norm   ★W = best max weight   ★C = best CNOT count (S1)").PadRight(w - 6))
     printfn "  ╚%s╝" (divider (w - 4))
