@@ -37,6 +37,8 @@
     <Compile Include="CircuitOutput.fs" />
     <Compile Include="VariationalCircuits.fs" />
     <Compile Include="Hamiltonian.fs" />
+    <Compile Include="CostAnalysis.fs" />
+    <Compile Include="Optimization.fs" />
   </ItemGroup>
 
   <ItemGroup>
