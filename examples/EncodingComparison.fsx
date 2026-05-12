@@ -55,7 +55,7 @@ type EncodingReport =
       CnotCount2 : int }
 
 let analyzeEncoding (factory : string -> Complex option) (n : uint32) (name : string) (encoder : EncoderFn) =
-    let hamiltonian = computeHamiltonianWithParallel encoder factory n
+    let hamiltonian = computeHamiltonianCached encoder factory n
     let costs = hamiltonianCosts hamiltonian
     let step1 = firstOrderTrotter 1.0 hamiltonian
     let step2 = secondOrderTrotter 1.0 hamiltonian
@@ -119,10 +119,10 @@ let printMoleculeReport (title : string) (subtitle : string) (reports : Encoding
 
     // Tapering analysis (reuse the already-computed JW Hamiltonian)
     let jwH = reports.[0].Hamiltonian
-    let symCount = z2SymmetryCount jwH
-    let taperingResult = taper defaultTaperingOptions jwH
-    printfn "  ║ %-96s ║" (sprintf "Z₂ symmetries: %d detected → %d → %d qubits after tapering"
-        symCount taperingResult.OriginalQubitCount taperingResult.TaperedQubitCount)
+    let diagSymQubits = diagonalZ2SymmetryQubits jwH
+    let taperingResult = taperAllDiagonalZ2WithPositiveSector jwH
+    printfn "  ║ %-96s ║" (sprintf "Diagonal Z₂ symmetries: %d detected → %d → %d qubits after tapering"
+        diagSymQubits.Length taperingResult.OriginalQubitCount taperingResult.TaperedQubitCount)
 
     // Qubitization resource estimate
     let qcosts = qubitizationCosts jwH
