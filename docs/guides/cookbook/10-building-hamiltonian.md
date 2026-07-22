@@ -17,6 +17,13 @@ and $\langle pq|rs\rangle$ are two-body integrals (electron-electron repulsion).
 For H₂ in the STO-3G basis, we have 4 spin-orbitals:
 
 ```fsharp
+open System.Numerics
+open Encodings
+open Encodings.Hamiltonian
+open Encodings.JordanWigner
+open Encodings.BravyiKitaev
+open Encodings.TreeEncoding
+open Encodings.MajoranaEncoding
 let nModes = 4u
 
 let oneBody = Map [
@@ -77,6 +84,10 @@ let hBK = computeHamiltonianWith bravyiKitaevTerms lookup nModes
 let hTT = computeHamiltonianWith ternaryTreeTerms  lookup nModes
 
 // Or your custom scheme from the Encoding Internals chapter:
+let myJW : EncodingScheme =
+    { Update     = fun _ _ -> Set.empty
+      Parity     = fun j   -> set [ for k in 0 .. j - 1 -> k ]
+      Occupation = fun j   -> set [ j ] }
 let hCustom = computeHamiltonianWith (encodeOperator myJW) lookup nModes
 ```
 

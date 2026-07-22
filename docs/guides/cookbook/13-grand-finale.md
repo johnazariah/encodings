@@ -4,6 +4,15 @@ Let's tie every chapter together. This script encodes H₂ with three
 different encodings and compares the results:
 
 ```fsharp
+open Encodings.Fcidump
+open Encodings.Hamiltonian
+open Encodings.JordanWigner
+open Encodings.BravyiKitaev
+open Encodings.TreeEncoding
+open Encodings.MajoranaEncoding
+open Encodings.Tapering
+open Encodings.Trotterization
+open Encodings.CircuitOutput
 open Encodings
 open System.Numerics
 

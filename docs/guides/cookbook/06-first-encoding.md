@@ -11,6 +11,8 @@ The simplest encoding is Jordan-Wigner (1928). It maps a ladder operator
 to Pauli strings by inserting a chain of Z operators on all preceding qubits:
 
 ```fsharp
+open Encodings
+open Encodings.JordanWigner
 // Encode a†₂ (creation on mode 2) for a 4-qubit system:
 let result = jordanWignerTerms Raise 2u 4u
 

@@ -572,13 +572,17 @@ module Tapering =
                         let tz' = tz
                         let newC = bitsToPauli (cx', cz')
                         let newT = bitsToPauli (tx', tz')
-                        // Determine the phase: CNOT |P_c P_t⟩ = phase · |P_c' P_t'⟩
-                        // Phase = product of single-qubit-level phases from the transformation
-                        // For CNOT, the phase depends on whether cx·tz = 1 (contributes -1)
-                        // Actually the general rule: phase = (-i)^{2·cx·tz} ... let me be precise.
-                        // The signed version: CNOT · (P_c⊗P_t) · CNOT† = (-1)^{x_c·z_t} · P_c'⊗P_t'
-                        // where x_c is the x-bit of the control and z_t is the z-bit of the target.
-                        if cx && tz then
+                        // Determine the phase: CNOT · (P_c ⊗ P_t) · CNOT† = phase · (P_c' ⊗ P_t').
+                        // In the convention I=(0,0), X=(1,0), Y=(1,1), Z=(0,1) — where the
+                        // Hermitian letter equals i^{xz} X^x Z^z — the only two-qubit Paulis that
+                        // pick up a −1 under CNOT are XZ → −YY and YY → −XZ. Enumerating all 16
+                        // cases, the sign is −1 exactly when the control carries an X-part, the
+                        // target carries a Z-part, and the target X-bit equals the control Z-bit:
+                        //   XZ: (cx,cz,tx,tz)=(1,0,0,1), tx=cz=0 → −1
+                        //   YY: (cx,cz,tx,tz)=(1,1,1,1), tx=cz=1 → −1
+                        //   XY: (1,0,1,1), tx≠cz → +1     YZ: (1,1,0,1), tx≠cz → +1
+                        // (The earlier rule `cx && tz` wrongly flipped XY→−YZ and YZ→−XY.)
+                        if cx && tz && (tx = cz) then
                             coeff <- coeff * Complex(-1.0, 0.0)
                         ignore (newC, newT)
 

@@ -188,3 +188,51 @@ module Hamiltonian =
         Assert.True(sparseSkel.OneBody.Length < fullSkel.OneBody.Length)
         // Sparse should only have entries for the provided keys
         Assert.True(sparseSkel.TwoBody.Length = 0)
+
+    // ── Index-range regression (0..n-1, not 0..n) ───────────────────
+
+    [<Fact>]
+    let ``Hamiltonian : factory is never queried with out-of-range index (sequential)`` () =
+        // Valid mode indices for n=2 are {0,1}. The corrected 0..n-1 loop bounds
+        // must never query the factory with the out-of-range index 2.
+        let queried = System.Collections.Generic.HashSet<string>()
+        let factory (key : string) = queried.Add key |> ignore; None
+        computeHamiltonianWith jordanWignerTerms factory 2u |> ignore
+        let touchesIndex2 = queried |> Seq.exists (fun k -> k.Split(',') |> Array.contains "2")
+        Assert.False(touchesIndex2, sprintf "queried out-of-range index: %A" (List.ofSeq queried))
+
+    [<Fact>]
+    let ``Hamiltonian : factory is never queried with out-of-range index (parallel)`` () =
+        let queried = System.Collections.Generic.HashSet<string>()
+        let factory (key : string) = queried.Add key |> ignore; None
+        computeHamiltonianWithParallel jordanWignerTerms factory 2u |> ignore
+        let touchesIndex2 = queried |> Seq.exists (fun k -> k.Split(',') |> Array.contains "2")
+        Assert.False(touchesIndex2, sprintf "queried out-of-range index: %A" (List.ofSeq queried))
+
+    // ── n=0 safety and sequential/parallel/cached parity ────────────
+
+    [<Fact>]
+    let ``Hamiltonian : n=0 yields empty results without underflow`` () =
+        // 0u .. n-1u would underflow to a ~4-billion-iteration uint32 range;
+        // modeRange keeps n=0 empty and fast for all construction paths.
+        let factory (_ : string) = Some Complex.One
+        Assert.Empty((computeHamiltonianWith jordanWignerTerms factory 0u).SummandTerms)
+        Assert.Empty((computeHamiltonianWithParallel jordanWignerTerms factory 0u).SummandTerms)
+        let sk = computeHamiltonianSkeleton jordanWignerTerms 0u
+        Assert.Empty(sk.OneBody)
+        Assert.Empty(sk.TwoBody)
+
+    [<Theory>]
+    [<InlineData(1u)>]
+    [<InlineData(2u)>]
+    [<InlineData(3u)>]
+    [<InlineData(4u)>]
+    let ``Hamiltonian : sequential, parallel, and cached-skeleton paths agree`` (n : uint32) =
+        let factory (key : string) =
+            // A sparse-ish factory so out-of-range work would show up as differences.
+            if key.Split(',').Length = 2 then Some (Complex(1.0, 0.0)) else None
+        let seqH    = computeHamiltonianWith jordanWignerTerms factory n
+        let parH    = computeHamiltonianWithParallel jordanWignerTerms factory n
+        let cachedH = applyCoefficients (computeHamiltonianSkeleton jordanWignerTerms n) factory
+        Assert.Equal(seqH.ToString(), parH.ToString())
+        Assert.Equal(seqH.ToString(), cachedH.ToString())

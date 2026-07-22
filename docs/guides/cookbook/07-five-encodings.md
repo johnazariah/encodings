@@ -3,6 +3,12 @@
 Every encoding function in FockMap has the exact same type signature:
 
 ```fsharp
+open System.Numerics
+open Encodings
+open Encodings.JordanWigner
+open Encodings.BravyiKitaev
+open Encodings.MajoranaEncoding
+open Encodings.TreeEncoding
 type EncoderFn = LadderOperatorUnit -> uint32 -> uint32 -> PauliRegisterSequence
 //                    Raise/Lower       mode     total       result
 //                                      index    qubits

@@ -63,7 +63,7 @@ This framework captures Jordan-Wigner, Bravyi-Kitaev (via Fenwick structure), an
 
 ## Why Both Frameworks Exist
 
-The index-set derivation assumes a monotonicity condition on ancestor indexing. That holds for some structures (for example Fenwick-like forms) but not for all balanced trees. Path-based encoding removes that structural restriction while preserving the same downstream symbolic representation.
+The generic tree → index-set derivation (`treeEncodingScheme`) is CAR-valid only for rooted *star* trees: an independent census over all rooted labelled trees finds exactly n of the n^(n−1) trees satisfy the anticommutation relations for n=3..6, precisely the stars. Fenwick-like and balanced binary/ternary trees do **not** satisfy CAR under this construction (monotonicity of ancestor indices is neither necessary nor sufficient). Path-based encoding removes that structural restriction — it produces valid encodings for arbitrary (ternary) tree topologies — while preserving the same downstream symbolic representation. The canonical JW/BK/Parity schemes are provided directly and do not depend on the generic tree construction.
 
 ## Symbolic Core (No Matrix Construction)
 

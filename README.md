@@ -15,7 +15,7 @@
 
 📖 **The Book:** [*From Molecules to Quantum Circuits*](https://johnazariah.github.io/encodings-book) — 23-chapter guide with interactive labs, computed results (H₂ dissociation curve, H₂O bond angle scan), and companion code.
 
-🍳 **API Cookbook:** [15 progressive chapters](https://johnazariah.github.io/encodings/guides/cookbook/) covering every type and function.
+🍳 **API Cookbook:** [18 progressive chapters](https://johnazariah.github.io/encodings/guides/cookbook/) covering every type and function.
 
 ---
 
@@ -108,6 +108,11 @@ Everything is pre-configured, so you can start coding immediately.
 ```fsharp
 open System.Numerics
 open Encodings
+open Encodings.Hamiltonian    // computeHamiltonianWith
+open Encodings.JordanWigner   // jordanWignerTerms
+open Encodings.Tapering       // taper, defaultTaperingOptions
+open Encodings.Trotterization // firstOrderTrotter, decomposeTrotterStep
+open Encodings.CircuitOutput  // toOpenQasm/toQSharp/toCircuitJson + default options
 
 // 1. Define molecular integrals (H₂ in STO-3G)
 let integrals = Map [
@@ -117,12 +122,17 @@ let integrals = Map [
 ]
 let factory key = integrals |> Map.tryFind key
 
-// 2. Encode → 15-term Pauli Hamiltonian
+// 2. Encode → Pauli Hamiltonian
+//    The four diagonal integrals shown yield a 5-term Hamiltonian
+//    (one identity + four single-Z terms). Adding the two-body
+//    integrals produces the full H₂ Hamiltonian.
 let ham = computeHamiltonianWith jordanWignerTerms factory 4u
 
 // 3. Taper → remove symmetry-redundant qubits
 let tapered = taper defaultTaperingOptions ham
-// 4 → 2 qubits
+// Removes qubits fixed by Z₂ symmetries; how many depends on the
+// Hamiltonian and chosen sector. (This purely diagonal 5-term example
+// tapers all four qubits; the full H₂ Hamiltonian tapers 4 → 2.)
 
 // 4. Trotterize → gate sequence
 let step = firstOrderTrotter 0.1 tapered.Hamiltonian
@@ -137,11 +147,22 @@ let qs   = toQSharp defaultQSharpOptions tapered.TaperedQubitCount gates
 let json = toCircuitJson tapered.TaperedQubitCount Map.empty gates
 ```
 
+### Qubit and index conventions
+
+- **Pauli strings are index-0-leftmost.** In a `PauliRegister` string, character
+  position *i* is mode/qubit *i*, so qubit 0 is the **leftmost** character:
+  `"XZI"` = X₀ ⊗ Z₁ ⊗ I₂, and Jordan–Wigner gives `a†₁` (n = 2) = `0.5 ZX − 0.5i ZY`.
+- **Occupation integers are mode-*j*-weight-2ʲ** (mode 0 = least-significant bit),
+  so the H₂ Hartree–Fock state with modes 0 and 1 occupied is the integer 3 = `0b0011`.
+- **To convert** a FockMap Pauli label to the Qiskit/OpenQASM display order, or to
+  read a string in the occupation basis (mode *j* → bit 2ʲ), **reverse the string**:
+  FockMap `"ZXII"` (Z₀X₁I₂I₃) ≡ Qiskit label `"IIXZ"`.
+
 ## Where to Start
 
 - **The Book:** [*From Molecules to Quantum Circuits*](https://johnazariah.github.io/encodings-book) — 23 chapters, from molecular integrals to quantum circuits
 - **Interactive Labs:** [10 F# scripts](https://github.com/johnazariah/encodings-book/tree/main/labs) — run with `dotnet fsi`
-- **API Cookbook:** [15-chapter tutorial](https://johnazariah.github.io/encodings/guides/cookbook/) — every type and function
+- **API Cookbook:** [18-chapter tutorial](https://johnazariah.github.io/encodings/guides/cookbook/) — every type and function
 - **Architecture:** [How the library works](https://johnazariah.github.io/encodings/guides/architecture.html)
 - **API Reference:** [All types and functions](https://johnazariah.github.io/encodings/reference/index.html)
 

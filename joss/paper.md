@@ -190,8 +190,9 @@ The library provides `balancedBinaryTree`, `balancedTernaryTree`, and
 `vlasovTree` constructors; users can build arbitrary trees from
 `TreeNode` values.
 The path-based encoding function traverses the tree to construct Majorana
-operators without requiring an index-set monotonicity constraint, making
-it strictly more general than the index-set framework.
+operators for arbitrary (ternary) tree topologies, whereas the generic
+tree-derived index-set construction is CAR-valid only for rooted star
+trees; the path-based framework is therefore strictly more general.
 
 ## Symbolic algebra engine
 
@@ -229,15 +230,17 @@ fermion--boson Hamiltonian assembly in a single pipeline.
   persistent Fenwick trees, recursive tree ADTs, and Pauli register
   sequences.
 - **Two complementary frameworks.**  The index-set framework is fast and
-  algebraically transparent but requires a monotonicity condition on
-  ancestor indices.  The path-based framework works for *any* tree
+  algebraically transparent; its canonical schemes (Jordan--Wigner,
+  Bravyi--Kitaev, Parity) are provided directly, but the generic
+  tree-derived index-set construction is CAR-valid only for rooted star
+  trees.  The path-based framework works for *any* (ternary) tree
   topology.  Both produce the same output type
   (`PauliRegisterSequence`), so downstream code is encoding-agnostic.
 
 ## Verification suite
 
 The verification strategy combines unit tests, property-based tests, and
-cross-encoding consistency checks.  At submission time, 733 tests pass,
+cross-encoding consistency checks.  At submission time, over 700 tests pass,
 covering six categories: anti-commutation ($\{a_i, a^\dagger_j\} =
 \delta_{ij}$ verified symbolically), commutation ($[b_i, b^\dagger_j] =
 \delta_{ij}$), number conservation, cross-encoding eigenspectrum

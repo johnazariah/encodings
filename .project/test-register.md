@@ -1,8 +1,8 @@
 # Test Register
 
-> **557 tests** | 0 skipped | xUnit + FsCheck (property-based)
+> **700+ tests** | 0 skipped | xUnit + FsCheck (property-based)
 >
-> Last verified: 2026-03-07 against current `main`
+> Last verified: 2026-07-22 against current `main`
 
 > **Purpose:** Plain-English catalogue of every automated test in FockMap test suite.
 > The LLM coding agent is responsible for keeping this register in sync
@@ -448,6 +448,8 @@ Balanced binary, ternary, and Vlasov tree encodings, plus cross-encoding validat
 | 1 | `computeHamiltonian` produces correct JW Pauli string for n = 2 and n = 4 with unit coefficients | Theory (2 sizes) |
 | 2 | `computeHamiltonianWith` using JW matches `computeHamiltonian` for n = 2 | Fact |
 | 3 | Missing coefficients (factory returns None) produce empty Pauli sequence | Fact |
+| 4 | Coefficient factory is never queried with an out-of-range mode index (loop bounds are `0..n-1`, not `0..n`) — sequential path | Fact |
+| 5 | Same out-of-range guarantee for the parallel construction path (`computeHamiltonianWithParallel`) | Fact |
 
 ---
 
@@ -552,6 +554,55 @@ Gray Code. Reference: Sawaya et al., arXiv:1909.05820.
 
 ---
 
+## 13. Qubit Tapering — Clifford Conjugation — `TaperingClifford.fs` (25 tests)
+
+Rigorous coverage of the Clifford rotation used by general (`FullClifford`)
+tapering, and of the H₂/STO-3G tapering sectors. The exact-conjugation phase
+rule for CNOT (`applyClifford`) is verified against dense unitary matrices, so
+these tests fail under the pre-fix rule that wrongly flipped XY→−YZ and YZ→−XY.
+
+| # | What is tested | Style |
+|---|----------------|-------|
+| 1 | All 16 two-qubit Pauli conjugations under CNOT(0,1) produce the exact output letters and ±1 phase (e.g. XZ→−YY, YY→−XZ; all others +1) | Theory (16 cases) |
+| 2 | Regression: XY conjugates to **+**YZ (not −YZ) | Fact |
+| 3 | Regression: YZ conjugates to **+**XY (not −XY) | Fact |
+| 4 | `applyClifford gates H` equals the dense-matrix conjugation `U·H·U†` to machine precision (mixed H, S, CNOT sequence with XY/YZ terms) | Fact |
+| 5 | `applyClifford` preserves the full eigenvalue multiset | Fact |
+| 6 | H₂/STO-3G electronic ground state is −1.852388 Ha (dense spectrum of the JW Hamiltonian) | Fact |
+| 7 | `FullClifford` Clifford rotation preserves the full 16-eigenvalue spectrum of H₂ | Fact |
+| 8 | H₂ ground-state sector (−1,−1,+1) tapers to 1 qubit and preserves −1.852388 Ha | Fact |
+| 9 | H₂ default (+1) sector tapered eigenvalues are all genuine eigenvalues of the true spectrum (no spurious values) | Fact |
+| 10 | Union of all 8 H₂ tapering sectors reproduces the full spectrum exactly | Fact |
+
+**Trotter Hermitian enforcement — `Trotter.fs` (3 tests):** first- and
+second-order Trotterization reject a term with a non-negligible imaginary
+(non-Hermitian) coefficient (`ArgumentException`), while tolerating benign
+sub-1e-9 floating-point noise in an otherwise real coefficient.
+
+---
+
+## 14. Index/Label Ordering (state-resolved) — `Ordering.fs` (9 tests)
+
+Locks in the two ordering conventions and how they relate. `PauliRegister`
+strings put mode/qubit 0 as the **leftmost** character; occupation integers
+weight mode j by 2ʲ (mode 0 = least-significant bit), so the H₂ Hartree–Fock
+state (modes 0,1 occupied) is the integer 3 = 0b0011. Reading a FockMap string
+in the occupation basis (mode j → bit 2ʲ) requires reversing the string — the
+same reversal as the Qiskit/OpenQASM label convention. Spectrum-only checks
+cannot detect a bit reversal, so these tests are state-resolved.
+
+| # | What is tested | Style |
+|---|----------------|-------|
+| 1 | JW number operator nⱼ = ½(I − Zⱼ) has its Z at string position j (mode 0 leftmost) | Theory (4) |
+| 2 | nⱼ reads mode j as bit 2ʲ across the entire occupation basis (all k, n=2..4) | Theory (3) |
+| 3 | H₂ Hartree–Fock state = occupation integer 3 (modes 0,1 occupied); total number operator gives N=2 | Fact |
+| 4 | Bit reversal preserves the spectrum but flips the occupation reading (why spectrum tests are insufficient) | Fact |
+
+Related: `PauliRegister.fs` tests confirm position 0 is the leftmost character
+(`WithOperatorAt 0 X` → "XIII"; string position i maps to mode i).
+
+---
+
 ## Coverage Summary by Area
 
 | Area | Tests | Technique | Confidence |
@@ -572,6 +623,8 @@ Gray Code. Reference: Sawaya et al., arXiv:1909.05820.
 | Hamiltonian construction | 3 | Theory + cross-validation | **Medium** — covers core path; could add BK/Parity Hamiltonians |
 | Mixed systems (fermion + boson) | 5 | Fact-based | **Medium** — covers canonical paths; larger mixed expressions untested |
 | Bosonic-to-qubit encodings | 70 | Theory + Fact + cross-encoding | **High** — matrix construction, Pauli decomposition, weight bounds, multi-mode embedding, number-operator roundtrip |
+| Qubit tapering — Clifford conjugation | 25 | Exact letters/phases + dense-matrix spectra | **High** — all 16 CNOT conjugations, U·H·U† to machine precision, H₂ sector spectra |
+| Index/label ordering (state-resolved) | 9 | Occupation-basis diagonal reads | **High** — number operators verified on the intended occupation basis; catches bit reversal that spectra miss |
 
 ### What is *not* tested
 

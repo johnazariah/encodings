@@ -11,7 +11,7 @@ module PauliRegister =
         Assert.Equal("IIII", reg.ToString())
 
     [<Fact>]
-    let ``Register is Big Endian``() =
+    let ``Register position 0 is the leftmost character``() =
         let reg = PauliRegister(4u).WithOperatorAt 0 X
         Assert.Equal(Some X, reg.[0])
         Assert.Equal("XIII", reg.ToString())
@@ -34,7 +34,7 @@ module PauliRegister =
     [<InlineData("IIXI", 2)>]
     [<InlineData("IXII", 1)>]
     [<InlineData("XIII", 0)>]
-    let ``FromString creates a BigEndian register``(s : string, index) =
+    let ``FromString maps string position i to mode i (position 0 leftmost)``(s : string, index) =
         let reg = PauliRegister (s, Complex.One)
         Assert.Equal(Some X, reg.[index])
 

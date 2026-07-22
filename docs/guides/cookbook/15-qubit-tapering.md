@@ -18,6 +18,7 @@ an eigenvalue without losing physics. Removing them gives:
 The simplest case: a qubit where every term has only `I` or `Z`.
 
 ```fsharp
+open Encodings.Tapering
 open System.Numerics
 open Encodings
 
@@ -59,11 +60,11 @@ Clifford rotation can map them onto a single-qubit $Z$.
 
 ```fsharp
 // Unified function — handles both diagonal and general symmetries
-let result = taper defaultTaperingOptions h
+let cliffordResult = taper defaultTaperingOptions h
 
-printfn "Generators found: %d" result.Generators.Length
-printfn "Clifford gates: %d" result.CliffordGates.Length
-printfn "%d → %d qubits" result.OriginalQubitCount result.TaperedQubitCount
+printfn "Generators found: %d" cliffordResult.Generators.Length
+printfn "Clifford gates: %d" cliffordResult.CliffordGates.Length
+printfn "%d → %d qubits" cliffordResult.OriginalQubitCount cliffordResult.TaperedQubitCount
 ```
 
 ### Exploring symmetries

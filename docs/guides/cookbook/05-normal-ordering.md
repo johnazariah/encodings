@@ -18,6 +18,8 @@ Let's see this in action with a simple example — $a_0 a^\dagger_1$
 (annihilate before create, **wrong** order):
 
 ```fsharp
+open Encodings
+open Encodings.Bosonic
 let disordered =
     P<IxOp<uint32, LadderOperatorUnit>>.Apply [|
         LadderOperatorUnit.FromUnit(false, 0u)   // a₀  (Lower first — wrong!)
@@ -57,9 +59,10 @@ The key design insight: commutation relations are not hard-coded.
 They live behind an interface:
 
 ```fsharp
-type ICombiningAlgebra<'op> =
-    abstract Combine :
-        P<IxOp<uint32,'op>> -> C<IxOp<uint32,'op>> -> P<IxOp<uint32,'op>>[]
+// The combining-algebra interface (from the library source):
+// type ICombiningAlgebra<'op> =
+//     abstract Combine :
+//         P<IxOp<uint32,'op>> -> C<IxOp<uint32,'op>> -> P<IxOp<uint32,'op>>[]
 ```
 
 The `Combine` method takes a partial product and the next operator, returning

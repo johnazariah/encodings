@@ -4,6 +4,7 @@ So far our operators have been "anonymous" — we haven't said which qubit
 each Pauli acts on. The `IxOp` type tags each operator with a mode index:
 
 ```fsharp
+open Encodings
 // "X on qubit 0":
 let x0 = IxOp<uint32, Pauli>.Apply(0u, X)
 

@@ -16,6 +16,11 @@ module Hamiltonian =
     open System.Numerics
     open Encodings.JordanWigner
 
+    /// <summary>Mode indices 0 .. n-1, or an empty sequence when n = 0.</summary>
+    /// <remarks>Guards against uint32 underflow of <c>n - 1u</c> when n = 0.</remarks>
+    let private modeRange (n : uint32) : seq<uint32> =
+        if n = 0u then Seq.empty else seq { 0u .. n - 1u }
+
     /// <summary>
     /// A function type that encodes a ladder operator into qubit Pauli strings.
     /// </summary>
@@ -53,8 +58,8 @@ module Hamiltonian =
 
         static member internal ComputeTermsWith (encode : EncoderFn) coefficientFactory n =
             [|
-                for i in 0u .. n do
-                    for j in 0u .. n do
+                for i in modeRange n do
+                    for j in modeRange n do
                         let key = sprintf "%u,%u" i j
                         match coefficientFactory key with
                         | Some hij ->
@@ -88,10 +93,10 @@ module Hamiltonian =
         static member internal ComputeTermsWith (encode : EncoderFn) coefficientFactory n =
             let termCoefficient = Complex (0.5, 0.)
             [|
-                for i in 0u .. n do
-                    for j in 0u .. n do
-                        for k in 0u .. n do
-                            for l in 0u .. n do
+                for i in modeRange n do
+                    for j in modeRange n do
+                        for k in modeRange n do
+                            for l in modeRange n do
                                 let key = sprintf "%u,%u,%u,%u" i j k l
                                 match coefficientFactory key with
                                 | Some hijkl ->
@@ -182,8 +187,8 @@ module Hamiltonian =
             |> PauliRegisterSequence
 
         let oneBodyTerms =
-            [| for i in 0u .. n do
-                   for j in 0u .. n do
+            [| for i in modeRange n do
+                   for j in modeRange n do
                        let key = sprintf "%u,%u" i j
                        match coefficientFactory key with
                        | Some hij -> yield (i, j, hij)
@@ -191,10 +196,10 @@ module Hamiltonian =
             |> Array.Parallel.map encodeOneBody
 
         let twoBodyTerms =
-            [| for i in 0u .. n do
-                   for j in 0u .. n do
-                       for k in 0u .. n do
-                           for l in 0u .. n do
+            [| for i in modeRange n do
+                   for j in modeRange n do
+                       for k in modeRange n do
+                           for l in modeRange n do
                                let key = sprintf "%u,%u,%u,%u" i j k l
                                match coefficientFactory key with
                                | Some hijkl -> yield (i, j, k, l, hijkl)
@@ -365,8 +370,8 @@ module Hamiltonian =
                   StructuralCoeff = r.Coefficient })
 
         let oneBody =
-            [| for i in 0u .. n - 1u do
-                   for j in 0u .. n - 1u -> (i, j) |]
+            [| for i in modeRange n do
+                   for j in modeRange n -> (i, j) |]
             |> Array.Parallel.map (fun (i, j) ->
                 let key = sprintf "%u,%u" i j
                 let product = (encode Raise i n) * (encode Lower j n)
@@ -375,10 +380,10 @@ module Hamiltonian =
             |> Array.filter (fun e -> e.Terms.Length > 0)
 
         let twoBody =
-            [| for i in 0u .. n - 1u do
-                   for j in 0u .. n - 1u do
-                       for k in 0u .. n - 1u do
-                           for l in 0u .. n - 1u -> (i, j, k, l) |]
+            [| for i in modeRange n do
+                   for j in modeRange n do
+                       for k in modeRange n do
+                           for l in modeRange n -> (i, j, k, l) |]
             |> Array.Parallel.map (fun (i, j, k, l) ->
                 let key = sprintf "%u,%u,%u,%u" i j k l
                 let product =
@@ -420,18 +425,18 @@ module Hamiltonian =
                   StructuralCoeff = r.Coefficient })
 
         let oneBodyKeys =
-            [| for i in 0u .. n - 1u do
-                   for j in 0u .. n - 1u do
+            [| for i in modeRange n do
+                   for j in modeRange n do
                        let key = sprintf "%u,%u" i j
                        match coefficientFactory key with
                        | Some _ -> yield (i, j, key)
                        | None -> () |]
 
         let twoBodyKeys =
-            [| for i in 0u .. n - 1u do
-                   for j in 0u .. n - 1u do
-                       for k in 0u .. n - 1u do
-                           for l in 0u .. n - 1u do
+            [| for i in modeRange n do
+                   for j in modeRange n do
+                       for k in modeRange n do
+                           for l in modeRange n do
                                let key = sprintf "%u,%u,%u,%u" i j k l
                                match coefficientFactory key with
                                | Some _ -> yield (i, j, k, l, key)

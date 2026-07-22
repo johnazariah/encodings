@@ -36,6 +36,7 @@ operation $\sigma^+_{n+1}\sigma^-_n$, so the maximum Pauli weight is
 always 2.
 
 ```fsharp
+open Encodings.BosonicEncoding
 open Encodings
 
 let d = 4u       // truncation: n ∈ {0, 1, 2, 3}
@@ -52,9 +53,14 @@ for t in bDagger.SummandTerms do
 The signature tells you exactly which type of encoding function to use:
 
 ```fsharp
-// BosonicEncoderFn =
-//   LadderOperatorUnit -> uint32 -> uint32 -> uint32 -> PauliRegisterSequence
-//   operator              mode j    modes M   cutoff d
+// BosonicEncoderFn — the argument order is: op, mode index j, numModes, cutoff d
+//   unaryBosonTerms  op  j  numModes  d
+//     op       : LadderOperatorUnit  — Raise (b†) or Lower (b)
+//     j        : uint32              — which mode (0-based)
+//     numModes : uint32              — total number of bosonic modes
+//     d        : uint32              — Fock-space truncation (levels per mode)
+//   All bosonic encoders share this signature:
+//     LadderOperatorUnit -> uint32 -> uint32 -> uint32 -> PauliRegisterSequence
 ```
 
 The first argument is `Raise` ($b^\dagger$) or `Lower` ($b$).
@@ -170,22 +176,24 @@ and `numModes` parameters handle the embedding automatically:
 
 ```fsharp
 let twoModes = 2u
-let d = 3u
+let dm = 3u
 
 // Number operators for each mode
-let n0 = (binaryBosonTerms Raise 0u twoModes d) * (binaryBosonTerms Lower 0u twoModes d)
-let n1 = (binaryBosonTerms Raise 1u twoModes d) * (binaryBosonTerms Lower 1u twoModes d)
+let n0 = (binaryBosonTerms Raise 0u twoModes dm) * (binaryBosonTerms Lower 0u twoModes dm)
+let n1 = (binaryBosonTerms Raise 1u twoModes dm) * (binaryBosonTerms Lower 1u twoModes dm)
 
 // Coupling: beam-splitter interaction b†₀ b₁ + b†₁ b₀
 let coupling =
-    let cr0 = binaryBosonTerms Raise 0u twoModes d
-    let an1 = binaryBosonTerms Lower 1u twoModes d
-    let cr1 = binaryBosonTerms Raise 1u twoModes d
-    let an0 = binaryBosonTerms Lower 0u twoModes d
-    (cr0 * an1) + (cr1 * an0)
+    let cr0 = binaryBosonTerms Raise 0u twoModes dm
+    let an1 = binaryBosonTerms Lower 1u twoModes dm
+    let cr1 = binaryBosonTerms Raise 1u twoModes dm
+    let an0 = binaryBosonTerms Lower 0u twoModes dm
+    // PauliRegisterSequence supports (*) but not (+); to add two Pauli sums,
+    // build a new sequence from the concatenation of their terms (like terms merge).
+    PauliRegisterSequence(Array.append (cr0 * an1).SummandTerms (cr1 * an0).SummandTerms)
 
 // Full Hamiltonian: H = ω₁ n̂₁ + ω₂ n̂₂ + g(b†₀ b₁ + b†₁ b₀)
-let qpm = binaryQubitsPerMode (int d)
+let qpm = binaryQubitsPerMode (int dm)
 printfn "Binary encoding: %d qubits/mode × %d modes = %d total qubits"
     qpm (int twoModes) (qpm * int twoModes)
 printfn "n̂₀: %d terms,  n̂₁: %d terms,  coupling: %d terms"

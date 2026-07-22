@@ -221,3 +221,26 @@ module Trotter =
         Assert.True(hasH0)
         Assert.True(hasSdg1)
         Assert.True(hasS1)
+
+    // ── Hermitian coefficient enforcement ───────────────────────────
+
+    [<Fact>]
+    let ``first-order rejects a non-Hermitian imaginary coefficient`` () =
+        // Trotterization assumes a Hermitian Hamiltonian (real Pauli coefficients).
+        // A purely imaginary coefficient indicates a non-Hermitian input and must
+        // be rejected rather than silently truncated by `.Real`.
+        let h = prs [ ("ZI", Complex(0.0, 1.0)) ]
+        Assert.Throws<System.ArgumentException>(fun () -> firstOrderTrotter 0.1 h |> ignore) |> ignore
+
+    [<Fact>]
+    let ``second-order rejects a non-Hermitian imaginary coefficient`` () =
+        let h = prs [ ("XY", Complex(0.3, 0.4)) ]
+        Assert.Throws<System.ArgumentException>(fun () -> secondOrderTrotter 0.1 h |> ignore) |> ignore
+
+    [<Fact>]
+    let ``first-order tolerates tiny imaginary floating-point noise`` () =
+        // Benign numerical noise below tolerance is accepted; angle uses the real part.
+        let h = prs [ ("ZI", Complex(1.5, 1e-12)) ]
+        let step = firstOrderTrotter 0.2 h
+        Assert.Equal(1, step.Rotations.Length)
+        Assert.Equal(1.5 * 0.2, step.Rotations.[0].Angle, 12)

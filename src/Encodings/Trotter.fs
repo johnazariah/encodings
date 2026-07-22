@@ -103,9 +103,22 @@ module Trotterization =
         |> Array.filter (fun (_, p) -> p <> I)
 
     /// Build a PauliRotation from a Hamiltonian term and time step.
+    /// <remarks>
+    /// Trotterization assumes a Hermitian Hamiltonian, whose Pauli coefficients are
+    /// real. The rotation angle uses only the real part, so a term with a non-negligible
+    /// imaginary coefficient indicates a non-Hermitian Hamiltonian and is rejected rather
+    /// than silently truncated. The tolerance (1e-9) absorbs benign floating-point noise.
+    /// </remarks>
     let private termToRotation (dt : float) (term : PauliRegister) =
+        let coeff = term.Coefficient
+        if abs coeff.Imaginary > 1e-9 then
+            let opString = (term.ResetPhase Complex.One).ToString()
+            invalidArg "hamiltonian"
+                (sprintf
+                    "Trotterization requires a Hermitian Hamiltonian with real Pauli coefficients, but term %s has a non-negligible imaginary coefficient (%g%+gi). Ensure the Hamiltonian is Hermitian before decomposing."
+                    opString coeff.Real coeff.Imaginary)
         { Operator = term.ResetPhase Complex.One
-          Angle    = term.Coefficient.Real * dt }
+          Angle    = coeff.Real * dt }
 
     // ── Trotter Decomposition ───────────────────────────────────────
 

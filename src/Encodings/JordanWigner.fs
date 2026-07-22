@@ -7,10 +7,32 @@
 /// Maps fermionic operators to qubit Pauli operators by inserting a chain
 /// of Z operators to track the parity of all preceding modes:
 ///
-///   cⱼ → Xⱼ ⊗ Zⱼ₋₁ ⊗ ... ⊗ Z₀
-///   dⱼ → Yⱼ ⊗ Zⱼ₋₁ ⊗ ... ⊗ Z₀
+///   cⱼ → Z₀ ⊗ Z₁ ⊗ ... ⊗ Zⱼ₋₁ ⊗ Xⱼ ⊗ Iⱼ₊₁ ⊗ ... ⊗ Iₙ₋₁
+///   dⱼ → Z₀ ⊗ Z₁ ⊗ ... ⊗ Zⱼ₋₁ ⊗ Yⱼ ⊗ Iⱼ₊₁ ⊗ ... ⊗ Iₙ₋₁
 ///
 /// where cⱼ = a†ⱼ + aⱼ and dⱼ = i(a†ⱼ − aⱼ) are Majorana operators.
+///
+/// <para>
+/// <b>Qubit ordering.</b> In this library the position of a Pauli in a
+/// <see cref="T:Encodings.PauliRegister"/> string maps directly to the qubit index:
+/// mode/qubit 0 is the <b>leftmost</b> character. So cⱼ produces the string
+/// "Z…ZX I…I" — a Z on qubits 0…j−1, an X on qubit j, and I on the rest — read
+/// left to right. For example a†₂ (n=4) = ½·ZZXI − (i/2)·ZZYI, and the number
+/// operator nⱼ = a†ⱼaⱼ = ½(I − Zⱼ) carries its Z at string position j
+/// (n₀ = ½·IIII − ½·ZIII, n₃ = ½·IIII − ½·IIIZ).
+/// </para>
+/// <para>
+/// <b>Occupation-number basis.</b> Occupation integers weight mode j by 2ʲ
+/// (mode 0 is the least-significant bit): the H₂ Hartree–Fock state with modes 0
+/// and 1 occupied is the integer 3 = 0b0011. To evaluate a FockMap Pauli string in
+/// this occupation basis so that mode j maps to bit 2ʲ, <b>reverse the string</b>
+/// before forming the Kronecker product (mode 0, the leftmost character, becomes
+/// the least-significant bit). That same reversal converts a FockMap label to the
+/// Qiskit/OpenQASM convention, where mode 0 is the <b>rightmost</b> character:
+/// FockMap "ZXII" (Z₀X₁I₂I₃) ≡ Qiskit label "IIXZ". (Avoid "big/little-endian"
+/// terminology — state the concrete rule: FockMap mode 0 is leftmost; occupation
+/// integers and Qiskit labels put mode 0 rightmost / at bit 2⁰.)
+/// </para>
 ///
 /// The Z-chain grows linearly with mode index j, giving O(n) worst-case weight.
 /// For O(log n) alternatives, see BravyiKitaev and TreeEncoding.

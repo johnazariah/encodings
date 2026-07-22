@@ -33,8 +33,25 @@ module BosonicEncoding =
     /// A function that encodes a single bosonic ladder operator into qubit Pauli strings.
     /// </summary>
     /// <remarks>
-    /// Parameters: operator (Raise/Lower), mode index j, number of modes M, truncation cutoff d.
-    /// Returns a <see cref="PauliRegisterSequence"/> of width M × (qubits per mode).
+    /// <para>
+    /// Argument order: <c>op</c> → <c>modeIndex j</c> → <c>numModes</c> → <c>truncation d</c>
+    /// → <see cref="PauliRegisterSequence"/>. That is:
+    /// <c>op -&gt; j -&gt; numModes -&gt; d -&gt; PauliRegisterSequence</c>.
+    /// </para>
+    /// <list type="bullet">
+    ///   <item><description><c>op</c>: the ladder operator, <c>Raise</c> (b†) or <c>Lower</c> (b).</description></item>
+    ///   <item><description><c>j</c>: the 0-based bosonic mode index (0 ≤ j &lt; numModes).</description></item>
+    ///   <item><description><c>numModes</c>: the total number of bosonic modes.</description></item>
+    ///   <item><description><c>d</c>: the Fock-space truncation (occupation levels per mode).</description></item>
+    /// </list>
+    /// <para>The result has width numModes × (qubits per mode).</para>
+    /// <example>
+    /// Encode b†₀ (mode 0) in a 2-mode system truncated to d = 4 levels:
+    /// <code>
+    /// // op       j    numModes  d
+    /// unaryBosonTerms Raise 0u   2u        4u
+    /// </code>
+    /// </example>
     /// </remarks>
     type BosonicEncoderFn = LadderOperatorUnit -> uint32 -> uint32 -> uint32 -> PauliRegisterSequence
 

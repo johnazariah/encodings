@@ -5,6 +5,7 @@ Quantum chemistry doesn't work with Pauli operators directly — it works with
 These add or remove a particle from a specific orbital:
 
 ```fsharp
+open Encodings
 // The three ladder operator cases:
 let create  = Raise     // a† — adds an electron
 let destroy = Lower     // a  — removes an electron

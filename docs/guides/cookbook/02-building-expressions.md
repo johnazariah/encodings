@@ -15,6 +15,8 @@ These types are **generic** — they work with any operator type, not just Pauli
 ## C — A single weighted operator
 
 ```fsharp
+open System.Numerics
+open Encodings
 // Create X with coefficient 1:
 let one_x = C<Pauli>.Apply X              // 1 · X
 
@@ -103,7 +105,8 @@ infinity values are replaced with zero, preventing numerical corruption
 from silently propagating through your computation:
 
 ```fsharp
-member this.Reduce = { this with Coeff = this.Coeff.Reduce }
+// (from the library source — the Reduce member sanitizes the coefficient:)
+// member this.Reduce = { this with Coeff = this.Coeff.Reduce }
 ```
 
 ## Zero propagation
@@ -113,9 +116,10 @@ This is checked eagerly so that downstream code never wastes time on
 terms that contribute nothing:
 
 ```fsharp
-member this.IsZero =
-    (not this.Coeff.IsNonZero) ||
-    (this.Units |> Seq.exists (fun item -> item.IsZero))
+// (from the library source — a product with any zero unit is the zero product:)
+// member this.IsZero =
+//     (not this.Coeff.IsNonZero) ||
+//     (this.Units |> Seq.exists (fun item -> item.IsZero))
 ```
 
 **Why this matters:** Every Hamiltonian in quantum chemistry is an `S<'T>`.

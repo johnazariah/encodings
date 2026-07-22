@@ -12,6 +12,13 @@ The Bravyi-Kitaev encoding is built on a Fenwick tree. FockMap provides
 a purely functional, immutable implementation:
 
 ```fsharp
+open System.Numerics
+open Encodings
+open Encodings.TreeEncoding
+open Encodings.MajoranaEncoding
+open Encodings.JordanWigner
+open Encodings.BravyiKitaev
+open Encodings.Hamiltonian
 let occupations = [| 1; 0; 1; 1; 0; 1; 0; 1 |]
 let tree = FenwickTree.ofArray (^^^) 0 occupations
 
@@ -48,18 +55,30 @@ let vlasov  = vlasovTree 8            // Complete ternary (Vlasov) → O(log₃ 
 Walk any tree:
 
 ```fsharp
-let tree = balancedBinaryTree 8
-treeAncestors tree 5      // path from node 5 toward root
-treeDescendants tree 1    // all descendants
-treeChildren tree 1       // direct children only
+let binTree = balancedBinaryTree 8
+treeAncestors binTree 5      // path from node 5 toward root
+treeDescendants binTree 1    // all descendants
+treeChildren binTree 1       // direct children only
 ```
 
 ## Two frameworks for tree-based encoding
 
-**Framework 1 — Index sets** (Fenwick-compatible trees only):
+**Framework 1 — Index sets** (rooted **star** trees only):
+
+> ⚠️ **The generic `treeEncodingScheme` construction is CAR-valid only for
+> rooted star trees.** A census over all rooted labelled trees finds exactly
+> `n` of the `n^(n−1)` trees satisfy the anticommutation relations for
+> `n = 3..6` — precisely the stars. Fenwick, chain, and balanced binary/ternary
+> trees do **not** satisfy CAR under this construction. The call below runs and
+> returns Pauli strings, but for `balancedBinaryTree 8` (a non-star) those
+> operators are **not** a valid encoding — it is shown only to illustrate the
+> API surface. For valid tree encodings use Framework 2 (path-based) below, and
+> for JW/BK/Parity use `jordanWignerTerms` / `bravyiKitaevTerms` / `parityTerms`.
 
 ```fsharp
-let scheme = treeEncodingScheme (balancedBinaryTree 8)
+// Valid index-set encoding: use one of the canonical schemes. For a general
+// tree topology, prefer the path-based Framework 2 below.
+let scheme = jordanWignerScheme
 encodeOperator scheme Raise 2u 8u
 ```
 
@@ -69,13 +88,13 @@ Constructs Pauli strings directly from root-to-leg paths using X/Y/Z
 link labels. This is the approach from Jiang et al. and the Bonsai paper:
 
 ```fsharp
-let tree = balancedTernaryTree 8
-let links = computeLinks tree          // assign X/Y/Z labels
+let terTree = balancedTernaryTree 8
+let links = computeLinks terTree       // assign X/Y/Z labels
 let legs  = allLegs links              // enumerate all legs
-let pairs = pairLegs tree links        // pair legs per mode
+let pairs = pairLegs terTree links     // pair legs per mode
 
 // Full encoding in one call:
-let result = encodeWithTernaryTree tree Raise 2u 8u
+let result = encodeWithTernaryTree terTree Raise 2u 8u
 ```
 
 ## The Vlasov tree: a different ternary shape
@@ -97,7 +116,7 @@ differently across modes:
 let n = 8u
 printfn "%-5s  %-8s  %-8s" "Mode" "TerTree" "Vlasov"
 for j in 0u .. n-1u do
-    let weight encode =
+    let weight (encode : EncoderFn) =
         let terms = (encode Raise j n).DistributeCoefficient
         terms.SummandTerms
         |> Array.map (fun t ->
@@ -130,6 +149,26 @@ Both ternary tree shapes produce valid H₂ Hamiltonians with identical
 eigenspectra but different Pauli structure:
 
 ```fsharp
+// A minimal H₂/STO-3G coefficient factory (4 spin-orbitals).
+// See Chapter 10 for the full integral set and Chapter 13 for loading FCIDUMP files.
+let lookup =
+    let fcidump = """
+ &FCI NORB=   2,NELEC= 2,MS2=0,
+  ORBSYM=1,1,
+  ISYM=1,
+ &END
+ 0.6747559268144484    1    1    1    1
+ 0.6637114013508132    1    1    2    2
+ 0.1812104620151968    2    1    2    1
+ 0.6637114013508132    2    2    1    1
+ 0.697651504490461     2    2    2    2
+ -1.253309786645977    1    1  0  0
+ -0.4750688487721783   2    2  0  0
+ 0.7151043390810812  0  0  0  0
+"""
+    let (factory, _core, _nso) = Fcidump.parseToSpinOrbitalFactory fcidump
+    factory
+
 let hamEncoders = [
     ("Jordan-Wigner",    jordanWignerTerms)
     ("Bravyi-Kitaev",    bravyiKitaevTerms)
