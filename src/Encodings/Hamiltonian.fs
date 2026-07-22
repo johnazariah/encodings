@@ -32,6 +32,36 @@ module Hamiltonian =
     type EncoderFn = LadderOperatorUnit -> uint32 -> uint32 -> PauliRegisterSequence
 
     /// <summary>
+    /// Structural Pauli terms for the two-body operator ½·a†_p a†_q a_s a_r.
+    /// </summary>
+    /// <remarks>
+    /// The library assembles the standard electronic Hamiltonian two-body term
+    /// under the unrestricted physicist sum ½·Σ_pqrs ⟨pq|rs⟩ a†_p a†_q a_s a_r.
+    /// The internal ½ and the <c>a_s a_r</c> annihilator order are applied here so
+    /// that every builder (sequential, parallel, cached, and both skeletons) and
+    /// <see cref="applyCoefficients"/> agree. The factory supplies the raw integral
+    /// ⟨pq|rs⟩ for key "p,q,r,s"; the caller multiplies these structural terms by it.
+    /// </remarks>
+    let private twoBodyStructuralTerms (encode : EncoderFn) (p : uint32) (q : uint32) (r : uint32) (s : uint32) (n : uint32) : PauliRegister[] =
+        let product =
+            (encode Raise p n) * (encode Raise q n)
+            * (encode Lower s n) * (encode Lower r n)
+        product.DistributeCoefficient.SummandTerms
+        |> Array.map (fun t -> t.ResetPhase (t.Coefficient * Complex(0.5, 0.0)))
+
+    /// <summary>Drop assembled terms whose coefficient is numerically zero (|c| ≤ 1e-12).</summary>
+    /// <remarks>
+    /// Fermionic cancellations can leave float-noise residues (~1e-18) that would
+    /// otherwise inflate term counts and Pauli weights (e.g. H₂ carrying 8 spurious
+    /// zero terms). Applied at Hamiltonian-assembly boundaries only, not to the core
+    /// Pauli algebra.
+    /// </remarks>
+    let private dropNumericalZeros (h : PauliRegisterSequence) : PauliRegisterSequence =
+        h.DistributeCoefficient.SummandTerms
+        |> Array.filter (fun t -> t.Coefficient.Magnitude > 1e-12)
+        |> PauliRegisterSequence
+
+    /// <summary>
     /// Discriminated union representing a term in the Hamiltonian.
     /// </summary>
     type HamiltonianTerm =
@@ -74,26 +104,21 @@ module Hamiltonian =
 
     /// <summary>
     /// A two-body exchange term with indices i, j, k, l representing the operator
-    /// <c>a†_i a†_j a_k a_l</c> (annihilators in the order k then l).
+    /// <c>a†_i a†_j a_l a_k</c> scaled by ½ — the standard two-body term for the
+    /// raw physicist integral ⟨ij|kl⟩ under the unrestricted sum.
     /// </summary>
     /// <remarks>
-    /// The coefficient supplied by the factory for key <c>"i,j,k,l"</c> is the FULL
-    /// prefactor of this operator string. In particular, the caller folds in the ½
-    /// of the two-body Hamiltonian term ½·Σ g_pqrs a†_p a†_q a_r a_s — no additional
-    /// ½ is applied here. (The <see cref="T:Encodings.Fcidump"/> adapters do this,
-    /// mapping chemist-notation integrals to <c>½·(ps|qr)</c> for key "p,q,r,s".)
+    /// The factory value for key <c>"i,j,k,l"</c> is the RAW physicist integral
+    /// ⟨ij|kl⟩ (unrestricted sum, no antisymmetrisation). The library applies the
+    /// ½ prefactor and the <c>a_l a_k</c> annihilator order internally
+    /// (see <see cref="twoBodyStructuralTerms"/>); the caller must NOT pre-fold the ½.
     /// </remarks>
     and ExchangeTerm = {i : uint32; j : uint32; k : uint32; l : uint32}
     with
         member private this.ToEncodedTerms (encode : EncoderFn) n coeff =
-            let product =
-                (encode Raise this.i n) * (encode Raise this.j n)
-                * (encode Lower this.k n) * (encode Lower this.l n)
-            product.DistributeCoefficient
-            |> fun prs ->
-                prs.SummandTerms
-                |> Array.map (fun r -> r.ResetPhase (r.Coefficient * coeff))
-                |> PauliRegisterSequence
+            twoBodyStructuralTerms encode this.i this.j this.k this.l n
+            |> Array.map (fun r -> r.ResetPhase (r.Coefficient * coeff))
+            |> PauliRegisterSequence
 
         member private this.ToJordanWignerTerms n coeff =
             this.ToEncodedTerms jordanWignerTerms n coeff
@@ -134,21 +159,21 @@ module Hamiltonian =
     /// using the Jordan-Wigner transformation. Keys are formatted as comma-separated
     /// indices: "i,j" for one-body and "i,j,k,l" for two-body terms.
     /// <para>
-    /// <b>Coefficient contract.</b> The factory returns the FULL prefactor of the
-    /// corresponding operator string, which this function applies verbatim:
+    /// <b>Coefficient contract.</b> The factory returns the raw physical integral;
+    /// this function applies the standard prefactors and operator order:
     /// </para>
     /// <list type="bullet">
     ///   <item><description>"i,j" → h_ij, the coefficient of <c>a†_i a_j</c>.</description></item>
-    ///   <item><description>"i,j,k,l" → the coefficient of <c>a†_i a†_j a_k a_l</c>,
-    ///   <b>with the ½ of the two-body term ½·Σ g_pqrs a†_p a†_q a_r a_s already folded in</b>.
-    ///   No additional ½ is applied here — supplying the raw integral yields a result
-    ///   twice too large.</description></item>
+    ///   <item><description>"i,j,k,l" → the raw physicist two-electron integral
+    ///   ⟨ij|kl⟩ under the unrestricted sum. The library builds
+    ///   <c>½·⟨ij|kl⟩·a†_i a†_j a_l a_k</c> — i.e. it applies the ½ of
+    ///   ½·Σ ⟨pq|rs⟩ a†_p a†_q a_s a_r and the <c>a_l a_k</c> annihilator order.
+    ///   Do NOT pre-fold the ½ or antisymmetrise (that is the ¼ convention).</description></item>
     /// </list>
     /// <para>
     /// The nuclear/constant term is not added (callers may add E_nuc·I separately).
     /// Use <see cref="T:Encodings.Fcidump"/> to build a conforming factory from an
-    /// FCIDUMP: for key "p,q,r,s" it supplies <c>½·(ps|qr)</c> (chemist notation) =
-    /// <c>½·⟨pq|sr⟩</c> (physicist notation).
+    /// FCIDUMP: it returns the raw ⟨pq|rs⟩ = (pr|qs) with spin(p)=spin(r), spin(q)=spin(s).
     /// </para>
     /// </remarks>
     let computeHamiltonian coefficientFactory n =
@@ -157,6 +182,7 @@ module Hamiltonian =
             yield ExchangeTerm.ComputeTerms coefficientFactory n
         |]
         |> PauliRegisterSequence
+        |> dropNumericalZeros
 
     /// <summary>
     /// Compute a qubit Hamiltonian from integral coefficients using any encoding.
@@ -172,11 +198,10 @@ module Hamiltonian =
     /// "i,j" for one-body and "i,j,k,l" for two-body terms.
     /// <para>
     /// <b>Coefficient contract (same as <see cref="computeHamiltonian"/>).</b> The
-    /// factory returns the FULL prefactor of the operator string, applied verbatim:
-    /// "i,j" → coefficient of <c>a†_i a_j</c>; "i,j,k,l" → coefficient of
-    /// <c>a†_i a†_j a_k a_l</c> <b>with the two-body ½ already folded in</b> (raw
-    /// integrals yield a result twice too large). Build a conforming factory with
-    /// <see cref="T:Encodings.Fcidump"/>.
+    /// factory returns raw physical integrals: "i,j" → coefficient of <c>a†_i a_j</c>;
+    /// "i,j,k,l" → the raw physicist ⟨ij|kl⟩ under the unrestricted sum. The library
+    /// applies the ½ and builds <c>½·⟨ij|kl⟩·a†_i a†_j a_l a_k</c> — do NOT pre-fold
+    /// the ½. Build a conforming factory with <see cref="T:Encodings.Fcidump"/>.
     /// </para>
     /// </remarks>
     let computeHamiltonianWith (encode : EncoderFn) coefficientFactory n =
@@ -185,6 +210,7 @@ module Hamiltonian =
             yield ExchangeTerm.ComputeTermsWith encode coefficientFactory n
         |]
         |> PauliRegisterSequence
+        |> dropNumericalZeros
 
 
     // ── Parallel Hamiltonian construction ─────────────────────────────
@@ -211,10 +237,7 @@ module Hamiltonian =
             |> PauliRegisterSequence
 
         let encodeTwoBody (i, j, k, l, coeff) =
-            let product =
-                (encode Raise i n) * (encode Raise j n)
-                * (encode Lower k n) * (encode Lower l n)
-            product.DistributeCoefficient.SummandTerms
+            twoBodyStructuralTerms encode i j k l n
             |> Array.map (fun r -> r.ResetPhase (r.Coefficient * coeff))
             |> PauliRegisterSequence
 
@@ -240,6 +263,7 @@ module Hamiltonian =
 
         Array.append oneBodyTerms twoBodyTerms
         |> PauliRegisterSequence
+        |> dropNumericalZeros
 
     /// <summary>
     /// Parallel version of <see cref="computeHamiltonian"/> (Jordan-Wigner).
@@ -282,9 +306,10 @@ module Hamiltonian =
             |> PauliRegisterSequence
 
         let encodeTwoBody (i : int, j : int, k : int, l : int, coeff) =
-            let product = raiseOps.[i] * raiseOps.[j] * lowerOps.[k] * lowerOps.[l]
+            // ½·a†_i a†_j a_l a_k (raw physicist ⟨ij|kl⟩; see twoBodyStructuralTerms).
+            let product = raiseOps.[i] * raiseOps.[j] * lowerOps.[l] * lowerOps.[k]
             product.DistributeCoefficient.SummandTerms
-            |> Array.map (fun r -> r.ResetPhase (r.Coefficient * coeff))
+            |> Array.map (fun r -> r.ResetPhase (r.Coefficient * coeff * Complex(0.5, 0.0)))
             |> PauliRegisterSequence
 
         let ni = int n
@@ -311,6 +336,7 @@ module Hamiltonian =
 
         Array.append oneBodyTerms twoBodyTerms
         |> PauliRegisterSequence
+        |> dropNumericalZeros
 
 
     // ── Pauli Skeleton: separate structure from coefficients ─────────
@@ -418,10 +444,7 @@ module Hamiltonian =
                            for l in modeRange n -> (i, j, k, l) |]
             |> Array.Parallel.map (fun (i, j, k, l) ->
                 let key = sprintf "%u,%u,%u,%u" i j k l
-                let product =
-                    (encode Raise i n) * (encode Raise j n)
-                    * (encode Lower k n) * (encode Lower l n)
-                let terms = product.DistributeCoefficient.SummandTerms |> toSkeletonTerms
+                let terms = twoBodyStructuralTerms encode i j k l n |> toSkeletonTerms
                 { Key = key; Terms = terms })
             |> Array.filter (fun e -> e.Terms.Length > 0)
 
@@ -485,10 +508,7 @@ module Hamiltonian =
         let twoBody =
             twoBodyKeys
             |> Array.Parallel.map (fun (i, j, k, l, key) ->
-                let product =
-                    (encode Raise i n) * (encode Raise j n)
-                    * (encode Lower k n) * (encode Lower l n)
-                let terms = product.DistributeCoefficient.SummandTerms |> toSkeletonTerms
+                let terms = twoBodyStructuralTerms encode i j k l n |> toSkeletonTerms
                 { Key = key; Terms = terms })
             |> Array.filter (fun e -> e.Terms.Length > 0)
 
@@ -540,8 +560,10 @@ module Hamiltonian =
         processEntries skeleton.OneBody
         processEntries skeleton.TwoBody
 
-        // Construct PauliRegisters only for the final combined terms
+        // Construct PauliRegisters only for the final combined terms (dropping
+        // numerical-zero residues from fermionic cancellations).
         coeffDict
+        |> Seq.filter (fun kvp -> kvp.Value.Magnitude > 1e-12)
         |> Seq.map (fun kvp -> PauliRegister(opsDict.[kvp.Key], kvp.Value))
         |> Seq.toArray
         |> PauliRegisterSequence

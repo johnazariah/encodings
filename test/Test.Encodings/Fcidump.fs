@@ -6,8 +6,12 @@ module Fcidump =
     open Encodings.Fcidump
     open Xunit
 
-    // ── Minimal H₂/STO-3G FCIDUMP (2 spatial orbitals) ─────────────
-    // Values from PySCF: H₂ at 1.4 Bohr, STO-3G basis
+    // ── Minimal H₂-like FCIDUMP fixture (2 spatial orbitals) ─────────────
+    // Illustrative values chosen to exercise the parser and factory conventions.
+    // NOT a physically-converged PySCF run (a real H₂/STO-3G at 1.4 Bohr has
+    // h1 ≈ -1.252797, -0.475602; (00|00) ≈ 0.674594, (11|00) ≈ 0.663564,
+    // (10|10) ≈ 0.181258, (11|11) ≈ 0.697495, Vnn = 5/7). For physically exact
+    // coefficient/spectrum checks, the tests use examples/H2_STO-3G.fcidump.
     let private h2Fcidump = """
  &FCI NORB=   2,NELEC= 2,MS2=0,
   ORBSYM=1,1,
@@ -117,15 +121,15 @@ module Fcidump =
         Assert.True((factory "0,5").IsNone)
 
     [<Fact>]
-    let ``toCoefficientFactory: two-body key includes half factor`` () =
+    let ``toCoefficientFactory: two-body key returns the raw physicist integral (no half)`` () =
         let data = parse h2Fcidump
         let factory = toCoefficientFactory data
-        // factory("p,q,r,s") = ½ × chemist(p,s,q,r)
-        // factory("0,1,1,0") = ½ × chemist(0,0,1,1) = ½ × (00|11)
-        // (00|11) = (11|00) by symmetry = 0.181288808
-        let v = factory "0,1,1,0"
-        Assert.True(v.IsSome)
-        Assert.Equal(0.5 * 0.181288808, v.Value.Real, 6)
+        // New contract: factory("p,q,r,s") = raw ⟨pq|rs⟩ = (pr|qs) chemist, NO ½
+        // (the Hamiltonian module applies the ½ and the a_s a_r order).
+        // factory("0,0,0,0") = ⟨00|00⟩ = (00|00) = 0.674493103
+        Assert.Equal(0.674493103, (factory "0,0,0,0").Value.Real, 6)
+        // factory("0,1,0,1") = ⟨01|01⟩ = (00|11) = 0.181288808
+        Assert.Equal(0.181288808, (factory "0,1,0,1").Value.Real, 6)
 
     [<Fact>]
     let ``toCoefficientFactory: zero integral returns None`` () =

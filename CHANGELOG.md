@@ -2,6 +2,36 @@
 
 All notable changes to FockMap will be documented in this file.
 
+## [Unreleased]
+
+### ⚠️ Breaking changes
+
+- **Hamiltonian factory coefficient contract (raw physicist integrals).**
+  `computeHamiltonian`, `computeHamiltonianWith`, `computeHamiltonianCached`,
+  `computeHamiltonianWithParallel`, both skeleton builders, and `applyCoefficients`
+  now take the **raw physicist two-electron integral ⟨pq|rs⟩** for key `"p,q,r,s"`
+  under the unrestricted sum. The library applies the ½ and the `a_s a_r` order
+  internally, assembling `½·Σ ⟨pq|rs⟩ a†_p a†_q a_s a_r`.
+  - **Migration:** a custom factory written for the previous contract (which
+    pre-folded the ½ and used the `a†_p a†_q a_r a_s` order, i.e. supplied
+    `½·⟨pq|sr⟩ = ½·(ps|qr)`) must now supply the raw `⟨pq|rs⟩ = (pr|qs)` with **no**
+    ½ and no r↔s swap. From chemist integrals, `⟨pq|rs⟩ = (pr|qs)`.
+  - The `Fcidump` adapters were updated in lockstep and continue to reproduce the
+    correct H₂/STO-3G spectrum (electronic ground −1.8523881736 Ha, 1-norm 2.699278);
+    no change is needed when building factories from FCIDUMP files.
+  - `CoreEnergy` (nuclear/constant term) is still returned separately and not added
+    to the Pauli Hamiltonian.
+
+### 🐛 Fixes
+
+- fix: correct the CNOT Clifford conjugation phase in `Tapering.applyClifford`
+  (`cx && tz && (tx = cz)`); general (`FullClifford`) tapering now preserves the spectrum.
+- fix: Hamiltonian assembly drops numerical-zero residues (H₂ now has 15 terms, not 23),
+  so cost/measurement analyses report the correct term counts and weights.
+- fix: `Hamiltonian` mode loops iterate `0..n-1` safely for `n = 0` (no `uint32` underflow).
+- fix: `TreeEncoding.computeLinks` raises a clear error for nodes with more than 3 children.
+- fix: Trotterization rejects non-Hermitian (materially imaginary) Pauli coefficients.
+
 ## [0.8.0] - 2026-03-17
 
 ### ✨ Features

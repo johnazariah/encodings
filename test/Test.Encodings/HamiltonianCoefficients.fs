@@ -50,7 +50,8 @@ module HamiltonianCoefficients =
     let ``H2 JW Hamiltonian has exact IIII and four-body coefficients (FCIDUMP)`` () =
         let factory, nso = h2Factory ()
         let ham = computeHamiltonianWith jordanWignerTerms factory (uint32 nso)
-        // 15 physical terms; the raw sum retains 8 zero-coefficient entries (23 total).
+        // Exactly 15 terms — numerical-zero residues are dropped at assembly.
+        Assert.Equal(15, ham.DistributeCoefficient.SummandTerms.Length)
         Assert.Equal(15, (nonZero ham).Length)
         // Independently reproduced by a direct second-quantized/JW oracle:
         Assert.Equal(-0.8121706072, coeffOf ham "IIII", 8)
@@ -74,23 +75,21 @@ module HamiltonianCoefficients =
         Assert.Equal(-0.85, coeffOf ham "ZI", 10)
 
     [<Fact>]
-    let ``two-body coefficient is applied verbatim with no additional one-half`` () =
-        // a†_0 a†_1 a_1 a_0 with factory("0,1,1,0")=V. Doubling V must double every
-        // coefficient AND the absolute values are fixed by V alone (a spurious ½
-        // would halve them). Compare V=1 against the known exact JW decomposition.
+    let ``two-body: library applies the half and a_s a_r order for raw physicist input`` () =
+        // factory("0,1,0,1")=V is the RAW ⟨01|01⟩. The library builds
+        // ½·V·a†_0 a†_1 a_1 a_0 = ½·V·n_0 n_1 = (V/8)(II − ZI − IZ + ZZ).
+        // (A spurious extra ½, or omitting it, changes these magnitudes.)
         let mk v = computeHamiltonianWith jordanWignerTerms
-                    (fun key -> if key = "0,1,1,0" then Some (Complex(v, 0.0)) else None) 2u
+                    (fun key -> if key = "0,1,0,1" then Some (Complex(v, 0.0)) else None) 2u
         let h1 = mk 1.0
         let h2 = mk 2.0
         // linearity: h2 == 2 * h1 term-by-term
         for t in nonZero h2 do
             Assert.Equal(2.0 * coeffOf h1 t.Signature, t.Coefficient.Real, 10)
-        // a†_0 a†_1 a_1 a_0 = n_0 n_1 = (I-Z_0)(I-Z_1)/4 = ¼(II - ZI - IZ + ZZ).
-        // With V=1 the II coefficient is exactly ¼ (not ½ and not ⅛).
-        Assert.Equal(0.25, coeffOf h1 "II", 10)
-        Assert.Equal(0.25, coeffOf h1 "ZZ", 10)
-        Assert.Equal(-0.25, coeffOf h1 "ZI", 10)
-        Assert.Equal(-0.25, coeffOf h1 "IZ", 10)
+        Assert.Equal(0.125, coeffOf h1 "II", 10)
+        Assert.Equal(0.125, coeffOf h1 "ZZ", 10)
+        Assert.Equal(-0.125, coeffOf h1 "ZI", 10)
+        Assert.Equal(-0.125, coeffOf h1 "IZ", 10)
 
     // ── (b) vs (c): the encoded Hamiltonian matches a first-principles dense
     //    fermionic construction (same factory), so the coefficients are physically
@@ -142,7 +141,8 @@ module HamiltonianCoefficients =
                     for q in p + 1 .. dim - 1 do off <- off + a.[p, q] * a.[p, q]
             [ for i in 0 .. dim - 1 -> a.[i, i] ] |> List.sort
 
-        /// Direct dense H = Σ h_ij a†_i a_j + Σ V_ijkl a†_i a†_j a_k a_l.
+        /// Direct dense H = Σ h_ij a†_i a_j + ½ Σ ⟨ij|kl⟩ a†_i a†_j a_l a_k
+        /// (matching the library's raw-physicist contract: ½ and a_l a_k order).
         let matrixOf (factory : string -> Complex option) n =
             let h = Array2D.zeroCreate dim dim
             for i in 0 .. n - 1 do
@@ -156,8 +156,8 @@ module HamiltonianCoefficients =
                         for l in 0 .. n - 1 do
                             match factory (sprintf "%d,%d,%d,%d" i j k l) with
                             | Some c ->
-                                addScaled h c.Real
-                                    (matmul (matmul (create i) (create j)) (matmul (annihilate k) (annihilate l)))
+                                addScaled h (0.5 * c.Real)
+                                    (matmul (matmul (create i) (create j)) (matmul (annihilate l) (annihilate k)))
                             | None -> ()
             h
 
@@ -195,15 +195,15 @@ module HamiltonianCoefficients =
         Assert.Equal(-1.852388, List.head sb, 5)
 
     // ══════════════════════════════════════════════════════════════════
-    //  Chemist ↔ physicist conversion (explicit permutation test)
+    //  Raw physicist tensor input (new contract)
     //  ──────────────────────────────────────────────────────────────────
-    //  FockMap's factory expects, for key "p,q,r,s" (operator a†_p a†_q a_r a_s),
-    //  the coefficient ½·(ps|qr) chemist = ½·⟨pq|sr⟩ physicist. Given a physicist
-    //  tensor T[a,b,c,d] = ⟨ab|cd⟩, the correct adaptation is
-    //      F("p,q,r,s") = ½ · T[p, q, s, r]      (fold in ½ AND swap r↔s).
-    //  Feeding the RAW physicist tensor (no ½, no swap) reproduces the book's
-    //  reported error exactly (IIII=-3.5608, four-body 0.0906). Canonical source:
-    //  encodings-research, R=1.3983973 bohr, interleaved 0α,0β,1α,1β, chemist ERIs.
+    //  FockMap's factory takes, for key "p,q,r,s", the RAW physicist integral
+    //  ⟨pq|rs⟩ under the unrestricted sum; the library applies the ½ and the
+    //  a_s a_r order. So a raw physicist tensor T[p,q,r,s]=⟨pq|rs⟩ (Phys.raw)
+    //  is fed DIRECTLY — the book's original input now works. A factory that
+    //  pre-folds ½ and swaps r↔s (Phys.preAdapted, the old convention) now
+    //  double-counts and must be migrated. Canonical source: encodings-research,
+    //  R=1.3983973 bohr, interleaved 0α,0β,1α,1β, chemist ERIs.
     // ══════════════════════════════════════════════════════════════════
     module private Phys =
         // Canonical spatial chemist ERIs [pq|rs] (0-indexed, 8-fold symmetry).
@@ -229,24 +229,26 @@ module HamiltonianCoefficients =
                 let v = hSpatial (sp p) (sp q)
                 if abs v > 1e-15 then Some (Complex(v, 0.0)) else None
             else None
-        /// CORRECT adaptation: F("p,q,r,s") = ½·⟨pq|sr⟩ = ½·T[p,q,s,r].
-        let correct (key : string) =
-            let x = key.Split(',')
-            match x.Length with
-            | 2 -> oneBody key
-            | 4 ->
-                let p, q, r, s = int x.[0], int x.[1], int x.[2], int x.[3]
-                let v = 0.5 * tPhys p q s r
-                if abs v > 1e-15 then Some (Complex(v, 0.0)) else None
-            | _ -> None
-        /// NAIVE (book bug): raw physicist tensor, no ½, no r↔s swap.
-        let naive (key : string) =
+        /// RAW physicist tensor F("p,q,r,s") = ⟨pq|rs⟩ = T[p,q,r,s].
+        /// Under the new contract this is the CORRECT, directly-usable input.
+        let raw (key : string) =
             let x = key.Split(',')
             match x.Length with
             | 2 -> oneBody key
             | 4 ->
                 let p, q, r, s = int x.[0], int x.[1], int x.[2], int x.[3]
                 let v = tPhys p q r s
+                if abs v > 1e-15 then Some (Complex(v, 0.0)) else None
+            | _ -> None
+        /// Old PRE-ADAPTED factory F("p,q,r,s") = ½·⟨pq|sr⟩ = ½·T[p,q,s,r].
+        /// Under the new contract this double-counts (migration hazard).
+        let preAdapted (key : string) =
+            let x = key.Split(',')
+            match x.Length with
+            | 2 -> oneBody key
+            | 4 ->
+                let p, q, r, s = int x.[0], int x.[1], int x.[2], int x.[3]
+                let v = 0.5 * tPhys p q s r
                 if abs v > 1e-15 then Some (Complex(v, 0.0)) else None
             | _ -> None
 
@@ -260,27 +262,48 @@ module HamiltonianCoefficients =
         Assert.Equal(2.699278, oneNorm ham, 5)
 
     [<Fact>]
-    let ``physicist tensor needs the half and r-s swap to match chemist coefficients`` () =
+    let ``raw physicist tensor produces the correct H2 directly (new contract)`` () =
         let chemF, nso = h2Factory ()
         let chem = computeHamiltonianWith jordanWignerTerms chemF (uint32 nso)
-        let good = computeHamiltonianWith jordanWignerTerms Phys.correct (uint32 nso)
-        // Correct adaptation reproduces the chemist Hamiltonian term-for-term.
-        Assert.Equal(chem.DistributeCoefficient.ToString(), good.DistributeCoefficient.ToString())
-        Assert.Equal(-0.8121706072, coeffOf good "IIII", 8)
-        Assert.Equal(-0.0453026155, coeffOf good "XXYY", 8)
-        Assert.Equal(2.699278, oneNorm good, 5)
+        let raw  = computeHamiltonianWith jordanWignerTerms Phys.raw (uint32 nso)
+        // The raw physicist tensor is fed directly and reproduces the FCIDUMP
+        // Hamiltonian term-for-term — the book's input now works without adaptation.
+        Assert.Equal(chem.DistributeCoefficient.ToString(), raw.DistributeCoefficient.ToString())
+        Assert.Equal(-0.8121706072, coeffOf raw "IIII", 8)
+        Assert.Equal(-0.0453026155, coeffOf raw "XXYY", 8)
+        Assert.Equal(2.699278, oneNorm raw, 5)
 
     [<Fact>]
-    let ``raw physicist adaptation reproduces the book's wrong coefficients`` () =
-        // Negative control: dropping the ½ and the r↔s swap gives exactly the
-        // book's reported IIII=-3.5608 and four-body 0.0906 (signatures still match).
-        let bad = computeHamiltonianWith jordanWignerTerms Phys.naive 4u
-        Assert.Equal(-3.5607946917, coeffOf bad "IIII", 6)
-        Assert.Equal( 0.0906052310, coeffOf bad "XXYY" |> abs, 6)
-        // The signatures are identical to the correct Hamiltonian — only coefficients differ.
-        let good = computeHamiltonianWith jordanWignerTerms Phys.correct 4u
-        let sigs (h : PauliRegisterSequence) =
-            h.DistributeCoefficient.SummandTerms
-            |> Array.filter (fun t -> Complex.Abs t.Coefficient > 1e-10)
-            |> Array.map (fun t -> t.Signature) |> Array.sort
-        Assert.Equal<string[]>(sigs good, sigs bad)
+    let ``pre-adapted half-folded factory now double-counts (migration hazard)`` () =
+        // A factory written for the OLD contract (½·⟨pq|sr⟩) now double-applies the
+        // ½ and re-swaps, so it no longer yields the correct H2. Custom pre-adapted
+        // factories must drop their ½/swap (or switch to the Fcidump adapters).
+        let preAdapted = computeHamiltonianWith jordanWignerTerms Phys.preAdapted 4u
+        Assert.True(abs (coeffOf preAdapted "IIII" - (-0.8121706072)) > 0.01,
+            sprintf "pre-adapted IIII=%f should differ materially from the correct -0.8121706072"
+                (coeffOf preAdapted "IIII"))
+
+    [<Fact>]
+    let ``H2 Hamiltonian carries no numerical-zero terms`` () =
+        // Fermionic cancellations previously left 8 float-noise zero terms
+        // (XXXY, XXYX, …) inflating CostAnalysis to 23 terms / weight 64.
+        let factory, nso = h2Factory ()
+        let ham = computeHamiltonianWith jordanWignerTerms factory (uint32 nso)
+        for t in ham.DistributeCoefficient.SummandTerms do
+            Assert.True(t.Coefficient.Magnitude > 1e-12,
+                sprintf "term %s has a numerical-zero coefficient %A" t.Signature t.Coefficient)
+
+    [<Fact>]
+    let ``all five Hamiltonian builders agree on H2`` () =
+        let factory, nso = h2Factory ()
+        let n = uint32 nso
+        let s (h : PauliRegisterSequence) = h.DistributeCoefficient.ToString()
+        let seqH    = computeHamiltonianWith jordanWignerTerms factory n
+        let parH    = computeHamiltonianWithParallel jordanWignerTerms factory n
+        let cacheH  = computeHamiltonianCached jordanWignerTerms factory n
+        let fullSk  = applyCoefficients (computeHamiltonianSkeleton jordanWignerTerms n) factory
+        let sparseSk = applyCoefficients (computeHamiltonianSkeletonFor jordanWignerTerms factory n) factory
+        Assert.Equal(s seqH, s parH)
+        Assert.Equal(s seqH, s cacheH)
+        Assert.Equal(s seqH, s fullSk)
+        Assert.Equal(s seqH, s sparseSk)
