@@ -605,7 +605,7 @@ Related: `PauliRegister.fs` tests confirm position 0 is the leftmost character
 
 ---
 
-## 15. Hamiltonian Coefficients (state/convention) — `HamiltonianCoefficients.fs` (22 tests)
+## 15. Hamiltonian Coefficients (state/convention) — `HamiltonianCoefficients.fs` (25 tests)
 
 Signature-only tests pass even when the integral/factory convention is wrong (all
 encodings share the same coefficient error). These pin exact Pauli coefficients and
@@ -645,8 +645,32 @@ from cancelling contributions, while preserving standalone tiny coefficients.
 | 18 | Floating cancellation residue (~eps·scale) is dropped, but nearby real ZI/IZ survive | Fact |
 | 19 | A legitimate small residue (1e-9) from two contributions is NOT dropped | Fact |
 | 20 | Standalone tiny coefficients (1e-12, 1e-13, 1e-15) survive on every builder path | Fact |
-| 21 | H₂ spectrum agrees across **all six** encodings (JW, BK, Parity, binary/ternary/Vlasov trees); tree Y–Y terms make the dense matrix complex-Hermitian, so the spectrum is taken via the 2n real embedding — a `.Real` truncation would corrupt it | Fact |
-| 22 | H₂ assembly is wrong (spectrum differs) if the caller's ½ or annihilator order is corrupted — each defect proven independently against the raw oracle | Fact |
+| 21 | Standalone tiny coefficients survive through the JW aliases (`computeHamiltonian`/`computeHamiltonianParallel`) | Fact |
+| 22 | Standalone tiny **two-body** coefficient (2e-13) survives verbatim as four ±5e-14 JW terms | Fact |
+| 23 | Standalone tiny coefficient survives through the named raw adapter (both raw entry points) | Fact |
+| 24 | H₂ spectrum agrees across **all six** encodings (JW, BK, Parity, binary/ternary/Vlasov trees); tree Y–Y terms make the dense matrix complex-Hermitian, so the spectrum is taken via the 2n real embedding — a `.Real` truncation would corrupt it | Fact |
+| 25 | H₂ assembly is wrong (spectrum differs) if the caller's ½ or annihilator order is corrupted — each defect proven independently against the raw oracle | Fact |
+
+---
+
+## 15a. Hamiltonian Fixture Lock (frozen JSON + oracle) — `HamiltonianFixtureLock.fs` (7 tests)
+
+An independent acceptance lock that loads the canonical H₂/STO-3G integrals **and**
+every expected value from a committed JSON fixture
+(`fixtures/h2_sto3g_raw.json`, raw single-bar physicist tensor with provenance
+metadata and a tamper-evident SHA-256 integral hash). Inputs are **not** regenerated
+in-test; only the direct 16×16 second-quantized oracle (which consumes those frozen
+inputs) is computed here.
+
+| # | What is tested | Style |
+|---|----------------|-------|
+| 1 | The recomputed SHA-256 of the integral block matches the recorded provenance hash (tamper-evidence) | Fact |
+| 2 | The fixture declares exactly 4 one-body + 32 raw two-body entries and 4 spin-orbitals | Fact |
+| 3 | Named raw adapter on the fixture reproduces the complete 15-entry coefficient map (no extra/missing terms) | Fact |
+| 4 | JW-encoded fixture Hamiltonian matches the direct 16×16 oracle **entrywise** (occupation basis, zero imaginary) | Fact |
+| 5 | Oracle HF row 3 = −1.8318636465, exact particle-number sectors, ground −1.8523881736 (all from the fixture) | Fact |
+| 6 | Metrics lock from the fixture: 15 terms, weight 32, 15 rotations, 36 CNOTs, 1-norm 2.6992778241 | Fact |
+| 7 | Legacy weighted path on independently pre-adapted fixture data equals the named raw-adapter path | Fact |
 
 ---
 
@@ -672,7 +696,7 @@ from cancelling contributions, while preserving standalone tiny coefficients.
 | Bosonic-to-qubit encodings | 70 | Theory + Fact + cross-encoding | **High** — matrix construction, Pauli decomposition, weight bounds, multi-mode embedding, number-operator roundtrip |
 | Qubit tapering — Clifford conjugation | 25 | Exact letters/phases + dense-matrix spectra | **High** — all 16 CNOT conjugations, U·H·U† to machine precision, H₂ sector spectra |
 | Index/label ordering (state-resolved) | 10 | Occupation-basis diagonal reads + exact a†₂ string | **High** — number operators verified on the intended occupation basis; catches bit reversal that spectra miss |
-| Hamiltonian coefficients & factory contract | 14 | Exact coefficients + dense fermionic oracle + six-encoding spectra + HF diagonal | **High** — pins H₂/STO-3G coefficients, raw-physicist contract, ½+swap defect proofs, trace/HF-diagonal anchors, zero filtering |
+| Hamiltonian coefficients & factory contract | 32 | Exact coefficients + independent 16×16 raw oracle + frozen JSON fixture/hash + six-encoding spectra + tiny-survival | **High** — pins H₂/STO-3G coefficients, restored **weighted** contract + named raw adapter, ½+order defect proofs, cancellation-aware tiny survival, provenance-locked fixture, trace/HF-diagonal/particle-sector anchors |
 
 ### What is *not* tested
 

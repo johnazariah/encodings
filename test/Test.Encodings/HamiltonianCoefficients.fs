@@ -570,6 +570,42 @@ module HamiltonianCoefficients =
             build (applyCoefficients (computeHamiltonianSkeleton jordanWignerTerms 2u) factory)
             build (applyCoefficients (computeHamiltonianSkeletonFor jordanWignerTerms factory 2u) factory)
 
+    [<Fact>]
+    let ``standalone tiny coefficients survive through the JW aliases`` () =
+        // computeHamiltonian / computeHamiltonianParallel (the Jordan-Wigner aliases)
+        // must preserve a tiny standalone coefficient just like the ...With forms.
+        for v in [1e-12; 1e-13; 1e-15] do
+            let factory (key : string) = if key = "0,0" then Some (Complex(2.0 * v, 0.0)) else None
+            for h in [ computeHamiltonian factory 2u; computeHamiltonianParallel factory 2u ] do
+                Assert.Equal(2, h.DistributeCoefficient.SummandTerms.Length)
+                Assert.Equal(v, coeffOf h "II", 15)
+                Assert.Equal(-v, coeffOf h "ZI", 15)
+
+    [<Fact>]
+    let ``standalone tiny two-body coefficient survives verbatim`` () =
+        // A single two-body weighted coefficient of 2e-13 → four JW terms at ±5e-14,
+        // each a standalone contribution (count = 1) that must not be pruned.
+        let factory (key : string) = if key = "0,1,0,1" then Some (Complex(2e-13, 0.0)) else None
+        let ham = computeHamiltonianWith jordanWignerTerms factory 2u
+        Assert.Equal(4, ham.DistributeCoefficient.SummandTerms.Length)
+        let close a b = Assert.True(abs (a - b) < 1e-20, sprintf "%g vs %g" a b)
+        close (-5e-14) (coeffOf ham "II")
+        close ( 5e-14) (coeffOf ham "IZ")
+        close ( 5e-14) (coeffOf ham "ZI")
+        close (-5e-14) (coeffOf ham "ZZ")
+
+    [<Fact>]
+    let ``standalone tiny coefficient survives through the named raw adapter`` () =
+        // A raw one-body integral of 2e-13 passes through the adapter unchanged and
+        // must survive on both raw entry points.
+        for v in [1e-12; 1e-13; 1e-15] do
+            let raw (key : string) = if key = "0,0" then Some (Complex(2.0 * v, 0.0)) else None
+            for h in [ computeHamiltonianFromPhysicist raw 2u
+                       computeHamiltonianFromPhysicistWith jordanWignerTerms raw 2u ] do
+                Assert.Equal(2, h.DistributeCoefficient.SummandTerms.Length)
+                Assert.Equal(v, coeffOf h "II", 15)
+                Assert.Equal(-v, coeffOf h "ZI", 15)
+
     // ══════════════════════════════════════════════════════════════════
     //  Six-encoding complex-Hermitian spectrum (retained; requirement 9).
     // ══════════════════════════════════════════════════════════════════

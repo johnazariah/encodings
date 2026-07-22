@@ -40,6 +40,7 @@
     <Compile Include="VariationalCircuits.fs" />
     <Compile Include="Hamiltonian.fs" />
     <Compile Include="HamiltonianCoefficients.fs" />
+    <Compile Include="HamiltonianFixtureLock.fs" />
     <Compile Include="CostAnalysis.fs" />
     <Compile Include="Optimization.fs" />
     <Compile Include="Fcidump.fs" />
@@ -58,6 +59,12 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Encodings\Encodings.fsproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="fixtures\h2_sto3g_raw.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

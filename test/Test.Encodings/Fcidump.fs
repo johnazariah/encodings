@@ -265,3 +265,33 @@ module Fcidump =
         Assert.Equal(2, data.Norb)
         Assert.Equal(1.0, data.H1e.[0, 0], 10)
         Assert.Equal(0.5, data.CoreEnergy, 10)
+
+    // ── Tiny-safe: no absolute magnitude deletion ───────────────────
+
+    [<Fact>]
+    let ``parse: preserves an exact 1e-15 integral (no absolute drop)`` () =
+        // The parser must store a legitimate 1e-15 one-electron integral rather than
+        // deleting it by an absolute threshold, so tiny physics survives end-to-end.
+        let content = """
+ &FCI NORB= 2,NELEC=2,MS2=0,
+  ORBSYM=1,1,
+  ISYM=1,
+ &END
+  1.0e-15   1   1   0   0
+  0.5       0   0   0   0
+"""
+        let data = parse content
+        let close a b = Assert.True(abs (a - b) < 1e-20, sprintf "%g vs %g" a b)
+        close 1e-15 data.H1e.[0, 0]
+        let factory = toCoefficientFactory data
+        let v = factory "0,0"
+        Assert.True(v.IsSome)
+        close 1e-15 v.Value.Real
+        // And it flows through to a surviving Pauli term (JW: ±5e-16 on II/ZI).
+        let ham = Hamiltonian.computeHamiltonianWith JordanWigner.jordanWignerTerms factory 2u
+        let coeffOf sg =
+            match ham.DistributeCoefficient.[sg] with
+            | true, r -> r.Coefficient.Real
+            | false, _ -> 0.0
+        close 0.5e-15 (coeffOf "II")
+        close (-0.5e-15) (coeffOf "ZI")

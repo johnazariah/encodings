@@ -143,7 +143,9 @@ let gates = decomposeTrotterStep step
 
 // 5. Export → OpenQASM 3.0
 let qasm = toOpenQasm defaultOpenQasmOptions tapered.TaperedQubitCount gates
-// Ready to run on IBM Quantum, IonQ, Rigetti, Amazon Braket
+// Emits standard OpenQASM 3.0 text. Submit it to a platform (e.g. IBM Quantum,
+// IonQ, Rigetti, Amazon Braket) through that vendor's own SDK/transpiler —
+// FockMap generates the circuit description, it does not talk to hardware.
 
 // Also available: Q# and JSON export
 let qs   = toQSharp defaultQSharpOptions tapered.TaperedQubitCount gates

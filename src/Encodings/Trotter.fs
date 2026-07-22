@@ -57,7 +57,7 @@ module Trotterization =
     /// <remarks>
     /// Universal gate set used in CNOT staircase decomposition.
     /// Requires qualified access to avoid ambiguity with
-    /// <see cref="CliffordGate"/> cases from the Tapering module.
+    /// <see cref="T:Encodings.Tapering.CliffordGate"/> cases from the Tapering module.
     /// </remarks>
     [<RequireQualifiedAccess>]
     type Gate =
@@ -152,7 +152,7 @@ module Trotterization =
     /// <para>
     /// <b>Precondition: the Hamiltonian must be Hermitian</b> (real Pauli
     /// coefficients); a term with |Im| &gt; 1e-9 is rejected (see
-    /// <see cref="firstOrderTrotter"/>).
+    /// <c>firstOrderTrotter</c>).
     /// </para>
     /// </remarks>
     /// <exception cref="T:System.ArgumentException">
@@ -166,7 +166,20 @@ module Trotterization =
           Order     = Second
           TimeStep  = dt }
 
-    /// <summary>Trotter decomposition dispatching on order.</summary>
+    /// <summary>
+    /// Trotter decomposition dispatching on order — returns the
+    /// <c>firstOrderTrotter</c> or <c>secondOrderTrotter</c> builder.
+    /// </summary>
+    /// <remarks>
+    /// <b>Precondition: the Hamiltonian must be Hermitian</b> (every Pauli coefficient
+    /// real). The returned builder rejects any term with a materially imaginary
+    /// coefficient (|Im| &gt; 1e-9) rather than silently truncating it; benign
+    /// floating-point noise is tolerated.
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentException">
+    /// Thrown (by the returned builder) when a term has a materially imaginary
+    /// (non-Hermitian) coefficient.
+    /// </exception>
     let trotterize (order : TrotterOrder) =
         match order with
         | First  -> firstOrderTrotter

@@ -25,11 +25,17 @@ All notable changes to FockMap will be documented in this file.
   `"i,j,k,l"` **verbatim** to `a†_i a†_j a_k a_l` (the FULL WEIGHTED prefactor,
   with the two-body ½ folded in by the caller). Older prose in a few places implied
   the library applied the ½ itself; that prose is fixed. **No released runtime
-  semantics changed** — legacy weighted factories and the `Fcidump` adapters
-  (which supply `½·(ps|qr) = ½·⟨pq|sr⟩`) behave exactly as before, and continue to
-  reproduce the H₂/STO-3G spectrum (electronic ground −1.8523881736 Ha, 1-norm
-  2.6992778241). If you previously wrote a custom raw-physicist factory that
-  worked, it still works; new code can instead use the named raw API above.
+  semantics changed** — a custom **weighted** factory (½ pre-folded, e.g. the
+  `Fcidump` adapters supplying `½·(ps|qr) = ½·⟨pq|sr⟩`) behaves exactly as before and
+  continues to reproduce the H₂/STO-3G spectrum (electronic ground −1.8523881736 Ha,
+  1-norm 2.6992778241). If you have a **raw** single-bar physicist tensor `⟨pq|rs⟩`,
+  do not feed it to the weighted API directly (it would be a factor of two off and
+  index-swapped); wrap it with the new `rawPhysicistToWeightedFactory` /
+  `computeHamiltonianFromPhysicist` API above.
+- Corrected the executed examples/tables in the cookbook (chapters 9, 10, 13) to the
+  canonical 15-term H₂ output, and fixed generated-docs `<see cref>` references for
+  the Hamiltonian/Optimization/Trotter/FCIDUMP surfaces so they no longer link out to
+  unrelated external pages.
 
 ### 🐛 Fixes
 

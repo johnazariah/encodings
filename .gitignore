@@ -68,3 +68,8 @@ Investigate_Construction_A_Failure.ipynb
 
 .fake
 book/output/
+
+# Circuit exports produced when executing doc samples (scripts/check-doc-samples.sh)
+circuit.json
+circuit.qasm
+circuit.qs

@@ -24,6 +24,16 @@ open System.Numerics
 /// Bayesian optimisation, simulated annealing) can generate candidates and use
 /// this module for evaluation.
 /// </para>
+/// <para>
+/// <b>Coefficient factory convention.</b> Every function here builds its
+/// Hamiltonian through <c>computeHamiltonianWith</c>, so the
+/// <c>coefficientFactory</c> argument follows the same <b>weighted</b> contract:
+/// the value for key <c>"i,j,k,l"</c> is the FULL WEIGHTED prefactor of
+/// <c>a†_i a†_j a_k a_l</c> (the two-body ½ already folded in), applied verbatim.
+/// Build one with <see cref="T:Encodings.Fcidump"/>, or wrap a raw physicist
+/// tensor <c>⟨pq|rs⟩</c> with
+/// <c>rawPhysicistToWeightedFactory</c> first.
+/// </para>
 /// </remarks>
 module Optimization =
 
@@ -43,7 +53,7 @@ module Optimization =
     type EncodingCandidate =
         { /// <summary>Human-readable name for display and comparison.</summary>
           Name : string
-          /// <summary>The encoder function (same signature as <see cref="EncoderFn"/>).</summary>
+          /// <summary>The encoder function (same signature as <see cref="T:Encodings.Hamiltonian.EncoderFn"/>).</summary>
           Encoder : EncoderFn }
 
     /// <summary>
@@ -144,7 +154,7 @@ module Optimization =
     /// <param name="coefficientFactory">Molecular integral lookup.</param>
     /// <param name="n">Number of spin-orbitals (qubits).</param>
     /// <param name="candidate">The encoding candidate to evaluate.</param>
-    /// <returns>An <see cref="EvaluationResult"/> with cost and Hamiltonian data.</returns>
+    /// <returns>An <see cref="T:Encodings.Optimization.EvaluationResult"/> with cost and Hamiltonian data.</returns>
     let evaluate
         (costFn : CostFunction)
         (coefficientFactory : string -> Complex option)
@@ -164,7 +174,7 @@ module Optimization =
     /// <param name="candidates">Array of encoding candidates to evaluate.</param>
     /// <param name="coefficientFactory">Molecular integral lookup.</param>
     /// <param name="n">Number of spin-orbitals (qubits).</param>
-    /// <returns>An <see cref="OptimizationResult"/> with the best candidate and full comparison.</returns>
+    /// <returns>An <see cref="T:Encodings.Optimization.OptimizationResult"/> with the best candidate and full comparison.</returns>
     let optimizeOver
         (costFn : CostFunction)
         (candidates : EncodingCandidate[])
@@ -182,7 +192,7 @@ module Optimization =
     /// <param name="costFn">The cost function to minimise.</param>
     /// <param name="coefficientFactory">Molecular integral lookup.</param>
     /// <param name="n">Number of spin-orbitals (qubits).</param>
-    /// <returns>An <see cref="OptimizationResult"/>.</returns>
+    /// <returns>An <see cref="T:Encodings.Optimization.OptimizationResult"/>.</returns>
     let optimizeStandard
         (costFn : CostFunction)
         (coefficientFactory : string -> Complex option)
@@ -191,14 +201,14 @@ module Optimization =
 
     /// <summary>
     /// Evaluate a custom encoder (e.g., from an external optimiser generating trees)
-    /// without needing to construct a full <see cref="EncodingCandidate"/>.
+    /// without needing to construct a full <see cref="T:Encodings.Optimization.EncodingCandidate"/>.
     /// </summary>
     /// <param name="costFn">The cost function to evaluate.</param>
     /// <param name="name">Display name for the encoding.</param>
     /// <param name="encoder">The encoder function.</param>
     /// <param name="coefficientFactory">Molecular integral lookup.</param>
     /// <param name="n">Number of spin-orbitals (qubits).</param>
-    /// <returns>An <see cref="EvaluationResult"/>.</returns>
+    /// <returns>An <see cref="T:Encodings.Optimization.EvaluationResult"/>.</returns>
     let evaluateCustom
         (costFn : CostFunction)
         (name : string)

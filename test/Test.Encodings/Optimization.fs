@@ -31,6 +31,23 @@ module Optimization =
         Assert.True(result.Hamiltonian.SummandTerms.Length > 0)
 
     [<Fact>]
+    let ``evaluate: consumes the weighted factory and preserves a tiny standalone coefficient`` () =
+        // The Optimization path builds its Hamiltonian via computeHamiltonianWith, so
+        // it inherits the released WEIGHTED contract (factory value applied verbatim)
+        // and the cancellation-aware reduction: a tiny standalone one-body coefficient
+        // of 2e-13 must survive as ±1e-13 (II, ZI), not be pruned by an absolute floor.
+        let factory (key : string) = if key = "0,0" then Some (Complex(2e-13, 0.0)) else None
+        let candidate = { Name = "JW"; Encoder = JordanWigner.jordanWignerTerms }
+        let result = evaluate lambdaNormCost factory 2u candidate
+        let coeffOf sg =
+            match result.Hamiltonian.DistributeCoefficient.[sg] with
+            | true, r -> r.Coefficient.Real
+            | false, _ -> 0.0
+        Assert.Equal(2, result.Hamiltonian.DistributeCoefficient.SummandTerms.Length)
+        Assert.Equal(1e-13, coeffOf "II", 15)
+        Assert.Equal(-1e-13, coeffOf "ZI", 15)
+
+    [<Fact>]
     let ``evaluate: cost matches direct computation`` () =
         let candidate = { Name = "JW"; Encoder = JordanWigner.jordanWignerTerms }
         let result = evaluate lambdaNormCost allOnes 2u candidate

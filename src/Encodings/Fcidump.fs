@@ -11,7 +11,7 @@ open System.Text.RegularExpressions
 /// <para>
 /// Reads molecular integrals in the standard FCIDUMP format (Knowles &amp; Handy, 1989)
 /// used by MOLPRO, PySCF, Psi4, and other quantum chemistry packages. Produces a
-/// <c>coefficientFactory</c> function compatible with <see cref="Hamiltonian.computeHamiltonianWith"/>.
+/// <c>coefficientFactory</c> function compatible with <c>computeHamiltonianWith</c>.
 /// </para>
 /// <para>
 /// <b>Index convention:</b> FCIDUMP files use 1-based indices with zero as a sentinel.
@@ -127,7 +127,7 @@ module Fcidump =
     /// Parse an FCIDUMP file from its text content.
     /// </summary>
     /// <param name="content">The full text content of an FCIDUMP file.</param>
-    /// <returns>A <see cref="FcidumpData"/> record with parsed integrals and metadata.</returns>
+    /// <returns>A <see cref="T:Encodings.Fcidump.FcidumpData"/> record with parsed integrals and metadata.</returns>
     /// <remarks>
     /// <para>Handles both <c>&amp;END</c> and <c>/</c> header terminators.</para>
     /// <para>Indices are converted from 1-based (FCIDUMP) to 0-based internally.</para>
@@ -174,7 +174,7 @@ module Fcidump =
     /// <remarks>
     /// <para>
     /// The returned function is compatible with
-    /// <see cref="Hamiltonian.computeHamiltonianWith"/> and the Skeleton API.
+    /// <c>computeHamiltonianWith</c> and the Skeleton API.
     /// </para>
     /// <para>
     /// <b>Convention mapping:</b> The Hamiltonian module assembles
@@ -184,7 +184,7 @@ module Fcidump =
     /// the factory returns <c>½ × ⟨pq|sr⟩ = ½ × (ps|qr)</c> in chemist's notation.
     /// The ½ factor is folded in here because the Hamiltonian module does not apply it.
     /// (For a raw physicist ⟨pq|rs⟩ tensor, use
-    /// <see cref="Hamiltonian.rawPhysicistToWeightedFactory"/> instead.)
+    /// <c>rawPhysicistToWeightedFactory</c> instead.)
     /// </para>
     /// <para>
     /// The nuclear repulsion energy is <b>not</b> included in the factory output.
@@ -228,7 +228,7 @@ module Fcidump =
     /// <returns>
     /// A tuple of (coefficientFactory, coreEnergy, norb) where norb is the
     /// number of spatial orbitals (use as the <c>n</c> parameter to
-    /// <see cref="Hamiltonian.computeHamiltonianWith"/>).
+    /// <c>computeHamiltonianWith</c>).
     /// </returns>
     let parseToFactory (content : string) : (string -> Complex option) * float * int =
         let data = parse content
@@ -315,7 +315,7 @@ module Fcidump =
     /// <returns>
     /// A tuple of (factory, coreEnergy, numSpinOrbitals).
     /// Use numSpinOrbitals as the <c>n</c> parameter to
-    /// <see cref="Hamiltonian.computeHamiltonianWith"/>.
+    /// <c>computeHamiltonianWith</c>.
     /// </returns>
     let parseToSpinOrbitalFactory (content : string) : (string -> Complex option) * float * int =
         let data = parse content
