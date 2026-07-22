@@ -653,30 +653,40 @@ from cancelling contributions, while preserving standalone tiny coefficients.
 
 ---
 
-## 15a. Hamiltonian Fixture Lock (audited artifact + oracle) — `HamiltonianFixtureLock.fs` (9 tests)
+## 15a. Hamiltonian Fixture Lock (audited artifact + oracle) — `HamiltonianFixtureLock.fs` (11 tests)
 
 An independent, authoritative acceptance lock. The integrals are the **byte-for-byte
-vendored** audited research artifact
-(`johnazariah/encodings-research` @ `1e000bbc…`,
-`papers/results/h2_sto3g/physicist_spin_integrals.json`, file SHA-256
-`6539afb3…`), copied verbatim into `fixtures/physicist_spin_integrals.json`. The test
-proves exact identity by recomputing the file's SHA-256 and asserting it equals the
-authoritative source hash — not a rounded reconstruction. Integral inputs are **not**
-regenerated in-test; only the direct 16×16 second-quantized oracle and the
-per-particle-number sector eigenvalues (which consume those frozen inputs) are computed
-here, asserted against literal frozen expected arrays.
+vendored** audited research artifact, pinned to its **immutable source object** (commit
++ git blob, not a mutable branch):
+
+- repo `johnazariah/encodings-research`
+- commit `1e000bbc9664b8e5cfef48608d07364279c0a54f`
+- path `papers/results/h2_sto3g/physicist_spin_integrals.json`
+- git blob SHA-1 `e0477e70c0dfd35b865000bb23b7b31882b062d3`
+- file SHA-256 `6539afb30a1c03ec89202a2960a06c6580a91afaebf13a6cadbcfd32c2d71812`
+
+copied verbatim into `fixtures/physicist_spin_integrals.json`, with a sidecar
+`fixtures/physicist_spin_integrals.provenance.json` recording all four identifiers.
+The test recomputes both the git blob SHA-1 and the file SHA-256 over the vendored
+bytes and asserts they equal the authoritative values — proving object-level identity,
+not a rounded reconstruction. Integral inputs are **not** regenerated in-test; only the
+direct 16×16 second-quantized oracle and the per-particle-number sector eigenvalues
+(which consume those frozen inputs) are computed here, asserted against literal frozen
+expected arrays.
 
 | # | What is tested | Style |
 |---|----------------|-------|
-| 1 | The vendored fixture is byte-for-byte identical to the audited research artifact (recomputed SHA-256 = authoritative `6539afb3…`) | Fact |
-| 2 | The fixture declares exactly 4 one-body + 32 raw two-body entries | Fact |
-| 3 | Representative fixture integral values match the canonical artifact **bit-for-bit** (e.g. h₀₀ = −1.2533097866459773, ⟨00\|00⟩ = 0.6747559268144484), not tolerance-only | Fact |
-| 4 | Named raw adapter reproduces the complete 15-entry coefficient map (no extra/missing terms; four-body ±0.045302615504) | Fact |
-| 5 | JW-encoded fixture Hamiltonian matches the direct 16×16 oracle **entrywise** (occupation basis, zero imaginary) | Fact |
-| 6 | Each particle-number sector matches its **literal frozen eigenvalue array** — dims 1/4/6/4/1, multiplicities and ascending order asserted (N4 = 0.2080748418) | Fact |
-| 7 | Sector eigenvalues **union to the full 16-eigenvalue spectrum**; ground −1.8523881736 (N=2 sector); HF diagonal[3] = −1.8318636465 | Fact |
-| 8 | Metrics lock: 15 terms, weight 32, 15 rotations, 36 CNOTs, 1-norm 2.6992778241 | Fact |
-| 9 | Legacy weighted path on independently pre-adapted fixture data equals the named raw-adapter path | Fact |
+| 1 | Vendored file SHA-256 == authoritative source hash `6539afb3…` | Fact |
+| 2 | Vendored file git blob SHA-1 == immutable source object id `e0477e70…` | Fact |
+| 3 | Sidecar provenance records all four immutable identifiers (repo/commit/path/blob/sha256), agreeing with the test constants **and** the recomputed hashes | Fact |
+| 4 | The fixture declares exactly 4 one-body + 32 raw two-body entries | Fact |
+| 5 | Representative fixture integral values match the canonical artifact **bit-for-bit** (e.g. h₀₀ = −1.2533097866459773, ⟨00\|00⟩ = 0.6747559268144484), not tolerance-only | Fact |
+| 6 | Named raw adapter reproduces the complete 15-entry coefficient map (no extra/missing terms; four-body ±0.045302615504) | Fact |
+| 7 | JW-encoded fixture Hamiltonian matches the direct 16×16 oracle **entrywise** (occupation basis, zero imaginary) | Fact |
+| 8 | Each particle-number sector matches its **literal frozen eigenvalue array** — dims 1/4/6/4/1, multiplicities and ascending order asserted (N4 = 0.2080748418) | Fact |
+| 9 | Sector eigenvalues **union to the full 16-eigenvalue spectrum**; ground −1.8523881736 (N=2 sector); HF diagonal[3] = −1.8318636465 | Fact |
+| 10 | Metrics lock: 15 terms, weight 32, 15 rotations, 36 CNOTs, 1-norm 2.6992778241 | Fact |
+| 11 | Legacy weighted path on independently pre-adapted fixture data equals the named raw-adapter path | Fact |
 
 Literal frozen sector eigenvalue arrays (ascending):
 - N=0 (dim 1): `[0.0]`
@@ -709,7 +719,7 @@ Literal frozen sector eigenvalue arrays (ascending):
 | Bosonic-to-qubit encodings | 70 | Theory + Fact + cross-encoding | **High** — matrix construction, Pauli decomposition, weight bounds, multi-mode embedding, number-operator roundtrip |
 | Qubit tapering — Clifford conjugation | 25 | Exact letters/phases + dense-matrix spectra | **High** — all 16 CNOT conjugations, U·H·U† to machine precision, H₂ sector spectra |
 | Index/label ordering (state-resolved) | 10 | Occupation-basis diagonal reads + exact a†₂ string | **High** — number operators verified on the intended occupation basis; catches bit reversal that spectra miss |
-| Hamiltonian coefficients & factory contract | 34 | Exact coefficients + independent 16×16 raw oracle + **byte-for-byte audited artifact** + per-sector eigenvalue arrays + six-encoding spectra + tiny-survival | **High** — pins H₂/STO-3G coefficients, restored **weighted** contract + named raw adapter, ½+order defect proofs, cancellation-aware tiny survival, SHA-256-locked vendored research fixture, literal N=0..4 sector spectra, trace/HF-diagonal/particle-sector anchors |
+| Hamiltonian coefficients & factory contract | 36 | Exact coefficients + independent 16×16 raw oracle + **immutable-source-pinned audited artifact (commit+blob+sha256)** + per-sector eigenvalue arrays + six-encoding spectra + tiny-survival | **High** — pins H₂/STO-3G coefficients, restored **weighted** contract + named raw adapter, ½+order defect proofs, cancellation-aware tiny survival, git-blob/SHA-256-locked vendored research fixture, literal N=0..4 sector spectra, trace/HF-diagonal/particle-sector anchors |
 
 ### What is *not* tested
 

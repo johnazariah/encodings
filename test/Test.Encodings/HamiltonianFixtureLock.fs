@@ -22,12 +22,15 @@ module HamiltonianFixtureLock =
     open Xunit
 
     // ── Authoritative source identity (audited research artifact) ───────
+    // Immutable pin: research COMMIT + git BLOB (not a mutable branch).
     // johnazariah/encodings-research @ 1e000bbc..., papers/results/h2_sto3g/
     let [<Literal>] SourceRepo   = "johnazariah/encodings-research"
     let [<Literal>] SourceCommit = "1e000bbc9664b8e5cfef48608d07364279c0a54f"
     let [<Literal>] SourcePath   = "papers/results/h2_sto3g/physicist_spin_integrals.json"
-    let [<Literal>] SourceSha256 = "6539afb30a1c03ec89202a2960a06c6580a91afaebf13a6cadbcfd32c2d71812"
+    let [<Literal>] SourceBlob   = "e0477e70c0dfd35b865000bb23b7b31882b062d3"          // git blob SHA-1
+    let [<Literal>] SourceSha256 = "6539afb30a1c03ec89202a2960a06c6580a91afaebf13a6cadbcfd32c2d71812"  // file SHA-256
     let [<Literal>] FixtureName  = "physicist_spin_integrals.json"
+    let [<Literal>] ProvenanceName = "physicist_spin_integrals.provenance.json"
 
     // ── Fixture loading ─────────────────────────────────────────────────
 
@@ -49,6 +52,13 @@ module HamiltonianFixtureLock =
     let private sha256Hex (bytes : byte[]) =
         use sha = SHA256.Create()
         sha.ComputeHash bytes |> Array.map (fun b -> b.ToString("x2")) |> String.concat ""
+
+    /// Git blob object id of a file's bytes: SHA-1 of "blob <len>\0" ++ bytes.
+    let private gitBlobSha1 (bytes : byte[]) =
+        let header = System.Text.Encoding.ASCII.GetBytes(sprintf "blob %d\u0000" bytes.Length)
+        use sha1 = SHA1.Create()
+        sha1.ComputeHash(Array.append header bytes)
+        |> Array.map (fun b -> b.ToString("x2")) |> String.concat ""
 
     // Native artifact schema: one_body_spin / two_body_spin_physicist arrays of
     // {p,q,r,s?,value} objects. Raw single-bar physicist tensor ⟨pq|rs⟩.
@@ -83,13 +93,44 @@ module HamiltonianFixtureLock =
         | true, reg -> reg.Coefficient.Real
         | false, _ -> 0.0
 
-    // ── (1) Byte-for-byte identity with the audited source artifact ─────
+    // ── (1) Immutable-source identity with the audited artifact ─────────
+    //  Pins the immutable source object (commit + git blob), not a mutable branch:
+    //  both the git blob SHA-1 and the file SHA-256 of the vendored bytes must equal
+    //  the authoritative values, and the sidecar provenance metadata must agree.
 
     [<Fact>]
-    let ``vendored fixture is byte-for-byte identical to the audited research artifact`` () =
+    let ``vendored fixture file SHA-256 matches the authoritative source hash`` () =
         // Proves the package fixture is the exact audited artifact, not a rounded
-        // reconstruction: recomputed SHA-256 must equal the authoritative source hash.
+        // reconstruction.
         Assert.Equal(SourceSha256, sha256Hex (fixtureBytes ()))
+
+    [<Fact>]
+    let ``vendored fixture git blob SHA-1 matches the immutable source object id`` () =
+        // The git blob id is the immutable content-addressed object in the source
+        // repo at commit 1e000bbc…; recomputing it over the vendored bytes proves
+        // object-level identity independent of the SHA-256.
+        Assert.Equal(SourceBlob, gitBlobSha1 (fixtureBytes ()))
+
+    [<Fact>]
+    let ``sidecar provenance records the immutable source (commit, path, blob, sha256)`` () =
+        // The four immutable identifiers are recorded next to the fixture and must
+        // agree with the test's constants AND with the recomputed hashes — so the
+        // pinned provenance cannot silently drift from either.
+        match locateFixture ProvenanceName with
+        | None -> failwithf "fixtures/%s not found" ProvenanceName
+        | Some path ->
+            use doc = JsonDocument.Parse(File.ReadAllText path)
+            let root = doc.RootElement
+            let field (name : string) = root.GetProperty(name).GetString()
+            Assert.Equal(SourceRepo,   field "source_repo")
+            Assert.Equal(SourceCommit, field "source_commit")
+            Assert.Equal(SourcePath,   field "source_path")
+            Assert.Equal(SourceBlob,   field "git_blob_sha1")
+            Assert.Equal(SourceSha256, field "file_sha256")
+            // Cross-check the recorded hashes against the actual vendored bytes.
+            let bytes = fixtureBytes ()
+            Assert.Equal(field "git_blob_sha1", gitBlobSha1 bytes)
+            Assert.Equal(field "file_sha256", sha256Hex bytes)
 
     [<Fact>]
     let ``fixture declares 4 one-body and 32 raw two-body entries`` () =

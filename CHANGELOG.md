@@ -37,10 +37,12 @@ All notable changes to FockMap will be documented in this file.
   the Hamiltonian/Optimization/Trotter/FCIDUMP surfaces so they no longer link out to
   unrelated external pages.
 - Added an authoritative acceptance lock: the byte-for-byte vendored audited research
-  artifact (`johnazariah/encodings-research` H₂/STO-3G physicist spin integrals,
-  SHA-256-verified) with literal per-particle-number sector eigenvalue arrays and a
-  hardened `scripts/check-doc-samples.sh` that executes every README/cookbook snippet
-  with exact output assertions.
+  artifact (`johnazariah/encodings-research` H₂/STO-3G physicist spin integrals),
+  pinned to its immutable source object — commit `1e000bbc…`, git blob `e0477e70…`,
+  file SHA-256 `6539afb3…` — with a sidecar provenance record, literal
+  per-particle-number sector eigenvalue arrays, and a hardened
+  `scripts/check-doc-samples.sh` that executes every README/cookbook snippet with
+  exact output assertions.
 
 ### 🐛 Fixes
 
