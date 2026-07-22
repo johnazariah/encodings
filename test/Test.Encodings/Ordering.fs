@@ -72,6 +72,22 @@ module Ordering =
     let private combine (a: PauliRegisterSequence) (b: PauliRegisterSequence) =
         PauliRegisterSequence(Array.append a.SummandTerms b.SummandTerms)
 
+    // ── The raising operator's exact string locks the index-0-leftmost / Z-string
+    //    convention: a†₂ (n=4) = ½·ZZXI − (i/2)·ZZYI (Z-string on modes 0,1;
+    //    X/Y on mode 2; mode 0 is the leftmost character). ──
+    [<Fact>]
+    let ``JW a-dagger_2 (n=4) is exactly 0.5 ZZXI - 0.5i ZZYI`` () =
+        let d = (jordanWignerTerms Raise 2u 4u).DistributeCoefficient
+        Assert.Equal(2, d.SummandTerms.Length)
+        let xf, xr = d.["ZZXI"]
+        let yf, yr = d.["ZZYI"]
+        Assert.True(xf, "expected a ZZXI term")
+        Assert.True(yf, "expected a ZZYI term")
+        Assert.True(abs (xr.Coefficient.Real - 0.5) < 1e-9 && abs xr.Coefficient.Imaginary < 1e-9,
+            sprintf "ZZXI should be +0.5, got %A" xr.Coefficient)
+        Assert.True(abs yr.Coefficient.Real < 1e-9 && abs (yr.Coefficient.Imaginary + 0.5) < 1e-9,
+            sprintf "ZZYI should be -0.5i, got %A" yr.Coefficient)
+
     // ── The JW number operator carries Z at string position j (mode 0 leftmost). ──
     [<Theory>]
     [<InlineData(0, "ZIII")>]

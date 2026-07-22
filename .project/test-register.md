@@ -581,22 +581,24 @@ sub-1e-9 floating-point noise in an otherwise real coefficient.
 
 ---
 
-## 14. Index/Label Ordering (state-resolved) — `Ordering.fs` (9 tests)
+## 14. Index/Label Ordering (state-resolved) — `Ordering.fs` (10 tests)
 
 Locks in the two ordering conventions and how they relate. `PauliRegister`
 strings put mode/qubit 0 as the **leftmost** character; occupation integers
 weight mode j by 2ʲ (mode 0 = least-significant bit), so the H₂ Hartree–Fock
 state (modes 0,1 occupied) is the integer 3 = 0b0011. Reading a FockMap string
 in the occupation basis (mode j → bit 2ʲ) requires reversing the string — the
-same reversal as the Qiskit/OpenQASM label convention. Spectrum-only checks
-cannot detect a bit reversal, so these tests are state-resolved.
+same reversal that converts to a Qiskit-style Pauli-label string. (OpenQASM has
+no Pauli-label string convention; it indexes qubits explicitly.) Spectrum-only
+checks cannot detect a bit reversal, so these tests are state-resolved.
 
 | # | What is tested | Style |
 |---|----------------|-------|
-| 1 | JW number operator nⱼ = ½(I − Zⱼ) has its Z at string position j (mode 0 leftmost) | Theory (4) |
-| 2 | nⱼ reads mode j as bit 2ʲ across the entire occupation basis (all k, n=2..4) | Theory (3) |
-| 3 | H₂ Hartree–Fock state = occupation integer 3 (modes 0,1 occupied); total number operator gives N=2 | Fact |
-| 4 | Bit reversal preserves the spectrum but flips the occupation reading (why spectrum tests are insufficient) | Fact |
+| 1 | JW a†₂ (n=4) is exactly ½·ZZXI − (i/2)·ZZYI — Z-string on modes 0,1, mode 0 leftmost | Fact |
+| 2 | JW number operator nⱼ = ½(I − Zⱼ) has its Z at string position j (mode 0 leftmost) | Theory (4) |
+| 3 | nⱼ reads mode j as bit 2ʲ across the entire occupation basis (all k, n=2..4) | Theory (3) |
+| 4 | H₂ Hartree–Fock state = occupation integer 3 (modes 0,1 occupied); total number operator gives N=2 | Fact |
+| 5 | Bit reversal preserves the spectrum but flips the occupation reading (why spectrum tests are insufficient) | Fact |
 
 Related: `PauliRegister.fs` tests confirm position 0 is the leftmost character
 (`WithOperatorAt 0 X` → "XIII"; string position i maps to mode i).
@@ -651,7 +653,7 @@ dropped or the r↔s swap is omitted.
 | Mixed systems (fermion + boson) | 5 | Fact-based | **Medium** — covers canonical paths; larger mixed expressions untested |
 | Bosonic-to-qubit encodings | 70 | Theory + Fact + cross-encoding | **High** — matrix construction, Pauli decomposition, weight bounds, multi-mode embedding, number-operator roundtrip |
 | Qubit tapering — Clifford conjugation | 25 | Exact letters/phases + dense-matrix spectra | **High** — all 16 CNOT conjugations, U·H·U† to machine precision, H₂ sector spectra |
-| Index/label ordering (state-resolved) | 9 | Occupation-basis diagonal reads | **High** — number operators verified on the intended occupation basis; catches bit reversal that spectra miss |
+| Index/label ordering (state-resolved) | 10 | Occupation-basis diagonal reads + exact a†₂ string | **High** — number operators verified on the intended occupation basis; catches bit reversal that spectra miss |
 | Hamiltonian coefficients & factory contract | 12 | Exact coefficients + dense fermionic oracle + six-encoding spectra | **High** — pins H₂/STO-3G coefficients, raw-physicist contract, ½+swap defect proofs, zero filtering |
 
 ### What is *not* tested
