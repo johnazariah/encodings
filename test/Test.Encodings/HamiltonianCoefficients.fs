@@ -251,6 +251,22 @@ module HamiltonianCoefficients =
                     for j in 0 .. dim - 1 do acc.[i, j] <- acc.[i, j] + t.Coefficient * m.[i].[j]
             acc
 
+        /// Encoded matrix in the OCCUPATION basis (mode j → bit 2ʲ): the FockMap
+        /// string is qubit-0-leftmost, so the signature is reversed before the
+        /// Kronecker product. Diagonal entry k then reads occupation integer k
+        /// (e.g. k = 3 = 0b0011 is the H₂ Hartree–Fock state, modes 0,1 occupied),
+        /// matching the direct fermionic oracle's basis.
+        let matrixOfCOcc (h : PauliRegisterSequence) =
+            let terms = h.DistributeCoefficient.SummandTerms
+            let n = terms.[0].Signature.Length
+            let dim = 1 <<< n
+            let acc = Array2D.zeroCreate<Complex> dim dim
+            for t in terms do
+                let m = t.Signature |> Seq.rev |> Seq.map pm |> Seq.reduce kron
+                for i in 0 .. dim - 1 do
+                    for j in 0 .. dim - 1 do acc.[i, j] <- acc.[i, j] + t.Coefficient * m.[i].[j]
+            acc
+
     [<Fact>]
     let ``encoded H2 spectrum matches the direct dense fermionic matrix`` () =
         let factory, nso = h2Factory ()
@@ -376,6 +392,47 @@ module HamiltonianCoefficients =
         Assert.Equal(s seqH, s cacheH)
         Assert.Equal(s seqH, s fullSk)
         Assert.Equal(s seqH, s sparseSk)
+
+    [<Fact>]
+    let ``H2 direct-oracle anchors: interleaved spin expansion, trace, HF diagonal`` () =
+        // Independent direct-oracle acceptance anchors (encodings-research):
+        //  • interleaved spin expansion → 4 nonzero one-body + 32 nonzero two-body
+        //    factory entries;
+        //  • Tr(H)/16 = the identity coefficient IIII = −0.8121706072 (basis-invariant);
+        //  • occupation-basis diagonal at the HF state (integer 3 = 0b0011, modes 0,1
+        //    occupied) = the electronic HF energy −1.8318636465, with Vnn kept separate.
+        let factory, nso = h2Factory ()
+        // (1) Factory entry counts (interleaved 0α,0β,1α,1β spin-orbitals).
+        let mutable one = 0
+        let mutable two = 0
+        for i in 0 .. nso - 1 do
+            for j in 0 .. nso - 1 do
+                if (factory (sprintf "%d,%d" i j)).IsSome then one <- one + 1
+                for k in 0 .. nso - 1 do
+                    for l in 0 .. nso - 1 do
+                        if (factory (sprintf "%d,%d,%d,%d" i j k l)).IsSome then two <- two + 1
+        Assert.Equal(4, one)
+        Assert.Equal(32, two)
+        // (2) Direct dense fermionic matrix (mode j → bit 2ʲ occupation basis).
+        let fermionic = Fermion.matrixOf factory nso
+        let trace = [ for i in 0 .. Fermion.dim - 1 -> fermionic.[i, i] ] |> List.sum
+        Assert.Equal(-0.8121706072, trace / float Fermion.dim, 8)
+        Assert.Equal(-1.8318636465, fermionic.[3, 3], 8)
+
+    [<Fact>]
+    let ``H2 JW-encoded HF diagonal equals the HF energy in the occupation basis`` () =
+        // The encoded (qubit-0-leftmost) Hamiltonian, read in the occupation basis
+        // (signature reversed so mode j → bit 2ʲ), must have its HF diagonal entry
+        // (integer 3, modes 0,1 occupied) equal to the electronic HF energy. A bit
+        // reversal would move this off diagonal index 3, so this is a state-resolved
+        // check the spectrum alone cannot make.
+        let factory, nso = h2Factory ()
+        let ham = computeHamiltonianWith jordanWignerTerms factory (uint32 nso)
+        let occ = Enc.matrixOfCOcc ham
+        Assert.Equal(-1.8318636465, occ.[3, 3].Real, 8)
+        // Trace is basis-invariant → identity coefficient.
+        let trace = [ for i in 0 .. 15 -> occ.[i, i] ] |> List.sumBy (fun c -> c.Real)
+        Assert.Equal(-0.8121706072, trace / 16.0, 8)
 
     [<Fact>]
     let ``H2 spectrum agrees across all six fermion-to-qubit encodings`` () =
