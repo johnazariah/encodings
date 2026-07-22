@@ -653,24 +653,37 @@ from cancelling contributions, while preserving standalone tiny coefficients.
 
 ---
 
-## 15a. Hamiltonian Fixture Lock (frozen JSON + oracle) — `HamiltonianFixtureLock.fs` (7 tests)
+## 15a. Hamiltonian Fixture Lock (audited artifact + oracle) — `HamiltonianFixtureLock.fs` (9 tests)
 
-An independent acceptance lock that loads the canonical H₂/STO-3G integrals **and**
-every expected value from a committed JSON fixture
-(`fixtures/h2_sto3g_raw.json`, raw single-bar physicist tensor with provenance
-metadata and a tamper-evident SHA-256 integral hash). Inputs are **not** regenerated
-in-test; only the direct 16×16 second-quantized oracle (which consumes those frozen
-inputs) is computed here.
+An independent, authoritative acceptance lock. The integrals are the **byte-for-byte
+vendored** audited research artifact
+(`johnazariah/encodings-research` @ `1e000bbc…`,
+`papers/results/h2_sto3g/physicist_spin_integrals.json`, file SHA-256
+`6539afb3…`), copied verbatim into `fixtures/physicist_spin_integrals.json`. The test
+proves exact identity by recomputing the file's SHA-256 and asserting it equals the
+authoritative source hash — not a rounded reconstruction. Integral inputs are **not**
+regenerated in-test; only the direct 16×16 second-quantized oracle and the
+per-particle-number sector eigenvalues (which consume those frozen inputs) are computed
+here, asserted against literal frozen expected arrays.
 
 | # | What is tested | Style |
 |---|----------------|-------|
-| 1 | The recomputed SHA-256 of the integral block matches the recorded provenance hash (tamper-evidence) | Fact |
-| 2 | The fixture declares exactly 4 one-body + 32 raw two-body entries and 4 spin-orbitals | Fact |
-| 3 | Named raw adapter on the fixture reproduces the complete 15-entry coefficient map (no extra/missing terms) | Fact |
-| 4 | JW-encoded fixture Hamiltonian matches the direct 16×16 oracle **entrywise** (occupation basis, zero imaginary) | Fact |
-| 5 | Oracle HF row 3 = −1.8318636465, exact particle-number sectors, ground −1.8523881736 (all from the fixture) | Fact |
-| 6 | Metrics lock from the fixture: 15 terms, weight 32, 15 rotations, 36 CNOTs, 1-norm 2.6992778241 | Fact |
-| 7 | Legacy weighted path on independently pre-adapted fixture data equals the named raw-adapter path | Fact |
+| 1 | The vendored fixture is byte-for-byte identical to the audited research artifact (recomputed SHA-256 = authoritative `6539afb3…`) | Fact |
+| 2 | The fixture declares exactly 4 one-body + 32 raw two-body entries | Fact |
+| 3 | Representative fixture integral values match the canonical artifact **bit-for-bit** (e.g. h₀₀ = −1.2533097866459773, ⟨00\|00⟩ = 0.6747559268144484), not tolerance-only | Fact |
+| 4 | Named raw adapter reproduces the complete 15-entry coefficient map (no extra/missing terms; four-body ±0.045302615504) | Fact |
+| 5 | JW-encoded fixture Hamiltonian matches the direct 16×16 oracle **entrywise** (occupation basis, zero imaginary) | Fact |
+| 6 | Each particle-number sector matches its **literal frozen eigenvalue array** — dims 1/4/6/4/1, multiplicities and ascending order asserted (N4 = 0.2080748418) | Fact |
+| 7 | Sector eigenvalues **union to the full 16-eigenvalue spectrum**; ground −1.8523881736 (N=2 sector); HF diagonal[3] = −1.8318636465 | Fact |
+| 8 | Metrics lock: 15 terms, weight 32, 15 rotations, 36 CNOTs, 1-norm 2.6992778241 | Fact |
+| 9 | Legacy weighted path on independently pre-adapted fixture data equals the named raw-adapter path | Fact |
+
+Literal frozen sector eigenvalue arrays (ascending):
+- N=0 (dim 1): `[0.0]`
+- N=1 (dim 4): `[-1.2533097866459773, -1.2533097866459773, -0.4750688487721783, -0.4750688487721783]`
+- N=2 (dim 6): `[-1.8523881735695826, -1.2458776960825393 ×3, -0.8834567720521458, -0.2319616659618189]`
+- N=3 (dim 4): `[-1.1607201545632546, -1.1607201545632546, -0.3595836390134429, -0.3595836390134429]`
+- N=4 (dim 1): `[0.2080748418414580]`
 
 ---
 
@@ -696,7 +709,7 @@ inputs) is computed here.
 | Bosonic-to-qubit encodings | 70 | Theory + Fact + cross-encoding | **High** — matrix construction, Pauli decomposition, weight bounds, multi-mode embedding, number-operator roundtrip |
 | Qubit tapering — Clifford conjugation | 25 | Exact letters/phases + dense-matrix spectra | **High** — all 16 CNOT conjugations, U·H·U† to machine precision, H₂ sector spectra |
 | Index/label ordering (state-resolved) | 10 | Occupation-basis diagonal reads + exact a†₂ string | **High** — number operators verified on the intended occupation basis; catches bit reversal that spectra miss |
-| Hamiltonian coefficients & factory contract | 32 | Exact coefficients + independent 16×16 raw oracle + frozen JSON fixture/hash + six-encoding spectra + tiny-survival | **High** — pins H₂/STO-3G coefficients, restored **weighted** contract + named raw adapter, ½+order defect proofs, cancellation-aware tiny survival, provenance-locked fixture, trace/HF-diagonal/particle-sector anchors |
+| Hamiltonian coefficients & factory contract | 34 | Exact coefficients + independent 16×16 raw oracle + **byte-for-byte audited artifact** + per-sector eigenvalue arrays + six-encoding spectra + tiny-survival | **High** — pins H₂/STO-3G coefficients, restored **weighted** contract + named raw adapter, ½+order defect proofs, cancellation-aware tiny survival, SHA-256-locked vendored research fixture, literal N=0..4 sector spectra, trace/HF-diagonal/particle-sector anchors |
 
 ### What is *not* tested
 

@@ -62,7 +62,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="fixtures\h2_sto3g_raw.json">
+    <None Include="fixtures\physicist_spin_integrals.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

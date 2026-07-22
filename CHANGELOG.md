@@ -36,6 +36,11 @@ All notable changes to FockMap will be documented in this file.
   canonical 15-term H₂ output, and fixed generated-docs `<see cref>` references for
   the Hamiltonian/Optimization/Trotter/FCIDUMP surfaces so they no longer link out to
   unrelated external pages.
+- Added an authoritative acceptance lock: the byte-for-byte vendored audited research
+  artifact (`johnazariah/encodings-research` H₂/STO-3G physicist spin integrals,
+  SHA-256-verified) with literal per-particle-number sector eigenvalue arrays and a
+  hardened `scripts/check-doc-samples.sh` that executes every README/cookbook snippet
+  with exact output assertions.
 
 ### 🐛 Fixes
 
