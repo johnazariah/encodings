@@ -144,6 +144,51 @@ module HamiltonianCoefficients =
                     for q in p + 1 .. dim - 1 do off <- off + a.[p, q] * a.[p, q]
             [ for i in 0 .. dim - 1 -> a.[i, i] ] |> List.sort
 
+        // Real-symmetric Jacobi for an arbitrary dimension.
+        let private jacobiN (n : int) (a0 : float[,]) =
+            let a = Array2D.copy a0
+            let mutable off = 1.0
+            let mutable it = 0
+            while off > 1e-11 && it < 2000 do
+                it <- it + 1
+                for p in 0 .. n - 2 do
+                    for q in p + 1 .. n - 1 do
+                        if abs a.[p, q] > 1e-300 then
+                            let phi = (a.[q, q] - a.[p, p]) / (2.0 * a.[p, q])
+                            let t = if phi = 0.0 then 1.0 else float (sign phi) / (abs phi + sqrt (phi * phi + 1.0))
+                            let c = 1.0 / sqrt (t * t + 1.0)
+                            let s = t * c
+                            for k in 0 .. n - 1 do
+                                let akp, akq = a.[k, p], a.[k, q]
+                                a.[k, p] <- c * akp - s * akq
+                                a.[k, q] <- s * akp + c * akq
+                            for k in 0 .. n - 1 do
+                                let apk, aqk = a.[p, k], a.[q, k]
+                                a.[p, k] <- c * apk - s * aqk
+                                a.[q, k] <- s * apk + c * aqk
+                off <- 0.0
+                for p in 0 .. n - 2 do
+                    for q in p + 1 .. n - 1 do off <- off + a.[p, q] * a.[p, q]
+            [ for i in 0 .. n - 1 -> a.[i, i] ] |> List.sort
+
+        /// Eigenvalues of a complex-Hermitian matrix via the 2n×2n real embedding
+        /// [[Re,−Im],[Im,Re]] (each eigenvalue appears twice). Required for tree
+        /// encodings, whose Y–Y couplings give genuinely imaginary off-diagonals —
+        /// taking `.Real` of the dense matrix would silently corrupt the spectrum.
+        let hermEigenvalues (h : Complex[,]) =
+            let n = Array2D.length1 h
+            let big = Array2D.zeroCreate (2 * n) (2 * n)
+            for i in 0 .. n - 1 do
+                for j in 0 .. n - 1 do
+                    big.[i, j] <- h.[i, j].Real
+                    big.[i + n, j + n] <- h.[i, j].Real
+                    big.[i, j + n] <- -h.[i, j].Imaginary
+                    big.[i + n, j] <- h.[i, j].Imaginary
+            jacobiN (2 * n) big
+            |> List.mapi (fun i v -> (i, v))
+            |> List.filter (fun (i, _) -> i % 2 = 0)
+            |> List.map snd
+
         /// Direct dense H with a configurable two-body prefactor (`half`) and
         /// annihilator order (`swap` = a_l a_k when true). The library uses
         /// half = 0.5 and swap = true; the defect variants (no ½, unswapped) are
@@ -191,6 +236,19 @@ module HamiltonianCoefficients =
                 let m = t.Signature |> Seq.map pm |> Seq.reduce kron
                 for i in 0 .. dim - 1 do
                     for j in 0 .. dim - 1 do acc.[i, j] <- acc.[i, j] + (t.Coefficient * m.[i].[j]).Real
+            acc
+
+        /// Full complex-Hermitian dense matrix (no `.Real` truncation). Needed for
+        /// encodings that produce imaginary off-diagonal entries (e.g. tree Y–Y terms).
+        let matrixOfC (h : PauliRegisterSequence) =
+            let terms = h.DistributeCoefficient.SummandTerms
+            let n = terms.[0].Signature.Length
+            let dim = 1 <<< n
+            let acc = Array2D.zeroCreate<Complex> dim dim
+            for t in terms do
+                let m = t.Signature |> Seq.map pm |> Seq.reduce kron
+                for i in 0 .. dim - 1 do
+                    for j in 0 .. dim - 1 do acc.[i, j] <- acc.[i, j] + t.Coefficient * m.[i].[j]
             acc
 
     [<Fact>]
@@ -320,21 +378,25 @@ module HamiltonianCoefficients =
         Assert.Equal(s seqH, s sparseSk)
 
     [<Fact>]
-    let ``H2 spectrum agrees across the index-set and binary-tree encodings`` () =
-        // Jordan-Wigner, Bravyi-Kitaev, Parity, and the balanced binary tree all
-        // reproduce the full 16-eigenvalue H₂ spectrum (ground −1.852388).
-        // NOTE: the path-based ternary (`ternaryTreeTerms`) and Vlasov encodings
-        // currently give a DIFFERENT spectrum (ground −1.831864 = the HF energy) —
-        // a pre-existing two-body-coupling defect in the path-based encoders,
-        // independent of the Hamiltonian coefficient contract (reported separately).
+    let ``H2 spectrum agrees across all six fermion-to-qubit encodings`` () =
+        // Jordan-Wigner, Bravyi-Kitaev, Parity, and the three tree encodings
+        // (balanced binary, ternary, Vlasov) must all reproduce the full
+        // 16-eigenvalue H₂ spectrum (ground −1.852388 Ha). The tree encodings
+        // emit Y–Y couplings, so their dense matrices are genuinely complex-
+        // Hermitian; the spectrum must be taken with `hermEigenvalues`, not by
+        // truncating to the real part.
         let factory, nso = h2Factory ()
         let n = uint32 nso
-        let specOf enc = Fermion.eigenvalues (Enc.matrixOf (computeHamiltonianWith enc factory n))
+        let specOf enc = Fermion.hermEigenvalues (Enc.matrixOfC (computeHamiltonianWith enc factory n))
         let jw = specOf jordanWignerTerms
         Assert.Equal(16, jw.Length)
         Assert.Equal(-1.852388, List.head jw, 5)
         for (name, enc) in
-            [ "BK", bravyiKitaevTerms; "Parity", parityTerms; "BinTree", balancedBinaryTreeTerms ] do
+            [ "BK", bravyiKitaevTerms
+              "Parity", parityTerms
+              "BinTree", balancedBinaryTreeTerms
+              "TerTree", ternaryTreeTerms
+              "Vlasov", vlasovTreeTerms ] do
             let s = specOf enc
             Assert.True(List.forall2 (fun (a : float) b -> abs (a - b) < 1e-8) jw s,
                 sprintf "%s spectrum differs from Jordan-Wigner" name)

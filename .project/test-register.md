@@ -603,23 +603,30 @@ Related: `PauliRegister.fs` tests confirm position 0 is the leftmost character
 
 ---
 
-## 15. Hamiltonian Coefficients (state/convention) — `HamiltonianCoefficients.fs` (7 tests)
+## 15. Hamiltonian Coefficients (state/convention) — `HamiltonianCoefficients.fs` (12 tests)
 
 Signature-only tests pass even when the integral/factory convention is wrong (all
 encodings share the same coefficient error). These pin exact Pauli coefficients and
-cross-check against a first-principles dense fermionic matrix, locking the factory
-coefficient contract: the caller folds the two-body ½ into the factory value; the
-library applies it verbatim. Proven to fail under a ×2 two-body perturbation.
+cross-check against a first-principles dense fermionic matrix, locking the **raw
+physicist factory contract**: the factory returns the raw ⟨pq|rs⟩ integral verbatim,
+and the library internally applies the two-body ½ prefactor and the `a_s a_r`
+annihilator order (`a†_p a†_q a_s a_r`). Proven to fail independently when the ½ is
+dropped or the r↔s swap is omitted.
 
 | # | What is tested | Style |
 |---|----------------|-------|
-| 1 | H₂/STO-3G JW Hamiltonian has exact IIII (−0.8121706072) and four-body (±0.0453026155) coefficients; 15 nonzero of 23 terms | Fact |
-| 2 | One-body coefficient applied verbatim: factory("0,0")=h → ½h·I − ½h·Z (JW's ½, not a library ½) | Fact |
-| 3 | Two-body coefficient applied verbatim with no additional ½: a†₀a†₁a₁a₀ = n₀n₁ = ¼(II−ZI−IZ+ZZ); linear in the factory value | Fact |
+| 1 | H₂/STO-3G JW Hamiltonian has exact IIII (−0.8121706072) and four-body (±0.0453026155) coefficients; 15 nonzero of 23 raw terms | Fact |
+| 2 | One-body coefficient applied verbatim: factory("0,0")=h → ½h·I − ½h·Z | Fact |
+| 3 | Two-body: library applies the ½ and the `a_s a_r` order for raw physicist input | Fact |
 | 4 | Encoded H₂ spectrum equals the direct dense fermionic matrix (same factory); ground −1.852388 preserved | Fact |
 | 5 | H₂ coefficient 1-norm equals the canonical 2.699278 (encodings-research source) | Fact |
-| 6 | A physicist-notation tensor requires the ½ and the r↔s swap (F("p,q,r,s")=½·⟨pq\|sr⟩) to match the chemist coefficients term-for-term | Fact |
-| 7 | The raw physicist adaptation (no ½, no swap) reproduces the book's wrong coefficients (IIII=−3.5608, four-body 0.0906) with identical signatures — the exact failure mode | Fact |
+| 6 | A raw physicist tensor ⟨pq\|rs⟩ is fed directly and reproduces the FCIDUMP Hamiltonian term-for-term (new contract) | Fact |
+| 7 | An old pre-adapted (½-folded, r↔s-swapped) factory now double-counts — migration hazard | Fact |
+| 8 | H₂ Hamiltonian carries no numerical-zero terms (the 8 float-noise zeros are filtered; 15 not 23) | Fact |
+| 9 | All five builders (sequential, parallel, cached, full/sparse skeleton) agree on H₂ | Fact |
+| 10 | H₂ spectrum agrees across **all six** encodings (JW, BK, Parity, binary/ternary/Vlasov trees); tree Y–Y terms make the dense matrix complex-Hermitian, so the spectrum is taken via the 2n real embedding — a `.Real` truncation would corrupt it | Fact |
+| 11 | H₂ assembly is wrong (spectrum differs) if the ½ is dropped or the r↔s swap omitted — each defect proven independently | Fact |
+| 12 | Legitimate small nonzero coefficients (±1e-6) survive the 1e-12 zero filter | Fact |
 
 ---
 
@@ -645,12 +652,12 @@ library applies it verbatim. Proven to fail under a ×2 two-body perturbation.
 | Bosonic-to-qubit encodings | 70 | Theory + Fact + cross-encoding | **High** — matrix construction, Pauli decomposition, weight bounds, multi-mode embedding, number-operator roundtrip |
 | Qubit tapering — Clifford conjugation | 25 | Exact letters/phases + dense-matrix spectra | **High** — all 16 CNOT conjugations, U·H·U† to machine precision, H₂ sector spectra |
 | Index/label ordering (state-resolved) | 9 | Occupation-basis diagonal reads | **High** — number operators verified on the intended occupation basis; catches bit reversal that spectra miss |
+| Hamiltonian coefficients & factory contract | 12 | Exact coefficients + dense fermionic oracle + six-encoding spectra | **High** — pins H₂/STO-3G coefficients, raw-physicist contract, ½+swap defect proofs, zero filtering |
 
 ### What is *not* tested
 
 - **Performance / scaling**: No benchmarks or regression tests for execution time.
 - **Large-n anti-commutation for BK and Parity**: Anti-commutation relations are verified for tree encodings but not for Bravyi-Kitaev or Parity at n > 2.
-- **Hamiltonian with real integrals**: The Hamiltonian builder is tested with unit coefficients only, not with physically meaningful H₂ integrals.
 - **Bosonic anti-commutation verification**: Bosonic encodings are tested for correct Pauli decomposition and weight bounds, but [b, b†] = I is not verified at the Pauli level for all encodings.
 - **Large-cutoff bosonic convergence**: Truncation encodings are tested up to d = 8; convergence behaviour at large d is not benchmarked.
 - **Error messages / diagnostics**: Invalid-input tests verify `None`/empty returns but do not check specific error text.
