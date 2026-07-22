@@ -16,6 +16,7 @@ module HamiltonianCoefficients =
     open Encodings.BravyiKitaev
     open Encodings.MajoranaEncoding
     open Encodings.TreeEncoding
+    open Encodings.Trotterization
     open Xunit
 
     // Exact H2/STO-3G integrals (2 spatial orbitals -> 4 spin-orbitals).
@@ -390,6 +391,18 @@ module HamiltonianCoefficients =
         Assert.Equal(32, costs.TotalPauliWeight)
         Assert.Equal(4, costs.MaxPauliWeight)
         Assert.Equal(-0.8121706072, costs.IdentityCoeff, 8)
+
+    [<Fact>]
+    let ``H2 downstream Trotter metrics are consistent with 15 terms (36 CNOTs, not 84)`` () =
+        // The retained zero terms previously inflated the first-order Trotter step to
+        // 23 rotations / 84 CNOTs. With the numerical-zero prune the H₂ step has 15
+        // rotations and 36 CNOTs (Σ 2(w−1): six weight-2 terms → 12, four weight-4 → 24).
+        let factory, nso = h2Factory ()
+        let ham = computeHamiltonianWith jordanWignerTerms factory (uint32 nso)
+        let stats = trotterStepStats (firstOrderTrotter 0.1 ham)
+        Assert.Equal(15, stats.RotationCount)
+        Assert.Equal(36, stats.CnotCount)
+        Assert.Equal(4, stats.MaxWeight)
 
     [<Fact>]
     let ``H2 JW Hamiltonian matches the complete exact 15-signature coefficient map`` () =
