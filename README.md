@@ -130,9 +130,12 @@ let ham = computeHamiltonianWith jordanWignerTerms factory 4u
 
 // 3. Taper → remove symmetry-redundant qubits
 let tapered = taper defaultTaperingOptions ham
-// Removes qubits fixed by Z₂ symmetries; how many depends on the
-// Hamiltonian and chosen sector. (This purely diagonal 5-term example
-// tapers all four qubits; the full H₂ Hamiltonian tapers 4 → 2.)
+// Removes qubits fixed by Z₂ symmetries; how many depends on the encoding,
+// method, and sector. (This purely diagonal 5-term example tapers all four
+// qubits. The full H₂ Hamiltonian has three Z₂ symmetries, so the default
+// JW + FullClifford settings shown here taper 4 → 1; the widely-cited
+// "H₂ → 2 qubits" figure is Bravyi–Kitaev + DiagonalOnly, which removes the
+// two single-qubit-Z symmetries on qubits 1 and 3.)
 
 // 4. Trotterize → gate sequence
 let step = firstOrderTrotter 0.1 tapered.Hamiltonian
