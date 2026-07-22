@@ -13,6 +13,9 @@ module HamiltonianCoefficients =
     open Encodings
     open Encodings.Hamiltonian
     open Encodings.JordanWigner
+    open Encodings.BravyiKitaev
+    open Encodings.MajoranaEncoding
+    open Encodings.TreeEncoding
     open Xunit
 
     // Exact H2/STO-3G integrals (2 spatial orbitals -> 4 spin-orbitals).
@@ -141,9 +144,11 @@ module HamiltonianCoefficients =
                     for q in p + 1 .. dim - 1 do off <- off + a.[p, q] * a.[p, q]
             [ for i in 0 .. dim - 1 -> a.[i, i] ] |> List.sort
 
-        /// Direct dense H = Σ h_ij a†_i a_j + ½ Σ ⟨ij|kl⟩ a†_i a†_j a_l a_k
-        /// (matching the library's raw-physicist contract: ½ and a_l a_k order).
-        let matrixOf (factory : string -> Complex option) n =
+        /// Direct dense H with a configurable two-body prefactor (`half`) and
+        /// annihilator order (`swap` = a_l a_k when true). The library uses
+        /// half = 0.5 and swap = true; the defect variants (no ½, unswapped) are
+        /// used to prove each defect changes the result independently.
+        let matrixOfWith (half : float) (swap : bool) (factory : string -> Complex option) n =
             let h = Array2D.zeroCreate dim dim
             for i in 0 .. n - 1 do
                 for j in 0 .. n - 1 do
@@ -156,10 +161,16 @@ module HamiltonianCoefficients =
                         for l in 0 .. n - 1 do
                             match factory (sprintf "%d,%d,%d,%d" i j k l) with
                             | Some c ->
-                                addScaled h (0.5 * c.Real)
-                                    (matmul (matmul (create i) (create j)) (matmul (annihilate l) (annihilate k)))
+                                let ann =
+                                    if swap then matmul (annihilate l) (annihilate k)
+                                    else matmul (annihilate k) (annihilate l)
+                                addScaled h (half * c.Real)
+                                    (matmul (matmul (create i) (create j)) ann)
                             | None -> ()
             h
+
+        /// Correct dense H = Σ h_ij a†_i a_j + ½ Σ ⟨ij|kl⟩ a†_i a†_j a_l a_k.
+        let matrixOf (factory : string -> Complex option) n = matrixOfWith 0.5 true factory n
 
     // Encoded Pauli sum -> dense matrix (qubit 0 = leftmost; convention-agnostic for eigenvalues).
     module private Enc =
@@ -307,3 +318,48 @@ module HamiltonianCoefficients =
         Assert.Equal(s seqH, s cacheH)
         Assert.Equal(s seqH, s fullSk)
         Assert.Equal(s seqH, s sparseSk)
+
+    [<Fact>]
+    let ``H2 spectrum agrees across the index-set and binary-tree encodings`` () =
+        // Jordan-Wigner, Bravyi-Kitaev, Parity, and the balanced binary tree all
+        // reproduce the full 16-eigenvalue H₂ spectrum (ground −1.852388).
+        // NOTE: the path-based ternary (`ternaryTreeTerms`) and Vlasov encodings
+        // currently give a DIFFERENT spectrum (ground −1.831864 = the HF energy) —
+        // a pre-existing two-body-coupling defect in the path-based encoders,
+        // independent of the Hamiltonian coefficient contract (reported separately).
+        let factory, nso = h2Factory ()
+        let n = uint32 nso
+        let specOf enc = Fermion.eigenvalues (Enc.matrixOf (computeHamiltonianWith enc factory n))
+        let jw = specOf jordanWignerTerms
+        Assert.Equal(16, jw.Length)
+        Assert.Equal(-1.852388, List.head jw, 5)
+        for (name, enc) in
+            [ "BK", bravyiKitaevTerms; "Parity", parityTerms; "BinTree", balancedBinaryTreeTerms ] do
+            let s = specOf enc
+            Assert.True(List.forall2 (fun (a : float) b -> abs (a - b) < 1e-8) jw s,
+                sprintf "%s spectrum differs from Jordan-Wigner" name)
+
+    [<Fact>]
+    let ``H2 assembly is wrong if the half is dropped or the r-s swap is omitted`` () =
+        // Proves each defect changes the physics independently (compared via spectra,
+        // since the encoded matrix uses qubit-0-leftmost and the fermionic oracle
+        // uses mode-0-LSB — a bit reversal that preserves eigenvalues).
+        let factory, nso = h2Factory ()
+        let libSpec = Fermion.eigenvalues (Enc.matrixOf (computeHamiltonianWith jordanWignerTerms factory (uint32 nso)))
+        let specOfOracle half swap = Fermion.eigenvalues (Fermion.matrixOfWith half swap factory nso)
+        let correct = specOfOracle 0.5 true
+        let noHalf  = specOfOracle 1.0 true    // missing ½
+        let noSwap  = specOfOracle 0.5 false   // unswapped annihilators
+        let eq a b = List.forall2 (fun (x : float) y -> abs (x - y) < 1e-8) a b
+        Assert.True(eq libSpec correct, "library must match the ½+swap oracle spectrum")
+        Assert.False(eq libSpec noHalf, "dropping the ½ must change the spectrum")
+        Assert.False(eq libSpec noSwap, "omitting the r↔s swap must change the spectrum")
+
+    [<Fact>]
+    let ``legitimate small nonzero coefficients survive the zero filter`` () =
+        // One-body h = 2e-6 → ½h·I and −½h·Z = ±1e-6, far above the 1e-12 threshold.
+        let factory (key : string) = if key = "0,0" then Some (Complex(2e-6, 0.0)) else None
+        let ham = computeHamiltonianWith jordanWignerTerms factory 2u
+        Assert.Equal(1e-6, coeffOf ham "II", 12)
+        Assert.Equal(-1e-6, coeffOf ham "ZI", 12)
+        Assert.Equal(2, ham.DistributeCoefficient.SummandTerms.Length)
