@@ -73,11 +73,19 @@ module Hamiltonian =
             OverlapTerm.ComputeTermsWith jordanWignerTerms coefficientFactory n
 
     /// <summary>
-    /// A two-body exchange term with indices i, j, k, l, representing ⟨ij|kl⟩ a†_i a†_j a_l a_k.
+    /// A two-body exchange term with indices i, j, k, l representing the operator
+    /// <c>a†_i a†_j a_k a_l</c> (annihilators in the order k then l).
     /// </summary>
+    /// <remarks>
+    /// The coefficient supplied by the factory for key <c>"i,j,k,l"</c> is the FULL
+    /// prefactor of this operator string. In particular, the caller folds in the ½
+    /// of the two-body Hamiltonian term ½·Σ g_pqrs a†_p a†_q a_r a_s — no additional
+    /// ½ is applied here. (The <see cref="T:Encodings.Fcidump"/> adapters do this,
+    /// mapping chemist-notation integrals to <c>½·(ps|qr)</c> for key "p,q,r,s".)
+    /// </remarks>
     and ExchangeTerm = {i : uint32; j : uint32; k : uint32; l : uint32}
     with
-        member private this.ToEncodedTerms (encode : EncoderFn) n coeff termCoefficient =
+        member private this.ToEncodedTerms (encode : EncoderFn) n coeff =
             let product =
                 (encode Raise this.i n) * (encode Raise this.j n)
                 * (encode Lower this.k n) * (encode Lower this.l n)
@@ -87,11 +95,10 @@ module Hamiltonian =
                 |> Array.map (fun r -> r.ResetPhase (r.Coefficient * coeff))
                 |> PauliRegisterSequence
 
-        member private this.ToJordanWignerTerms n coeff termCoefficient =
-            this.ToEncodedTerms jordanWignerTerms n coeff termCoefficient
+        member private this.ToJordanWignerTerms n coeff =
+            this.ToEncodedTerms jordanWignerTerms n coeff
 
         static member internal ComputeTermsWith (encode : EncoderFn) coefficientFactory n =
-            let termCoefficient = Complex (0.5, 0.)
             [|
                 for i in modeRange n do
                     for j in modeRange n do
@@ -106,7 +113,7 @@ module Hamiltonian =
                                         ExchangeTerm.k = k
                                         ExchangeTerm.l = l
                                     }
-                                    yield term.ToEncodedTerms encode n hijkl termCoefficient
+                                    yield term.ToEncodedTerms encode n hijkl
                                 | _ -> ()
             |]
             |> PauliRegisterSequence
@@ -126,6 +133,23 @@ module Hamiltonian =
     /// retrieves coefficients from the factory function, and encodes non-zero terms
     /// using the Jordan-Wigner transformation. Keys are formatted as comma-separated
     /// indices: "i,j" for one-body and "i,j,k,l" for two-body terms.
+    /// <para>
+    /// <b>Coefficient contract.</b> The factory returns the FULL prefactor of the
+    /// corresponding operator string, which this function applies verbatim:
+    /// </para>
+    /// <list type="bullet">
+    ///   <item><description>"i,j" → h_ij, the coefficient of <c>a†_i a_j</c>.</description></item>
+    ///   <item><description>"i,j,k,l" → the coefficient of <c>a†_i a†_j a_k a_l</c>,
+    ///   <b>with the ½ of the two-body term ½·Σ g_pqrs a†_p a†_q a_r a_s already folded in</b>.
+    ///   No additional ½ is applied here — supplying the raw integral yields a result
+    ///   twice too large.</description></item>
+    /// </list>
+    /// <para>
+    /// The nuclear/constant term is not added (callers may add E_nuc·I separately).
+    /// Use <see cref="T:Encodings.Fcidump"/> to build a conforming factory from an
+    /// FCIDUMP: for key "p,q,r,s" it supplies <c>½·(ps|qr)</c> (chemist notation) =
+    /// <c>½·⟨pq|sr⟩</c> (physicist notation).
+    /// </para>
     /// </remarks>
     let computeHamiltonian coefficientFactory n =
         [|
@@ -146,6 +170,14 @@ module Hamiltonian =
     /// Useful for comparing different encodings (Jordan-Wigner, Bravyi-Kitaev, etc.)
     /// on the same Hamiltonian. Keys are formatted as comma-separated indices:
     /// "i,j" for one-body and "i,j,k,l" for two-body terms.
+    /// <para>
+    /// <b>Coefficient contract (same as <see cref="computeHamiltonian"/>).</b> The
+    /// factory returns the FULL prefactor of the operator string, applied verbatim:
+    /// "i,j" → coefficient of <c>a†_i a_j</c>; "i,j,k,l" → coefficient of
+    /// <c>a†_i a†_j a_k a_l</c> <b>with the two-body ½ already folded in</b> (raw
+    /// integrals yield a result twice too large). Build a conforming factory with
+    /// <see cref="T:Encodings.Fcidump"/>.
+    /// </para>
     /// </remarks>
     let computeHamiltonianWith (encode : EncoderFn) coefficientFactory n =
         [|

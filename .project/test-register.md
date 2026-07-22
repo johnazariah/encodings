@@ -603,6 +603,23 @@ Related: `PauliRegister.fs` tests confirm position 0 is the leftmost character
 
 ---
 
+## 15. Hamiltonian Coefficients (state/convention) — `HamiltonianCoefficients.fs` (4 tests)
+
+Signature-only tests pass even when the integral/factory convention is wrong (all
+encodings share the same coefficient error). These pin exact Pauli coefficients and
+cross-check against a first-principles dense fermionic matrix, locking the factory
+coefficient contract: the caller folds the two-body ½ into the factory value; the
+library applies it verbatim. Proven to fail under a ×2 two-body perturbation.
+
+| # | What is tested | Style |
+|---|----------------|-------|
+| 1 | H₂/STO-3G JW Hamiltonian has exact IIII (−0.8121706072) and four-body (±0.0453026155) coefficients; 15 nonzero of 23 terms | Fact |
+| 2 | One-body coefficient applied verbatim: factory("0,0")=h → ½h·I − ½h·Z (JW's ½, not a library ½) | Fact |
+| 3 | Two-body coefficient applied verbatim with no additional ½: a†₀a†₁a₁a₀ = n₀n₁ = ¼(II−ZI−IZ+ZZ); linear in the factory value | Fact |
+| 4 | Encoded H₂ spectrum equals the direct dense fermionic matrix (same factory); ground −1.852388 preserved | Fact |
+
+---
+
 ## Coverage Summary by Area
 
 | Area | Tests | Technique | Confidence |

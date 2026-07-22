@@ -60,6 +60,15 @@ let lookup (key : string) =
     | _ -> None
 ```
 
+> **Coefficient contract.** The factory returns the *full* prefactor of the
+> operator string, applied verbatim: `"i,j"` → the coefficient of `a†_i a_j`;
+> `"i,j,k,l"` → the coefficient of `a†_i a†_j a_k a_l` **with the two-body ½ of
+> `½·Σ g_pqrs a†_p a†_q a_r a_s` already folded in** — the library applies *no*
+> extra ½, so passing a raw integral makes every two-body term twice too large.
+> Watch the index order and notation: for key `"p,q,r,s"` supply `½·(ps|qr)` in
+> chemist notation, equivalently `½·⟨pq|sr⟩` in physicist notation. The
+> `Fcidump` adapters do exactly this — prefer them over hand-rolled tensors.
+
 ## Step 3 — Compute the qubit Hamiltonian
 
 One function call does everything — loops over indices, looks up
