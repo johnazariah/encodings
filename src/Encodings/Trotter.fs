@@ -127,7 +127,16 @@ module Trotterization =
     /// </summary>
     /// <remarks>
     /// exp(−iHΔt) ≈ Πₖ exp(−icₖPₖΔt) where H = Σₖ cₖPₖ.
+    /// <para>
+    /// <b>Precondition: the Hamiltonian must be Hermitian</b>, i.e. every Pauli
+    /// coefficient must be real. The rotation angle uses only the real part, so a
+    /// term with a non-negligible imaginary coefficient (|Im| &gt; 1e-9) is rejected
+    /// rather than silently truncated. Benign floating-point noise is tolerated.
+    /// </para>
     /// </remarks>
+    /// <exception cref="T:System.ArgumentException">
+    /// Thrown when a term has a materially imaginary (non-Hermitian) coefficient.
+    /// </exception>
     let firstOrderTrotter (dt : float) (hamiltonian : PauliRegisterSequence) =
         let rotations =
             hamiltonian.DistributeCoefficient.SummandTerms
@@ -140,7 +149,15 @@ module Trotterization =
     /// <remarks>
     /// Forward pass at half-angle followed by reverse pass at half-angle.
     /// The resulting step is palindromic.
+    /// <para>
+    /// <b>Precondition: the Hamiltonian must be Hermitian</b> (real Pauli
+    /// coefficients); a term with |Im| &gt; 1e-9 is rejected (see
+    /// <see cref="firstOrderTrotter"/>).
+    /// </para>
     /// </remarks>
+    /// <exception cref="T:System.ArgumentException">
+    /// Thrown when a term has a materially imaginary (non-Hermitian) coefficient.
+    /// </exception>
     let secondOrderTrotter (dt : float) (hamiltonian : PauliRegisterSequence) =
         let terms = hamiltonian.DistributeCoefficient.SummandTerms
         let forward = terms |> Array.map (termToRotation (dt / 2.0))

@@ -43,7 +43,8 @@ FenwickTree.remainderSet 3       // R(3) = P(3) \ Occ(3)
 
 ## Encoding trees: choose your shape
 
-FockMap generalises beyond Fenwick trees to arbitrary tree shapes:
+FockMap generalises beyond Fenwick trees to arbitrary ternary tree shapes
+(the path-based encoder supports at most three children per node):
 
 ```fsharp
 let linear  = linearTree 8            // Chain → recovers Jordan-Wigner

@@ -138,7 +138,9 @@ module TreeEncoding =
           Target : int option }  // Some childIndex, or None for a leg
 
     /// Compute the link labeling for each node in the tree.
-    /// Each node gets exactly 3 descending links (edges + legs).
+    /// Each node gets exactly 3 descending links (edges + legs), so the tree must
+    /// be <b>ternary</b> — at most 3 children per node. Nodes with more than 3
+    /// children are not supported and raise <c>ArgumentException</c>.
     /// We use "homogeneous localisation" (Bonsai Algorithm 4):
     ///   - If 2 or 3 children: assign X, Y to edges; Z to leg (or 3rd edge).
     ///   - If 1 child: assign X to edge; Y, Z to legs.
@@ -147,6 +149,11 @@ module TreeEncoding =
         tree.Nodes
         |> Map.map (fun _idx node ->
             let childIndices = node.Children |> List.map (fun c -> c.Index)
+            if List.length childIndices > 3 then
+                invalidArg "tree"
+                    (sprintf
+                        "Path-based ternary-tree encoding supports at most 3 children per node, but node %d has %d children (%A). Use a ternary tree (max degree 3); other tree shapes are not supported by encodeWithTernaryTree."
+                        node.Index (List.length childIndices) childIndices)
             let labels = [LX; LY; LZ]
             let nChildren = List.length childIndices
             // Assign first nChildren labels to edges, rest to legs.

@@ -633,3 +633,16 @@ module TreeEncoding =
     let ``Index-set construction: chain (linear) tree fails CAR for n>=3`` () =
         Assert.False(indexSetCarHolds (linearTree 4),
             "linear chain (n=4) is non-star and must NOT satisfy CAR under the index-set construction")
+
+    [<Fact>]
+    let ``Path-based encoding: node with more than 3 children raises a clear error`` () =
+        // computeLinks / encodeWithTernaryTree support at most 3 children per node.
+        // A degree-4 node previously dropped the 4th child silently, then failed
+        // later with an opaque KeyNotFoundException; it now raises a clear error.
+        let star4 =
+            let leaf i = { Index = i; Children = []; Parent = Some 0 }
+            let root = { Index = 0; Children = [ leaf 1; leaf 2; leaf 3; leaf 4 ]; Parent = None }
+            let nodes = [ 0, root; 1, leaf 1; 2, leaf 2; 3, leaf 3; 4, leaf 4 ] |> Map.ofList
+            { Root = root; Nodes = nodes; Size = 5 }
+        let ex = Assert.Throws<System.ArgumentException>(fun () -> computeLinks star4 |> ignore)
+        Assert.Contains("at most 3 children", ex.Message)

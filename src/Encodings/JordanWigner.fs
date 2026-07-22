@@ -27,11 +27,12 @@
 /// and 1 occupied is the integer 3 = 0b0011. To evaluate a FockMap Pauli string in
 /// this occupation basis so that mode j maps to bit 2ʲ, <b>reverse the string</b>
 /// before forming the Kronecker product (mode 0, the leftmost character, becomes
-/// the least-significant bit). That same reversal converts a FockMap label to the
-/// Qiskit/OpenQASM convention, where mode 0 is the <b>rightmost</b> character:
-/// FockMap "ZXII" (Z₀X₁I₂I₃) ≡ Qiskit label "IIXZ". (Avoid "big/little-endian"
-/// terminology — state the concrete rule: FockMap mode 0 is leftmost; occupation
-/// integers and Qiskit labels put mode 0 rightmost / at bit 2⁰.)
+/// the least-significant bit). That same reversal converts a FockMap label to a
+/// Qiskit-style Pauli-label string, where mode 0 is the <b>rightmost</b> character:
+/// FockMap "ZXII" (Z₀X₁I₂I₃) ≡ Qiskit-style label "IIXZ". (Prefer this concrete
+/// rule over "big/little-endian": FockMap mode 0 is leftmost; occupation integers
+/// and Qiskit-style Pauli labels put mode 0 rightmost / at bit 2⁰. OpenQASM has no
+/// Pauli-label string — it addresses qubits as q[i] explicitly.)
 /// </para>
 ///
 /// The Z-chain grows linearly with mode index j, giving O(n) worst-case weight.

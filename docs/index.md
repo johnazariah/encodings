@@ -4,7 +4,7 @@
 
 A composable F# framework for the complete quantum simulation pipeline: operator algebra → encoding → tapering → Trotterization → circuit export.
 
-> Encode, taper, Trotterize, and export quantum circuits from molecular integrals — with five fermionic encodings, three bosonic encodings, symbolic qubit tapering, and output to OpenQASM, Q#, and JSON. Zero dependencies.
+> Encode, taper, Trotterize, and export quantum circuits from molecular integrals — with six fermionic encodings, three bosonic encodings, symbolic qubit tapering, and output to OpenQASM, Q#, and JSON. Zero dependencies.
 
 ## Install
 

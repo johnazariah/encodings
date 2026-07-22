@@ -24,7 +24,7 @@
 If you're exploring quantum chemistry on qubits, you usually hit this question quickly: **how do I map fermions to Pauli operators?** And increasingly: **what about phonons and other bosonic modes?**
 
 FockMap gives you one small, consistent API for the complete quantum simulation pipeline:
-- **Encode** fermionic or bosonic operators as Pauli strings (5 fermionic + 3 bosonic encodings)
+- **Encode** fermionic or bosonic operators as Pauli strings (6 fermionic + 3 bosonic encodings)
 - **Taper** qubits via Z₂ symmetry detection and Clifford rotation (diagonal + general)
 - **Trotterize** a Pauli Hamiltonian into gate sequences (first and second order)
 - **Export** circuits as OpenQASM 3.0, Q#, or JSON for any quantum platform
@@ -157,9 +157,11 @@ let json = toCircuitJson tapered.TaperedQubitCount Map.empty gates
   `"XZI"` = X₀ ⊗ Z₁ ⊗ I₂, and Jordan–Wigner gives `a†₁` (n = 2) = `0.5 ZX − 0.5i ZY`.
 - **Occupation integers are mode-*j*-weight-2ʲ** (mode 0 = least-significant bit),
   so the H₂ Hartree–Fock state with modes 0 and 1 occupied is the integer 3 = `0b0011`.
-- **To convert** a FockMap Pauli label to the Qiskit/OpenQASM display order, or to
+- **To convert** a FockMap Pauli label to a Qiskit-style Pauli-label string, or to
   read a string in the occupation basis (mode *j* → bit 2ʲ), **reverse the string**:
-  FockMap `"ZXII"` (Z₀X₁I₂I₃) ≡ Qiskit label `"IIXZ"`.
+  FockMap `"ZXII"` (Z₀X₁I₂I₃) ≡ Qiskit-style label `"IIXZ"`. (Qiskit's `Pauli`
+  labels are little-endian; OpenQASM has no Pauli-label string, it indexes `q[i]`
+  explicitly, so this reversal is about label display, not qubit numbering.)
 
 ## Where to Start
 

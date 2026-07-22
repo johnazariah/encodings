@@ -29,6 +29,13 @@ Notice the two Z operators before the X/Y — they track the **parity** of
 electrons in modes 0 and 1. This is how the encoding preserves fermionic
 anti-symmetry on a qubit register.
 
+> **Ordering convention.** In a `PauliRegister` string, character position *i*
+> is mode/qubit *i*, so **mode 0 is the leftmost character** (`"ZZXI"` = Z₀ Z₁ X₂ I₃).
+> Occupation integers weight mode *j* by 2ʲ (mode 0 = least-significant bit), so the
+> H₂ Hartree–Fock state |modes 0,1 occupied⟩ is the integer 3 = `0b0011`. To read a
+> string in that occupation basis, or to produce a Qiskit-style Pauli-label string,
+> **reverse it** (mode 0 becomes rightmost / bit 2⁰).
+
 ## The Z-chain problem
 
 Watch what happens as you encode higher modes:

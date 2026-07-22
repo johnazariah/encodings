@@ -39,8 +39,8 @@ defined by three set-valued functions (`Update`, `Parity`,
 labelled tree induces a valid encoding.  The index-set abstraction
 expresses Jordan--Wigner [@jordan1928], Bravyi--Kitaev
 [@bravyi2002; @seeley2012], and Parity in 3--5 lines each, while
-the path-based abstraction supports arbitrary tree topologies, including
-balanced binary and balanced ternary trees with optimal $O(\log n)$
+the path-based abstraction supports arbitrary ternary (max-degree-3) tree
+topologies, including balanced binary and balanced ternary trees with optimal $O(\log n)$
 asymptotic Pauli weight [@jiang2020], as well as the complete ternary
 tree of Vlasov [@vlasov2019].
 
@@ -61,7 +61,7 @@ in a single representation.
 
 The library is implemented with algebraic data types and pure functions,
 includes a persistent Fenwick tree ADT, and is validated by an extensive
-xUnit + FsCheck test suite (733 passing tests), including both
+xUnit + FsCheck test suite (over 700 passing tests), including both
 property-based algebraic checks and targeted edge-case regressions.  A
 complete H~2~/STO-3G example is provided and reproduced across all six
 built-in encodings.
@@ -185,9 +185,10 @@ $a^\dagger_j$ and $a_j$ by linear combination.
 
 ## Tree encodings (Path-based framework)
 
-Any rooted labelled tree defines a fermion-to-qubit encoding.  The
+Any rooted ternary tree (at most three children per node) defines a
+fermion-to-qubit encoding.  The
 The library provides `balancedBinaryTree`, `balancedTernaryTree`, and
-`vlasovTree` constructors; users can build arbitrary trees from
+`vlasovTree` constructors; users can build arbitrary ternary trees from
 `TreeNode` values.
 The path-based encoding function traverses the tree to construct Majorana
 operators for arbitrary (ternary) tree topologies, whereas the generic
@@ -254,7 +255,7 @@ robustness.
 `FockMap` ships with extensive documentation hosted at
 [johnazariah.github.io/encodings](https://johnazariah.github.io/encodings/):
 
-- A 17-chapter progressive *Cookbook* tutorial covering every public
+- An 18-chapter progressive *Cookbook* tutorial covering every public
   type, function, and workflow.
 - A companion textbook, *From Molecules to Quantum Circuits*
   (23 chapters, available on arXiv), reproducing the full pipeline

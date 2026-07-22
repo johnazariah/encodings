@@ -256,15 +256,21 @@ module TaperingClifford =
         Assert.Equal(h2Ground, Array.min spec, 4)
 
     [<Fact>]
-    let ``H2 FullClifford: Clifford rotation preserves the full spectrum`` () =
+    let ``H2 FullClifford: applyClifford equals U H Udagger and preserves the spectrum`` () =
         let ham = h2ElectronicHamiltonian ()
         let n = 4
-        // Rotate with the synthesized Clifford (no sector fixing) and compare spectra.
         let result = taper { defaultTaperingOptions with Sector = [] } ham
+        // Exercise the LIBRARY's applyClifford (not just a dense U H U†): its output
+        // must equal the dense conjugation to machine precision — this is what would
+        // regress under the old CNOT phase rule.
+        let libRotated = seqToMatrix (applyClifford result.CliffordGates ham)
         let u = cliffordUnitary result.CliffordGates n
-        let rotated = matmul (matmul u (seqToMatrix ham)) (dagger u)
+        let denseRotated = matmul (matmul u (seqToMatrix ham)) (dagger u)
+        Assert.True(maxDiff libRotated denseRotated < 1e-8,
+            sprintf "applyClifford vs U·H·U† max diff = %e" (maxDiff libRotated denseRotated))
+        // ... and therefore preserves the full eigenvalue multiset.
         let before = hermitianEigenvalues (seqToMatrix ham)
-        let after = hermitianEigenvalues rotated
+        let after = hermitianEigenvalues libRotated
         Assert.True(multisetApproxEqual 1e-8 before after,
             sprintf "before=%A after=%A" before after)
 
