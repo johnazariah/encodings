@@ -146,7 +146,7 @@ module Fcidump =
 
         for lineIdx in bodyStart .. lines.Length - 1 do
             match parseDataLine lines.[lineIdx] with
-            | Some (v, i, j, k, l) when abs v > 1e-15 ->
+            | Some (v, i, j, k, l) when v <> 0.0 ->
                 if k > 0 && l > 0 then
                     // Two-electron integral (ij|kl), 1-based → 0-based
                     storeH2e h2e (i-1) (j-1) (k-1) (l-1) v
@@ -178,10 +178,13 @@ module Fcidump =
     /// </para>
     /// <para>
     /// <b>Convention mapping:</b> The Hamiltonian module assembles
-    /// <c>H = Σ f("p,q") a†_p a_q + ½ Σ f("p,q,r,s") a†_p a†_q a_s a_r</c> — it applies
-    /// the ½ and the <c>a_s a_r</c> order internally. To reproduce the physics
-    /// <c>H₂ = ½ Σ ⟨pq|rs⟩ a†_p a†_q a_s a_r</c>, the factory returns the RAW physicist
-    /// integral <c>⟨pq|rs⟩ = (pr|qs)</c> in chemist's notation (no ½, no swap).
+    /// <c>H = Σ f("p,q") a†_p a_q + Σ f("p,q,r,s") a†_p a†_q a_r a_s</c> and applies the
+    /// factory value verbatim (the FULL WEIGHTED prefactor). To reproduce the physics
+    /// <c>H₂ = ½ Σ ⟨pq|rs⟩ a†_p a†_q a_s a_r</c>,
+    /// the factory returns <c>½ × ⟨pq|sr⟩ = ½ × (ps|qr)</c> in chemist's notation.
+    /// The ½ factor is folded in here because the Hamiltonian module does not apply it.
+    /// (For a raw physicist ⟨pq|rs⟩ tensor, use
+    /// <see cref="Hamiltonian.rawPhysicistToWeightedFactory"/> instead.)
     /// </para>
     /// <para>
     /// The nuclear repulsion energy is <b>not</b> included in the factory output.
@@ -203,7 +206,7 @@ module Fcidump =
                 let q = int parts.[1]
                 if p < norb && q < norb then
                     let v = h1e.[p, q]
-                    if abs v > 1e-15 then Some (Complex(v, 0.0)) else None
+                    if v <> 0.0 then Some (Complex(v, 0.0)) else None
                 else None
             | 4 ->
                 let p = int parts.[0]
@@ -211,10 +214,10 @@ module Fcidump =
                 let r = int parts.[2]
                 let s = int parts.[3]
                 if p < norb && q < norb && r < norb && s < norb then
-                    // Factory key "p,q,r,s" → raw physicist ⟨pq|rs⟩ = (pr|qs) chemist.
-                    // The Hamiltonian module applies the ½ and the a_s a_r order.
-                    let v = h2e.[p, r, q, s]
-                    if abs v > 1e-15 then Some (Complex(v, 0.0)) else None
+                    // Factory key "p,q,r,s" → weighted coefficient of a†_p a†_q a_r a_s
+                    // = ½ ⟨pq|sr⟩ = ½ (ps|qr) in chemist notation.
+                    let v = 0.5 * h2e.[p, s, q, r]
+                    if v <> 0.0 then Some (Complex(v, 0.0)) else None
                 else None
             | _ -> None
 
@@ -280,7 +283,7 @@ module Fcidump =
                         let ip = p / 2
                         let iq = q / 2
                         let v = h1e.[ip, iq]
-                        if abs v > 1e-15 then Some (Complex(v, 0.0)) else None
+                        if v <> 0.0 then Some (Complex(v, 0.0)) else None
                 else None
             | 4 ->
                 let p = int parts.[0]
@@ -288,13 +291,18 @@ module Fcidump =
                 let r = int parts.[2]
                 let s = int parts.[3]
                 if p < nso && q < nso && r < nso && s < nso then
-                    // Factory key "p,q,r,s" → raw physicist ⟨pq|rs⟩ (spin-orbital):
-                    //   δ_{spin(p),spin(r)} · δ_{spin(q),spin(s)} · (pr|qs) chemist spatial.
-                    // The Hamiltonian module applies the ½ and the a_s a_r order.
-                    if p % 2 <> r % 2 || q % 2 <> s % 2 then None
+                    // Factory key "P,Q,R,S" → weighted ½ × chemist_spinorb(P,S,Q,R),
+                    // where chemist_spinorb(i,j,k,l)
+                    //   = δ_{spin(i),spin(j)} × δ_{spin(k),spin(l)} × chemist_spatial(i/2,j/2,k/2,l/2).
+                    let i, j, k, l = p, s, q, r
+                    let si = i % 2
+                    let sj = j % 2
+                    let sk = k % 2
+                    let sl = l % 2
+                    if si <> sj || sk <> sl then None
                     else
-                        let v = h2e.[p/2, r/2, q/2, s/2]
-                        if abs v > 1e-15 then Some (Complex(v, 0.0)) else None
+                        let v = 0.5 * h2e.[i/2, j/2, k/2, l/2]
+                        if v <> 0.0 then Some (Complex(v, 0.0)) else None
                 else None
             | _ -> None
 

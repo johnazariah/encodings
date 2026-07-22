@@ -60,13 +60,19 @@ let lookup (key : string) =
     | _ -> None
 ```
 
-> **Coefficient contract.** The factory returns the *raw* physical integral; the
-> library applies the standard prefactors. `"i,j"` → the coefficient of `a†_i a_j`;
-> `"i,j,k,l"` → the **raw physicist two-electron integral `⟨ij|kl⟩`** under the
-> unrestricted sum. The library builds `½·⟨ij|kl⟩·a†_i a†_j a_l a_k` — it applies the
-> ½ of `½·Σ ⟨pq|rs⟩ a†_p a†_q a_s a_r` and the `a_l a_k` order internally, so do
-> **not** pre-fold the ½ or antisymmetrise. From chemist integrals, `⟨ij|kl⟩ = (ik|jl)`.
-> The `Fcidump` adapters return these raw integrals directly — prefer them.
+> **Coefficient contract.** The factory returns the *full weighted* prefactor of the
+> operator string, applied verbatim: `"i,j"` → the coefficient of `a†_i a_j`;
+> `"i,j,k,l"` → the coefficient of `a†_i a†_j a_k a_l` **with the two-body ½ of
+> `½·Σ ⟨pq|rs⟩ a†_p a†_q a_s a_r` already folded in** — the library applies *no*
+> extra ½, so passing a raw integral makes every two-body term twice too large.
+> The `Fcidump` adapters do exactly this — for key `"p,q,r,s"` they supply
+> `½·(ps|qr)` in chemist notation, equivalently `½·⟨pq|sr⟩` in physicist notation —
+> so prefer them over hand-rolled tensors.
+>
+> **Have a raw physicist tensor `⟨pq|rs⟩` instead?** Don't hand-fold the ½: wrap it
+> with `rawPhysicistToWeightedFactory` (or call `computeHamiltonianFromPhysicist`),
+> which maps `(p,q,r,s,g)` to weighted key `(p,q,s,r) = ½·g` for you. (That is the
+> single-bar convention; an antisymmetrised double-bar `⟨pq||rs⟩` would use `¼`.)
 
 ## Step 3 — Compute the qubit Hamiltonian
 

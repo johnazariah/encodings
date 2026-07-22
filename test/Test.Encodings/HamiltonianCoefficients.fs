@@ -1,12 +1,18 @@
 namespace Tests
 
 /// <summary>
-/// Coefficient-level tests for Hamiltonian assembly. Signature-only tests pass
-/// even when the integral/factory convention is wrong (all encodings agree on the
-/// signatures but share the coefficient error), so these tests pin exact Pauli
-/// coefficients, cross-check against a first-principles dense fermionic matrix,
-/// and lock the factory coefficient contract (the two-body ½ is folded in by the
-/// caller; the library applies the factory value verbatim).
+/// Coefficient-level acceptance tests for Hamiltonian assembly. Signature-only tests
+/// pass even when the integral/factory convention is wrong (all encodings agree on the
+/// signatures but could share a coefficient error), so these tests pin exact Pauli
+/// coefficients, cross-check against a first-principles dense fermionic matrix built by
+/// an independent raw second-quantized oracle, and lock the RELEASED factory contract:
+///
+///   • Legacy WEIGHTED factory (unchanged since v0.1): the value for key "i,j,k,l" is
+///     the FULL WEIGHTED prefactor, applied verbatim to a†_i a†_j a_k a_l. The two-body
+///     ½ is folded in by the caller (the Fcidump adapters supply ½·(ps|qr)).
+///   • NEW named RAW adapter: <c>rawPhysicistToWeightedFactory</c> /
+///     <c>computeHamiltonianFromPhysicist</c> accept a raw single-bar physicist tensor
+///     ⟨pq|rs⟩ and map (p,q,r,s,g) → weighted key (p,q,s,r) = ½·g.
 /// </summary>
 module HamiltonianCoefficients =
     open System.Numerics
@@ -18,7 +24,10 @@ module HamiltonianCoefficients =
     open Encodings.TreeEncoding
     open Xunit
 
-    // Exact H2/STO-3G integrals (2 spatial orbitals -> 4 spin-orbitals).
+    // Exact H2/STO-3G integrals (2 spatial orbitals -> 4 spin-orbitals),
+    // interleaved spin-orbitals 0α,0β,1α,1β. Canonical source: encodings-research,
+    // R = 1.3983973 bohr, chemist ERIs. Frozen fixture — see Phys below for the
+    // equivalent raw physicist tensor used by the independent oracle.
     let private h2Fcidump = """
  &FCI NORB=   2,NELEC= 2,MS2=0,
   ORBSYM=1,1,
@@ -47,27 +56,13 @@ module HamiltonianCoefficients =
         | true, reg -> reg.Coefficient.Real
         | false, _ -> 0.0
 
-    // ── (a)/(d) Exact Pauli coefficients — the anti-regression that fails if the
-    //    two-body ½ is dropped or double-applied (signatures would still match). ──
-    [<Fact>]
-    let ``H2 JW Hamiltonian has exact IIII and four-body coefficients (FCIDUMP)`` () =
-        let factory, nso = h2Factory ()
-        let ham = computeHamiltonianWith jordanWignerTerms factory (uint32 nso)
-        // Exactly 15 terms — numerical-zero residues are dropped at assembly.
-        Assert.Equal(15, ham.DistributeCoefficient.SummandTerms.Length)
-        Assert.Equal(15, (nonZero ham).Length)
-        // Independently reproduced by a direct second-quantized/JW oracle:
-        Assert.Equal(-0.8121706072, coeffOf ham "IIII", 8)
-        Assert.Equal(-0.2234315369, coeffOf ham "IIIZ", 8)
-        Assert.Equal( 0.1744128761, coeffOf ham "IIZZ", 8)
-        // The four-body exchange coefficient — 0.0453026155, NOT 0.0906 (which is
-        // what a dropped ½ / raw-integral factory would produce).
-        Assert.Equal(-0.0453026155, coeffOf ham "XXYY", 8)
-        Assert.Equal( 0.0453026155, coeffOf ham "XYYX", 8)
-        Assert.Equal( 0.0453026155, coeffOf ham "YXXY", 8)
-        Assert.Equal(-0.0453026155, coeffOf ham "YYXX", 8)
+    let private oneNorm (h : PauliRegisterSequence) =
+        h.DistributeCoefficient.SummandTerms |> Array.sumBy (fun t -> Complex.Abs t.Coefficient)
 
-    // ── Minimal fixture: the factory value is applied verbatim (no hidden factor). ──
+    // ══════════════════════════════════════════════════════════════════
+    //  Released weighted contract: factory value applied VERBATIM.
+    // ══════════════════════════════════════════════════════════════════
+
     [<Fact>]
     let ``one-body coefficient is applied verbatim (h -> h/2 I - h/2 Z from JW)`` () =
         // n_0 = a†_0 a_0 = (I - Z_0)/2, so factory("0,0")=h gives IIII=h/2, ZIII=-h/2.
@@ -78,10 +73,11 @@ module HamiltonianCoefficients =
         Assert.Equal(-0.85, coeffOf ham "ZI", 10)
 
     [<Fact>]
-    let ``two-body: library applies the half and a_s a_r order for raw physicist input`` () =
-        // factory("0,1,0,1")=V is the RAW ⟨01|01⟩. The library builds
-        // ½·V·a†_0 a†_1 a_1 a_0 = ½·V·n_0 n_1 = (V/8)(II − ZI − IZ + ZZ).
-        // (A spurious extra ½, or omitting it, changes these magnitudes.)
+    let ``two-body: the factory value is applied verbatim to a†_i a†_j a_k a_l`` () =
+        // Minimal oracle. factory("0,1,0,1")=V is the FULL WEIGHTED coefficient of
+        // a†_0 a†_1 a_0 a_1 (verbatim; the caller has already folded any ½). JW gives
+        //   V·a†_0 a†_1 a_0 a_1 = V·(−II + IZ + ZI − ZZ)/4.
+        // A spuriously-applied internal ½ (or an index swap) would change these.
         let mk v = computeHamiltonianWith jordanWignerTerms
                     (fun key -> if key = "0,1,0,1" then Some (Complex(v, 0.0)) else None) 2u
         let h1 = mk 1.0
@@ -89,14 +85,44 @@ module HamiltonianCoefficients =
         // linearity: h2 == 2 * h1 term-by-term
         for t in nonZero h2 do
             Assert.Equal(2.0 * coeffOf h1 t.Signature, t.Coefficient.Real, 10)
-        Assert.Equal(0.125, coeffOf h1 "II", 10)
-        Assert.Equal(0.125, coeffOf h1 "ZZ", 10)
-        Assert.Equal(-0.125, coeffOf h1 "ZI", 10)
-        Assert.Equal(-0.125, coeffOf h1 "IZ", 10)
+        Assert.Equal(-0.25, coeffOf h1 "II", 10)
+        Assert.Equal( 0.25, coeffOf h1 "IZ", 10)
+        Assert.Equal( 0.25, coeffOf h1 "ZI", 10)
+        Assert.Equal(-0.25, coeffOf h1 "ZZ", 10)
 
-    // ── (b) vs (c): the encoded Hamiltonian matches a first-principles dense
-    //    fermionic construction (same factory), so the coefficients are physically
-    //    correct, not merely self-consistent across encodings. ──
+    [<Fact>]
+    let ``two-body: the a_k a_l annihilator order is applied verbatim`` () =
+        // factory("0,1,1,0")=1 → a†_0 a†_1 a_1 a_0 = +¼(II − IZ − ZI + ZZ), the
+        // negation of the a_0 a_1 order above: proves the library keeps the caller's
+        // k,l order (it does NOT swap to a_l a_k).
+        let h = computeHamiltonianWith jordanWignerTerms
+                  (fun key -> if key = "0,1,1,0" then Some (Complex(1.0, 0.0)) else None) 2u
+        Assert.Equal( 0.25, coeffOf h "II", 10)
+        Assert.Equal(-0.25, coeffOf h "IZ", 10)
+        Assert.Equal(-0.25, coeffOf h "ZI", 10)
+        Assert.Equal( 0.25, coeffOf h "ZZ", 10)
+
+    [<Fact>]
+    let ``H2 JW Hamiltonian has exact IIII and four-body coefficients (FCIDUMP)`` () =
+        let factory, nso = h2Factory ()
+        let ham = computeHamiltonianWith jordanWignerTerms factory (uint32 nso)
+        // Exactly 15 stored terms — cancellation residues are dropped at assembly.
+        Assert.Equal(15, ham.DistributeCoefficient.SummandTerms.Length)
+        Assert.Equal(15, (nonZero ham).Length)
+        // Independently reproduced by the direct raw oracle below.
+        Assert.Equal(-0.8121706072, coeffOf ham "IIII", 8)
+        Assert.Equal(-0.2234315369, coeffOf ham "IIIZ", 8)
+        Assert.Equal( 0.1744128761, coeffOf ham "IIZZ", 8)
+        // The four-body exchange coefficient — 0.0453026155, NOT 0.0906 (which a
+        // dropped ½ / raw-integral factory fed to the weighted API would produce).
+        Assert.Equal(-0.0453026155, coeffOf ham "XXYY", 8)
+        Assert.Equal( 0.0453026155, coeffOf ham "XYYX", 8)
+        Assert.Equal( 0.0453026155, coeffOf ham "YXXY", 8)
+        Assert.Equal(-0.0453026155, coeffOf ham "YYXX", 8)
+
+    // ══════════════════════════════════════════════════════════════════
+    //  Independent first-principles dense fermionic oracle (16×16).
+    // ══════════════════════════════════════════════════════════════════
     module private Fermion =
         let dim = 16
         let private parity (state : int) (p : int) =
@@ -121,9 +147,9 @@ module HamiltonianCoefficients =
         let eigenvalues (a0 : float[,]) =
             let a = Array2D.copy a0
             let mutable off = 1.0
-            let mutable it = 0
-            while off > 1e-12 && it < 400 do
-                it <- it + 1
+            let mutable pass = 0
+            while off > 1e-12 && pass < 400 do
+                pass <- pass + 1
                 for p in 0 .. dim - 2 do
                     for q in p + 1 .. dim - 1 do
                         if abs a.[p, q] > 1e-300 then
@@ -148,9 +174,9 @@ module HamiltonianCoefficients =
         let private jacobiN (n : int) (a0 : float[,]) =
             let a = Array2D.copy a0
             let mutable off = 1.0
-            let mutable it = 0
-            while off > 1e-11 && it < 2000 do
-                it <- it + 1
+            let mutable pass = 0
+            while off > 1e-11 && pass < 2000 do
+                pass <- pass + 1
                 for p in 0 .. n - 2 do
                     for q in p + 1 .. n - 1 do
                         if abs a.[p, q] > 1e-300 then
@@ -190,9 +216,7 @@ module HamiltonianCoefficients =
             |> List.map snd
 
         /// Direct dense H with a configurable two-body prefactor (`half`) and
-        /// annihilator order (`swap` = a_l a_k when true). The library uses
-        /// half = 0.5 and swap = true; the defect variants (no ½, unswapped) are
-        /// used to prove each defect changes the result independently.
+        /// annihilator order (`swap` = a_l a_k when true).
         let matrixOfWith (half : float) (swap : bool) (factory : string -> Complex option) n =
             let h = Array2D.zeroCreate dim dim
             for i in 0 .. n - 1 do
@@ -214,10 +238,16 @@ module HamiltonianCoefficients =
                             | None -> ()
             h
 
-        /// Correct dense H = Σ h_ij a†_i a_j + ½ Σ ⟨ij|kl⟩ a†_i a†_j a_l a_k.
-        let matrixOf (factory : string -> Complex option) n = matrixOfWith 0.5 true factory n
+        /// RAW second-quantized oracle: consumes a raw physicist tensor ⟨ij|kl⟩ and
+        /// assembles ½·Σ ⟨ij|kl⟩ a†_i a†_j a_l a_k directly, bypassing the library
+        /// factory / FCIDUMP adaptation.
+        let matrixOfRaw (rawFactory : string -> Complex option) n = matrixOfWith 0.5 true rawFactory n
 
-    // Encoded Pauli sum -> dense matrix (qubit 0 = leftmost; convention-agnostic for eigenvalues).
+        /// WEIGHTED oracle: consumes the library's weighted factory verbatim,
+        /// assembling Σ f(i,j,k,l) a†_i a†_j a_k a_l (no ½, no swap).
+        let matrixOfWeighted (weightedFactory : string -> Complex option) n = matrixOfWith 1.0 false weightedFactory n
+
+    // Encoded Pauli sum -> dense matrix.
     module private Enc =
         let private cI = [| [| Complex.One; Complex.Zero |]; [| Complex.Zero; Complex.One |] |]
         let private cX = [| [| Complex.Zero; Complex.One |]; [| Complex.One; Complex.Zero |] |]
@@ -267,28 +297,9 @@ module HamiltonianCoefficients =
                     for j in 0 .. dim - 1 do acc.[i, j] <- acc.[i, j] + t.Coefficient * m.[i].[j]
             acc
 
-    [<Fact>]
-    let ``encoded H2 spectrum matches the direct dense fermionic matrix`` () =
-        let factory, nso = h2Factory ()
-        let encoded = Enc.matrixOf (computeHamiltonianWith jordanWignerTerms factory (uint32 nso))
-        let fermionic = Fermion.matrixOf factory nso
-        let sa = Fermion.eigenvalues encoded
-        let sb = Fermion.eigenvalues fermionic
-        Assert.Equal(sa.Length, sb.Length)
-        List.iter2 (fun (a: float) b -> Assert.Equal(a, b, 8)) sa sb
-        // And the physical ground state is preserved.
-        Assert.Equal(-1.852388, List.head sb, 5)
-
     // ══════════════════════════════════════════════════════════════════
-    //  Raw physicist tensor input (new contract)
-    //  ──────────────────────────────────────────────────────────────────
-    //  FockMap's factory takes, for key "p,q,r,s", the RAW physicist integral
-    //  ⟨pq|rs⟩ under the unrestricted sum; the library applies the ½ and the
-    //  a_s a_r order. So a raw physicist tensor T[p,q,r,s]=⟨pq|rs⟩ (Phys.raw)
-    //  is fed DIRECTLY — the book's original input now works. A factory that
-    //  pre-folds ½ and swaps r↔s (Phys.preAdapted, the old convention) now
-    //  double-counts and must be migrated. Canonical source: encodings-research,
-    //  R=1.3983973 bohr, interleaved 0α,0β,1α,1β, chemist ERIs.
+    //  Canonical RAW physicist tensor (independent of the library factory).
+    //  4 one-body + 32 raw two-body nonzero entries (interleaved 0α,0β,1α,1β).
     // ══════════════════════════════════════════════════════════════════
     module private Phys =
         // Canonical spatial chemist ERIs [pq|rs] (0-indexed, 8-fold symmetry).
@@ -300,22 +311,22 @@ module HamiltonianCoefficients =
             | (0,0),(0,0) -> 0.6747559268144484
             | (1,1),(1,1) -> 0.697651504490461
             | (0,0),(1,1) -> 0.6637114013508132
-            | (0,1),(0,1) -> 0.18121046201519672   // K01 exchange
+            | (0,1),(0,1) -> 0.1812104620151968   // K01 exchange
             | _ -> 0.0
-        let hSpatial p q = if p = q then (if p = 0 then -1.2533097866 else -0.4750688488) else 0.0
-        let spin i = i % 2
-        let sp i = i / 2
+        let hSpatial p q = if p = q then (if p = 0 then -1.253309786645977 else -0.4750688487721783) else 0.0
+        let spinOf i = i % 2
+        let spatialOf i = i / 2
         // Physicist spin-orbital tensor ⟨ab|cd⟩ = [ac|bd]_chem, δ_spin(a,c) δ_spin(b,d).
         let tPhys a b c d =
-            if spin a = spin c && spin b = spin d then gChem (sp a) (sp c) (sp b) (sp d) else 0.0
+            if spinOf a = spinOf c && spinOf b = spinOf d then gChem (spatialOf a) (spatialOf c) (spatialOf b) (spatialOf d) else 0.0
         let private oneBody (key : string) =
             let p, q = let x = key.Split(',') in int x.[0], int x.[1]
-            if spin p = spin q then
-                let v = hSpatial (sp p) (sp q)
-                if abs v > 1e-15 then Some (Complex(v, 0.0)) else None
+            if spinOf p = spinOf q then
+                let v = hSpatial (spatialOf p) (spatialOf q)
+                if v <> 0.0 then Some (Complex(v, 0.0)) else None
             else None
-        /// RAW physicist tensor F("p,q,r,s") = ⟨pq|rs⟩ = T[p,q,r,s].
-        /// Under the new contract this is the CORRECT, directly-usable input.
+        /// RAW physicist factory F("p,q,r,s") = ⟨pq|rs⟩. Fed DIRECTLY to the named raw
+        /// adapter (or the raw oracle); a caller error if fed to the weighted API.
         let raw (key : string) =
             let x = key.Split(',')
             match x.Length with
@@ -323,10 +334,11 @@ module HamiltonianCoefficients =
             | 4 ->
                 let p, q, r, s = int x.[0], int x.[1], int x.[2], int x.[3]
                 let v = tPhys p q r s
-                if abs v > 1e-15 then Some (Complex(v, 0.0)) else None
+                if v <> 0.0 then Some (Complex(v, 0.0)) else None
             | _ -> None
-        /// Old PRE-ADAPTED factory F("p,q,r,s") = ½·⟨pq|sr⟩ = ½·T[p,q,s,r].
-        /// Under the new contract this double-counts (migration hazard).
+        /// PRE-ADAPTED weighted factory F("p,q,r,s") = ½·⟨pq|sr⟩ = ½·T[p,q,s,r].
+        /// This is the CORRECT legacy weighted input (equivalent to the Fcidump
+        /// adapters); a migration hazard if fed to the raw adapter.
         let preAdapted (key : string) =
             let x = key.Split(',')
             match x.Length with
@@ -334,42 +346,164 @@ module HamiltonianCoefficients =
             | 4 ->
                 let p, q, r, s = int x.[0], int x.[1], int x.[2], int x.[3]
                 let v = 0.5 * tPhys p q s r
-                if abs v > 1e-15 then Some (Complex(v, 0.0)) else None
+                if v <> 0.0 then Some (Complex(v, 0.0)) else None
             | _ -> None
 
-    let private oneNorm (h : PauliRegisterSequence) =
-        h.DistributeCoefficient.SummandTerms |> Array.sumBy (fun t -> Complex.Abs t.Coefficient)
+    // ── Named raw adapter and legacy weighted factory agree ──────────────
 
     [<Fact>]
-    let ``H2 chemist Hamiltonian matches canonical 1-norm 2.699278`` () =
+    let ``raw factory has 4 one-body and 32 raw two-body nonzero entries`` () =
+        let nso = 4
+        let mutable one = 0
+        let mutable two = 0
+        for i in 0 .. nso - 1 do
+            for j in 0 .. nso - 1 do
+                if (Phys.raw (sprintf "%d,%d" i j)).IsSome then one <- one + 1
+                for k in 0 .. nso - 1 do
+                    for l in 0 .. nso - 1 do
+                        if (Phys.raw (sprintf "%d,%d,%d,%d" i j k l)).IsSome then two <- two + 1
+        Assert.Equal(4, one)
+        Assert.Equal(32, two)
+
+    [<Fact>]
+    let ``named raw adapter produces all 15 canonical H2 coefficient entries`` () =
+        // computeHamiltonianFromPhysicist feeds the raw physicist tensor through the
+        // named adapter → the full 15-term canonical H₂, not a truncated 7.
+        let raw = computeHamiltonianFromPhysicist Phys.raw 4u
+        Assert.Equal(15, raw.DistributeCoefficient.SummandTerms.Length)
+        Assert.Equal(-0.8121706072, coeffOf raw "IIII", 8)
+        Assert.Equal(-0.2234315369, coeffOf raw "IIIZ", 8)
+        Assert.Equal( 0.1744128761, coeffOf raw "IIZZ", 8)
+        Assert.Equal(-0.0453026155, coeffOf raw "XXYY", 8)
+        Assert.Equal(2.6992778241, oneNorm raw, 8)
+
+    [<Fact>]
+    let ``legacy weighted factory and named raw adapter produce the same map`` () =
+        // Pre-adapted weighted data through the legacy API == raw data through the raw
+        // adapter == FCIDUMP through the legacy API. All three routes are identical.
+        let factory, nso = h2Factory ()
+        let viaFcidump = computeHamiltonianWith jordanWignerTerms factory (uint32 nso)
+        let viaLegacy  = computeHamiltonianWith jordanWignerTerms Phys.preAdapted 4u
+        let viaRaw     = computeHamiltonianFromPhysicist Phys.raw 4u
+        let s (h : PauliRegisterSequence) = h.DistributeCoefficient.ToString()
+        Assert.Equal(s viaFcidump, s viaLegacy)
+        Assert.Equal(s viaFcidump, s viaRaw)
+
+    // ── Direct raw oracle acceptance (bypasses the library entirely) ─────
+
+    [<Fact>]
+    let ``JW dense matrix matches the direct raw fermionic oracle entrywise`` () =
+        // The raw oracle assembles ½·Σ ⟨ij|kl⟩ a†_i a†_j a_l a_k directly from the raw
+        // physicist tensor; the library builds the same H from the FCIDUMP weighted
+        // factory. In the occupation basis they must agree entry-for-entry.
+        let factory, nso = h2Factory ()
+        let lib = Enc.matrixOfCOcc (computeHamiltonianWith jordanWignerTerms factory (uint32 nso))
+        let oracle = Fermion.matrixOfRaw Phys.raw nso
+        for i in 0 .. Fermion.dim - 1 do
+            for j in 0 .. Fermion.dim - 1 do
+                Assert.Equal(oracle.[i, j], lib.[i, j].Real, 8)
+                Assert.Equal(0.0, lib.[i, j].Imaginary, 8)
+
+    [<Fact>]
+    let ``raw oracle: HF diagonal, particle sectors, ground state, IIII trace`` () =
+        let factory, nso = h2Factory ()
+        let oracle = Fermion.matrixOfRaw Phys.raw nso
+        // HF state = integer 3 (0b0011, modes 0 and 1 occupied): electronic HF energy.
+        Assert.Equal(-1.8318636465, oracle.[3, 3], 8)
+        // Particle-number sectors: no coupling between different occupation numbers.
+        let popcount (x : int) = System.Numerics.BitOperations.PopCount(uint32 x)
+        for i in 0 .. Fermion.dim - 1 do
+            for j in 0 .. Fermion.dim - 1 do
+                if popcount i <> popcount j then Assert.Equal(0.0, oracle.[i, j], 10)
+        // Ground state of the full 16×16 spectrum.
+        let spec = Fermion.eigenvalues oracle
+        Assert.Equal(-1.8523881736, List.head spec, 8)
+        // Trace/16 = the identity coefficient IIII (basis-invariant).
+        let trace = [ for i in 0 .. Fermion.dim - 1 -> oracle.[i, i] ] |> List.sum
+        Assert.Equal(-0.8121706072, trace / float Fermion.dim, 8)
+
+    [<Fact>]
+    let ``encoded H2 spectrum matches the direct fermionic matrix (ground -1.8523881736)`` () =
+        let factory, nso = h2Factory ()
+        let encoded = Enc.matrixOf (computeHamiltonianWith jordanWignerTerms factory (uint32 nso))
+        let fermionic = Fermion.matrixOfRaw Phys.raw nso
+        let sa = Fermion.eigenvalues encoded
+        let sb = Fermion.eigenvalues fermionic
+        Assert.Equal(sa.Length, sb.Length)
+        List.iter2 (fun (a: float) b -> Assert.Equal(a, b, 8)) sa sb
+        Assert.Equal(-1.8523881736, List.head sb, 8)
+
+    [<Fact>]
+    let ``FCIDUMP independently matches the coefficient and weighted dense oracles`` () =
+        // The FCIDUMP weighted factory, consumed verbatim, matches (a) the encoded
+        // coefficient oracle and (b) a weighted dense oracle that also consumes it
+        // verbatim (no ½, no swap) — locking the FCIDUMP½·(ps|qr) adapter.
+        let factory, nso = h2Factory ()
+        let lib = Enc.matrixOfCOcc (computeHamiltonianWith jordanWignerTerms factory (uint32 nso))
+        let weightedOracle = Fermion.matrixOfWeighted factory nso
+        let rawOracle = Fermion.matrixOfRaw Phys.raw nso
+        for i in 0 .. Fermion.dim - 1 do
+            for j in 0 .. Fermion.dim - 1 do
+                Assert.Equal(weightedOracle.[i, j], lib.[i, j].Real, 8)
+                Assert.Equal(rawOracle.[i, j], weightedOracle.[i, j], 8)
+
+    // ── Migration hazard / caller error ─────────────────────────────────
+
+    [<Fact>]
+    let ``pre-adapted data fed to the raw adapter double-adapts (migration hazard)`` () =
+        // Already-weighted (½-folded) data pushed through the raw adapter applies a
+        // second ½ and re-swaps → wrong. Migrate such factories to the legacy weighted
+        // API (or strip their ½/swap) rather than the raw adapter.
+        let hazard = computeHamiltonianFromPhysicist Phys.preAdapted 4u
+        Assert.True(abs (coeffOf hazard "IIII" - (-0.8121706072)) > 0.01,
+            sprintf "double-adapted IIII=%f should differ materially from -0.8121706072"
+                (coeffOf hazard "IIII"))
+
+    [<Fact>]
+    let ``raw data fed straight to the legacy weighted API is a caller error`` () =
+        // Raw physicist integrals passed to the weighted factory omit the ½ and the
+        // index swap → wrong. Wrap them with rawPhysicistToWeightedFactory instead.
+        let wrong = computeHamiltonianWith jordanWignerTerms Phys.raw 4u
+        Assert.True(abs (coeffOf wrong "IIII" - (-0.8121706072)) > 0.01,
+            sprintf "unadapted-raw IIII=%f should differ materially from -0.8121706072"
+                (coeffOf wrong "IIII"))
+
+    // ── All five builders agree ──────────────────────────────────────────
+
+    [<Fact>]
+    let ``all five Hamiltonian builders agree on H2`` () =
+        let factory, nso = h2Factory ()
+        let n = uint32 nso
+        let s (h : PauliRegisterSequence) = h.DistributeCoefficient.ToString()
+        let seqH     = computeHamiltonianWith jordanWignerTerms factory n
+        let parH     = computeHamiltonianWithParallel jordanWignerTerms factory n
+        let cacheH   = computeHamiltonianCached jordanWignerTerms factory n
+        let fullSk   = applyCoefficients (computeHamiltonianSkeleton jordanWignerTerms n) factory
+        let sparseSk = applyCoefficients (computeHamiltonianSkeletonFor jordanWignerTerms factory n) factory
+        Assert.Equal(s seqH, s parH)
+        Assert.Equal(s seqH, s cacheH)
+        Assert.Equal(s seqH, s fullSk)
+        Assert.Equal(s seqH, s sparseSk)
+
+    // ── Canonical H2 resource metrics: 15 / 32 / 15 / 36 ─────────────────
+
+    [<Fact>]
+    let ``canonical H2 metrics: 15 terms, weight 32, 15 rotations, 36 CNOTs`` () =
         let factory, nso = h2Factory ()
         let ham = computeHamiltonianWith jordanWignerTerms factory (uint32 nso)
-        Assert.Equal(2.699278, oneNorm ham, 5)
+        let costs = CostAnalysis.hamiltonianCosts ham
+        Assert.Equal(15, costs.TermCount)
+        Assert.Equal(32, costs.TotalPauliWeight)
+        let step = Trotterization.firstOrderTrotter 1.0 ham
+        Assert.Equal(15, step.Rotations.Length)
+        Assert.Equal(36, Trotterization.trotterCnotCount step)
+
+    // ══════════════════════════════════════════════════════════════════
+    //  Cancellation-aware zero reduction + tiny-term survival.
+    // ══════════════════════════════════════════════════════════════════
 
     [<Fact>]
-    let ``raw physicist tensor produces the correct H2 directly (new contract)`` () =
-        let chemF, nso = h2Factory ()
-        let chem = computeHamiltonianWith jordanWignerTerms chemF (uint32 nso)
-        let raw  = computeHamiltonianWith jordanWignerTerms Phys.raw (uint32 nso)
-        // The raw physicist tensor is fed directly and reproduces the FCIDUMP
-        // Hamiltonian term-for-term — the book's input now works without adaptation.
-        Assert.Equal(chem.DistributeCoefficient.ToString(), raw.DistributeCoefficient.ToString())
-        Assert.Equal(-0.8121706072, coeffOf raw "IIII", 8)
-        Assert.Equal(-0.0453026155, coeffOf raw "XXYY", 8)
-        Assert.Equal(2.699278, oneNorm raw, 5)
-
-    [<Fact>]
-    let ``pre-adapted half-folded factory now double-counts (migration hazard)`` () =
-        // A factory written for the OLD contract (½·⟨pq|sr⟩) now double-applies the
-        // ½ and re-swaps, so it no longer yields the correct H2. Custom pre-adapted
-        // factories must drop their ½/swap (or switch to the Fcidump adapters).
-        let preAdapted = computeHamiltonianWith jordanWignerTerms Phys.preAdapted 4u
-        Assert.True(abs (coeffOf preAdapted "IIII" - (-0.8121706072)) > 0.01,
-            sprintf "pre-adapted IIII=%f should differ materially from the correct -0.8121706072"
-                (coeffOf preAdapted "IIII"))
-
-    [<Fact>]
-    let ``H2 Hamiltonian carries no numerical-zero terms`` () =
+    let ``H2 stores no numerical-zero terms (cancellation residues removed)`` () =
         // Fermionic cancellations previously left 8 float-noise zero terms
         // (XXXY, XXYX, …) inflating CostAnalysis to 23 terms / weight 64.
         let factory, nso = h2Factory ()
@@ -379,60 +513,66 @@ module HamiltonianCoefficients =
                 sprintf "term %s has a numerical-zero coefficient %A" t.Signature t.Coefficient)
 
     [<Fact>]
-    let ``all five Hamiltonian builders agree on H2`` () =
-        let factory, nso = h2Factory ()
-        let n = uint32 nso
-        let s (h : PauliRegisterSequence) = h.DistributeCoefficient.ToString()
-        let seqH    = computeHamiltonianWith jordanWignerTerms factory n
-        let parH    = computeHamiltonianWithParallel jordanWignerTerms factory n
-        let cacheH  = computeHamiltonianCached jordanWignerTerms factory n
-        let fullSk  = applyCoefficients (computeHamiltonianSkeleton jordanWignerTerms n) factory
-        let sparseSk = applyCoefficients (computeHamiltonianSkeletonFor jordanWignerTerms factory n) factory
-        Assert.Equal(s seqH, s parH)
-        Assert.Equal(s seqH, s cacheH)
-        Assert.Equal(s seqH, s fullSk)
-        Assert.Equal(s seqH, s sparseSk)
+    let ``exact cancellation of two contributions drops the term`` () =
+        // n_0 = (I − Z_0)/2 and n_1 = (I − Z_1)/2 each contribute to II. With
+        // factory("0,0")=+0.1 and factory("1,1")=−0.1 the two II contributions
+        // (+0.05 and −0.05) cancel exactly → II is dropped (count = 2, exact zero),
+        // while ZI = −0.05 and IZ = +0.05 survive.
+        let factory (key : string) =
+            if   key = "0,0" then Some (Complex(0.1, 0.0))
+            elif key = "1,1" then Some (Complex(-0.1, 0.0))
+            else None
+        let ham = computeHamiltonianWith jordanWignerTerms factory 2u
+        Assert.Equal(0.0, coeffOf ham "II", 15)
+        Assert.Equal(-0.05, coeffOf ham "ZI", 12)
+        Assert.Equal(0.05, coeffOf ham "IZ", 12)
+        Assert.Equal(2, ham.DistributeCoefficient.SummandTerms.Length)
 
     [<Fact>]
-    let ``H2 direct-oracle anchors: interleaved spin expansion, trace, HF diagonal`` () =
-        // Independent direct-oracle acceptance anchors (encodings-research):
-        //  • interleaved spin expansion → 4 nonzero one-body + 32 nonzero two-body
-        //    factory entries;
-        //  • Tr(H)/16 = the identity coefficient IIII = −0.8121706072 (basis-invariant);
-        //  • occupation-basis diagonal at the HF state (integer 3 = 0b0011, modes 0,1
-        //    occupied) = the electronic HF energy −1.8318636465, with Vnn kept separate.
-        let factory, nso = h2Factory ()
-        // (1) Factory entry counts (interleaved 0α,0β,1α,1β spin-orbitals).
-        let mutable one = 0
-        let mutable two = 0
-        for i in 0 .. nso - 1 do
-            for j in 0 .. nso - 1 do
-                if (factory (sprintf "%d,%d" i j)).IsSome then one <- one + 1
-                for k in 0 .. nso - 1 do
-                    for l in 0 .. nso - 1 do
-                        if (factory (sprintf "%d,%d,%d,%d" i j k l)).IsSome then two <- two + 1
-        Assert.Equal(4, one)
-        Assert.Equal(32, two)
-        // (2) Direct dense fermionic matrix (mode j → bit 2ʲ occupation basis).
-        let fermionic = Fermion.matrixOf factory nso
-        let trace = [ for i in 0 .. Fermion.dim - 1 -> fermionic.[i, i] ] |> List.sum
-        Assert.Equal(-0.8121706072, trace / float Fermion.dim, 8)
-        Assert.Equal(-1.8318636465, fermionic.[3, 3], 8)
+    let ``floating cancellation residue is removed but nearby real term survives`` () =
+        // n_0 = (I - Z_0)/2. factory("0,0")=h1 and factory("1,1")=h2 populate II with
+        // h1/2 + h2/2. Choose h1 = 0.1, h2 = -0.1 + 3e-16: the II coefficient is a
+        // ~1.5e-16 residue (≈ eps·scale, scale≈0.1) → dropped as cancellation, while the
+        // ZI (h1/2 = 0.05) and IZ (h2/2 ≈ -0.05) terms survive.
+        let factory (key : string) =
+            if   key = "0,0" then Some (Complex(0.1, 0.0))
+            elif key = "1,1" then Some (Complex(-0.1 + 3e-16, 0.0))
+            else None
+        let ham = computeHamiltonianWith jordanWignerTerms factory 2u
+        Assert.Equal(0.0, coeffOf ham "II", 12)                 // II dropped
+        Assert.Equal(-0.05, coeffOf ham "ZI", 12)               // survives
+        Assert.Equal(0.05, coeffOf ham "IZ", 12)                // survives
 
     [<Fact>]
-    let ``H2 JW-encoded HF diagonal equals the HF energy in the occupation basis`` () =
-        // The encoded (qubit-0-leftmost) Hamiltonian, read in the occupation basis
-        // (signature reversed so mode j → bit 2ʲ), must have its HF diagonal entry
-        // (integer 3, modes 0,1 occupied) equal to the electronic HF energy. A bit
-        // reversal would move this off diagonal index 3, so this is a state-resolved
-        // check the spectrum alone cannot make.
-        let factory, nso = h2Factory ()
-        let ham = computeHamiltonianWith jordanWignerTerms factory (uint32 nso)
-        let occ = Enc.matrixOfCOcc ham
-        Assert.Equal(-1.8318636465, occ.[3, 3].Real, 8)
-        // Trace is basis-invariant → identity coefficient.
-        let trace = [ for i in 0 .. 15 -> occ.[i, i] ] |> List.sumBy (fun c -> c.Real)
-        Assert.Equal(-0.8121706072, trace / 16.0, 8)
+    let ``a legitimate small residue from two contributions is NOT dropped`` () =
+        // Same shape as above but the II residue is 1e-9 (far above eps·scale), a real
+        // physical value that must survive even though it arose from two contributions.
+        let factory (key : string) =
+            if   key = "0,0" then Some (Complex(0.1, 0.0))
+            elif key = "1,1" then Some (Complex(-0.1 + 2e-9, 0.0))
+            else None
+        let ham = computeHamiltonianWith jordanWignerTerms factory 2u
+        Assert.Equal(1e-9, coeffOf ham "II", 15)
+
+    [<Fact>]
+    let ``standalone tiny coefficients survive on every builder path`` () =
+        // A single one-body coefficient far below any legacy absolute threshold must
+        // survive verbatim through sequential, parallel, cached and both skeletons.
+        for v in [1e-12; 1e-13; 1e-15] do
+            let factory (key : string) = if key = "0,0" then Some (Complex(2.0 * v, 0.0)) else None
+            let build (h : PauliRegisterSequence) =
+                Assert.Equal(2, h.DistributeCoefficient.SummandTerms.Length)
+                Assert.Equal(v, coeffOf h "II", 15)
+                Assert.Equal(-v, coeffOf h "ZI", 15)
+            build (computeHamiltonianWith jordanWignerTerms factory 2u)
+            build (computeHamiltonianWithParallel jordanWignerTerms factory 2u)
+            build (computeHamiltonianCached jordanWignerTerms factory 2u)
+            build (applyCoefficients (computeHamiltonianSkeleton jordanWignerTerms 2u) factory)
+            build (applyCoefficients (computeHamiltonianSkeletonFor jordanWignerTerms factory 2u) factory)
+
+    // ══════════════════════════════════════════════════════════════════
+    //  Six-encoding complex-Hermitian spectrum (retained; requirement 9).
+    // ══════════════════════════════════════════════════════════════════
 
     [<Fact>]
     let ``H2 spectrum agrees across all six fermion-to-qubit encodings`` () =
@@ -440,7 +580,7 @@ module HamiltonianCoefficients =
         // (balanced binary, ternary, Vlasov) must all reproduce the full
         // 16-eigenvalue H₂ spectrum (ground −1.852388 Ha). The tree encodings
         // emit Y–Y couplings, so their dense matrices are genuinely complex-
-        // Hermitian; the spectrum must be taken with `hermEigenvalues`, not by
+        // Hermitian; the spectrum must be taken with `hermEigenvalues`, never by
         // truncating to the real part.
         let factory, nso = h2Factory ()
         let n = uint32 nso
@@ -459,26 +599,17 @@ module HamiltonianCoefficients =
                 sprintf "%s spectrum differs from Jordan-Wigner" name)
 
     [<Fact>]
-    let ``H2 assembly is wrong if the half is dropped or the r-s swap is omitted`` () =
-        // Proves each defect changes the physics independently (compared via spectra,
-        // since the encoded matrix uses qubit-0-leftmost and the fermionic oracle
-        // uses mode-0-LSB — a bit reversal that preserves eigenvalues).
+    let ``H2 assembly is wrong if the caller's half or index order is corrupted`` () =
+        // Proves the ½ and the annihilator order each change the physics independently
+        // (compared via spectra). The library consumes the WEIGHTED factory verbatim;
+        // the raw oracle applies ½ + a_l a_k. The defect variants must disagree.
         let factory, nso = h2Factory ()
         let libSpec = Fermion.eigenvalues (Enc.matrixOf (computeHamiltonianWith jordanWignerTerms factory (uint32 nso)))
-        let specOfOracle half swap = Fermion.eigenvalues (Fermion.matrixOfWith half swap factory nso)
+        let specOfOracle half swap = Fermion.eigenvalues (Fermion.matrixOfWith half swap Phys.raw nso)
         let correct = specOfOracle 0.5 true
         let noHalf  = specOfOracle 1.0 true    // missing ½
         let noSwap  = specOfOracle 0.5 false   // unswapped annihilators
         let eq a b = List.forall2 (fun (x : float) y -> abs (x - y) < 1e-8) a b
-        Assert.True(eq libSpec correct, "library must match the ½+swap oracle spectrum")
+        Assert.True(eq libSpec correct, "library must match the ½+swap raw oracle spectrum")
         Assert.False(eq libSpec noHalf, "dropping the ½ must change the spectrum")
         Assert.False(eq libSpec noSwap, "omitting the r↔s swap must change the spectrum")
-
-    [<Fact>]
-    let ``legitimate small nonzero coefficients survive the zero filter`` () =
-        // One-body h = 2e-6 → ½h·I and −½h·Z = ±1e-6, far above the 1e-12 threshold.
-        let factory (key : string) = if key = "0,0" then Some (Complex(2e-6, 0.0)) else None
-        let ham = computeHamiltonianWith jordanWignerTerms factory 2u
-        Assert.Equal(1e-6, coeffOf ham "II", 12)
-        Assert.Equal(-1e-6, coeffOf ham "ZI", 12)
-        Assert.Equal(2, ham.DistributeCoefficient.SummandTerms.Length)

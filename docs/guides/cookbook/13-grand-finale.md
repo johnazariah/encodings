@@ -16,28 +16,30 @@ open Encodings.CircuitOutput
 open Encodings
 open System.Numerics
 
-// ─── Integrals (from the Hamiltonian chapter) ───────────────
+// ─── Integrals: the canonical H₂/STO-3G FCIDUMP (from Chapter 10) ───
 let nModes = 4u
 
-let integrals = Map [
-    ("0,0", Complex(-1.2563, 0.0)); ("1,1", Complex(-1.2563, 0.0))
-    ("2,2", Complex(-0.4719, 0.0)); ("3,3", Complex(-0.4719, 0.0))
-    ("0,0,0,0", Complex(0.6745, 0.0)); ("1,1,1,1", Complex(0.6745, 0.0))
-    ("2,2,2,2", Complex(0.6974, 0.0)); ("3,3,3,3", Complex(0.6974, 0.0))
-    ("0,0,1,1", Complex(0.6745, 0.0)); ("1,1,0,0", Complex(0.6745, 0.0))
-    ("0,0,2,2", Complex(0.6636, 0.0)); ("2,2,0,0", Complex(0.6636, 0.0))
-    ("0,0,3,3", Complex(0.6636, 0.0)); ("3,3,0,0", Complex(0.6636, 0.0))
-    ("1,1,2,2", Complex(0.6636, 0.0)); ("2,2,1,1", Complex(0.6636, 0.0))
-    ("1,1,3,3", Complex(0.6636, 0.0)); ("3,3,1,1", Complex(0.6636, 0.0))
-    ("2,2,3,3", Complex(0.6974, 0.0)); ("3,3,2,2", Complex(0.6974, 0.0))
-    ("0,2,2,0", Complex(0.1809, 0.0)); ("2,0,0,2", Complex(0.1809, 0.0))
-    ("1,3,3,1", Complex(0.1809, 0.0)); ("3,1,1,3", Complex(0.1809, 0.0))
-]
+// A self-contained H₂/STO-3G coefficient factory. The FCIDUMP adapter
+// returns the released *weighted* coefficients (½·(ps|qr) folded in), so
+// the factory is fed straight to the builders — no hand-folded ½.
+let fcidump = """
+ &FCI NORB=   2,NELEC= 2,MS2=0,
+  ORBSYM=1,1,
+  ISYM=1,
+ &END
+ 0.6747559268144484    1    1    1    1
+ 0.6637114013508132    1    1    2    2
+ 0.1812104620151968    2    1    2    1
+ 0.6637114013508132    2    2    1    1
+ 0.697651504490461     2    2    2    2
+ -1.253309786645977    1    1  0  0
+ -0.4750688487721783   2    2  0  0
+ 0.7151043390810812  0  0  0  0
+"""
 
-let lookup key =
-    match (key : string).Split(',').Length with
-    | 2 | 4 -> integrals |> Map.tryFind key
-    | _ -> None
+let lookup =
+    let (factory, _core, _nso) = parseToSpinOrbitalFactory fcidump
+    factory
 
 // ─── Encode and compare ─────────────────────────────────────
 let encoders = [
@@ -82,13 +84,13 @@ term, so the total CNOT cost is $\sum_k 2(w_k - 1)$ over all terms.
 
 | Encoding | Terms | Max weight | Avg weight | CNOTs / Trotter step |
 |:---|:---:|:---:|:---:|:---:|
-| Jordan–Wigner | 6 | 2 | 1.3 | 4 |
-| Bravyi–Kitaev | 6 | 3 | 2.0 | 12 |
-| Ternary Tree | 6 | 3 | 1.7 | 8 |
+| Jordan–Wigner | 15 | 4 | 2.13 | 36 |
+| Bravyi–Kitaev | 15 | 4 | 2.40 | 44 |
+| Ternary Tree | 15 | 4 | 2.40 | 44 |
 
 > **Surprise:** For H₂ (4 qubits), Jordan–Wigner has the *lowest* CNOT
-> count! The $O(n)$ weight scaling only becomes problematic at larger $n$.
-> At $n = 32$, JW needs 62 CNOTs per worst-case rotation while the
+> count (36 vs 44)! The $O(n)$ weight scaling only becomes problematic at
+> larger $n$. At $n = 32$, JW needs 62 CNOTs per worst-case rotation while the
 > ternary tree needs only 8. See [Lab 07](../../labs/07-trotter-cost.html)
 > for the full scaling analysis.
 
