@@ -16,6 +16,16 @@ All notable changes to FockMap will be documented in this file.
     pre-folded the ½ and used the `a†_p a†_q a_r a_s` order, i.e. supplied
     `½·⟨pq|sr⟩ = ½·(ps|qr)`) must now supply the raw `⟨pq|rs⟩ = (pr|qs)` with **no**
     ½ and no r↔s swap. From chemist integrals, `⟨pq|rs⟩ = (pr|qs)`.
+  - **Concrete key mapping.** For a raw physicist integral `⟨pq|rs⟩`:
+    - **New contract (do this):** factory key `"p,q,r,s"` → value `⟨pq|rs⟩`.
+      The library forms `½·⟨pq|rs⟩ · a†_p a†_q a_s a_r`.
+    - **Old contract (previously required):** factory key `"p,q,s,r"` → value
+      `0.5·⟨pq|rs⟩` (the caller pre-applied the ½ and pre-swapped r↔s so the old
+      builder's `a†_p a†_q a_k a_l` order landed on `a_s a_r`).
+    - The **book bug** was feeding raw `⟨pq|rs⟩` at key `"p,q,r,s"` to the *old*
+      builder, which then dropped the ½ and used the wrong annihilator order —
+      yielding `IIII = −3.5608` and a four-body magnitude `0.0906` (exactly 2× the
+      correct `0.0453026155`). The new contract makes the raw tensor correct as-is.
   - The `Fcidump` adapters were updated in lockstep and continue to reproduce the
     correct H₂/STO-3G spectrum (electronic ground −1.8523881736 Ha, 1-norm 2.699278);
     no change is needed when building factories from FCIDUMP files.

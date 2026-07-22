@@ -379,6 +379,19 @@ module HamiltonianCoefficients =
                 sprintf "term %s has a numerical-zero coefficient %A" t.Signature t.Coefficient)
 
     [<Fact>]
+    let ``H2 CostAnalysis reports 15 terms and weight 32 (no zero inflation)`` () =
+        // Retained exact/near-zero terms previously inflated the analysis to 23
+        // terms / total weight 64. After boundary pruning the H₂ Hamiltonian has
+        // exactly 15 nonzero Pauli terms; CostAnalysis must reflect that.
+        let factory, nso = h2Factory ()
+        let ham = computeHamiltonianWith jordanWignerTerms factory (uint32 nso)
+        let costs = CostAnalysis.hamiltonianCosts ham
+        Assert.Equal(15, costs.TermCount)
+        Assert.Equal(32, costs.TotalPauliWeight)
+        Assert.Equal(4, costs.MaxPauliWeight)
+        Assert.Equal(-0.8121706072, costs.IdentityCoeff, 8)
+
+    [<Fact>]
     let ``all five Hamiltonian builders agree on H2`` () =
         let factory, nso = h2Factory ()
         let n = uint32 nso

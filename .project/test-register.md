@@ -605,7 +605,7 @@ Related: `PauliRegister.fs` tests confirm position 0 is the leftmost character
 
 ---
 
-## 15. Hamiltonian Coefficients (state/convention) — `HamiltonianCoefficients.fs` (14 tests)
+## 15. Hamiltonian Coefficients (state/convention) — `HamiltonianCoefficients.fs` (15 tests)
 
 Signature-only tests pass even when the integral/factory convention is wrong (all
 encodings share the same coefficient error). These pin exact Pauli coefficients and
@@ -631,6 +631,7 @@ dropped or the r↔s swap is omitted.
 | 12 | Legitimate small nonzero coefficients (±1e-6) survive the 1e-12 zero filter | Fact |
 | 13 | Direct-oracle anchors: interleaved spin expansion gives 4 one-body + 32 two-body nonzero factory entries; Tr(H)/16 = IIII = −0.8121706072; occupation diag[3] (HF, modes 0,1) = −1.8318636465 | Fact |
 | 14 | JW-encoded HF diagonal in the occupation basis (mode j → bit 2ʲ) equals the HF energy −1.8318636465 — a state-resolved check a bit reversal would break | Fact |
+| 15 | CostAnalysis on H₂ reports 15 terms / total weight 32 / IdentityCoeff −0.8121706072 (no zero-term inflation to 23/64) | Fact |
 
 ---
 
@@ -656,7 +657,7 @@ dropped or the r↔s swap is omitted.
 | Bosonic-to-qubit encodings | 70 | Theory + Fact + cross-encoding | **High** — matrix construction, Pauli decomposition, weight bounds, multi-mode embedding, number-operator roundtrip |
 | Qubit tapering — Clifford conjugation | 25 | Exact letters/phases + dense-matrix spectra | **High** — all 16 CNOT conjugations, U·H·U† to machine precision, H₂ sector spectra |
 | Index/label ordering (state-resolved) | 10 | Occupation-basis diagonal reads + exact a†₂ string | **High** — number operators verified on the intended occupation basis; catches bit reversal that spectra miss |
-| Hamiltonian coefficients & factory contract | 14 | Exact coefficients + dense fermionic oracle + six-encoding spectra + HF diagonal | **High** — pins H₂/STO-3G coefficients, raw-physicist contract, ½+swap defect proofs, trace/HF-diagonal anchors, zero filtering |
+| Hamiltonian coefficients & factory contract | 15 | Exact coefficients + dense fermionic oracle + six-encoding spectra + HF diagonal | **High** — pins H₂/STO-3G coefficients, raw-physicist contract, ½+swap defect proofs, trace/HF-diagonal anchors, zero filtering |
 
 ### What is *not* tested
 

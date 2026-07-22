@@ -11,6 +11,21 @@
 /// and encodes it as a sum of Pauli strings using any provided encoding function.
 /// The function handles one-body terms, two-body terms, coefficient combination,
 /// and zero-term dropping.
+///
+/// <para>
+/// <b>Factory contract.</b> The coefficient factory returns the RAW physicist
+/// two-electron integral ⟨pq|rs⟩ for key "p,q,r,s" (and h_pq for "p,q"); the
+/// library applies the ½ and the a_s a_r annihilator order internally. Do NOT
+/// pre-fold the ½ or pre-swap the last two indices. From chemist integrals,
+/// ⟨pq|rs⟩ = (pr|qs).
+/// </para>
+/// <para>
+/// <b>Migration example.</b> For a raw physicist integral ⟨pq|rs⟩:
+/// new contract — key "p,q,r,s" → value ⟨pq|rs⟩ (correct as-is);
+/// the previous contract instead required key "p,q,s,r" → value 0.5·⟨pq|rs⟩.
+/// Feeding raw ⟨pq|rs⟩ at "p,q,r,s" to the OLD builder was the source of the
+/// doubled/mis-ordered coefficients (IIII = −3.5608, four-body 2× too large).
+/// </para>
 /// </remarks>
 module Hamiltonian =
     open System.Numerics
