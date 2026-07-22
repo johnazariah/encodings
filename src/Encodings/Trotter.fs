@@ -17,6 +17,14 @@ open System.Numerics
 /// decompositions, along with circuit resource estimation (CNOT count,
 /// Pauli weight statistics).
 /// </para>
+/// <para>
+/// <b>Precondition: the Hamiltonian must be Hermitian.</b> Only the real part of
+/// each Pauli coefficient maps to a rotation angle, so every term must have a
+/// negligible imaginary part (|Im| ≤ 1e-9). <see cref="firstOrderTrotter"/> and
+/// <see cref="secondOrderTrotter"/> reject a materially imaginary (non-Hermitian)
+/// coefficient with <see cref="T:System.ArgumentException"/> rather than silently
+/// discarding it.
+/// </para>
 /// </remarks>
 module Trotterization =
 

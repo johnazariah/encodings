@@ -82,9 +82,14 @@ term, so the total CNOT cost is $\sum_k 2(w_k - 1)$ over all terms.
 
 | Encoding | Terms | Max weight | Avg weight | CNOTs / Trotter step |
 |:---|:---:|:---:|:---:|:---:|
-| Jordan–Wigner | 6 | 2 | 1.3 | 4 |
-| Bravyi–Kitaev | 6 | 3 | 2.0 | 12 |
-| Ternary Tree | 6 | 3 | 1.7 | 8 |
+| Jordan–Wigner | 7 | 2 | 1.14 | 4 |
+| Bravyi–Kitaev | 7 | 3 | 1.71 | 12 |
+| Ternary Tree | 7 | 3 | 1.43 | 8 |
+
+> **Note:** this chapter uses a reduced illustrative integral set (diagonal
+> Coulomb/exchange only), so each encoding yields 7 Pauli terms rather than the
+> full 15-term physical H₂. See [Chapter 9](09-trees.html), which loads the real
+> STO-3G integrals via the FCIDUMP adapter, for the complete 15-term Hamiltonian.
 
 > **Surprise:** For H₂ (4 qubits), Jordan–Wigner has the *lowest* CNOT
 > count! The $O(n)$ weight scaling only becomes problematic at larger $n$.

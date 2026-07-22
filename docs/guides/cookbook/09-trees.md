@@ -187,10 +187,10 @@ for (name, encoder) in hamEncoders do
 ```
 
 ```
-Jordan-Wigner         Terms: 7  MaxWt: 2  AvgWt: 1.14
-Bravyi-Kitaev         Terms: 7  MaxWt: 3  AvgWt: 1.71
-Balanced Ternary      Terms: 7  MaxWt: 3  AvgWt: 1.43
-Vlasov Tree           Terms: 7  MaxWt: 3  AvgWt: 1.43
+Jordan-Wigner         Terms: 15  MaxWt: 4  AvgWt: 2.13
+Bravyi-Kitaev         Terms: 15  MaxWt: 4  AvgWt: 2.40
+Balanced Ternary      Terms: 15  MaxWt: 4  AvgWt: 2.40
+Vlasov Tree           Terms: 15  MaxWt: 4  AvgWt: 2.40
 ```
 
 For H₂ (4 qubits), both tree encodings match.  The differences grow

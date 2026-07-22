@@ -143,7 +143,7 @@ let gates = decomposeTrotterStep step
 
 // 5. Export → OpenQASM 3.0
 let qasm = toOpenQasm defaultOpenQasmOptions tapered.TaperedQubitCount gates
-// Ready to run on IBM Quantum, IonQ, Rigetti, Amazon Braket
+// OpenQASM 3.0 — importable by IBM Quantum, IonQ, Rigetti, and Amazon Braket toolchains
 
 // Also available: Q# and JSON export
 let qs   = toQSharp defaultQSharpOptions tapered.TaperedQubitCount gates

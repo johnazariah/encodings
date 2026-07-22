@@ -392,6 +392,51 @@ module HamiltonianCoefficients =
         Assert.Equal(-0.8121706072, costs.IdentityCoeff, 8)
 
     [<Fact>]
+    let ``H2 JW Hamiltonian matches the complete exact 15-signature coefficient map`` () =
+        // The full canonical H₂/STO-3G Jordan-Wigner coefficient map. Locks every
+        // signature and coefficient (not just IIII/four-body), so a wrong index
+        // mapping or a dropped/duplicated term is caught exactly.
+        let expected =
+            [ "IIII", -0.8121706072
+              "IIIZ", -0.2234315369; "IIZI", -0.2234315369; "IIZZ",  0.1744128761
+              "IZII",  0.1714128264; "IZIZ",  0.1206252348; "IZZI",  0.1659278503
+              "XXYY", -0.0453026155; "XYYX",  0.0453026155; "YXXY",  0.0453026155; "YYXX", -0.0453026155
+              "ZIII",  0.1714128264; "ZIIZ",  0.1659278503; "ZIZI",  0.1206252348; "ZZII",  0.1686889817 ]
+            |> Map.ofList
+        let factory, nso = h2Factory ()
+        let terms = (computeHamiltonianWith jordanWignerTerms factory (uint32 nso)).DistributeCoefficient.SummandTerms
+        Assert.Equal(expected.Count, terms.Length)
+        for t in terms do
+            match Map.tryFind t.Signature expected with
+            | Some c ->
+                Assert.Equal(c, t.Coefficient.Real, 8)
+                Assert.True(abs t.Coefficient.Imaginary < 1e-9,
+                    sprintf "%s should be real, got %A" t.Signature t.Coefficient)
+            | None -> Assert.True(false, sprintf "unexpected signature %s (%A)" t.Signature t.Coefficient)
+        for kv in expected do
+            Assert.True(terms |> Array.exists (fun t -> t.Signature = kv.Key),
+                sprintf "missing signature %s" kv.Key)
+
+    [<Fact>]
+    let ``H2 encoded dense matrix equals an independent raw-integral oracle entry by entry`` () =
+        // Non-circular dense check. The library builds H₂ through the FCIDUMP-derived
+        // factory (h2Factory) and encodes with Jordan-Wigner; the oracle is a direct
+        // dense fermionic matrix built from the hard-coded spatial integrals (Phys.raw
+        // via gChem/hSpatial), NOT the FCIDUMP parser. Comparing EVERY entry in the
+        // shared occupation basis (mode j → bit 2ʲ) locks the FCIDUMP index mapping and
+        // the encoding basis — a spectrum-only check cannot (bit reversal is isospectral).
+        let factory, nso = h2Factory ()
+        let lib = Enc.matrixOfCOcc (computeHamiltonianWith jordanWignerTerms factory (uint32 nso))
+        let oracle = Fermion.matrixOf Phys.raw nso
+        let mutable maxErr = 0.0
+        for i in 0 .. Fermion.dim - 1 do
+            for j in 0 .. Fermion.dim - 1 do
+                Assert.True(abs lib.[i, j].Imaginary < 1e-9,
+                    sprintf "entry (%d,%d) should be real, got %A" i j lib.[i, j])
+                maxErr <- max maxErr (abs (lib.[i, j].Real - oracle.[i, j]))
+        Assert.True(maxErr < 1e-8, sprintf "max dense entry error %g exceeds tolerance" maxErr)
+
+    [<Fact>]
     let ``all five Hamiltonian builders agree on H2`` () =
         let factory, nso = h2Factory ()
         let n = uint32 nso
