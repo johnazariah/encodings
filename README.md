@@ -158,10 +158,11 @@ let json = toCircuitJson tapered.TaperedQubitCount Map.empty gates
 - **Occupation integers are mode-*j*-weight-2ʲ** (mode 0 = least-significant bit),
   so the H₂ Hartree–Fock state with modes 0 and 1 occupied is the integer 3 = `0b0011`.
 - **To convert** a FockMap Pauli label to a Qiskit-style Pauli-label string, or to
-  read a string in the occupation basis (mode *j* → bit 2ʲ), **reverse the string**:
-  FockMap `"ZXII"` (Z₀X₁I₂I₃) ≡ Qiskit-style label `"IIXZ"`. (Qiskit's `Pauli`
-  labels are little-endian; OpenQASM has no Pauli-label string, it indexes `q[i]`
-  explicitly, so this reversal is about label display, not qubit numbering.)
+  read a string in the occupation basis (mode *j* → bit 2ʲ), **reverse the character
+  string**: FockMap `"ZXII"` (Z₀X₁I₂I₃) ≡ Qiskit-style label `"IIXZ"`. Qiskit-style
+  Pauli labels put q0 rightmost, which is why the reversal is needed. OpenQASM gates
+  use explicit indexed operands, so map qubit *i* to `q[i]` rather than relying on a
+  string-order convention.
 
 ## Where to Start
 

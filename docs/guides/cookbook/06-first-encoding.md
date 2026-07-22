@@ -34,7 +34,9 @@ anti-symmetry on a qubit register.
 > Occupation integers weight mode *j* by 2ʲ (mode 0 = least-significant bit), so the
 > H₂ Hartree–Fock state |modes 0,1 occupied⟩ is the integer 3 = `0b0011`. To read a
 > string in that occupation basis, or to produce a Qiskit-style Pauli-label string,
-> **reverse it** (mode 0 becomes rightmost / bit 2⁰).
+> **reverse it** (mode 0 becomes rightmost / bit 2⁰). OpenQASM gates use explicit
+> indexed operands, so map qubit *i* to `q[i]` rather than relying on a string-order
+> convention.
 
 ## The Z-chain problem
 

@@ -81,9 +81,9 @@ Multi-qubit Pauli strings and their arithmetic.
 | # | What is tested | Style |
 |---|----------------|-------|
 | 1 | Default register of size n is all-identity ("IIII") | Fact |
-| 2 | Register uses big-endian bit ordering | Fact |
+| 2 | Register position 0 is the leftmost character (mode/qubit 0 = leftmost) | Fact |
 | 3 | `FromString` creates a round-trippable register | Theory (8 strings) |
-| 4 | `FromString` creates a big-endian register (X at expected index) | Theory (4 cases) |
+| 4 | `FromString` maps string position i to mode i (position 0 leftmost) | Theory (4 cases) |
 | 5 | Two registers multiply correctly (phase + Pauli string) | Theory (9 product cases) |
 | 6 | Out-of-range indexing returns `None` | Fact |
 | 7 | `WithOperatorAt` ignores out-of-range indices silently | Fact |

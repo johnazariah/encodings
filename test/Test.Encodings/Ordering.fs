@@ -17,8 +17,11 @@ namespace Tests
 ///
 /// To read a FockMap Pauli string in the occupation basis (mode j → bit 2^j),
 /// REVERSE the string before taking the Kronecker product, so mode 0 (the
-/// leftmost character) becomes the least-significant bit. This reversal is
-/// exactly the Qiskit/OpenQASM label convention (mode 0 rightmost).
+/// leftmost character) becomes the least-significant bit. Qiskit-style Pauli
+/// labels likewise put q0 rightmost, so the same character-string reversal
+/// converts a FockMap label to a Qiskit-style label. OpenQASM gates use explicit
+/// indexed operands, so map qubit i to q[i] rather than relying on a string-order
+/// convention.
 ///
 /// Spectrum-only checks cannot detect a mode-order (bit) reversal: bit reversal
 /// is a permutation similarity that preserves the eigenvalue multiset. These

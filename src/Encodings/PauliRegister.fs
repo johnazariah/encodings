@@ -60,10 +60,10 @@ module PauliRegister =
     /// H₂ Hartree–Fock state with modes 0,1 occupied is the integer 3 = 0b0011. To
     /// evaluate a register in that occupation basis (mode j → bit 2ʲ), or to convert
     /// to a Qiskit-style Pauli-label string, <b>reverse the string</b> so mode 0
-    /// becomes the rightmost character / least-significant bit. (OpenQASM has no
-    /// Pauli-label string convention — it indexes qubits <c>q[i]</c> explicitly.)
-    /// State this concrete rule rather than "big/little-endian", which is ambiguous
-    /// across communities.
+    /// becomes the rightmost character / least-significant bit. (OpenQASM gates use
+    /// explicit indexed operands, so map qubit i to <c>q[i]</c> rather than relying
+    /// on a string-order convention.) State this concrete rule rather than
+    /// "big/little-endian", which is ambiguous across communities.
     /// </para>
     /// </remarks>
     type PauliRegister internal (operators : Pauli[], phase) =
