@@ -302,6 +302,13 @@ module HamiltonianFixtureLock =
           4, [ 0.2080748418414580 ] ]
 
     [<Fact>]
+    let ``literal expected sector arrays are authored in ascending order`` () =
+        // Sanity: the frozen literals are already ascending, so the direct
+        // element-by-element comparison below needs no sorting of the expected side.
+        for (_, expected) in expectedSectors do
+            Assert.Equal<float list>(List.sort expected, expected)
+
+    [<Fact>]
     let ``each particle-number sector matches its literal frozen eigenvalue array`` () =
         let oracle = Oracle.matrixOf (rawFactory ()) 4
         let dims = [ 0, 1; 1, 4; 2, 6; 3, 4; 4, 1 ]
@@ -311,25 +318,32 @@ module HamiltonianFixtureLock =
         for (n, expected) in expectedSectors do
             let idx = Oracle.sectorIndices n
             let computed = Oracle.eigenvaluesOf oracle idx    // ascending
-            let expectedSorted = List.sort expected
             Assert.Equal(expected.Length, idx.Length)         // multiplicity/count
             Assert.Equal(expected.Length, computed.Length)
-            // Order + multiplicity: ascending arrays compared element-by-element.
-            List.iter2 (fun (e : float) c -> Assert.Equal(e, c, 8)) expectedSorted computed
+            // Compare the literal expected array DIRECTLY (NOT sorted) to the ascending
+            // computed eigenvalues — order and multiplicity are both pinned.
+            List.iter2 (fun (e : float) c -> Assert.Equal(e, c, 8)) expected computed
 
     [<Fact>]
-    let ``sector eigenvalues union to the full 16-eigenvalue spectrum with the canonical ground`` () =
+    let ``full 16x16 spectrum equals the sorted union of the literal sector arrays`` () =
         let oracle = Oracle.matrixOf (rawFactory ()) 4
-        let full =
-            [ for n in 0 .. 4 -> Oracle.eigenvaluesOf oracle (Oracle.sectorIndices n) ]
-            |> List.concat |> List.sort
-        let expectedFull = expectedSectors |> List.collect snd |> List.sort
+        // Diagonalise the WHOLE 16×16 oracle independently (single block over all
+        // basis states), not by concatenating per-sector results.
+        let full = Oracle.eigenvaluesOf oracle [| 0 .. Oracle.dim - 1 |]   // ascending
+        // Compare entrywise to the sorted union of the frozen N0..N4 sector arrays.
+        let expectedUnion = expectedSectors |> List.collect snd |> List.sort
         Assert.Equal(16, full.Length)
-        List.iter2 (fun (e : float) c -> Assert.Equal(e, c, 8)) expectedFull full
+        Assert.Equal(expectedUnion.Length, full.Length)
+        List.iter2 (fun (e : float) c -> Assert.Equal(e, c, 8)) expectedUnion full
         // The physical ground state lives in the N = 2 sector.
         Assert.Equal(-1.8523881735695826, List.head full, 8)
         // HF determinant (integer 3 = 0b0011, modes 0,1 occupied): electronic HF energy.
         Assert.Equal(-1.8318636464775060, oracle.[3, 3], 8)
+        // Multiplicity anchor: the triply-degenerate N=2 level −1.2458776960825393
+        // appears exactly three times in the full spectrum.
+        let mult v = full |> List.filter (fun x -> abs (x - v) < 1e-8) |> List.length
+        Assert.Equal(3, mult -1.2458776960825393)
+        Assert.Equal(2, mult -1.1607201545632546)
 
     // ── (4) Metrics lock + legacy/raw equivalence on the frozen data ────
 

@@ -653,7 +653,7 @@ from cancelling contributions, while preserving standalone tiny coefficients.
 
 ---
 
-## 15a. Hamiltonian Fixture Lock (audited artifact + oracle) — `HamiltonianFixtureLock.fs` (11 tests)
+## 15a. Hamiltonian Fixture Lock (audited artifact + oracle) — `HamiltonianFixtureLock.fs` (12 tests)
 
 An independent, authoritative acceptance lock. The integrals are the **byte-for-byte
 vendored** audited research artifact, pinned to its **immutable source object** (commit
@@ -683,10 +683,11 @@ expected arrays.
 | 5 | Representative fixture integral values match the canonical artifact **bit-for-bit** (e.g. h₀₀ = −1.2533097866459773, ⟨00\|00⟩ = 0.6747559268144484), not tolerance-only | Fact |
 | 6 | Named raw adapter reproduces the complete 15-entry coefficient map (no extra/missing terms; four-body ±0.045302615504) | Fact |
 | 7 | JW-encoded fixture Hamiltonian matches the direct 16×16 oracle **entrywise** (occupation basis, zero imaginary) | Fact |
-| 8 | Each particle-number sector matches its **literal frozen eigenvalue array** — dims 1/4/6/4/1, multiplicities and ascending order asserted (N4 = 0.2080748418) | Fact |
-| 9 | Sector eigenvalues **union to the full 16-eigenvalue spectrum**; ground −1.8523881736 (N=2 sector); HF diagonal[3] = −1.8318636465 | Fact |
-| 10 | Metrics lock: 15 terms, weight 32, 15 rotations, 36 CNOTs, 1-norm 2.6992778241 | Fact |
-| 11 | Legacy weighted path on independently pre-adapted fixture data equals the named raw-adapter path | Fact |
+| 8 | The literal expected sector arrays are authored in ascending order (so the direct comparison needs no sorting of the expected side) | Fact |
+| 9 | Each particle-number sector matches its **literal frozen eigenvalue array compared DIRECTLY** (unsorted) to the ascending computed eigenvalues — dims 1/4/6/4/1, multiplicities and order asserted (N4 = 0.2080748418) | Fact |
+| 10 | The **whole 16×16 oracle**, diagonalised independently over all basis states (`eigenvaluesOf oracle [0..dim-1]`), equals the sorted union of the literal N0..N4 arrays entrywise; ground −1.8523881736, HF diagonal[3] −1.8318636465, and the degeneracy multiplicities (−1.2458776961 ×3, −1.1607201546 ×2) | Fact |
+| 11 | Metrics lock: 15 terms, weight 32, 15 rotations, 36 CNOTs, 1-norm 2.6992778241 | Fact |
+| 12 | Legacy weighted path on independently pre-adapted fixture data equals the named raw-adapter path | Fact |
 
 Literal frozen sector eigenvalue arrays (ascending):
 - N=0 (dim 1): `[0.0]`
@@ -719,7 +720,7 @@ Literal frozen sector eigenvalue arrays (ascending):
 | Bosonic-to-qubit encodings | 70 | Theory + Fact + cross-encoding | **High** — matrix construction, Pauli decomposition, weight bounds, multi-mode embedding, number-operator roundtrip |
 | Qubit tapering — Clifford conjugation | 25 | Exact letters/phases + dense-matrix spectra | **High** — all 16 CNOT conjugations, U·H·U† to machine precision, H₂ sector spectra |
 | Index/label ordering (state-resolved) | 10 | Occupation-basis diagonal reads + exact a†₂ string | **High** — number operators verified on the intended occupation basis; catches bit reversal that spectra miss |
-| Hamiltonian coefficients & factory contract | 36 | Exact coefficients + independent 16×16 raw oracle + **immutable-source-pinned audited artifact (commit+blob+sha256)** + per-sector eigenvalue arrays + six-encoding spectra + tiny-survival | **High** — pins H₂/STO-3G coefficients, restored **weighted** contract + named raw adapter, ½+order defect proofs, cancellation-aware tiny survival, git-blob/SHA-256-locked vendored research fixture, literal N=0..4 sector spectra, trace/HF-diagonal/particle-sector anchors |
+| Hamiltonian coefficients & factory contract | 37 | Exact coefficients + independent 16×16 raw oracle (per-sector **and** whole-matrix) + immutable-source-pinned audited artifact (commit+blob+sha256) + literal sector eigenvalue arrays + six-encoding spectra + tiny-survival | **High** — pins H₂/STO-3G coefficients, restored **weighted** contract + named raw adapter, ½+order defect proofs, cancellation-aware tiny survival, git-blob/SHA-256-locked vendored research fixture, direct-compared N=0..4 sector spectra + full-matrix union, trace/HF-diagonal/particle-sector anchors |
 
 ### What is *not* tested
 
