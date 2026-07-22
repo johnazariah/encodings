@@ -129,6 +129,30 @@ count_file () {
     esac
 }
 
+# bind_asserts: "encoder-name||exact-metric-substring" — binds each encoder HEADING
+# ("═══ <name> ═══") to the metric line immediately following it, so that a
+# count-preserving swap of two encoders' metrics (which the multiplicity checks alone
+# would accept) is rejected.
+bind_asserts () {
+    case "$1" in
+      "docs/guides/cookbook/13-grand-finale.md")
+        printf '%s\n' \
+          'Jordan-Wigner||Terms: 15    Avg Pauli weight: 2.13' \
+          'Bravyi-Kitaev||Terms: 15    Avg Pauli weight: 2.40' \
+          'Ternary Tree||Terms: 15    Avg Pauli weight: 2.40' ;;
+      *) : ;;
+    esac
+}
+
+# Extract the metric line bound to an encoder heading: the first line containing
+# "Terms:" that follows the "═══ <name> ═══" header in <stdout>.
+bound_metric () {
+    awk -v name="$2" '
+        index($0, "═══ " name " ═══") { f = 1; next }
+        f && /Terms:/ { print; f = 0 }
+    ' <<<"$1" | head -1
+}
+
 # Documents that MUST contribute at least one assertion (guards against a silent
 # no-op if an assertion table is ever emptied by mistake).
 is_required () {
@@ -182,6 +206,18 @@ evaluate_doc () {
             echo "FAIL  $md (expected $n source line(s) containing '$lit', got $actual)"; ok=0
         fi
     done < <(count_file "$md")
+    # Heading→metric bindings: each encoder's metric line must sit under its own
+    # header (rejects a count-preserving swap that the multiplicity checks accept).
+    local name want got
+    while IFS= read -r spec; do
+        [[ -z "$spec" ]] && continue
+        ASSERTED=$((ASSERTED + 1))
+        name="${spec%%||*}"; want="${spec#*||}"
+        got="$(bound_metric "$out" "$name")"
+        if [[ "$got" != *"$want"* ]]; then
+            echo "FAIL  $md (binding '$name' expected metric '$want', got '$got')"; ok=0
+        fi
+    done < <(bind_asserts "$md")
     # No-op guard: a required document must have contributed assertions.
     if is_required "$md" && [[ "$ASSERTED" -eq 0 ]]; then
         echo "FAIL  $md (required document contributed no assertions — evaluator silently no-op)"; ok=0
@@ -223,10 +259,40 @@ if [[ "$MODE" == "selftest" ]]; then
         fi
     done
 
+    echo "Self-test 5: a COUNT-PRESERVING encoder swap must be rejected by the binding."
+    # JW and BK metrics are swapped. The multiset is unchanged — one 2.13, two 2.40,
+    # three 'Terms: 15' — so the multiplicity checks alone WOULD accept it; only the
+    # heading→metric binding catches the mismatch.
+    swapped="$(printf '%s\n' \
+        '═══ Jordan-Wigner ═══' \
+        '  Terms: 15    Avg Pauli weight: 2.40' \
+        '    -0.8122  IIII' \
+        '═══ Bravyi-Kitaev ═══' \
+        '  Terms: 15    Avg Pauli weight: 2.13' \
+        '    -0.8122  IIII' \
+        '═══ Ternary Tree ═══' \
+        '  Terms: 15    Avg Pauli weight: 2.40' \
+        '    -0.8122  IIII')"
+    # Prove the multiset is preserved (the multiplicity assertions would pass).
+    c213="$(grep -Ec 'Avg Pauli weight: 2\.13' <<<"$swapped" || true)"
+    c240="$(grep -Ec 'Avg Pauli weight: 2\.40' <<<"$swapped" || true)"
+    c15="$(grep -Ec 'Terms: 15' <<<"$swapped" || true)"
+    if [[ "$c213" == "1" && "$c240" == "2" && "$c15" == "3" ]]; then
+        echo "  (multiset preserved: one 2.13, two 2.40, three Terms:15 — counts alone would pass)"
+    else
+        echo "  SELFTEST FAILED: swapped output was not count-preserving ($c213/$c240/$c15)." >&2; rc=1
+    fi
+    # The SAME production evaluator must nonetheless reject it (binding mismatch).
+    if evaluate_doc "docs/guides/cookbook/13-grand-finale.md" "$swapped" >/dev/null 2>&1; then
+        echo "  SELFTEST FAILED: evaluate_doc accepted a count-preserving swap." >&2; rc=1
+    else
+        echo "  OK: evaluate_doc rejected the swap (heading→metric binding)."
+    fi
+
     echo "Self-test 4: the no-op guard fires for a required doc with an empty table."
     # A required path whose tables are all empty must be flagged by evaluate_doc.
     exec_asserts () { : ; }; file_asserts () { : ; }
-    count_out () { : ; }; count_file () { : ; }
+    count_out () { : ; }; count_file () { : ; }; bind_asserts () { : ; }
     if evaluate_doc "docs/guides/cookbook/13-grand-finale.md" "anything" >/dev/null 2>&1; then
         echo "  SELFTEST FAILED: empty-table required doc was accepted." >&2; rc=1
     else
