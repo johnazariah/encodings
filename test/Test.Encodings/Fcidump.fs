@@ -202,6 +202,48 @@ module Fcidump =
         Assert.True(costs.LambdaNorm > 0.0)
         Assert.True(costs.QubitCount = 2)
 
+    // ── Real shipped FCIDUMP → canonical H₂ coefficients (end-to-end) ────
+    // Proves the real examples/H2_STO-3G.fcidump, run through the spin-orbital
+    // factory, reproduces the canonical H₂ coefficient map after the raw-physicist
+    // contract change (no compensating ½·⟨pq|sr⟩). The identical coefficient map is
+    // shown to give the FCI ground −1.852388 by the dense oracle in
+    // HamiltonianCoefficients, so this transitively locks the FCIDUMP spectrum path.
+
+    let private locateExample name =
+        let rec up (dir : System.IO.DirectoryInfo) =
+            if isNull dir then None
+            else
+                let candidate = System.IO.Path.Combine(dir.FullName, "examples", name)
+                if System.IO.File.Exists candidate then Some candidate else up dir.Parent
+        up (System.IO.DirectoryInfo(System.AppContext.BaseDirectory))
+
+    [<Fact>]
+    let ``integration: real H2 FCIDUMP reproduces the canonical H2 coefficients`` () =
+        match locateExample "H2_STO-3G.fcidump" with
+        | None -> failwith "examples/H2_STO-3G.fcidump not found"
+        | Some path ->
+            let content = System.IO.File.ReadAllText path
+            let (factory, core, nso) = parseToSpinOrbitalFactory content
+            Assert.Equal(4, nso)
+            Assert.Equal(0.7151043391, core, 7)
+            let ham =
+                Hamiltonian.computeHamiltonianWith JordanWigner.jordanWignerTerms factory (uint32 nso)
+            let terms = ham.DistributeCoefficient.SummandTerms
+            let coeffOf sg =
+                terms |> Array.tryFind (fun t -> t.Signature = sg)
+                      |> Option.map (fun t -> t.Coefficient.Real) |> Option.defaultValue 0.0
+            let oneNorm = terms |> Array.sumBy (fun t -> Complex.Abs t.Coefficient)
+            // 15 nonzero Pauli terms; canonical identity, four-body, and 1-norm.
+            Assert.Equal(15, terms.Length)
+            Assert.Equal(-0.8121706072, coeffOf "IIII", 8)
+            Assert.Equal(2.699278, oneNorm, 5)
+            let fourBody =
+                terms
+                |> Array.filter (fun t -> t.Signature |> Seq.filter (fun c -> c <> 'I') |> Seq.length = 4)
+            Assert.NotEmpty fourBody
+            for t in fourBody do
+                Assert.Equal(0.0453026155, Complex.Abs t.Coefficient, 8)
+
     // ── Header format variations ────────────────────────────────────
 
     [<Fact>]
