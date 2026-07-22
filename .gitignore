@@ -17,6 +17,7 @@
 docs-output/
 api-output/
 .fsdocs/
+output/
 docs/**/*.html
 docs/**/*.pdf
 docs/content/fsdocs-default.css
