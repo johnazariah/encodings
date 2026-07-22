@@ -603,7 +603,7 @@ Related: `PauliRegister.fs` tests confirm position 0 is the leftmost character
 
 ---
 
-## 15. Hamiltonian Coefficients (state/convention) — `HamiltonianCoefficients.fs` (4 tests)
+## 15. Hamiltonian Coefficients (state/convention) — `HamiltonianCoefficients.fs` (7 tests)
 
 Signature-only tests pass even when the integral/factory convention is wrong (all
 encodings share the same coefficient error). These pin exact Pauli coefficients and
@@ -617,6 +617,9 @@ library applies it verbatim. Proven to fail under a ×2 two-body perturbation.
 | 2 | One-body coefficient applied verbatim: factory("0,0")=h → ½h·I − ½h·Z (JW's ½, not a library ½) | Fact |
 | 3 | Two-body coefficient applied verbatim with no additional ½: a†₀a†₁a₁a₀ = n₀n₁ = ¼(II−ZI−IZ+ZZ); linear in the factory value | Fact |
 | 4 | Encoded H₂ spectrum equals the direct dense fermionic matrix (same factory); ground −1.852388 preserved | Fact |
+| 5 | H₂ coefficient 1-norm equals the canonical 2.699278 (encodings-research source) | Fact |
+| 6 | A physicist-notation tensor requires the ½ and the r↔s swap (F("p,q,r,s")=½·⟨pq\|sr⟩) to match the chemist coefficients term-for-term | Fact |
+| 7 | The raw physicist adaptation (no ½, no swap) reproduces the book's wrong coefficients (IIII=−3.5608, four-body 0.0906) with identical signatures — the exact failure mode | Fact |
 
 ---
 

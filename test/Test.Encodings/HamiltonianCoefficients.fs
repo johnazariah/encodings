@@ -193,3 +193,94 @@ module HamiltonianCoefficients =
         List.iter2 (fun (a: float) b -> Assert.Equal(a, b, 8)) sa sb
         // And the physical ground state is preserved.
         Assert.Equal(-1.852388, List.head sb, 5)
+
+    // ══════════════════════════════════════════════════════════════════
+    //  Chemist ↔ physicist conversion (explicit permutation test)
+    //  ──────────────────────────────────────────────────────────────────
+    //  FockMap's factory expects, for key "p,q,r,s" (operator a†_p a†_q a_r a_s),
+    //  the coefficient ½·(ps|qr) chemist = ½·⟨pq|sr⟩ physicist. Given a physicist
+    //  tensor T[a,b,c,d] = ⟨ab|cd⟩, the correct adaptation is
+    //      F("p,q,r,s") = ½ · T[p, q, s, r]      (fold in ½ AND swap r↔s).
+    //  Feeding the RAW physicist tensor (no ½, no swap) reproduces the book's
+    //  reported error exactly (IIII=-3.5608, four-body 0.0906). Canonical source:
+    //  encodings-research, R=1.3983973 bohr, interleaved 0α,0β,1α,1β, chemist ERIs.
+    // ══════════════════════════════════════════════════════════════════
+    module private Phys =
+        // Canonical spatial chemist ERIs [pq|rs] (0-indexed, 8-fold symmetry).
+        let gChem p q r s =
+            let a = (min p q, max p q)
+            let b = (min r s, max r s)
+            let (x, y) = if a <= b then (a, b) else (b, a)
+            match x, y with
+            | (0,0),(0,0) -> 0.6747559268144484
+            | (1,1),(1,1) -> 0.697651504490461
+            | (0,0),(1,1) -> 0.6637114013508132
+            | (0,1),(0,1) -> 0.18121046201519672   // K01 exchange
+            | _ -> 0.0
+        let hSpatial p q = if p = q then (if p = 0 then -1.2533097866 else -0.4750688488) else 0.0
+        let spin i = i % 2
+        let sp i = i / 2
+        // Physicist spin-orbital tensor ⟨ab|cd⟩ = [ac|bd]_chem, δ_spin(a,c) δ_spin(b,d).
+        let tPhys a b c d =
+            if spin a = spin c && spin b = spin d then gChem (sp a) (sp c) (sp b) (sp d) else 0.0
+        let private oneBody (key : string) =
+            let p, q = let x = key.Split(',') in int x.[0], int x.[1]
+            if spin p = spin q then
+                let v = hSpatial (sp p) (sp q)
+                if abs v > 1e-15 then Some (Complex(v, 0.0)) else None
+            else None
+        /// CORRECT adaptation: F("p,q,r,s") = ½·⟨pq|sr⟩ = ½·T[p,q,s,r].
+        let correct (key : string) =
+            let x = key.Split(',')
+            match x.Length with
+            | 2 -> oneBody key
+            | 4 ->
+                let p, q, r, s = int x.[0], int x.[1], int x.[2], int x.[3]
+                let v = 0.5 * tPhys p q s r
+                if abs v > 1e-15 then Some (Complex(v, 0.0)) else None
+            | _ -> None
+        /// NAIVE (book bug): raw physicist tensor, no ½, no r↔s swap.
+        let naive (key : string) =
+            let x = key.Split(',')
+            match x.Length with
+            | 2 -> oneBody key
+            | 4 ->
+                let p, q, r, s = int x.[0], int x.[1], int x.[2], int x.[3]
+                let v = tPhys p q r s
+                if abs v > 1e-15 then Some (Complex(v, 0.0)) else None
+            | _ -> None
+
+    let private oneNorm (h : PauliRegisterSequence) =
+        h.DistributeCoefficient.SummandTerms |> Array.sumBy (fun t -> Complex.Abs t.Coefficient)
+
+    [<Fact>]
+    let ``H2 chemist Hamiltonian matches canonical 1-norm 2.699278`` () =
+        let factory, nso = h2Factory ()
+        let ham = computeHamiltonianWith jordanWignerTerms factory (uint32 nso)
+        Assert.Equal(2.699278, oneNorm ham, 5)
+
+    [<Fact>]
+    let ``physicist tensor needs the half and r-s swap to match chemist coefficients`` () =
+        let chemF, nso = h2Factory ()
+        let chem = computeHamiltonianWith jordanWignerTerms chemF (uint32 nso)
+        let good = computeHamiltonianWith jordanWignerTerms Phys.correct (uint32 nso)
+        // Correct adaptation reproduces the chemist Hamiltonian term-for-term.
+        Assert.Equal(chem.DistributeCoefficient.ToString(), good.DistributeCoefficient.ToString())
+        Assert.Equal(-0.8121706072, coeffOf good "IIII", 8)
+        Assert.Equal(-0.0453026155, coeffOf good "XXYY", 8)
+        Assert.Equal(2.699278, oneNorm good, 5)
+
+    [<Fact>]
+    let ``raw physicist adaptation reproduces the book's wrong coefficients`` () =
+        // Negative control: dropping the ½ and the r↔s swap gives exactly the
+        // book's reported IIII=-3.5608 and four-body 0.0906 (signatures still match).
+        let bad = computeHamiltonianWith jordanWignerTerms Phys.naive 4u
+        Assert.Equal(-3.5607946917, coeffOf bad "IIII", 6)
+        Assert.Equal( 0.0906052310, coeffOf bad "XXYY" |> abs, 6)
+        // The signatures are identical to the correct Hamiltonian — only coefficients differ.
+        let good = computeHamiltonianWith jordanWignerTerms Phys.correct 4u
+        let sigs (h : PauliRegisterSequence) =
+            h.DistributeCoefficient.SummandTerms
+            |> Array.filter (fun t -> Complex.Abs t.Coefficient > 1e-10)
+            |> Array.map (fun t -> t.Signature) |> Array.sort
+        Assert.Equal<string[]>(sigs good, sigs bad)
