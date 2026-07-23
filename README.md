@@ -115,10 +115,14 @@ open Encodings.Trotterization // firstOrderTrotter, decomposeTrotterStep
 open Encodings.CircuitOutput  // toOpenQasm/toQSharp/toCircuitJson + default options
 
 // 1. Define molecular integrals (H₂ in STO-3G)
+//    One-body key "p,q" → h_pq; two-body key "p,q,r,s" → the RAW single-bar
+//    physicist integral ⟨pq|rs⟩ (0.9.0+ contract; the library applies the
+//    two-body ½ and the r↔s order). See docs/guides/migration-0.9.md if you
+//    are upgrading pre-adapted "weighted" factories from ≤ 0.8.0.
 let integrals = Map [
     ("0,0", Complex(-1.2563, 0.0)); ("1,1", Complex(-1.2563, 0.0))
     ("2,2", Complex(-0.4719, 0.0)); ("3,3", Complex(-0.4719, 0.0))
-    // ... (two-body integrals)
+    // ... (two-body integrals: raw physicist ⟨pq|rs⟩)
 ]
 let factory key = integrals |> Map.tryFind key
 

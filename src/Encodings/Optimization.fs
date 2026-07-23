@@ -26,13 +26,13 @@ open System.Numerics
 /// </para>
 /// <para>
 /// <b>Coefficient factory convention.</b> Every function here builds its
-/// Hamiltonian through <c>computeHamiltonianWith</c>, so the
-/// <c>coefficientFactory</c> argument follows the same <b>weighted</b> contract:
-/// the value for key <c>"i,j,k,l"</c> is the FULL WEIGHTED prefactor of
-/// <c>a†_i a†_j a_k a_l</c> (the two-body ½ already folded in), applied verbatim.
-/// Build one with <see cref="T:Encodings.Fcidump"/>, or wrap a raw physicist
-/// tensor <c>⟨pq|rs⟩</c> with
-/// <c>rawPhysicistToWeightedFactory</c> first.
+/// Hamiltonian through the raw-physicist <c>computeHamiltonianWith</c> (0.9.0+), so
+/// the <c>coefficientFactory</c> argument follows the same <b>raw single-bar
+/// physicist</b> contract: the value for key <c>"p,q,r,s"</c> is the raw integral
+/// <c>⟨pq|rs⟩</c> (no ½, no index swap), and for key <c>"p,q"</c> the one-body
+/// coefficient <c>h_pq</c>. Build one with <see cref="T:Encodings.Fcidump"/>. To reuse
+/// a legacy <b>weighted</b> factory here, wrap it once with
+/// <c>Hamiltonian.weightedToRawFactory</c>.
 /// </para>
 /// </remarks>
 module Optimization =

@@ -79,27 +79,30 @@ let rawLookup (key : string) =
     | _ -> None
 ```
 
-> **Coefficient contract.** Two conventions meet here:
+> **Coefficient contract (0.9.0+).** The primary builders take the raw tensor
+> **directly**:
 >
-> - **Raw physicist tensor** — what a chemistry code hands you: for key
+> - **Raw physicist tensor** — what a chemistry code hands you, and what
+>   `computeHamiltonian` / `computeHamiltonianWith` now consume: for key
 >   `"p,q,r,s"` the single-bar integral `⟨pq|rs⟩`, with **no** ½ and no index
->   swap. Feed it through `computeHamiltonianFromPhysicist` (or wrap it with
->   `rawPhysicistToWeightedFactory`), which maps `(p,q,r,s,g)` to the weighted
->   key `(p,q,s,r) = ½·g`. (This is the single-bar convention; an
->   antisymmetrised double-bar `⟨pq||rs⟩` would use `¼`.)
-> - **Weighted factory** — what `computeHamiltonian`/`computeHamiltonianWith`
->   consume directly: the *full weighted* prefactor of `a†_i a†_j a_k a_l`, with
->   the two-body ½ of `½·Σ ⟨pq|rs⟩ a†_p a†_q a_s a_r` **already folded in**. The
->   `Fcidump` adapters produce this form (`½·(ps|qr) = ½·⟨pq|sr⟩`), so prefer them
->   — or the raw adapter above — over hand-rolled weighted tensors.
+>   swap. The library internally builds `½·⟨pq|rs⟩·a†_p a†_q a_s a_r` (it applies
+>   the ½ and the r↔s order). The `Fcidump` adapters produce this raw form
+>   (`⟨pq|rs⟩ = (pr|qs)` in chemist notation). An antisymmetrised double-bar
+>   `⟨pq||rs⟩` (¼ convention) has its own `antisymmetrizedToRawFactory` adapter.
+> - **Legacy weighted factory** — the *full weighted* prefactor of
+>   `a†_i a†_j a_k a_l` with the two-body ½ already folded in (the released
+>   ≤ 0.8.0 contract). It is still available through the
+>   `computeHamiltonianFromWeighted…` functions, or wrap it once with
+>   `weightedToRawFactory` to feed the raw builders. See the
+>   [0.9.0 migration guide](../migration-0.9.html).
 
 ## Step 3 — Compute the qubit Hamiltonian
 
-One call maps the raw integrals through the ½ adapter, loops over indices,
-encodes each term, and combines like terms:
+One call loops over indices, applies the two-body ½ and r↔s order, encodes each
+term, and combines like terms:
 
 ```fsharp
-let hamiltonian = computeHamiltonianFromPhysicist rawLookup nModes
+let hamiltonian = computeHamiltonian rawLookup nModes
 
 printfn "H₂ Hamiltonian: %d Pauli terms\n" hamiltonian.SummandTerms.Length
 
@@ -137,19 +140,18 @@ the total energy).
 
 ## Step 4 — Swap the encoding
 
-Use `computeHamiltonianFromPhysicistWith` to try any encoding on the same
-raw integrals:
+Use `computeHamiltonianWith` to try any encoding on the same raw integrals:
 
 ```fsharp
-let hBK = computeHamiltonianFromPhysicistWith bravyiKitaevTerms rawLookup nModes
-let hTT = computeHamiltonianFromPhysicistWith ternaryTreeTerms  rawLookup nModes
+let hBK = computeHamiltonianWith bravyiKitaevTerms rawLookup nModes
+let hTT = computeHamiltonianWith ternaryTreeTerms  rawLookup nModes
 
 // Or your custom scheme from the Encoding Internals chapter:
 let myJW : EncodingScheme =
     { Update     = fun _ _ -> Set.empty
       Parity     = fun j   -> set [ for k in 0 .. j - 1 -> k ]
       Occupation = fun j   -> set [ j ] }
-let hCustom = computeHamiltonianFromPhysicistWith (encodeOperator myJW) rawLookup nModes
+let hCustom = computeHamiltonianWith (encodeOperator myJW) rawLookup nModes
 ```
 
 All three Hamiltonians have the same eigenvalues — they represent

@@ -445,11 +445,14 @@ Balanced binary, ternary, and Vlasov tree encodings, plus cross-encoding validat
 
 | # | What is tested | Style |
 |---|----------------|-------|
-| 1 | `computeHamiltonian` produces correct JW Pauli string for n = 2 and n = 4 with unit coefficients | Theory (2 sizes) |
+| 1 | `computeHamiltonianFromWeighted` produces the correct JW Pauli string for n = 2 and n = 4 with unit **weighted** coefficients (absolute output pinned under the legacy weighted contract) | Theory (2 sizes) |
 | 2 | `computeHamiltonianWith` using JW matches `computeHamiltonian` for n = 2 | Fact |
 | 3 | Missing coefficients (factory returns None) produce empty Pauli sequence | Fact |
 | 4 | Coefficient factory is never queried with an out-of-range mode index (loop bounds are `0..n-1`, not `0..n`) — sequential path | Fact |
 | 5 | Same out-of-range guarantee for the parallel construction path (`computeHamiltonianWithParallel`) | Fact |
+| 6 | All five legacy weighted builders (`…FromWeightedWith` seq/parallel/cached + full/sparse `applyCoefficientsFromWeighted`) agree on a two-body weighted factory | Theory (4 sizes) |
+| 7 | `weightedToRawFactory` round-trips a weighted factory through the raw builder to match `computeHamiltonianFromWeightedWith` exactly | Theory (2 sizes) |
+| 8 | `antisymmetrizedToRawFactory` (¼ double-bar convention) reproduces the raw single-bar path (fermionic anticommutation) | Fact |
 
 ---
 
@@ -605,51 +608,55 @@ Related: `PauliRegister.fs` tests confirm position 0 is the leftmost character
 
 ---
 
-## 15. Hamiltonian Coefficients (state/convention) — `HamiltonianCoefficients.fs` (25 tests)
+## 15. Hamiltonian Coefficients (state/convention) — `HamiltonianCoefficients.fs` (28 tests)
 
 Signature-only tests pass even when the integral/factory convention is wrong (all
 encodings share the same coefficient error). These pin exact Pauli coefficients and
 cross-check against a first-principles dense fermionic matrix built by an independent
-raw second-quantized oracle, locking the **released weighted factory contract** and
-the **named raw adapter**:
+raw second-quantized oracle, locking the **0.9.0 raw-physicist contract** and the
+**legacy weighted migration API**:
 
-- **Legacy weighted factory** (unchanged since v0.1): the value for key `"i,j,k,l"`
-  is the FULL WEIGHTED prefactor, applied verbatim to `a†_i a†_j a_k a_l`. The
-  two-body ½ is folded in by the caller (the `Fcidump` adapters supply `½·(ps|qr)`).
-- **Named raw adapter** (`rawPhysicistToWeightedFactory` /
-  `computeHamiltonianFromPhysicist`): accepts a raw single-bar physicist tensor
-  `⟨pq|rs⟩` and maps `(p,q,r,s,g)` → weighted key `(p,q,s,r) = ½·g`.
+- **Raw primary contract** (0.9.0+): `computeHamiltonian` / `computeHamiltonianWith`
+  and the `Fcidump` adapters consume a raw single-bar physicist tensor `⟨pq|rs⟩` for
+  key `"p,q,r,s"`. The library applies the two-body ½ and the r↔s annihilator order
+  internally (`½·⟨pq|rs⟩·a†_p a†_q a_s a_r`).
+- **Legacy weighted contract**: `computeHamiltonianFromWeightedWith` applies the value
+  verbatim to `a†_i a†_j a_k a_l` (FULL WEIGHTED prefactor, two-body ½ pre-folded).
+  `weightedToRawFactory` bridges weighted data to the raw builders.
 
 Assembly is **cancellation-aware**: it removes only exact zeros and roundoff residues
 from cancelling contributions, while preserving standalone tiny coefficients.
 
 | # | What is tested | Style |
 |---|----------------|-------|
-| 1 | One-body coefficient applied verbatim: factory("0,0")=h → ½h·I − ½h·Z | Fact |
-| 2 | Two-body: factory value applied verbatim to `a†_i a†_j a_k a_l` (minimal oracle key "0,1,0,1") | Fact |
-| 3 | Two-body: the caller's `a_k a_l` annihilator order is kept (no internal swap) | Fact |
-| 4 | H₂/STO-3G JW Hamiltonian has exact IIII (−0.8121706072) and four-body (±0.0453026155) coefficients; exactly 15 stored terms | Fact |
-| 5 | Raw factory has 4 one-body + 32 raw two-body nonzero entries (interleaved 0α,0β,1α,1β) | Fact |
-| 6 | Named raw adapter produces all 15 canonical coefficient entries (IIII, four-body, 1-norm 2.6992778241) | Fact |
-| 7 | Legacy weighted (pre-adapted), named raw adapter, and FCIDUMP all produce the same coefficient map | Fact |
-| 8 | JW dense matrix matches the direct raw fermionic oracle **entrywise** (occupation basis) | Fact |
-| 9 | Raw oracle acceptance: HF diag[3] = −1.8318636465, particle-number sectors block-diagonal, ground −1.8523881736, Tr/16 = IIII | Fact |
-| 10 | Encoded H₂ spectrum equals the direct fermionic matrix; ground −1.8523881736 | Fact |
-| 11 | FCIDUMP independently matches the coefficient and weighted dense oracles | Fact |
-| 12 | Pre-adapted (½-folded) data fed to the raw adapter double-adapts — migration hazard | Fact |
-| 13 | Raw data fed straight to the legacy weighted API is a caller error | Fact |
-| 14 | All five builders (sequential, parallel, cached, full/sparse skeleton) agree on H₂ | Fact |
-| 15 | Canonical H₂ metrics: 15 terms, total Pauli weight 32, 15 first-order rotations, 36 CNOTs | Fact |
-| 16 | H₂ stores no numerical-zero terms (the 8 float-noise zeros are dropped; 15 not 23) | Fact |
-| 17 | Exact cancellation of two contributions drops the term (II from n₀+n₁ cancels; ZI/IZ survive) | Fact |
-| 18 | Floating cancellation residue (~eps·scale) is dropped, but nearby real ZI/IZ survive | Fact |
-| 19 | A legitimate small residue (1e-9) from two contributions is NOT dropped | Fact |
-| 20 | Standalone tiny coefficients (1e-12, 1e-13, 1e-15) survive on every builder path | Fact |
-| 21 | Standalone tiny coefficients survive through the JW aliases (`computeHamiltonian`/`computeHamiltonianParallel`) | Fact |
-| 22 | Standalone tiny **two-body** coefficient (2e-13) survives verbatim as four ±5e-14 JW terms | Fact |
-| 23 | Standalone tiny coefficient survives through the named raw adapter (both raw entry points) | Fact |
-| 24 | H₂ spectrum agrees across **all six** encodings (JW, BK, Parity, binary/ternary/Vlasov trees); tree Y–Y terms make the dense matrix complex-Hermitian, so the spectrum is taken via the 2n real embedding — a `.Real` truncation would corrupt it | Fact |
-| 25 | H₂ assembly is wrong (spectrum differs) if the caller's ½ or annihilator order is corrupted — each defect proven independently against the raw oracle | Fact |
+| 1 | One-body coefficient applied verbatim (convention-invariant): factory("0,0")=h → ½h·I − ½h·Z | Fact |
+| 2 | Two-body (legacy weighted): factory value applied verbatim to `a†_i a†_j a_k a_l` (key "0,1,0,1") | Fact |
+| 3 | Two-body (legacy weighted): the caller's `a_k a_l` annihilator order is kept (no swap) | Fact |
+| 4 | Two-body (raw primary): the internal ½ and r↔s swap are applied (key "0,1,0,1" → ⅛(II−IZ−ZI+ZZ); ≡ weighted key (0,1,1,0)=½) | Fact |
+| 5 | H₂/STO-3G JW Hamiltonian (FCIDUMP raw) has exact IIII (−0.8121706072) and four-body (±0.0453026155) coefficients; exactly 15 stored terms | Fact |
+| 6 | Raw factory has 4 one-body + 32 raw two-body nonzero entries (interleaved 0α,0β,1α,1β) | Fact |
+| 7 | Raw primary produces all 15 canonical coefficient entries (IIII, four-body, 1-norm 2.6992778241) | Fact |
+| 8 | Legacy weighted (pre-adapted), raw primary, and FCIDUMP (raw) all produce the same coefficient map | Fact |
+| 9 | JW dense matrix matches the direct raw fermionic oracle **entrywise** (occupation basis) | Fact |
+| 10 | Raw oracle acceptance: HF diag[3] = −1.8318636465, particle-number sectors block-diagonal, ground −1.8523881736, Tr/16 = IIII | Fact |
+| 11 | Encoded H₂ spectrum equals the direct fermionic matrix; ground −1.8523881736 | Fact |
+| 12 | FCIDUMP (raw) independently matches the coefficient and raw dense oracles | Fact |
+| 13 | Pre-adapted (½-folded) weighted data fed to the raw primary double-adapts — migration hazard | Fact |
+| 14 | Raw data fed straight to the legacy weighted API is a caller error | Fact |
+| 15 | All five raw builders (sequential, parallel, cached, full/sparse skeleton) agree on H₂ | Fact |
+| 16 | All five legacy weighted builders agree on H₂ **and** match the raw path | Fact |
+| 17 | Canonical H₂ metrics: 15 terms, total Pauli weight 32, 15 first-order rotations, 36 CNOTs | Fact |
+| 18 | H₂ stores no numerical-zero terms (the 8 float-noise zeros are dropped; 15 not 23) | Fact |
+| 19 | Exact cancellation of two contributions drops the term (II from n₀+n₁ cancels; ZI/IZ survive) | Fact |
+| 20 | Floating cancellation residue (~eps·scale) is dropped, but nearby real ZI/IZ survive | Fact |
+| 21 | A legitimate small residue (1e-9) from two contributions is NOT dropped | Fact |
+| 22 | Standalone tiny coefficients (1e-12, 1e-13, 1e-15) survive on every builder path | Fact |
+| 23 | Standalone tiny coefficients survive through the JW aliases (`computeHamiltonian`/`computeHamiltonianParallel`) | Fact |
+| 24 | Standalone tiny **two-body** coefficient (2e-13, legacy weighted) survives as four ±5e-14 JW terms | Fact |
+| 25 | Standalone tiny **two-body** coefficient (2e-13, raw primary) survives as four ±2.5e-14 JW terms | Fact |
+| 26 | Standalone tiny coefficient survives through the raw primary entry points (both `…With` and JW alias) | Fact |
+| 27 | H₂ spectrum agrees across **all six** encodings (JW, BK, Parity, binary/ternary/Vlasov trees); tree Y–Y terms make the dense matrix complex-Hermitian, so the spectrum is taken via the 2n real embedding — a `.Real` truncation would corrupt it | Fact |
+| 28 | H₂ assembly is wrong (spectrum differs) if the library's ½ or annihilator order is corrupted — each defect proven independently against the raw oracle | Fact |
 
 ---
 
@@ -681,13 +688,13 @@ expected arrays.
 | 3 | Sidecar provenance records all four immutable identifiers (repo/commit/path/blob/sha256), agreeing with the test constants **and** the recomputed hashes | Fact |
 | 4 | The fixture declares exactly 4 one-body + 32 raw two-body entries | Fact |
 | 5 | Representative fixture integral values match the canonical artifact **bit-for-bit** (e.g. h₀₀ = −1.2533097866459773, ⟨00\|00⟩ = 0.6747559268144484), not tolerance-only | Fact |
-| 6 | Named raw adapter reproduces the complete 15-entry coefficient map (no extra/missing terms; four-body ±0.045302615504) | Fact |
+| 6 | Raw primary reproduces the complete 15-entry coefficient map (no extra/missing terms; four-body ±0.045302615504) | Fact |
 | 7 | JW-encoded fixture Hamiltonian matches the direct 16×16 oracle **entrywise** (occupation basis, zero imaginary) | Fact |
 | 8 | The literal expected sector arrays are authored in ascending order (so the direct comparison needs no sorting of the expected side) | Fact |
 | 9 | Each particle-number sector matches its **literal frozen eigenvalue array compared DIRECTLY** (unsorted) to the ascending computed eigenvalues — dims 1/4/6/4/1, multiplicities and order asserted (N4 = 0.2080748418) | Fact |
 | 10 | The **whole 16×16 oracle**, diagonalised independently over all basis states (`eigenvaluesOf oracle [0..dim-1]`), equals the sorted union of the literal N0..N4 arrays entrywise; ground −1.8523881736, HF diagonal[3] −1.8318636465, and the degeneracy multiplicities (−1.2458776961 ×3, −1.1607201546 ×2) | Fact |
 | 11 | Metrics lock: 15 terms, weight 32, 15 rotations, 36 CNOTs, 1-norm 2.6992778241 | Fact |
-| 12 | Legacy weighted path on independently pre-adapted fixture data equals the named raw-adapter path | Fact |
+| 12 | Legacy weighted path on independently pre-adapted fixture data equals the raw primary path | Fact |
 
 Literal frozen sector eigenvalue arrays (ascending):
 - N=0 (dim 1): `[0.0]`
@@ -720,7 +727,7 @@ Literal frozen sector eigenvalue arrays (ascending):
 | Bosonic-to-qubit encodings | 70 | Theory + Fact + cross-encoding | **High** — matrix construction, Pauli decomposition, weight bounds, multi-mode embedding, number-operator roundtrip |
 | Qubit tapering — Clifford conjugation | 25 | Exact letters/phases + dense-matrix spectra | **High** — all 16 CNOT conjugations, U·H·U† to machine precision, H₂ sector spectra |
 | Index/label ordering (state-resolved) | 10 | Occupation-basis diagonal reads + exact a†₂ string | **High** — number operators verified on the intended occupation basis; catches bit reversal that spectra miss |
-| Hamiltonian coefficients & factory contract | 37 | Exact coefficients + independent 16×16 raw oracle (per-sector **and** whole-matrix) + immutable-source-pinned audited artifact (commit+blob+sha256) + literal sector eigenvalue arrays + six-encoding spectra + tiny-survival | **High** — pins H₂/STO-3G coefficients, restored **weighted** contract + named raw adapter, ½+order defect proofs, cancellation-aware tiny survival, git-blob/SHA-256-locked vendored research fixture, direct-compared N=0..4 sector spectra + full-matrix union, trace/HF-diagonal/particle-sector anchors |
+| Hamiltonian coefficients & factory contract | 40 | Exact coefficients + independent 16×16 raw oracle (per-sector **and** whole-matrix) + immutable-source-pinned audited artifact (commit+blob+sha256) + literal sector eigenvalue arrays + six-encoding spectra + tiny-survival | **High** — pins H₂/STO-3G coefficients, 0.9.0 **raw physicist** primary contract + named legacy weighted migration API + `weighted`/`antisymmetrized` adapters, ½+order defect proofs, migration-hazard mismatch proofs, cancellation-aware tiny survival, git-blob/SHA-256-locked vendored research fixture, direct-compared N=0..4 sector spectra + full-matrix union, trace/HF-diagonal/particle-sector anchors |
 
 ### What is *not* tested
 

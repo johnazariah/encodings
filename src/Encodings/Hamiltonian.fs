@@ -4,15 +4,36 @@
 /// Hamiltonian construction from one-body and two-body integrals.
 /// </summary>
 /// <remarks>
+/// <para>
 /// Assembles the second-quantized electronic Hamiltonian:
+/// </para>
 ///
 ///   H = Σ_{pq} h_{pq} a†_p a_q  +  ½ Σ_{pqrs} ⟨pq|rs⟩ a†_p a†_q a_s a_r
 ///
+/// <para>
 /// and encodes it as a sum of Pauli strings using any provided encoding function.
-/// The function handles one-body terms, two-body terms, coefficient combination,
+/// The builders handle one-body terms, two-body terms, coefficient combination,
 /// and zero-term dropping.
+/// </para>
+/// <para>
+/// <b>BREAKING CHANGE (0.9.0).</b> The primary builders — <c>computeHamiltonian</c>,
+/// <c>computeHamiltonianWith</c> and the parallel / cached / skeleton variants — now
+/// consume <b>RAW single-bar physicist integrals</b> ⟨pq|rs⟩ keyed <c>"p,q,r,s"</c>
+/// (no ½, no index swap). Internally each two-body key contributes
+/// <c>½·⟨pq|rs⟩·a†_p a†_q a_s a_r</c> (the ½ of the two-body term and the r↔s
+/// annihilator order are applied by the library). The <see cref="T:Encodings.Fcidump"/>
+/// adapters likewise return raw physicist integrals, so FCIDUMP physics is unchanged.
+/// </para>
+/// <para>
+/// The <b>previously released weighted</b> semantics (value = the full weighted
+/// prefactor of <c>a†_i a†_j a_k a_l</c>, applied verbatim, two-body ½ pre-folded)
+/// remain available behind the clearly named <c>computeHamiltonianFromWeighted…</c>
+/// migration functions and the <c>weightedToRawFactory</c> adapter. See the migration
+/// guide (<c>docs/guides/migration-0.9.md</c>) for the exact before/after mapping.
+/// </para>
 /// </remarks>
 module Hamiltonian =
+    open System
     open System.Numerics
     open Encodings.JordanWigner
 
@@ -35,12 +56,12 @@ module Hamiltonian =
     /// Structural Pauli terms for the two-body operator <c>a†_i a†_j a_k a_l</c>.
     /// </summary>
     /// <remarks>
-    /// The factory coefficient for key "i,j,k,l" is the FULL WEIGHTED prefactor of
-    /// this operator string and is applied verbatim by the caller — this helper
-    /// contributes only the structural Pauli phases from the encoding algebra, with
-    /// the annihilators in the order <c>a_k</c> then <c>a_l</c>. Shared by every
-    /// builder (sequential, parallel, cached, and both skeletons) and, via the
-    /// skeleton, by <c>applyCoefficients</c>, so all surfaces agree.
+    /// This helper contributes only the structural Pauli phases from the encoding
+    /// algebra for <c>a†_i a†_j a_k a_l</c> (annihilators in the order <c>a_k</c> then
+    /// <c>a_l</c>); the weighted core multiplies in the caller's coefficient. It is
+    /// shared by every builder (sequential, parallel, cached, and both skeletons), so
+    /// all surfaces agree. The raw-physicist primary builders reach it through the
+    /// internal raw→weighted mapping (the ½ and the r↔s swap live there, not here).
     /// </remarks>
     let private twoBodyStructuralTerms (encode : EncoderFn) (i : uint32) (j : uint32) (k : uint32) (l : uint32) (n : uint32) : PauliRegister[] =
         let product =
@@ -141,13 +162,14 @@ module Hamiltonian =
     /// <c>a†_i a†_j a_k a_l</c> (annihilators in the order k then l).
     /// </summary>
     /// <remarks>
-    /// The coefficient supplied by the factory for key <c>"i,j,k,l"</c> is the FULL
-    /// WEIGHTED prefactor of this operator string and is applied verbatim — the
-    /// caller folds in the ½ of the two-body Hamiltonian term
-    /// ½·Σ g_pqrs a†_p a†_q a_r a_s; no additional ½ is applied here. The
-    /// <see cref="T:Encodings.Fcidump"/> adapters do this, mapping chemist-notation
-    /// integrals to <c>½·(ps|qr)</c> for key "p,q,r,s". For raw physicist
-    /// ⟨pq|rs⟩ tensors use <c>rawPhysicistToWeightedFactory</c> instead.
+    /// The coefficient supplied to this internal helper for key <c>"i,j,k,l"</c> is the
+    /// FULL WEIGHTED prefactor of this operator string and is applied verbatim — the
+    /// weighted core folds in the ½ of the two-body Hamiltonian term
+    /// ½·Σ g_pqrs a†_p a†_q a_r a_s; no additional ½ is applied here. The raw-physicist
+    /// primary builders reach this helper via the internal raw→weighted mapping (½ and
+    /// r↔s swap), so a raw <c>⟨pq|rs⟩</c> factory is supplied to
+    /// <c>computeHamiltonianWith</c> directly. The <see cref="T:Encodings.Fcidump"/>
+    /// adapters produce a conforming raw factory.
     /// </remarks>
     and ExchangeTerm = {i : uint32; j : uint32; k : uint32; l : uint32}
     with
@@ -180,87 +202,81 @@ module Hamiltonian =
 
 
     /// <summary>
-    /// Compute a qubit Hamiltonian from integral coefficients using any encoding.
+    /// <b>[Legacy / migration]</b> Compute a qubit Hamiltonian from <b>weighted</b>
+    /// integral coefficients using any encoding.
     /// </summary>
     /// <param name="encode">The encoding function to transform ladder operators to Pauli strings.</param>
     /// <param name="coefficientFactory">A function that returns Some(coefficient) for a given comma-separated index key (e.g., "0,1" for one-body, "0,1,2,3" for two-body), or None if the term should be skipped.</param>
     /// <param name="n">The number of qubits/modes in the system.</param>
     /// <returns>A PauliRegisterSequence representing the encoded Hamiltonian.</returns>
     /// <remarks>
-    /// Generic version that accepts any fermion-to-qubit encoding function.
-    /// Useful for comparing different encodings (Jordan-Wigner, Bravyi-Kitaev, etc.)
-    /// on the same Hamiltonian. Keys are formatted as comma-separated indices:
-    /// "i,j" for one-body and "i,j,k,l" for two-body terms.
     /// <para>
-    /// <b>Coefficient contract (same as <c>computeHamiltonian</c>).</b> The
+    /// This preserves the <b>previously released (≤ 0.8.0) weighted</b> contract: the
     /// factory returns the FULL WEIGHTED prefactor of the operator string, applied
-    /// verbatim: "i,j" → coefficient of <c>a†_i a_j</c>; "i,j,k,l" → coefficient of
-    /// <c>a†_i a†_j a_k a_l</c> <b>with the two-body ½ already folded in</b> (raw
-    /// integrals yield a result twice too large). Build a conforming factory with
-    /// <see cref="T:Encodings.Fcidump"/>, or wrap a raw physicist tensor with
-    /// <c>rawPhysicistToWeightedFactory</c>.
+    /// verbatim — "i,j" → coefficient of <c>a†_i a_j</c>; "i,j,k,l" → coefficient of
+    /// <c>a†_i a†_j a_k a_l</c> <b>with the two-body ½ already folded in</b>. No ½ and
+    /// no index swap are applied by the library.
+    /// </para>
+    /// <para>
+    /// New code should prefer the raw-physicist <c>computeHamiltonianWith</c> (0.9.0+).
+    /// To reuse an existing weighted factory with the raw builders, wrap it once with
+    /// <c>weightedToRawFactory</c>. Numerically-zero residues from fermionic
+    /// cancellation are removed (cancellation-aware); standalone tiny coefficients are
+    /// preserved.
     /// </para>
     /// </remarks>
-    let computeHamiltonianWith (encode : EncoderFn) coefficientFactory n =
+    let computeHamiltonianFromWeightedWith (encode : EncoderFn) coefficientFactory n =
         Array.append
             (OverlapTerm.ContributionsWith  encode coefficientFactory n)
             (ExchangeTerm.ContributionsWith encode coefficientFactory n)
         |> reduceWithCancellation
 
     /// <summary>
-    /// Compute a qubit Hamiltonian from integral coefficients using Jordan-Wigner encoding.
+    /// <b>[Legacy / migration]</b> Compute a qubit Hamiltonian from <b>weighted</b>
+    /// integral coefficients using Jordan-Wigner encoding.
     /// </summary>
     /// <param name="coefficientFactory">A function that returns Some(coefficient) for a given comma-separated index key (e.g., "0,1" for one-body, "0,1,2,3" for two-body), or None if the term should be skipped.</param>
     /// <param name="n">The number of qubits/modes in the system.</param>
     /// <returns>A PauliRegisterSequence representing the encoded Hamiltonian.</returns>
     /// <remarks>
-    /// Iterates over all one-body (i,j) and two-body (i,j,k,l) index combinations,
-    /// retrieves coefficients from the factory function, and encodes non-zero terms
-    /// using the Jordan-Wigner transformation. Keys are formatted as comma-separated
-    /// indices: "i,j" for one-body and "i,j,k,l" for two-body terms.
     /// <para>
-    /// <b>Coefficient contract.</b> The factory returns the FULL WEIGHTED prefactor
-    /// of the corresponding operator string, which this function applies verbatim:
+    /// Jordan-Wigner specialisation of <c>computeHamiltonianFromWeightedWith</c>. The
+    /// factory returns the FULL WEIGHTED prefactor of the corresponding operator
+    /// string, applied verbatim:
     /// </para>
     /// <list type="bullet">
     ///   <item><description>"i,j" → h_ij, the coefficient of <c>a†_i a_j</c>.</description></item>
     ///   <item><description>"i,j,k,l" → the coefficient of <c>a†_i a†_j a_k a_l</c>,
     ///   <b>with the ½ of the two-body term ½·Σ g_pqrs a†_p a†_q a_r a_s already folded in</b>.
-    ///   No additional ½ is applied here — supplying a raw integral yields a result
-    ///   twice too large. For raw physicist ⟨pq|rs⟩ tensors, wrap the factory with
-    ///   <c>rawPhysicistToWeightedFactory</c> (or call
-    ///   <c>computeHamiltonianFromPhysicist</c>).</description></item>
+    ///   No additional ½ or index swap is applied.</description></item>
     /// </list>
     /// <para>
     /// The nuclear/constant term is not added (callers may add E_nuc·I separately).
-    /// Use <see cref="T:Encodings.Fcidump"/> to build a conforming factory from an
-    /// FCIDUMP: for key "p,q,r,s" it supplies <c>½·(ps|qr)</c> (chemist notation) =
-    /// <c>½·⟨pq|sr⟩</c> (physicist notation). Numerically-zero residues from
-    /// fermionic cancellation are removed (cancellation-aware), while standalone
-    /// tiny coefficients are preserved.
+    /// New code should prefer the raw-physicist <c>computeHamiltonian</c> (0.9.0+).
     /// </para>
     /// </remarks>
-    let computeHamiltonian coefficientFactory n =
-        computeHamiltonianWith jordanWignerTerms coefficientFactory n
+    let computeHamiltonianFromWeighted coefficientFactory n =
+        computeHamiltonianFromWeightedWith jordanWignerTerms coefficientFactory n
 
 
     // ── Parallel Hamiltonian construction ─────────────────────────────
 
     /// <summary>
-    /// Parallel version of <c>computeHamiltonianWith</c>.
+    /// <b>[Legacy / migration]</b> Parallel version of
+    /// <c>computeHamiltonianFromWeightedWith</c> (weighted contract).
     /// Distributes encoding work across available CPU cores using Array.Parallel.
     /// </summary>
     /// <param name="encode">The encoding function to transform ladder operators to Pauli strings.</param>
-    /// <param name="coefficientFactory">A function that returns Some(coefficient) for a given comma-separated index key.</param>
+    /// <param name="coefficientFactory">A weighted coefficient lookup (see <c>computeHamiltonianFromWeightedWith</c>).</param>
     /// <param name="n">The number of qubits/modes in the system.</param>
     /// <returns>A PauliRegisterSequence representing the encoded Hamiltonian.</returns>
     /// <remarks>
     /// The n² one-body and n⁴ two-body index loops are parallelised.
     /// Coefficient lookups remain sequential (cheap), while the expensive
     /// encode-and-multiply steps run across all cores. Produces results
-    /// identical to the sequential <c>computeHamiltonianWith</c>.
+    /// identical to the sequential <c>computeHamiltonianFromWeightedWith</c>.
     /// </remarks>
-    let computeHamiltonianWithParallel (encode : EncoderFn) coefficientFactory n =
+    let computeHamiltonianFromWeightedWithParallel (encode : EncoderFn) coefficientFactory n =
         let encodeOneBody (i, j, coeff) : PauliRegister[] =
             let product = (encode Raise i n) * (encode Lower j n)
             product.DistributeCoefficient.SummandTerms
@@ -294,16 +310,18 @@ module Hamiltonian =
         |> reduceWithCancellation
 
     /// <summary>
-    /// Parallel version of <c>computeHamiltonian</c> (Jordan-Wigner).
+    /// <b>[Legacy / migration]</b> Parallel version of
+    /// <c>computeHamiltonianFromWeighted</c> (Jordan-Wigner, weighted contract).
     /// </summary>
-    let computeHamiltonianParallel coefficientFactory n =
-        computeHamiltonianWithParallel jordanWignerTerms coefficientFactory n
+    let computeHamiltonianFromWeightedParallel coefficientFactory n =
+        computeHamiltonianFromWeightedWithParallel jordanWignerTerms coefficientFactory n
 
 
     // ── Cached Hamiltonian construction ──────────────────────────────
 
     /// <summary>
-    /// Optimised Hamiltonian construction with operator caching.
+    /// <b>[Legacy / migration]</b> Optimised Hamiltonian construction with operator
+    /// caching (weighted contract).
     /// </summary>
     /// <remarks>
     /// <para>
@@ -319,16 +337,16 @@ module Hamiltonian =
     /// where N_nz ≪ n⁴.
     /// </para>
     /// <para>
-    /// <b>Coefficient contract (same as <c>computeHamiltonianWith</c>).</b>
+    /// <b>Coefficient contract (same as <c>computeHamiltonianFromWeightedWith</c>).</b>
     /// The factory returns the FULL WEIGHTED prefactor for each key, applied verbatim
     /// (two-body ½ pre-folded). Results are identical to the sequential builder,
     /// including the cancellation-aware removal of zero residues.
     /// </para>
     /// </remarks>
     /// <param name="encode">The encoding function.</param>
-    /// <param name="coefficientFactory">Weighted coefficient lookup (see <c>computeHamiltonianWith</c>; wrap raw physicist tensors with <c>rawPhysicistToWeightedFactory</c>).</param>
+    /// <param name="coefficientFactory">Weighted coefficient lookup (see <c>computeHamiltonianFromWeightedWith</c>).</param>
     /// <param name="n">Number of spin-orbitals (qubits).</param>
-    let computeHamiltonianCached (encode : EncoderFn) coefficientFactory (n : uint32) =
+    let computeHamiltonianFromWeightedCached (encode : EncoderFn) coefficientFactory (n : uint32) =
         // Pre-cache all encoded raise and lower operators
         let raiseOps = Array.init (int n) (fun i -> encode Raise (uint32 i) n)
         let lowerOps = Array.init (int n) (fun i -> encode Lower (uint32 i) n)
@@ -447,10 +465,18 @@ module Hamiltonian =
     /// structures for all one-body and two-body operator products.
     /// </returns>
     /// <remarks>
+    /// <para>
     /// Uses <c>Array.Parallel.map</c> on the n⁴ two-body index space.
     /// Signatures and operator arrays are cached in <see cref="T:Encodings.Hamiltonian.SkeletonTerm"/>
     /// records so that <c>applyCoefficients</c> can accumulate
     /// coefficients without any Pauli algebra or string computation.
+    /// </para>
+    /// <para>
+    /// The skeleton is <b>contract-agnostic</b> (pure Pauli structure for each
+    /// operator product <c>a†_i a†_j a_k a_l</c>): it is consumed by both the raw
+    /// <c>applyCoefficients</c> and the legacy <c>applyCoefficientsFromWeighted</c>,
+    /// which differ only in how they map the supplied factory onto these structures.
+    /// </para>
     /// </remarks>
     let computeHamiltonianSkeleton (encode : EncoderFn) (n : uint32) : HamiltonianSkeleton =
         let toSkeletonTerms (regs : PauliRegister[]) =
@@ -483,10 +509,11 @@ module Hamiltonian =
         { OneBody = oneBody; TwoBody = twoBody; NumQubits = n }
 
     /// <summary>
-    /// Precompute a sparse Pauli skeleton using a coefficient factory to discover active keys.
+    /// <b>[Legacy / migration]</b> Precompute a sparse Pauli skeleton using a
+    /// <b>weighted</b> coefficient factory to discover active keys.
     /// </summary>
     /// <param name="encode">The encoding function.</param>
-    /// <param name="coefficientFactory">A function that returns Some for keys to include. Only the presence/absence matters; coefficient values are ignored.</param>
+    /// <param name="coefficientFactory">A weighted factory that returns Some for keys to include. Only the presence/absence matters; coefficient values are ignored.</param>
     /// <param name="n">The number of qubits/modes.</param>
     /// <returns>
     /// A <see cref="T:Encodings.Hamiltonian.HamiltonianSkeleton"/> containing precomputed Pauli
@@ -501,10 +528,13 @@ module Hamiltonian =
     /// </para>
     /// <para>
     /// Use when all geometries in a scan share the same sparsity pattern
-    /// (same basis set → same non-zero integral indices).
+    /// (same basis set → same non-zero integral indices). The discovered keys are
+    /// weighted structural keys "i,j,k,l" (operator <c>a†_i a†_j a_k a_l</c>) and must
+    /// be applied with <c>applyCoefficientsFromWeighted</c>. For the raw-physicist
+    /// contract use <c>computeHamiltonianSkeletonFor</c> instead.
     /// </para>
     /// </remarks>
-    let computeHamiltonianSkeletonFor (encode : EncoderFn) (coefficientFactory : string -> Complex option) (n : uint32) : HamiltonianSkeleton =
+    let computeHamiltonianSkeletonForFromWeighted (encode : EncoderFn) (coefficientFactory : string -> Complex option) (n : uint32) : HamiltonianSkeleton =
         let toSkeletonTerms (regs : PauliRegister[]) =
             regs |> Array.map (fun r ->
                 { Signature       = r.Signature
@@ -547,10 +577,11 @@ module Hamiltonian =
         { OneBody = oneBody; TwoBody = twoBody; NumQubits = n }
 
     /// <summary>
-    /// Apply integral coefficients to a precomputed skeleton.
+    /// <b>[Legacy / migration]</b> Apply <b>weighted</b> integral coefficients to a
+    /// precomputed skeleton.
     /// </summary>
-    /// <param name="skeleton">The precomputed skeleton from <c>computeHamiltonianSkeleton</c>.</param>
-    /// <param name="coefficientFactory">A function returning Some(coefficient) for a given comma-separated index key, or None to skip. Same WEIGHTED contract as <c>computeHamiltonianWith</c> — the value is the full weighted prefactor (two-body ½ pre-folded), applied verbatim; wrap raw physicist tensors with <c>rawPhysicistToWeightedFactory</c>.</param>
+    /// <param name="skeleton">The precomputed skeleton from <c>computeHamiltonianSkeleton</c> or <c>computeHamiltonianSkeletonForFromWeighted</c>.</param>
+    /// <param name="coefficientFactory">A function returning Some(coefficient) for a given comma-separated index key, or None to skip. Same WEIGHTED contract as <c>computeHamiltonianFromWeightedWith</c> — the value is the full weighted prefactor (two-body ½ pre-folded), applied verbatim to <c>a†_i a†_j a_k a_l</c>. For the raw-physicist contract use <c>applyCoefficients</c>.</param>
     /// <returns>A PauliRegisterSequence representing the encoded Hamiltonian.</returns>
     /// <remarks>
     /// <para>
@@ -563,8 +594,8 @@ module Hamiltonian =
     /// <para>
     /// Zero residues are dropped cancellation-aware (exact zeros, or residues from
     /// more than one contribution below a small multiple of machine epsilon times the
-    /// contribution scale), matching <c>computeHamiltonianWith</c>; standalone
-    /// tiny coefficients are preserved.
+    /// contribution scale), matching <c>computeHamiltonianFromWeightedWith</c>;
+    /// standalone tiny coefficients are preserved.
     /// </para>
     /// <para>
     /// Typical runtime is under 10 ms for systems up to ~20 qubits,
@@ -572,7 +603,7 @@ module Hamiltonian =
     /// after the one-time skeleton build.
     /// </para>
     /// </remarks>
-    let applyCoefficients (skeleton : HamiltonianSkeleton) (coefficientFactory : string -> Complex option) : PauliRegisterSequence =
+    let applyCoefficientsFromWeighted (skeleton : HamiltonianSkeleton) (coefficientFactory : string -> Complex option) : PauliRegisterSequence =
         // Accumulate coefficients by Pauli signature — no PauliRegister construction.
         // Track per-signature contribution count and magnitude scale so the final
         // reduction is cancellation-aware (see reduceWithCancellation).
@@ -618,34 +649,16 @@ module Hamiltonian =
         |> PauliRegisterSequence
 
 
-    // ── Raw physicist integral adapter ───────────────────────────────
+    // ── Factory adapters: raw ⟷ weighted, and antisymmetrised ────────
 
     /// <summary>
-    /// Adapt a raw physicist two-electron integral factory to the weighted
-    /// coefficient contract consumed by <c>computeHamiltonianWith</c> and
-    /// every other builder.
+    /// (internal) Adapt a raw single-bar physicist factory to the legacy weighted
+    /// contract: two-body key <c>"i,j,k,l"</c> ↦ <c>½·⟨ij|lk⟩</c> (i.e. raw entry
+    /// <c>(p,q,r,s) ↦ ⟨pq|rs⟩</c> maps to weighted key <c>(p,q,s,r)</c> = <c>½·⟨pq|rs⟩</c>),
+    /// one-body keys pass through. This is how every raw primary builder is
+    /// implemented on top of the audited weighted core.
     /// </summary>
-    /// <param name="rawPhysicistFactory">
-    /// A factory returning, for key <c>"p,q,r,s"</c>, the RAW single-bar physicist
-    /// integral <c>⟨pq|rs⟩</c> under the unrestricted sum (no ½, no antisymmetrisation),
-    /// and, for key <c>"p,q"</c>, the one-body coefficient <c>h_pq</c>.
-    /// </param>
-    /// <returns>
-    /// A weighted factory. For a two-body query <c>"i,j,k,l"</c> it returns
-    /// <c>½·⟨ij|lk⟩</c> — i.e. it maps a raw entry <c>(p,q,r,s) ↦ ⟨pq|rs⟩</c> to the
-    /// weighted key <c>(p,q,s,r)</c> with value <c>½·⟨pq|rs⟩</c>, reproducing the
-    /// physics <c>½·Σ ⟨pq|rs⟩ a†_p a†_q a_s a_r</c>. One-body keys pass through
-    /// unchanged. The nuclear/core energy is not involved.
-    /// </returns>
-    /// <remarks>
-    /// This is the single-bar (½) convention. An antisymmetrised double-bar tensor
-    /// <c>⟨pq||rs⟩</c> would instead use a ¼ prefactor under its own explicitly named
-    /// adapter (not provided here). Passing an already-weighted / pre-adapted factory
-    /// through this adapter double-adapts it (a migration hazard); conversely, passing
-    /// a raw physicist factory straight to <c>computeHamiltonianWith</c> is a
-    /// caller error (the ½ and index swap would be missing).
-    /// </remarks>
-    let rawPhysicistToWeightedFactory (rawPhysicistFactory : string -> Complex option) : (string -> Complex option) =
+    let private rawToWeightedFactory (rawPhysicistFactory : string -> Complex option) : (string -> Complex option) =
         fun (key : string) ->
             let parts = key.Split(',')
             match parts.Length with
@@ -657,25 +670,165 @@ module Hamiltonian =
             | _ -> rawPhysicistFactory key
 
     /// <summary>
-    /// Compute a qubit Hamiltonian directly from a raw physicist integral factory
-    /// using any encoding.
+    /// Adapt a <b>legacy weighted</b> coefficient factory to the <b>raw physicist</b>
+    /// contract consumed by the primary builders (0.9.0+).
     /// </summary>
-    /// <param name="encode">The encoding function.</param>
-    /// <param name="rawPhysicistFactory">A factory of raw physicist integrals ⟨pq|rs⟩ (see <c>rawPhysicistToWeightedFactory</c>).</param>
-    /// <param name="n">The number of qubits/modes in the system.</param>
+    /// <param name="weightedFactory">
+    /// A factory returning the FULL WEIGHTED prefactor for key <c>"i,j,k,l"</c>
+    /// (the coefficient of <c>a†_i a†_j a_k a_l</c>, two-body ½ pre-folded), and the
+    /// one-body coefficient <c>h_pq</c> for key <c>"p,q"</c>.
+    /// </param>
+    /// <returns>
+    /// A raw-physicist factory. For a two-body query <c>"p,q,r,s"</c> it returns
+    /// <c>2·w(p,q,s,r)</c>, so that feeding it to a raw builder reproduces exactly the
+    /// weighted physics <c>w(p,q,s,r)·a†_p a†_q a_s a_r</c>. One-body keys pass through.
+    /// </returns>
     /// <remarks>
-    /// Convenience wrapper equivalent to
-    /// <c>computeHamiltonianWith encode (rawPhysicistToWeightedFactory rawPhysicistFactory) n</c>.
-    /// The nuclear/core energy is added separately by the caller.
+    /// This is the forward migration bridge: it lets pre-adapted weighted data (or an
+    /// old caller's weighted factory) drive the new raw builders — including the
+    /// <see cref="T:Encodings.Optimization"/> entry points, which have no dedicated
+    /// weighted overload. It is the exact inverse of the internal raw→weighted mapping.
     /// </remarks>
-    let computeHamiltonianFromPhysicistWith (encode : EncoderFn) (rawPhysicistFactory : string -> Complex option) n =
-        computeHamiltonianWith encode (rawPhysicistToWeightedFactory rawPhysicistFactory) n
+    let weightedToRawFactory (weightedFactory : string -> Complex option) : (string -> Complex option) =
+        fun (key : string) ->
+            let parts = key.Split(',')
+            match parts.Length with
+            | 4 ->
+                // Raw key (p,q,r,s) → weighted key (p,q,s,r), value doubled (undo the ½).
+                let weightedKey = sprintf "%s,%s,%s,%s" parts.[0] parts.[1] parts.[3] parts.[2]
+                weightedFactory weightedKey
+                |> Option.map (fun w -> w * Complex(2.0, 0.0))
+            | _ -> weightedFactory key
 
     /// <summary>
-    /// Compute a qubit Hamiltonian directly from a raw physicist integral factory
-    /// using Jordan-Wigner encoding.
+    /// Adapt an <b>antisymmetrised double-bar</b> physicist tensor <c>⟨pq||rs⟩</c>
+    /// (¼ convention) to the raw single-bar factory consumed by the primary builders.
     /// </summary>
-    /// <param name="rawPhysicistFactory">A factory of raw physicist integrals ⟨pq|rs⟩ (see <c>rawPhysicistToWeightedFactory</c>).</param>
+    /// <param name="antisymmetrizedFactory">
+    /// A factory returning, for key <c>"p,q,r,s"</c>, the antisymmetrised double-bar
+    /// integral <c>⟨pq||rs⟩ = ⟨pq|rs⟩ − ⟨pq|sr⟩</c>, and, for key <c>"p,q"</c>, the
+    /// one-body coefficient <c>h_pq</c>.
+    /// </param>
+    /// <returns>
+    /// A raw factory that scales every two-body entry by ½ (one-body passes through).
+    /// The double-bar Hamiltonian <c>¼·Σ ⟨pq||rs⟩ a†_p a†_q a_s a_r</c> equals the
+    /// single-bar <c>½·Σ ⟨pq|rs⟩ a†_p a†_q a_s a_r</c> under fermionic anticommutation,
+    /// so <c>½·⟨pq||rs⟩</c> is the correct raw single-bar value for each key.
+    /// </returns>
+    /// <remarks>
+    /// Use for chemistry codes that hand you an already-antisymmetrised tensor. The
+    /// core/nuclear energy remains a separate, caller-supplied constant.
+    /// </remarks>
+    let antisymmetrizedToRawFactory (antisymmetrizedFactory : string -> Complex option) : (string -> Complex option) =
+        fun (key : string) ->
+            let parts = key.Split(',')
+            match parts.Length with
+            | 4 -> antisymmetrizedFactory key |> Option.map (fun g -> g * Complex(0.5, 0.0))
+            | _ -> antisymmetrizedFactory key
+
+
+    // ── RAW physicist integral API (primary; breaking change in 0.9.0) ──
+
+    /// <summary>
+    /// Compute a qubit Hamiltonian from <b>raw single-bar physicist integrals</b>
+    /// using any encoding. <b>Primary builder (0.9.0+).</b>
+    /// </summary>
+    /// <param name="encode">The encoding function to transform ladder operators to Pauli strings.</param>
+    /// <param name="rawPhysicistFactory">A factory returning, for key <c>"p,q,r,s"</c>, the RAW physicist integral <c>⟨pq|rs⟩</c> (no ½, no index swap), and for key <c>"p,q"</c> the one-body coefficient <c>h_pq</c>; None to skip.</param>
     /// <param name="n">The number of qubits/modes in the system.</param>
+    /// <returns>A PauliRegisterSequence representing the encoded Hamiltonian.</returns>
+    /// <remarks>
+    /// <para>
+    /// Assembles <c>Σ h_pq a†_p a_q + ½ Σ ⟨pq|rs⟩ a†_p a†_q a_s a_r</c>: the library
+    /// applies the two-body ½ and builds the annihilators in the order <c>a_s a_r</c>
+    /// (the r↔s swap) internally, so the factory supplies the raw integral unmodified.
+    /// <see cref="T:Encodings.Fcidump"/> adapters produce a conforming raw factory.
+    /// </para>
+    /// <para>
+    /// To reuse an existing <b>weighted</b> factory, wrap it with
+    /// <c>weightedToRawFactory</c>, or use the legacy
+    /// <c>computeHamiltonianFromWeightedWith</c>. The nuclear/constant term is not
+    /// added. Numerically-zero residues are removed (cancellation-aware) while
+    /// standalone tiny coefficients are preserved.
+    /// </para>
+    /// </remarks>
+    let computeHamiltonianWith (encode : EncoderFn) (rawPhysicistFactory : string -> Complex option) n =
+        computeHamiltonianFromWeightedWith encode (rawToWeightedFactory rawPhysicistFactory) n
+
+    /// <summary>
+    /// Compute a qubit Hamiltonian from <b>raw single-bar physicist integrals</b>
+    /// using Jordan-Wigner encoding. <b>Primary builder (0.9.0+).</b>
+    /// </summary>
+    /// <param name="rawPhysicistFactory">A raw physicist factory (see <c>computeHamiltonianWith</c>).</param>
+    /// <param name="n">The number of qubits/modes in the system.</param>
+    let computeHamiltonian (rawPhysicistFactory : string -> Complex option) n =
+        computeHamiltonianWith jordanWignerTerms rawPhysicistFactory n
+
+    /// <summary>Parallel version of <c>computeHamiltonianWith</c> (raw physicist contract).</summary>
+    /// <param name="encode">The encoding function.</param>
+    /// <param name="rawPhysicistFactory">A raw physicist factory (see <c>computeHamiltonianWith</c>).</param>
+    /// <param name="n">The number of qubits/modes.</param>
+    let computeHamiltonianWithParallel (encode : EncoderFn) (rawPhysicistFactory : string -> Complex option) n =
+        computeHamiltonianFromWeightedWithParallel encode (rawToWeightedFactory rawPhysicistFactory) n
+
+    /// <summary>Parallel version of <c>computeHamiltonian</c> (Jordan-Wigner, raw physicist contract).</summary>
+    let computeHamiltonianParallel (rawPhysicistFactory : string -> Complex option) n =
+        computeHamiltonianWithParallel jordanWignerTerms rawPhysicistFactory n
+
+    /// <summary>Cached-operator version of <c>computeHamiltonianWith</c> (raw physicist contract).</summary>
+    /// <param name="encode">The encoding function.</param>
+    /// <param name="rawPhysicistFactory">A raw physicist factory (see <c>computeHamiltonianWith</c>).</param>
+    /// <param name="n">Number of spin-orbitals (qubits).</param>
+    let computeHamiltonianCached (encode : EncoderFn) (rawPhysicistFactory : string -> Complex option) (n : uint32) =
+        computeHamiltonianFromWeightedCached encode (rawToWeightedFactory rawPhysicistFactory) n
+
+    /// <summary>
+    /// Precompute a sparse Pauli skeleton using a <b>raw physicist</b> factory to
+    /// discover active keys, then apply with <c>applyCoefficients</c>.
+    /// </summary>
+    /// <param name="encode">The encoding function.</param>
+    /// <param name="rawPhysicistFactory">A raw physicist factory; only presence/absence matters for discovery.</param>
+    /// <param name="n">The number of qubits/modes.</param>
+    let computeHamiltonianSkeletonFor (encode : EncoderFn) (rawPhysicistFactory : string -> Complex option) (n : uint32) : HamiltonianSkeleton =
+        computeHamiltonianSkeletonForFromWeighted encode (rawToWeightedFactory rawPhysicistFactory) n
+
+    /// <summary>
+    /// Apply <b>raw physicist</b> integral coefficients to a precomputed skeleton.
+    /// </summary>
+    /// <param name="skeleton">The precomputed skeleton from <c>computeHamiltonianSkeleton</c> or <c>computeHamiltonianSkeletonFor</c>.</param>
+    /// <param name="rawPhysicistFactory">A raw physicist factory (see <c>computeHamiltonianWith</c>): key <c>"p,q,r,s"</c> ↦ <c>⟨pq|rs⟩</c>. The library applies the ½ and r↔s order.</param>
+    /// <returns>A PauliRegisterSequence representing the encoded Hamiltonian.</returns>
+    let applyCoefficients (skeleton : HamiltonianSkeleton) (rawPhysicistFactory : string -> Complex option) : PauliRegisterSequence =
+        applyCoefficientsFromWeighted skeleton (rawToWeightedFactory rawPhysicistFactory)
+
+
+    // ── Deprecated compatibility aliases (PR #6 raw adapter) ─────────
+
+    /// <summary>
+    /// <b>[Obsolete]</b> Adapt a raw physicist factory to the weighted contract.
+    /// </summary>
+    /// <remarks>
+    /// Redundant since 0.9.0: the primary builders (<c>computeHamiltonian</c>,
+    /// <c>computeHamiltonianWith</c>, …) consume raw physicist integrals directly, so
+    /// pass the raw factory straight to them. Retained only to bridge raw data into the
+    /// legacy <c>computeHamiltonianFromWeighted…</c> functions.
+    /// </remarks>
+    [<Obsolete("Since 0.9.0 the primary builders consume raw physicist integrals directly; pass the raw factory to computeHamiltonian/computeHamiltonianWith. This bridge is only needed to feed raw data into the legacy computeHamiltonianFromWeighted* functions.")>]
+    let rawPhysicistToWeightedFactory (rawPhysicistFactory : string -> Complex option) : (string -> Complex option) =
+        rawToWeightedFactory rawPhysicistFactory
+
+    /// <summary>
+    /// <b>[Obsolete]</b> Identity alias of <c>computeHamiltonianWith</c> (both now
+    /// consume raw physicist integrals). Use <c>computeHamiltonianWith</c> directly.
+    /// </summary>
+    [<Obsolete("Since 0.9.0 computeHamiltonianWith consumes raw physicist integrals directly; this alias is redundant. Use computeHamiltonianWith.")>]
+    let computeHamiltonianFromPhysicistWith (encode : EncoderFn) (rawPhysicistFactory : string -> Complex option) n =
+        computeHamiltonianWith encode rawPhysicistFactory n
+
+    /// <summary>
+    /// <b>[Obsolete]</b> Identity alias of <c>computeHamiltonian</c> (both now consume
+    /// raw physicist integrals). Use <c>computeHamiltonian</c> directly.
+    /// </summary>
+    [<Obsolete("Since 0.9.0 computeHamiltonian consumes raw physicist integrals directly; this alias is redundant. Use computeHamiltonian.")>]
     let computeHamiltonianFromPhysicist (rawPhysicistFactory : string -> Complex option) n =
-        computeHamiltonianFromPhysicistWith jordanWignerTerms rawPhysicistFactory n
+        computeHamiltonianWith jordanWignerTerms rawPhysicistFactory n

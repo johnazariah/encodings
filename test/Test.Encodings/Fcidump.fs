@@ -121,19 +121,17 @@ module Fcidump =
         Assert.True((factory "0,5").IsNone)
 
     [<Fact>]
-    let ``toCoefficientFactory: two-body key includes half factor`` () =
+    let ``toCoefficientFactory: two-body key returns raw physicist integral`` () =
         let data = parse h2Fcidump
         let factory = toCoefficientFactory data
-        // Weighted contract: factory("p,q,r,s") = ½ × chemist(p,s,q,r) — the ½ of the
-        // two-body Hamiltonian term is folded in here (the Hamiltonian module applies
-        // the value verbatim).
-        // factory("0,1,1,0") = ½ × chemist(0,0,1,1) = ½ × (00|11)
-        // (00|11) = (11|00) by symmetry = 0.181288808
-        let v = factory "0,1,1,0"
+        // Raw contract (0.9.0): factory("p,q,r,s") = ⟨pq|rs⟩ = (pr|qs) chemist = h2e[p,r,q,s],
+        // with NO ½ and NO index swap — the Hamiltonian builder applies them.
+        // ⟨01|01⟩ = (00|11) = (11|00) = 0.181288808 (Coulomb).
+        let v = factory "0,1,0,1"
         Assert.True(v.IsSome)
-        Assert.Equal(0.5 * 0.181288808, v.Value.Real, 6)
-        // factory("0,0,0,0") = ½ × (00|00) = ½ × 0.674493103
-        Assert.Equal(0.5 * 0.674493103, (factory "0,0,0,0").Value.Real, 6)
+        Assert.Equal(0.181288808, v.Value.Real, 6)
+        // ⟨00|00⟩ = (00|00) = 0.674493103.
+        Assert.Equal(0.674493103, (factory "0,0,0,0").Value.Real, 6)
 
     [<Fact>]
     let ``toCoefficientFactory: zero integral returns None`` () =
@@ -208,11 +206,11 @@ module Fcidump =
 
     // ── Real shipped FCIDUMP → canonical H₂ coefficients (end-to-end) ────
     // Proves the real examples/H2_STO-3G.fcidump, run through the spin-orbital
-    // factory, reproduces the canonical H₂ coefficient map under the released
-    // weighted contract (the adapter supplies ½·(ps|qr) = ½·⟨pq|sr⟩, applied
-    // verbatim). The identical coefficient map is shown to give the FCI ground
-    // −1.8523881736 by the direct raw oracle in HamiltonianCoefficients, so this
-    // transitively locks the FCIDUMP spectrum path.
+    // factory, reproduces the canonical H₂ coefficient map under the raw contract
+    // (the adapter supplies the raw physicist ⟨pq|rs⟩ = (pr|qs); the builder applies
+    // the ½ and r↔s order). The identical coefficient map is shown to give the FCI
+    // ground −1.8523881736 by the direct raw oracle in HamiltonianCoefficients, so
+    // this transitively locks the FCIDUMP spectrum path.
 
     let private locateExample name =
         let rec up (dir : System.IO.DirectoryInfo) =

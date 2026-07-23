@@ -20,9 +20,11 @@ open System.Text.RegularExpressions
 /// </para>
 /// <para>
 /// <b>Integral notation:</b> The chemist's integral <c>(ij|kl)</c> relates to the
-/// physicist's integral <c>⟨pq|rs⟩</c> by <c>⟨pq|rs⟩ = (pr|qs)</c>.
-/// The coefficient factory performs this conversion so that the Hamiltonian
-/// module assembles the correct second-quantized Hamiltonian.
+/// physicist's integral <c>⟨pq|rs⟩</c> by <c>⟨pq|rs⟩ = (pr|qs)</c>. Since 0.9.0 the
+/// factory returns the <b>RAW single-bar physicist integral</b> <c>⟨pq|rs⟩</c> for key
+/// <c>"p,q,r,s"</c> (no ½, no index swap); the <see cref="T:Encodings.Hamiltonian"/>
+/// builders apply the two-body ½ and the r↔s annihilator order, so the assembled
+/// physics is unchanged from earlier releases.
 /// </para>
 /// </remarks>
 module Fcidump =
@@ -173,18 +175,15 @@ module Fcidump =
     /// </summary>
     /// <remarks>
     /// <para>
-    /// The returned function is compatible with
-    /// <c>computeHamiltonianWith</c> and the Skeleton API.
+    /// The returned function is compatible with the raw-physicist
+    /// <c>computeHamiltonianWith</c> and the Skeleton API (0.9.0+).
     /// </para>
     /// <para>
     /// <b>Convention mapping:</b> The Hamiltonian module assembles
-    /// <c>H = Σ f("p,q") a†_p a_q + Σ f("p,q,r,s") a†_p a†_q a_r a_s</c> and applies the
-    /// factory value verbatim (the FULL WEIGHTED prefactor). To reproduce the physics
-    /// <c>H₂ = ½ Σ ⟨pq|rs⟩ a†_p a†_q a_s a_r</c>,
-    /// the factory returns <c>½ × ⟨pq|sr⟩ = ½ × (ps|qr)</c> in chemist's notation.
-    /// The ½ factor is folded in here because the Hamiltonian module does not apply it.
-    /// (For a raw physicist ⟨pq|rs⟩ tensor, use
-    /// <c>rawPhysicistToWeightedFactory</c> instead.)
+    /// <c>H₂ = ½ Σ ⟨pq|rs⟩ a†_p a†_q a_s a_r</c>, applying the ½ and the r↔s annihilator
+    /// order itself. This factory therefore returns the <b>RAW single-bar physicist</b>
+    /// integral for key <c>"p,q,r,s"</c>: <c>⟨pq|rs⟩ = (pr|qs)</c> in chemist's notation
+    /// (no ½, no swap). The assembled physics is identical to earlier releases.
     /// </para>
     /// <para>
     /// The nuclear repulsion energy is <b>not</b> included in the factory output.
@@ -214,9 +213,10 @@ module Fcidump =
                 let r = int parts.[2]
                 let s = int parts.[3]
                 if p < norb && q < norb && r < norb && s < norb then
-                    // Factory key "p,q,r,s" → weighted coefficient of a†_p a†_q a_r a_s
-                    // = ½ ⟨pq|sr⟩ = ½ (ps|qr) in chemist notation.
-                    let v = 0.5 * h2e.[p, s, q, r]
+                    // Raw single-bar physicist integral for key "p,q,r,s":
+                    //   ⟨pq|rs⟩ = (pr|qs) in chemist notation = h2e.[p, r, q, s].
+                    // No ½ and no index swap — the Hamiltonian builder applies them.
+                    let v = h2e.[p, r, q, s]
                     if v <> 0.0 then Some (Complex(v, 0.0)) else None
                 else None
             | _ -> None
@@ -258,7 +258,10 @@ module Fcidump =
     /// </list>
     /// <para>
     /// The returned factory is indexed by spin-orbital indices and should be used
-    /// with <c>n = 2 * NORB</c> (number of spin-orbitals).
+    /// with <c>n = 2 * NORB</c> (number of spin-orbitals). Since 0.9.0 it returns the
+    /// <b>RAW single-bar physicist</b> integral for a two-body key <c>"P,Q,R,S"</c>:
+    /// <c>⟨PQ|RS⟩ = chemist_spinorb(P,R,Q,S)</c> (no ½, no swap); the Hamiltonian
+    /// builder applies the ½ and r↔s order.
     /// </para>
     /// </remarks>
     /// <param name="data">Parsed spatial-orbital FCIDUMP data.</param>
@@ -291,17 +294,19 @@ module Fcidump =
                 let r = int parts.[2]
                 let s = int parts.[3]
                 if p < nso && q < nso && r < nso && s < nso then
-                    // Factory key "P,Q,R,S" → weighted ½ × chemist_spinorb(P,S,Q,R),
-                    // where chemist_spinorb(i,j,k,l)
-                    //   = δ_{spin(i),spin(j)} × δ_{spin(k),spin(l)} × chemist_spatial(i/2,j/2,k/2,l/2).
-                    let i, j, k, l = p, s, q, r
+                    // Raw single-bar physicist integral for spin-orbital key "P,Q,R,S":
+                    //   ⟨PQ|RS⟩ = chemist_spinorb(P,R,Q,S)
+                    //     = δ_{spin(P),spin(R)} δ_{spin(Q),spin(S)}
+                    //         × chemist_spatial(P/2, R/2, Q/2, S/2).
+                    // No ½ and no index swap — the Hamiltonian builder applies them.
+                    let i, j, k, l = p, r, q, s
                     let si = i % 2
                     let sj = j % 2
                     let sk = k % 2
                     let sl = l % 2
                     if si <> sj || sk <> sl then None
                     else
-                        let v = 0.5 * h2e.[i/2, j/2, k/2, l/2]
+                        let v = h2e.[i/2, j/2, k/2, l/2]
                         if v <> 0.0 then Some (Complex(v, 0.0)) else None
                 else None
             | _ -> None

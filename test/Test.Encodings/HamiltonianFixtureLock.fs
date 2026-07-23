@@ -174,8 +174,8 @@ module HamiltonianFixtureLock =
           "ZZII",  0.168688981704 ]
 
     [<Fact>]
-    let ``named raw adapter reproduces the complete 15-entry coefficient map`` () =
-        let ham = computeHamiltonianFromPhysicist (rawFactory ()) 4u
+    let ``raw primary reproduces the complete 15-entry coefficient map`` () =
+        let ham = computeHamiltonian (rawFactory ()) 4u
         // Exactly the 15 expected terms — no extra, none missing.
         Assert.Equal(expectedMap.Length, ham.DistributeCoefficient.SummandTerms.Length)
         Assert.Equal(15, ham.DistributeCoefficient.SummandTerms.Length)
@@ -281,7 +281,7 @@ module HamiltonianFixtureLock =
     [<Fact>]
     let ``JW-encoded fixture Hamiltonian matches the direct oracle entrywise (16x16)`` () =
         let factory = rawFactory ()
-        let lib = Enc.matrixOfCOcc (computeHamiltonianFromPhysicist factory 4u)
+        let lib = Enc.matrixOfCOcc (computeHamiltonian factory 4u)
         let oracle = Oracle.matrixOf factory 4
         for i in 0 .. Oracle.dim - 1 do
             for j in 0 .. Oracle.dim - 1 do
@@ -349,7 +349,7 @@ module HamiltonianFixtureLock =
 
     [<Fact>]
     let ``fixture metrics lock: 15 terms, weight 32, 15 rotations, 36 CNOTs, 1-norm`` () =
-        let ham = computeHamiltonianFromPhysicist (rawFactory ()) 4u
+        let ham = computeHamiltonian (rawFactory ()) 4u
         let costs = CostAnalysis.hamiltonianCosts ham
         Assert.Equal(15, costs.TermCount)
         Assert.Equal(32, costs.TotalPauliWeight)
@@ -360,10 +360,10 @@ module HamiltonianFixtureLock =
         Assert.Equal(2.6992778241451574, oneNorm, 10)
 
     [<Fact>]
-    let ``legacy weighted path on fixture-derived weighted data equals the raw-adapter path`` () =
+    let ``legacy weighted path on fixture-derived weighted data equals the raw primary path`` () =
         // Independently pre-adapt the frozen raw integrals to weighted form
         // (½·⟨pq|sr⟩ for weighted key p,q,r,s) and feed the legacy weighted API; it
-        // must match the named raw adapter on the same vendored artifact.
+        // must match the raw primary on the same vendored artifact.
         let oneBody, twoBody = loadArtifact ()
         let preAdapted (key : string) =
             let x = key.Split(',')
@@ -374,6 +374,6 @@ module HamiltonianFixtureLock =
                 Map.tryFind (int x.[0], int x.[1], int x.[3], int x.[2]) twoBody
                 |> Option.map (fun v -> Complex(0.5 * v, 0.0))
             | _ -> None
-        let viaLegacy = computeHamiltonianWith jordanWignerTerms preAdapted 4u
-        let viaRaw    = computeHamiltonianFromPhysicist (rawFactory ()) 4u
+        let viaLegacy = computeHamiltonianFromWeightedWith jordanWignerTerms preAdapted 4u
+        let viaRaw    = computeHamiltonian (rawFactory ()) 4u
         Assert.Equal(viaRaw.DistributeCoefficient.ToString(), viaLegacy.DistributeCoefficient.ToString())

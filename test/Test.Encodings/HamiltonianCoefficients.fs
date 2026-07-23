@@ -5,14 +5,15 @@ namespace Tests
 /// pass even when the integral/factory convention is wrong (all encodings agree on the
 /// signatures but could share a coefficient error), so these tests pin exact Pauli
 /// coefficients, cross-check against a first-principles dense fermionic matrix built by
-/// an independent raw second-quantized oracle, and lock the RELEASED factory contract:
+/// an independent raw second-quantized oracle, and lock the 0.9.0 factory contracts:
 ///
-///   • Legacy WEIGHTED factory (unchanged since v0.1): the value for key "i,j,k,l" is
-///     the FULL WEIGHTED prefactor, applied verbatim to a†_i a†_j a_k a_l. The two-body
-///     ½ is folded in by the caller (the Fcidump adapters supply ½·(ps|qr)).
-///   • NEW named RAW adapter: <c>rawPhysicistToWeightedFactory</c> /
-///     <c>computeHamiltonianFromPhysicist</c> accept a raw single-bar physicist tensor
-///     ⟨pq|rs⟩ and map (p,q,r,s,g) → weighted key (p,q,s,r) = ½·g.
+///   • RAW primary contract (0.9.0+): <c>computeHamiltonian</c> /
+///     <c>computeHamiltonianWith</c> and the FCIDUMP adapters consume a raw single-bar
+///     physicist tensor ⟨pq|rs⟩ for key "p,q,r,s". The library applies the two-body ½
+///     and the r↔s annihilator order internally (½·⟨pq|rs⟩·a†_p a†_q a_s a_r).
+///   • LEGACY weighted contract: <c>computeHamiltonianFromWeightedWith</c> applies the
+///     value verbatim to a†_i a†_j a_k a_l (FULL WEIGHTED prefactor, two-body ½
+///     pre-folded). <c>weightedToRawFactory</c> bridges weighted data to the raw API.
 /// </summary>
 module HamiltonianCoefficients =
     open System.Numerics
@@ -60,25 +61,25 @@ module HamiltonianCoefficients =
         h.DistributeCoefficient.SummandTerms |> Array.sumBy (fun t -> Complex.Abs t.Coefficient)
 
     // ══════════════════════════════════════════════════════════════════
-    //  Released weighted contract: factory value applied VERBATIM.
+    //  Legacy weighted contract: factory value applied VERBATIM.
     // ══════════════════════════════════════════════════════════════════
 
     [<Fact>]
     let ``one-body coefficient is applied verbatim (h -> h/2 I - h/2 Z from JW)`` () =
         // n_0 = a†_0 a_0 = (I - Z_0)/2, so factory("0,0")=h gives IIII=h/2, ZIII=-h/2.
         // (The ½ here is the JW encoding of a†a, NOT a library-applied Hamiltonian ½.)
+        // One-body terms are convention-invariant, so the raw primary is used directly.
         let factory (key : string) = if key = "0,0" then Some (Complex(1.7, 0.0)) else None
         let ham = computeHamiltonianWith jordanWignerTerms factory 2u
         Assert.Equal( 0.85, coeffOf ham "II", 10)
         Assert.Equal(-0.85, coeffOf ham "ZI", 10)
 
     [<Fact>]
-    let ``two-body: the factory value is applied verbatim to a†_i a†_j a_k a_l`` () =
-        // Minimal oracle. factory("0,1,0,1")=V is the FULL WEIGHTED coefficient of
+    let ``two-body: the weighted factory value is applied verbatim to a†_i a†_j a_k a_l`` () =
+        // Legacy weighted API. factory("0,1,0,1")=V is the FULL WEIGHTED coefficient of
         // a†_0 a†_1 a_0 a_1 (verbatim; the caller has already folded any ½). JW gives
         //   V·a†_0 a†_1 a_0 a_1 = V·(−II + IZ + ZI − ZZ)/4.
-        // A spuriously-applied internal ½ (or an index swap) would change these.
-        let mk v = computeHamiltonianWith jordanWignerTerms
+        let mk v = computeHamiltonianFromWeightedWith jordanWignerTerms
                     (fun key -> if key = "0,1,0,1" then Some (Complex(v, 0.0)) else None) 2u
         let h1 = mk 1.0
         let h2 = mk 2.0
@@ -91,16 +92,33 @@ module HamiltonianCoefficients =
         Assert.Equal(-0.25, coeffOf h1 "ZZ", 10)
 
     [<Fact>]
-    let ``two-body: the a_k a_l annihilator order is applied verbatim`` () =
+    let ``two-body: the weighted a_k a_l annihilator order is applied verbatim`` () =
         // factory("0,1,1,0")=1 → a†_0 a†_1 a_1 a_0 = +¼(II − IZ − ZI + ZZ), the
-        // negation of the a_0 a_1 order above: proves the library keeps the caller's
-        // k,l order (it does NOT swap to a_l a_k).
-        let h = computeHamiltonianWith jordanWignerTerms
+        // negation of the a_0 a_1 order above: proves the legacy weighted API keeps the
+        // caller's k,l order (it does NOT swap to a_l a_k — the raw API does).
+        let h = computeHamiltonianFromWeightedWith jordanWignerTerms
                   (fun key -> if key = "0,1,1,0" then Some (Complex(1.0, 0.0)) else None) 2u
         Assert.Equal( 0.25, coeffOf h "II", 10)
         Assert.Equal(-0.25, coeffOf h "IZ", 10)
         Assert.Equal(-0.25, coeffOf h "ZI", 10)
         Assert.Equal( 0.25, coeffOf h "ZZ", 10)
+
+    [<Fact>]
+    let ``two-body: the raw factory applies the internal half and r-s swap`` () =
+        // RAW primary. raw("0,1,0,1")=V (⟨01|01⟩) → the library builds
+        //   ½·V·a†_0 a†_1 a_1 a_0  (½ folded in; annihilators swapped to a_s a_r).
+        // Since a†_0 a†_1 a_1 a_0 = ¼(II − IZ − ZI + ZZ), the result is
+        //   (V/8)(II − IZ − ZI + ZZ). Equivalently: raw ⟨01|01⟩ ≡ weighted key (0,1,1,0)=½V.
+        let h = computeHamiltonianWith jordanWignerTerms
+                  (fun key -> if key = "0,1,0,1" then Some (Complex(1.0, 0.0)) else None) 2u
+        Assert.Equal( 0.125, coeffOf h "II", 10)
+        Assert.Equal(-0.125, coeffOf h "IZ", 10)
+        Assert.Equal(-0.125, coeffOf h "ZI", 10)
+        Assert.Equal( 0.125, coeffOf h "ZZ", 10)
+        // Cross-check: same map as the legacy weighted key (0,1,1,0) with value ½.
+        let w = computeHamiltonianFromWeightedWith jordanWignerTerms
+                  (fun key -> if key = "0,1,1,0" then Some (Complex(0.5, 0.0)) else None) 2u
+        Assert.Equal(w.DistributeCoefficient.ToString(), h.DistributeCoefficient.ToString())
 
     [<Fact>]
     let ``H2 JW Hamiltonian has exact IIII and four-body coefficients (FCIDUMP)`` () =
@@ -325,8 +343,8 @@ module HamiltonianCoefficients =
                 let v = hSpatial (spatialOf p) (spatialOf q)
                 if v <> 0.0 then Some (Complex(v, 0.0)) else None
             else None
-        /// RAW physicist factory F("p,q,r,s") = ⟨pq|rs⟩. Fed DIRECTLY to the named raw
-        /// adapter (or the raw oracle); a caller error if fed to the weighted API.
+        /// RAW physicist factory F("p,q,r,s") = ⟨pq|rs⟩. Fed DIRECTLY to the raw primary
+        /// API (or the raw oracle); a caller error if fed to the legacy weighted API.
         let raw (key : string) =
             let x = key.Split(',')
             match x.Length with
@@ -337,8 +355,8 @@ module HamiltonianCoefficients =
                 if v <> 0.0 then Some (Complex(v, 0.0)) else None
             | _ -> None
         /// PRE-ADAPTED weighted factory F("p,q,r,s") = ½·⟨pq|sr⟩ = ½·T[p,q,s,r].
-        /// This is the CORRECT legacy weighted input (equivalent to the Fcidump
-        /// adapters); a migration hazard if fed to the raw adapter.
+        /// This is the CORRECT legacy weighted input (fed to
+        /// computeHamiltonianFromWeighted*); a migration hazard if fed to the raw API.
         let preAdapted (key : string) =
             let x = key.Split(',')
             match x.Length with
@@ -366,10 +384,10 @@ module HamiltonianCoefficients =
         Assert.Equal(32, two)
 
     [<Fact>]
-    let ``named raw adapter produces all 15 canonical H2 coefficient entries`` () =
-        // computeHamiltonianFromPhysicist feeds the raw physicist tensor through the
-        // named adapter → the full 15-term canonical H₂, not a truncated 7.
-        let raw = computeHamiltonianFromPhysicist Phys.raw 4u
+    let ``raw primary produces all 15 canonical H2 coefficient entries`` () =
+        // computeHamiltonian consumes the raw physicist tensor DIRECTLY → the full
+        // 15-term canonical H₂, not a truncated 7.
+        let raw = computeHamiltonian Phys.raw 4u
         Assert.Equal(15, raw.DistributeCoefficient.SummandTerms.Length)
         Assert.Equal(-0.8121706072, coeffOf raw "IIII", 8)
         Assert.Equal(-0.2234315369, coeffOf raw "IIIZ", 8)
@@ -378,13 +396,13 @@ module HamiltonianCoefficients =
         Assert.Equal(2.6992778241, oneNorm raw, 8)
 
     [<Fact>]
-    let ``legacy weighted factory and named raw adapter produce the same map`` () =
+    let ``legacy weighted factory and raw primary produce the same map`` () =
         // Pre-adapted weighted data through the legacy API == raw data through the raw
-        // adapter == FCIDUMP through the legacy API. All three routes are identical.
+        // primary == FCIDUMP (raw) through the raw primary. All three routes agree.
         let factory, nso = h2Factory ()
         let viaFcidump = computeHamiltonianWith jordanWignerTerms factory (uint32 nso)
-        let viaLegacy  = computeHamiltonianWith jordanWignerTerms Phys.preAdapted 4u
-        let viaRaw     = computeHamiltonianFromPhysicist Phys.raw 4u
+        let viaLegacy  = computeHamiltonianFromWeightedWith jordanWignerTerms Phys.preAdapted 4u
+        let viaRaw     = computeHamiltonian Phys.raw 4u
         let s (h : PauliRegisterSequence) = h.DistributeCoefficient.ToString()
         Assert.Equal(s viaFcidump, s viaLegacy)
         Assert.Equal(s viaFcidump, s viaRaw)
@@ -394,8 +412,8 @@ module HamiltonianCoefficients =
     [<Fact>]
     let ``JW dense matrix matches the direct raw fermionic oracle entrywise`` () =
         // The raw oracle assembles ½·Σ ⟨ij|kl⟩ a†_i a†_j a_l a_k directly from the raw
-        // physicist tensor; the library builds the same H from the FCIDUMP weighted
-        // factory. In the occupation basis they must agree entry-for-entry.
+        // physicist tensor; the library builds the same H from the FCIDUMP raw factory
+        // through the raw primary. In the occupation basis they must agree entry-for-entry.
         let factory, nso = h2Factory ()
         let lib = Enc.matrixOfCOcc (computeHamiltonianWith jordanWignerTerms factory (uint32 nso))
         let oracle = Fermion.matrixOfRaw Phys.raw nso
@@ -434,36 +452,37 @@ module HamiltonianCoefficients =
         Assert.Equal(-1.8523881736, List.head sb, 8)
 
     [<Fact>]
-    let ``FCIDUMP independently matches the coefficient and weighted dense oracles`` () =
-        // The FCIDUMP weighted factory, consumed verbatim, matches (a) the encoded
-        // coefficient oracle and (b) a weighted dense oracle that also consumes it
-        // verbatim (no ½, no swap) — locking the FCIDUMP½·(ps|qr) adapter.
+    let ``FCIDUMP (raw) independently matches the coefficient and raw dense oracles`` () =
+        // The FCIDUMP raw factory, consumed by the raw primary, matches (a) the encoded
+        // coefficient oracle and (b) a raw dense oracle that consumes the same factory
+        // with ½ + a_l a_k — locking the FCIDUMP raw ⟨pq|rs⟩ = (pr|qs) adapter.
         let factory, nso = h2Factory ()
         let lib = Enc.matrixOfCOcc (computeHamiltonianWith jordanWignerTerms factory (uint32 nso))
-        let weightedOracle = Fermion.matrixOfWeighted factory nso
+        let fcidumpOracle = Fermion.matrixOfRaw factory nso
         let rawOracle = Fermion.matrixOfRaw Phys.raw nso
         for i in 0 .. Fermion.dim - 1 do
             for j in 0 .. Fermion.dim - 1 do
-                Assert.Equal(weightedOracle.[i, j], lib.[i, j].Real, 8)
-                Assert.Equal(rawOracle.[i, j], weightedOracle.[i, j], 8)
+                Assert.Equal(fcidumpOracle.[i, j], lib.[i, j].Real, 8)
+                Assert.Equal(rawOracle.[i, j], fcidumpOracle.[i, j], 8)
 
     // ── Migration hazard / caller error ─────────────────────────────────
 
     [<Fact>]
-    let ``pre-adapted data fed to the raw adapter double-adapts (migration hazard)`` () =
-        // Already-weighted (½-folded) data pushed through the raw adapter applies a
+    let ``pre-adapted weighted data fed to the raw primary double-adapts (migration hazard)`` () =
+        // Already-weighted (½-folded) data pushed through the raw primary applies a
         // second ½ and re-swaps → wrong. Migrate such factories to the legacy weighted
-        // API (or strip their ½/swap) rather than the raw adapter.
-        let hazard = computeHamiltonianFromPhysicist Phys.preAdapted 4u
+        // API (or strip their ½/swap) rather than the raw primary.
+        let hazard = computeHamiltonian Phys.preAdapted 4u
         Assert.True(abs (coeffOf hazard "IIII" - (-0.8121706072)) > 0.01,
             sprintf "double-adapted IIII=%f should differ materially from -0.8121706072"
                 (coeffOf hazard "IIII"))
 
     [<Fact>]
     let ``raw data fed straight to the legacy weighted API is a caller error`` () =
-        // Raw physicist integrals passed to the weighted factory omit the ½ and the
-        // index swap → wrong. Wrap them with rawPhysicistToWeightedFactory instead.
-        let wrong = computeHamiltonianWith jordanWignerTerms Phys.raw 4u
+        // Raw physicist integrals passed to the legacy weighted factory omit the ½ and
+        // the index swap → wrong. Wrap them with weightedToRawFactory's inverse — i.e.
+        // feed them to the raw primary instead.
+        let wrong = computeHamiltonianFromWeightedWith jordanWignerTerms Phys.raw 4u
         Assert.True(abs (coeffOf wrong "IIII" - (-0.8121706072)) > 0.01,
             sprintf "unadapted-raw IIII=%f should differ materially from -0.8121706072"
                 (coeffOf wrong "IIII"))
@@ -484,6 +503,26 @@ module HamiltonianCoefficients =
         Assert.Equal(s seqH, s cacheH)
         Assert.Equal(s seqH, s fullSk)
         Assert.Equal(s seqH, s sparseSk)
+
+    [<Fact>]
+    let ``all five legacy weighted builders agree on H2 and match the raw path`` () =
+        // Pre-adapted weighted H₂ data through every FromWeighted surface
+        // (sequential/parallel/cached/full-skeleton/sparse-skeleton) must all reproduce
+        // the identical map AND equal the raw primary on the same physics (item 12).
+        let n = 4u
+        let s (h : PauliRegisterSequence) = h.DistributeCoefficient.ToString()
+        let seqW     = computeHamiltonianFromWeightedWith jordanWignerTerms Phys.preAdapted n
+        let parW     = computeHamiltonianFromWeightedWithParallel jordanWignerTerms Phys.preAdapted n
+        let cacheW   = computeHamiltonianFromWeightedCached jordanWignerTerms Phys.preAdapted n
+        let fullSkW  = applyCoefficientsFromWeighted (computeHamiltonianSkeleton jordanWignerTerms n) Phys.preAdapted
+        let sparseSkW = applyCoefficientsFromWeighted (computeHamiltonianSkeletonForFromWeighted jordanWignerTerms Phys.preAdapted n) Phys.preAdapted
+        Assert.Equal(s seqW, s parW)
+        Assert.Equal(s seqW, s cacheW)
+        Assert.Equal(s seqW, s fullSkW)
+        Assert.Equal(s seqW, s sparseSkW)
+        // …and the whole legacy-weighted path equals the raw primary path.
+        let viaRaw = computeHamiltonian Phys.raw n
+        Assert.Equal(s viaRaw, s seqW)
 
     // ── Canonical H2 resource metrics: 15 / 32 / 15 / 36 ─────────────────
 
@@ -582,11 +621,11 @@ module HamiltonianCoefficients =
                 Assert.Equal(-v, coeffOf h "ZI", 15)
 
     [<Fact>]
-    let ``standalone tiny two-body coefficient survives verbatim`` () =
+    let ``standalone tiny two-body coefficient survives verbatim (legacy weighted)`` () =
         // A single two-body weighted coefficient of 2e-13 → four JW terms at ±5e-14,
         // each a standalone contribution (count = 1) that must not be pruned.
         let factory (key : string) = if key = "0,1,0,1" then Some (Complex(2e-13, 0.0)) else None
-        let ham = computeHamiltonianWith jordanWignerTerms factory 2u
+        let ham = computeHamiltonianFromWeightedWith jordanWignerTerms factory 2u
         Assert.Equal(4, ham.DistributeCoefficient.SummandTerms.Length)
         let close a b = Assert.True(abs (a - b) < 1e-20, sprintf "%g vs %g" a b)
         close (-5e-14) (coeffOf ham "II")
@@ -595,13 +634,26 @@ module HamiltonianCoefficients =
         close (-5e-14) (coeffOf ham "ZZ")
 
     [<Fact>]
-    let ``standalone tiny coefficient survives through the named raw adapter`` () =
-        // A raw one-body integral of 2e-13 passes through the adapter unchanged and
-        // must survive on both raw entry points.
+    let ``standalone tiny two-body coefficient survives verbatim (raw primary)`` () =
+        // A single raw two-body integral of 2e-13 → ½·2e-13 = 1e-13 on a†_0 a†_1 a_1 a_0
+        // → four JW terms at ±2.5e-14, each a standalone contribution that must survive.
+        let factory (key : string) = if key = "0,1,0,1" then Some (Complex(2e-13, 0.0)) else None
+        let ham = computeHamiltonianWith jordanWignerTerms factory 2u
+        Assert.Equal(4, ham.DistributeCoefficient.SummandTerms.Length)
+        let close a b = Assert.True(abs (a - b) < 1e-20, sprintf "%g vs %g" a b)
+        close ( 2.5e-14) (coeffOf ham "II")
+        close (-2.5e-14) (coeffOf ham "IZ")
+        close (-2.5e-14) (coeffOf ham "ZI")
+        close ( 2.5e-14) (coeffOf ham "ZZ")
+
+    [<Fact>]
+    let ``standalone tiny coefficient survives through the raw primary entry points`` () =
+        // A raw one-body integral of 2e-13 passes through unchanged and must survive on
+        // both raw entry points (…With and the JW alias).
         for v in [1e-12; 1e-13; 1e-15] do
             let raw (key : string) = if key = "0,0" then Some (Complex(2.0 * v, 0.0)) else None
-            for h in [ computeHamiltonianFromPhysicist raw 2u
-                       computeHamiltonianFromPhysicistWith jordanWignerTerms raw 2u ] do
+            for h in [ computeHamiltonian raw 2u
+                       computeHamiltonianWith jordanWignerTerms raw 2u ] do
                 Assert.Equal(2, h.DistributeCoefficient.SummandTerms.Length)
                 Assert.Equal(v, coeffOf h "II", 15)
                 Assert.Equal(-v, coeffOf h "ZI", 15)
@@ -637,8 +689,9 @@ module HamiltonianCoefficients =
     [<Fact>]
     let ``H2 assembly is wrong if the caller's half or index order is corrupted`` () =
         // Proves the ½ and the annihilator order each change the physics independently
-        // (compared via spectra). The library consumes the WEIGHTED factory verbatim;
-        // the raw oracle applies ½ + a_l a_k. The defect variants must disagree.
+        // (compared via spectra). The library now consumes the raw factory and applies
+        // the ½ + a_l a_k itself; the raw oracle applies the same ½ + a_l a_k. The
+        // defect variants must disagree.
         let factory, nso = h2Factory ()
         let libSpec = Fermion.eigenvalues (Enc.matrixOf (computeHamiltonianWith jordanWignerTerms factory (uint32 nso)))
         let specOfOracle half swap = Fermion.eigenvalues (Fermion.matrixOfWith half swap Phys.raw nso)

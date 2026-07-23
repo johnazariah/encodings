@@ -31,11 +31,11 @@ module Optimization =
         Assert.True(result.Hamiltonian.SummandTerms.Length > 0)
 
     [<Fact>]
-    let ``evaluate: consumes the weighted factory and preserves a tiny standalone coefficient`` () =
-        // The Optimization path builds its Hamiltonian via computeHamiltonianWith, so
-        // it inherits the released WEIGHTED contract (factory value applied verbatim)
-        // and the cancellation-aware reduction: a tiny standalone one-body coefficient
-        // of 2e-13 must survive as ±1e-13 (II, ZI), not be pruned by an absolute floor.
+    let ``evaluate: consumes the raw factory and preserves a tiny standalone coefficient`` () =
+        // The Optimization path builds its Hamiltonian via the raw-physicist
+        // computeHamiltonianWith, so it inherits the raw contract and the
+        // cancellation-aware reduction. A tiny standalone one-body coefficient of 2e-13
+        // (convention-invariant) must survive as ±1e-13 (II, ZI), not be pruned.
         let factory (key : string) = if key = "0,0" then Some (Complex(2e-13, 0.0)) else None
         let candidate = { Name = "JW"; Encoder = JordanWigner.jordanWignerTerms }
         let result = evaluate lambdaNormCost factory 2u candidate

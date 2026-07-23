@@ -20,8 +20,8 @@ open System.Numerics
 let nModes = 4u
 
 // A self-contained H₂/STO-3G coefficient factory. The FCIDUMP adapter
-// returns the released *weighted* coefficients (½·(ps|qr) folded in), so
-// the factory is fed straight to the builders — no hand-folded ½.
+// returns the raw physicist integrals ⟨pq|rs⟩ = (pr|qs), so the factory is
+// fed straight to the builders — the library applies the two-body ½ and swap.
 let fcidump = """
  &FCI NORB=   2,NELEC= 2,MS2=0,
   ORBSYM=1,1,
