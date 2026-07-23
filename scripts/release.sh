@@ -2,24 +2,49 @@
 set -euo pipefail
 
 # FockMap Release Automation Script
-# Usage: ./scripts/release.sh [--dry-run]
+# Usage:
+#   ./scripts/release.sh [--dry-run] [MODE]
+#
+# MODE is one of:
+#   auto              (default) infer bump from conventional commits
+#   current | staged  release the CURRENT project version with NO bump
+#                      (finalizes a staged version, e.g. the 0.9.0 breaking release)
+#   major | minor | patch   force a specific bump
+#
+# Flags and MODE may appear in any order, e.g.:
+#   ./scripts/release.sh --dry-run current
+#   ./scripts/release.sh current --dry-run
 #
 # This script:
 # 1. Analyzes commits since last release
-# 2. Proposes version bump (PATCH/MINOR/MAJOR)
+# 2. Determines the release version (bump, or the staged current version)
 # 3. Updates version in .fsproj
-# 4. Generates CHANGELOG entry
-# 5. Commits, tags, and pushes
-# 6. Monitors CI until completion
+# 4. Generates/finalizes the CHANGELOG entry
+# 5. Adds-or-replaces the CITATION.cff date-released
+# 6. Commits, tags, and pushes
+# 7. Monitors CI until completion
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
+# Portable, tested release helpers (version extraction, semver compare, CFF
+# date add-or-replace, changelog finalization). Shared with the CI workflow.
+# shellcheck source=scripts/lib/release-lib.sh
+source "$REPO_ROOT/scripts/lib/release-lib.sh"
+
 DRY_RUN=false
-if [[ "${1:-}" == "--dry-run" ]]; then
-    DRY_RUN=true
-    echo "🔍 DRY RUN MODE - no changes will be made"
-fi
+MODE="auto"
+for arg in "$@"; do
+    case "$arg" in
+        --dry-run) DRY_RUN=true ;;
+        auto|current|staged|major|minor|patch) MODE="$arg" ;;
+        *) echo "Unknown argument: $arg" >&2
+           echo "Usage: ./scripts/release.sh [--dry-run] [auto|current|staged|major|minor|patch]" >&2
+           exit 2 ;;
+    esac
+done
+$DRY_RUN && echo "🔍 DRY RUN MODE - no changes will be made"
+echo "Release mode: $MODE"
 
 # Colors for output
 RED='\033[0;31m'
@@ -52,9 +77,9 @@ else
     log_info "Last release: $LAST_TAG (version $LAST_VERSION)"
 fi
 
-# Parse current version from .fsproj
+# Parse current version from .fsproj (portable — no PCRE `grep -oP`).
 FSPROJ="$REPO_ROOT/src/Encodings/Encodings.fsproj"
-CURRENT_VERSION=$(grep -oP '(?<=<Version>)[^<]+' "$FSPROJ")
+CURRENT_VERSION=$(rl_extract_fsproj_version "$FSPROJ")
 log_info "Current version in .fsproj: $CURRENT_VERSION"
 
 # ═══════════════════════════════════════════════════════════════════
@@ -83,7 +108,7 @@ fi
 echo ""
 
 # ═══════════════════════════════════════════════════════════════════
-# Step 3: Determine version bump type
+# Step 3: Determine release version (staged current, or a bump)
 # ═══════════════════════════════════════════════════════════════════
 
 # Analyze commit messages for conventional commits
@@ -101,37 +126,66 @@ log_info "Commit analysis:"
 [[ -n "$CHORES" ]] && echo "  🔧 Chores: $(echo "$CHORES" | wc -l)"
 echo ""
 
-# Parse version components
+# Parse version components (for the interactive menu hints)
 IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
 
-# Determine recommended bump
-if $FIRST_RELEASE; then
-    # First release: use current version from .fsproj
+# STAGED_RELEASE finalizes the CURRENT project version with no bump. This is how
+# a deliberately staged version (e.g. the 0.9.0 breaking release, whose version
+# and BREAKING changelog are already committed) is shipped WITHOUT auto-bumping
+# it to 1.0.0.
+STAGED_RELEASE=false
+
+if [[ "$MODE" == "current" || "$MODE" == "staged" ]]; then
+    STAGED_RELEASE=true
+    RECOMMENDED="CURRENT (staged)"
+    NEW_VERSION="$CURRENT_VERSION"
+
+    # Validate: current must be strictly greater than the latest released tag,
+    # and the staged CFF/CHANGELOG must already match the current version.
+    if ! $FIRST_RELEASE; then
+        if ! rl_version_gt "$CURRENT_VERSION" "$LAST_VERSION"; then
+            log_error "current/staged release requires .fsproj version ($CURRENT_VERSION) > last tag ($LAST_VERSION)."
+            exit 1
+        fi
+    fi
+    CFF_VERSION=$(awk -F': ' '/^version:/{print $2; exit}' "$REPO_ROOT/CITATION.cff" 2>/dev/null || echo "")
+    if [[ -n "$CFF_VERSION" && "$CFF_VERSION" != "$CURRENT_VERSION" ]]; then
+        log_error "CITATION.cff version ($CFF_VERSION) does not match .fsproj ($CURRENT_VERSION); align them before a staged release."
+        exit 1
+    fi
+    if ! grep -Eq "^## \[$(printf '%s' "$CURRENT_VERSION" | sed 's/\./\\./g')\]" "$REPO_ROOT/CHANGELOG.md"; then
+        log_error "CHANGELOG.md has no '## [$CURRENT_VERSION]' heading; add the staged entry before a staged release."
+        exit 1
+    fi
+    log_success "Staged release validated: $CURRENT_VERSION (> $LAST_VERSION), CFF/CHANGELOG aligned."
+elif $FIRST_RELEASE; then
     RECOMMENDED="INITIAL"
     NEW_VERSION="$CURRENT_VERSION"
+elif [[ "$MODE" == "major" ]]; then
+    RECOMMENDED="MAJOR"
+    NEW_VERSION=$(rl_compute_next_version "$CURRENT_VERSION" major)
+elif [[ "$MODE" == "minor" ]]; then
+    RECOMMENDED="MINOR"
+    NEW_VERSION=$(rl_compute_next_version "$CURRENT_VERSION" minor)
+elif [[ "$MODE" == "patch" ]]; then
+    RECOMMENDED="PATCH"
+    NEW_VERSION=$(rl_compute_next_version "$CURRENT_VERSION" patch)
 elif [[ -n "$BREAKING_CHANGES" ]]; then
     RECOMMENDED="MAJOR"
-    NEW_MAJOR=$((MAJOR + 1))
-    NEW_MINOR=0
-    NEW_PATCH=0
-    NEW_VERSION="${NEW_MAJOR}.${NEW_MINOR}.${NEW_PATCH}"
+    NEW_VERSION=$(rl_compute_next_version "$CURRENT_VERSION" major)
 elif [[ -n "$FEATURES" ]]; then
     RECOMMENDED="MINOR"
-    NEW_MAJOR=$MAJOR
-    NEW_MINOR=$((MINOR + 1))
-    NEW_PATCH=0
-    NEW_VERSION="${NEW_MAJOR}.${NEW_MINOR}.${NEW_PATCH}"
+    NEW_VERSION=$(rl_compute_next_version "$CURRENT_VERSION" minor)
 else
     RECOMMENDED="PATCH"
-    NEW_MAJOR=$MAJOR
-    NEW_MINOR=$MINOR
-    NEW_PATCH=$((PATCH + 1))
-    NEW_VERSION="${NEW_MAJOR}.${NEW_MINOR}.${NEW_PATCH}"
+    NEW_VERSION=$(rl_compute_next_version "$CURRENT_VERSION" patch)
 fi
 
 echo -e "${YELLOW}═══════════════════════════════════════════════════════════════════${NC}"
 if $FIRST_RELEASE; then
     echo -e "${YELLOW}  First release: v${NEW_VERSION}${NC}"
+elif $STAGED_RELEASE; then
+    echo -e "${YELLOW}  Staged release (no bump): v${NEW_VERSION}${NC}"
 else
     echo -e "${YELLOW}  Recommended: ${RECOMMENDED} release${NC}"
     echo -e "${YELLOW}  Version: ${CURRENT_VERSION} → ${NEW_VERSION}${NC}"
@@ -139,24 +193,26 @@ fi
 echo -e "${YELLOW}═══════════════════════════════════════════════════════════════════${NC}"
 echo ""
 
-# Ask for confirmation
+# Ask for confirmation (staged/bump modes are non-interactive-friendly: a staged
+# release is already fully determined, so we still confirm before mutating).
 read -p "Accept this version? [Y/n/custom version]: " CONFIRM
 case "$CONFIRM" in
     n|N|no|No)
-        echo "Options: MAJOR ($((MAJOR + 1)).0.0), MINOR ($MAJOR.$((MINOR + 1)).0), PATCH ($MAJOR.$MINOR.$((PATCH + 1)))"
+        echo "Options: MAJOR ($((MAJOR + 1)).0.0), MINOR ($MAJOR.$((MINOR + 1)).0), PATCH ($MAJOR.$MINOR.$((PATCH + 1))), CURRENT ($CURRENT_VERSION)"
         read -p "Enter version type or custom version: " CUSTOM
         case "$CUSTOM" in
-            MAJOR|major) NEW_VERSION="$((MAJOR + 1)).0.0" ;;
-            MINOR|minor) NEW_VERSION="$MAJOR.$((MINOR + 1)).0" ;;
-            PATCH|patch) NEW_VERSION="$MAJOR.$MINOR.$((PATCH + 1))" ;;
-            *) NEW_VERSION="$CUSTOM" ;;
+            MAJOR|major) NEW_VERSION="$((MAJOR + 1)).0.0"; STAGED_RELEASE=false ;;
+            MINOR|minor) NEW_VERSION="$MAJOR.$((MINOR + 1)).0"; STAGED_RELEASE=false ;;
+            PATCH|patch) NEW_VERSION="$MAJOR.$MINOR.$((PATCH + 1))"; STAGED_RELEASE=false ;;
+            CURRENT|current|staged) NEW_VERSION="$CURRENT_VERSION"; STAGED_RELEASE=true ;;
+            *) NEW_VERSION="$CUSTOM"; STAGED_RELEASE=false ;;
         esac
         ;;
     ""|y|Y|yes|Yes)
         # Use recommended
         ;;
     *)
-        NEW_VERSION="$CONFIRM"
+        NEW_VERSION="$CONFIRM"; STAGED_RELEASE=false
         ;;
 esac
 
@@ -168,21 +224,34 @@ if $DRY_RUN; then
 fi
 
 # ═══════════════════════════════════════════════════════════════════
-# Step 4: Update version in .fsproj
+# Step 4: Update version in .fsproj (portable in-place rewrite)
 # ═══════════════════════════════════════════════════════════════════
 
 log_info "Updating version in Encodings.fsproj..."
-sed -i "s|<Version>$CURRENT_VERSION</Version>|<Version>$NEW_VERSION</Version>|" "$FSPROJ"
-log_success "Updated version to $NEW_VERSION"
+if [[ "$NEW_VERSION" != "$CURRENT_VERSION" ]]; then
+    FSPROJ_TMP=$(mktemp)
+    sed "s|<Version>$CURRENT_VERSION</Version>|<Version>$NEW_VERSION</Version>|" "$FSPROJ" > "$FSPROJ_TMP"
+    mv "$FSPROJ_TMP" "$FSPROJ"
+    log_success "Updated version to $NEW_VERSION"
+else
+    log_info "Version already at $NEW_VERSION (staged release) — no .fsproj change needed."
+fi
 
 # ═══════════════════════════════════════════════════════════════════
-# Step 5: Generate CHANGELOG entry
+# Step 5: Generate or finalize the CHANGELOG entry
 # ═══════════════════════════════════════════════════════════════════
 
 CHANGELOG="$REPO_ROOT/CHANGELOG.md"
 DATE=$(date +%Y-%m-%d)
 
-log_info "Generating CHANGELOG entry..."
+if $STAGED_RELEASE; then
+    # The staged entry (e.g. "## [0.9.0] - Unreleased") already exists with its
+    # curated BREAKING notes — finalize its date rather than prepend a duplicate.
+    log_info "Finalizing staged CHANGELOG heading for v$NEW_VERSION..."
+    rl_finalize_changelog "$CHANGELOG" "$NEW_VERSION" "$DATE"
+    log_success "Finalized CHANGELOG heading to $DATE"
+else
+    log_info "Generating CHANGELOG entry..."
 
 # Create changelog entry
 ENTRY="## [$NEW_VERSION] - $DATE
@@ -269,17 +338,17 @@ EOF
 fi
 
 log_success "Updated CHANGELOG.md"
+fi  # end: staged (finalize) vs bump (generate) CHANGELOG
 
 # ═══════════════════════════════════════════════════════════════════
-# Step 6: Update CITATION.cff version
+# Step 6: Update CITATION.cff version and date (add-or-replace)
 # ═══════════════════════════════════════════════════════════════════
 
 CITATION="$REPO_ROOT/CITATION.cff"
 if [[ -f "$CITATION" ]]; then
-    log_info "Updating CITATION.cff..."
-    sed -i "s|^version: .*|version: $NEW_VERSION|" "$CITATION"
-    sed -i "s|^date-released: .*|date-released: $DATE|" "$CITATION"
-    log_success "Updated CITATION.cff"
+    log_info "Updating CITATION.cff (version + date-released, add-or-replace)..."
+    rl_set_cff_version_and_date "$CITATION" "$NEW_VERSION" "$DATE"
+    log_success "Updated CITATION.cff to v$NEW_VERSION ($DATE)"
 fi
 
 # ═══════════════════════════════════════════════════════════════════
