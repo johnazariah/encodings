@@ -61,6 +61,61 @@ module Optimization =
         Assert.True(result.Costs.TermCount > 0)
         Assert.True(result.Costs.QubitCount > 0)
 
+    // ── Convention-sensitive routing (Optimization is RAW, 0.9.0) ────
+    // Optimization builds through the raw-physicist computeHamiltonianWith, so its
+    // coefficientFactory argument follows the RAW single-bar contract. These three
+    // regressions pin that routing on the exposed Optimization surface, so a future
+    // re-wire to the weighted core (or a lost adapter) is caught here, not only in
+    // the Hamiltonian tests.
+
+    let private jw = { Name = "JW"; Encoder = JordanWigner.jordanWignerTerms }
+
+    let private coeffOfResult (r : EvaluationResult) (sign : string) =
+        match r.Hamiltonian.DistributeCoefficient.[sign] with
+        | true, reg -> reg.Coefficient.Real
+        | false, _ -> 0.0
+
+    [<Fact>]
+    let ``evaluate: raw two-body factory maps exactly through Optimization (½ + r↔s swap)`` () =
+        // raw("0,1,0,1")=1 (⟨01|01⟩) routed through Optimization must yield the raw
+        // convention ⅛(II − IZ − ZI + ZZ): the library's internal ½ and r↔s swap are
+        // applied. A weighted-core regression would give ¼-scale values instead.
+        let raw (key : string) = if key = "0,1,0,1" then Some (Complex(1.0, 0.0)) else None
+        let result = evaluate lambdaNormCost raw 2u jw
+        Assert.Equal( 0.125, coeffOfResult result "II", 10)
+        Assert.Equal(-0.125, coeffOfResult result "IZ", 10)
+        Assert.Equal(-0.125, coeffOfResult result "ZI", 10)
+        Assert.Equal( 0.125, coeffOfResult result "ZZ", 10)
+
+    [<Fact>]
+    let ``evaluate: weightedToRawFactory migrates a weighted factory through Optimization`` () =
+        // A legacy weighted factory wrapped with weightedToRawFactory and evaluated
+        // through Optimization must reproduce the legacy weighted builder EXACTLY —
+        // this is the supported migration path for the Optimization entry points,
+        // which have no dedicated weighted overload.
+        let weighted (key : string) =
+            if key = "0,1,1,0" then Some (Complex(0.7, 0.0))
+            elif key = "0,0" then Some (Complex(-0.9, 0.0))
+            else None
+        let viaOptimization = evaluate lambdaNormCost (weightedToRawFactory weighted) 2u jw
+        let viaWeighted     = computeHamiltonianFromWeightedWith JordanWigner.jordanWignerTerms weighted 2u
+        Assert.Equal(viaWeighted.DistributeCoefficient.ToString(),
+                     viaOptimization.Hamiltonian.DistributeCoefficient.ToString())
+
+    [<Fact>]
+    let ``evaluate: pre-adapted weighted data fed directly to Optimization is a misuse (negative control)`` () =
+        // Feeding pre-adapted weighted data (½ folded, indices swapped) straight to
+        // Optimization's RAW routing double-adapts it → a materially different map than
+        // the correct weighted build. Guards against silent accidental equivalence.
+        let weighted (key : string) =
+            if key = "0,1,1,0" then Some (Complex(0.7, 0.0))
+            elif key = "0,0" then Some (Complex(-0.9, 0.0))
+            else None
+        let misused = (evaluate lambdaNormCost weighted 2u jw).Hamiltonian
+        let correct = computeHamiltonianFromWeightedWith JordanWigner.jordanWignerTerms weighted 2u
+        Assert.NotEqual<string>(correct.DistributeCoefficient.ToString(),
+                                misused.DistributeCoefficient.ToString())
+
     // ── optimizeOver ────────────────────────────────────────────────
 
     [<Fact>]

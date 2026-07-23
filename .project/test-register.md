@@ -1,8 +1,8 @@
 # Test Register
 
-> **700+ tests** | 0 skipped | xUnit + FsCheck (property-based)
+> **900 tests** (897 at base `8e562175` + 3 Optimization convention regressions) | 0 skipped | xUnit + FsCheck (property-based)
 >
-> Last verified: 2026-07-22 against current `main`
+> Last verified: 2026-07-23 against `johnazariah-raw-hamiltonian-api` (0.9.0 raw-physicist contract)
 
 > **Purpose:** Plain-English catalogue of every automated test in FockMap test suite.
 > The LLM coding agent is responsible for keeping this register in sync
@@ -441,7 +441,7 @@ Balanced binary, ternary, and Vlasov tree encodings, plus cross-encoding validat
 
 ---
 
-## 10. Hamiltonian Construction — `Hamiltonian.fs` (3 tests)
+## 10. Hamiltonian Construction — `Hamiltonian.fs` (25 test methods, 42 cases)
 
 | # | What is tested | Style |
 |---|----------------|-------|
@@ -705,6 +705,23 @@ Literal frozen sector eigenvalue arrays (ascending):
 
 ---
 
+## 15b. Optimization Routing Convention (state/convention) — `Optimization.fs` (3 convention regressions)
+
+The `Optimization` entry points build through the raw-physicist
+`computeHamiltonianWith` (0.9.0), so their `coefficientFactory` argument follows the
+**raw single-bar** contract. These regressions pin that routing on the *exposed*
+Optimization surface (not only the Hamiltonian builders), so a future re-wire to the
+weighted core — or a lost adapter — is caught here. (The file has 22 test methods in
+total; the 19 cost/candidate/strategy tests are covered by the framework suite.)
+
+| # | What is tested | Style |
+|---|----------------|-------|
+| 1 | Raw two-body factory maps exactly through `evaluate`: `raw("0,1,0,1")=1` → ⅛(II − IZ − ZI + ZZ), proving the internal ½ + r↔s swap are applied on the Optimization path | Fact |
+| 2 | `weightedToRawFactory` migrates a legacy weighted factory through `evaluate` to reproduce `computeHamiltonianFromWeightedWith` **exactly** (the supported migration path for Optimization, which has no weighted overload) | Fact |
+| 3 | Negative control: pre-adapted weighted data fed **directly** to `evaluate` (raw routing) double-adapts → a materially different map than the correct weighted build (no silent accidental equivalence) | Fact |
+
+---
+
 ## Coverage Summary by Area
 
 | Area | Tests | Technique | Confidence |
@@ -722,12 +739,13 @@ Literal frozen sector eigenvalue arrays (ascending):
 | Bravyi-Kitaev encoding | 14 | Theory + cross-validation vs JW | **High** |
 | Parity encoding | 14 | Theory + index-set verification | **High** |
 | Tree-based encodings | 26 | Fact + Theory + anti-commutation + cross-encoding | **High** — includes CAR verification and weight bounds |
-| Hamiltonian construction | 3 | Theory + cross-validation | **Medium** — covers core path; could add BK/Parity Hamiltonians |
+| Hamiltonian construction | 25 methods / 42 cases | Theory + cross-validation + raw/weighted builder parity + adapter round-trips | **High** — raw primary + legacy weighted builders (seq/parallel/cached/skeleton) agree; `weightedToRawFactory` round-trip and `antisymmetrizedToRawFactory` verified |
 | Mixed systems (fermion + boson) | 5 | Fact-based | **Medium** — covers canonical paths; larger mixed expressions untested |
 | Bosonic-to-qubit encodings | 70 | Theory + Fact + cross-encoding | **High** — matrix construction, Pauli decomposition, weight bounds, multi-mode embedding, number-operator roundtrip |
 | Qubit tapering — Clifford conjugation | 25 | Exact letters/phases + dense-matrix spectra | **High** — all 16 CNOT conjugations, U·H·U† to machine precision, H₂ sector spectra |
 | Index/label ordering (state-resolved) | 10 | Occupation-basis diagonal reads + exact a†₂ string | **High** — number operators verified on the intended occupation basis; catches bit reversal that spectra miss |
 | Hamiltonian coefficients & factory contract | 40 | Exact coefficients + independent 16×16 raw oracle (per-sector **and** whole-matrix) + immutable-source-pinned audited artifact (commit+blob+sha256) + literal sector eigenvalue arrays + six-encoding spectra + tiny-survival | **High** — pins H₂/STO-3G coefficients, 0.9.0 **raw physicist** primary contract + named legacy weighted migration API + `weighted`/`antisymmetrized` adapters, ½+order defect proofs, migration-hazard mismatch proofs, cancellation-aware tiny survival, git-blob/SHA-256-locked vendored research fixture, direct-compared N=0..4 sector spectra + full-matrix union, trace/HF-diagonal/particle-sector anchors |
+| Optimization routing convention | 3 | Exact raw map + migration parity + negative control | **High** — pins the raw contract on the exposed Optimization surface: raw two-body exact map, `weightedToRawFactory` migration parity, direct-weighted misuse negative control |
 
 ### What is *not* tested
 
