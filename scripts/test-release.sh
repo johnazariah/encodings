@@ -67,6 +67,13 @@ assert_eq "1.0.0"  "$(rl_compute_next_version 0.9.0 major)"   "major → 1.0.0"
 assert_eq "0.10.0" "$(rl_compute_next_version 0.9.0 minor)"   "minor → 0.10.0"
 assert_eq "0.9.1"  "$(rl_compute_next_version 0.9.0 patch)"   "patch → 0.9.1"
 
+echo "── 3b. Portable fsproj version rewrite (no sed -i) ──"
+fsproj_bump="$TMP/bump.fsproj"
+cp "$FSPROJ_FIXT" "$fsproj_bump"
+assert_ok "rewrite <Version> to 1.0.0" rl_set_fsproj_version "$fsproj_bump" 1.0.0
+assert_eq "1.0.0" "$(rl_extract_fsproj_version "$fsproj_bump")" "fsproj now reports 1.0.0"
+assert_eq "0" "$(grep -c '<Version>0.9.0</Version>' "$fsproj_bump")" "old <Version>0.9.0</Version> gone"
+
 echo "── 4. CITATION.cff date add-or-replace ──"
 # 4a: date ABSENT → inserted adjacent to version, exactly once, correct value.
 cff_absent="$TMP/absent.cff"

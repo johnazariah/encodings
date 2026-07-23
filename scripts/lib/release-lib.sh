@@ -10,6 +10,7 @@
 #   rl_extract_fsproj_version <fsproj>              -> echoes <Version> text
 #   rl_version_gt <a> <b>                           -> exit 0 iff a > b (semver core)
 #   rl_compute_next_version <current> <mode>        -> echoes next version
+#   rl_set_fsproj_version <fsproj> <new>            -> rewrite <Version> (portable)
 #   rl_set_cff_version_and_date <cff> <ver> <date>  -> add-or-replace version + date
 #   rl_finalize_changelog <changelog> <ver> <date>  -> Unreleased -> date (idempotent)
 #
@@ -64,6 +65,26 @@ rl_compute_next_version() {
         patch)          printf '%s\n' "$maj.$min.$((pat + 1))" ;;
         *) echo "rl_compute_next_version: unknown mode '$mode'" >&2; return 2 ;;
     esac
+}
+
+# Set the <Version> element of an fsproj to a new value (portable temp+mv; no
+# GNU-only `sed -i`). Replaces the first <Version>…</Version> content and
+# post-validates the written value.
+rl_set_fsproj_version() {
+    local fsproj="$1" newver="$2"
+    if [[ ! -f "$fsproj" ]]; then
+        echo "rl_set_fsproj_version: file not found: $fsproj" >&2
+        return 1
+    fi
+    local tmp; tmp=$(mktemp)
+    sed "s|<Version>[^<]*</Version>|<Version>${newver}</Version>|" "$fsproj" > "$tmp"
+    mv "$tmp" "$fsproj"
+    local got
+    got=$(rl_extract_fsproj_version "$fsproj") || return 1
+    if [[ "$got" != "$newver" ]]; then
+        echo "rl_set_fsproj_version: post-check failed (got '$got', want '$newver')" >&2
+        return 1
+    fi
 }
 
 # Set CITATION.cff `version:` and `date-released:`.

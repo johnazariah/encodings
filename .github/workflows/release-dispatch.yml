@@ -145,13 +145,15 @@ jobs:
       - name: Update .fsproj version
         run: |
           set -euo pipefail
+          source scripts/lib/release-lib.sh
           FSPROJ="src/Encodings/Encodings.fsproj"
           CURRENT="${{ steps.version.outputs.current_version }}"
           NEW="${{ steps.version.outputs.new_version }}"
           if [[ "$NEW" == "$CURRENT" ]]; then
             echo "Version already at $NEW (staged release) — no .fsproj change."
           else
-            sed -i "s|<Version>$CURRENT</Version>|<Version>$NEW</Version>|" "$FSPROJ"
+            # Portable temp+mv rewrite (parity with scripts/release.sh; no `sed -i`).
+            rl_set_fsproj_version "$FSPROJ" "$NEW"
             echo "Updated $FSPROJ: $CURRENT → $NEW"
           fi
 

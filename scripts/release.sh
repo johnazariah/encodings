@@ -229,9 +229,7 @@ fi
 
 log_info "Updating version in Encodings.fsproj..."
 if [[ "$NEW_VERSION" != "$CURRENT_VERSION" ]]; then
-    FSPROJ_TMP=$(mktemp)
-    sed "s|<Version>$CURRENT_VERSION</Version>|<Version>$NEW_VERSION</Version>|" "$FSPROJ" > "$FSPROJ_TMP"
-    mv "$FSPROJ_TMP" "$FSPROJ"
+    rl_set_fsproj_version "$FSPROJ" "$NEW_VERSION"
     log_success "Updated version to $NEW_VERSION"
 else
     log_info "Version already at $NEW_VERSION (staged release) — no .fsproj change needed."
