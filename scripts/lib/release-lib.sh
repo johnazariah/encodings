@@ -67,24 +67,65 @@ rl_compute_next_version() {
     esac
 }
 
-# Set the <Version> element of an fsproj to a new value (portable temp+mv; no
-# GNU-only `sed -i`). Replaces the first <Version>…</Version> content and
-# post-validates the written value.
+# Set the <Version> element of an fsproj to a new value.
+#
+# Strict + atomic:
+#   * PREVALIDATES the file and REFUSES to touch it unless it contains EXACTLY ONE
+#     well-formed <Version>…</Version> element and NO other `<Version>`/`</Version>`
+#     tags. Rejects: absent, duplicate, unterminated open tag, orphan close tag, or
+#     otherwise malformed version markup.
+#   * On ANY failure the file is left BYTE-FOR-BYTE UNCHANGED (validation happens
+#     before any write; the new content is staged in a temp file and only moved into
+#     place once it is fully built and post-validated).
+#   * Replaces the single occurrence LITERALLY (no sed/awk metacharacter surprises),
+#     then post-validates that the file now reports exactly the requested version.
+# Portable: no GNU-only `sed -i`, no PCRE.
 rl_set_fsproj_version() {
     local fsproj="$1" newver="$2"
     if [[ ! -f "$fsproj" ]]; then
         echo "rl_set_fsproj_version: file not found: $fsproj" >&2
         return 1
     fi
-    local tmp; tmp=$(mktemp)
-    sed "s|<Version>[^<]*</Version>|<Version>${newver}</Version>|" "$fsproj" > "$tmp"
-    mv "$tmp" "$fsproj"
-    local got
-    got=$(rl_extract_fsproj_version "$fsproj") || return 1
-    if [[ "$got" != "$newver" ]]; then
-        echo "rl_set_fsproj_version: post-check failed (got '$got', want '$newver')" >&2
+
+    # Count open tags, close tags, and well-formed single-line pairs across the file.
+    local opens closes pairs
+    opens=$(grep -o '<Version>'  "$fsproj" | wc -l | tr -d '[:space:]')
+    closes=$(grep -o '</Version>' "$fsproj" | wc -l | tr -d '[:space:]')
+    pairs=$(grep -oE '<Version>[^<]*</Version>' "$fsproj" | wc -l | tr -d '[:space:]')
+
+    if [[ "$opens" -eq 0 && "$closes" -eq 0 ]]; then
+        echo "rl_set_fsproj_version: no <Version> element in $fsproj (unchanged)" >&2
         return 1
     fi
+    if [[ "$opens" -ne 1 || "$closes" -ne 1 || "$pairs" -ne 1 ]]; then
+        echo "rl_set_fsproj_version: refusing to edit — expected exactly one well-formed <Version>…</Version> element, found opens=$opens closes=$closes well-formed=$pairs (file unchanged)" >&2
+        return 1
+    fi
+
+    # Exactly one well-formed element. Read its current value and build the new one.
+    local oldver oldtag newtag
+    oldver=$(rl_extract_fsproj_version "$fsproj") || return 1
+    oldtag="<Version>${oldver}</Version>"
+    newtag="<Version>${newver}</Version>"
+
+    # Literal single-occurrence replacement (index/substr — no regex metacharacters).
+    local tmp; tmp=$(mktemp)
+    awk -v old="$oldtag" -v new="$newtag" '
+        !done { i = index($0, old); if (i > 0) { $0 = substr($0, 1, i-1) new substr($0, i+length(old)); done = 1 } }
+        { print }
+    ' "$fsproj" > "$tmp"
+
+    # Post-validate the staged content BEFORE swapping it into place, so a bad write
+    # never replaces the good original.
+    local staged
+    staged=$(sed -n 's|.*<Version>\([^<]*\)</Version>.*|\1|p' "$tmp" | head -n1)
+    if [[ "$staged" != "$newver" ]]; then
+        rm -f "$tmp"
+        echo "rl_set_fsproj_version: post-check failed (staged '$staged', want '$newver'); file unchanged" >&2
+        return 1
+    fi
+
+    mv "$tmp" "$fsproj"
 }
 
 # Set CITATION.cff `version:` and `date-released:`.

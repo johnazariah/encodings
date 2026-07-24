@@ -74,6 +74,40 @@ assert_ok "rewrite <Version> to 1.0.0" rl_set_fsproj_version "$fsproj_bump" 1.0.
 assert_eq "1.0.0" "$(rl_extract_fsproj_version "$fsproj_bump")" "fsproj now reports 1.0.0"
 assert_eq "0" "$(grep -c '<Version>0.9.0</Version>' "$fsproj_bump")" "old <Version>0.9.0</Version> gone"
 
+echo "── 3c. Strict prevalidation + atomic unchanged-on-failure ──"
+# A helper that asserts rl_set_fsproj_version REJECTS the file AND leaves it byte-for-byte
+# unchanged (atomicity). $1=name, $2=file contents.
+assert_reject_unchanged() {
+    local name="$1" body="$2"
+    local f="$TMP/reject.fsproj"
+    printf '%s\n' "$body" > "$f"
+    local before; before=$(shasum "$f" | awk '{print $1}')
+    if rl_set_fsproj_version "$f" 9.9.9 >/dev/null 2>&1; then
+        bad "$name: expected rejection but it succeeded"
+        return
+    fi
+    local after; after=$(shasum "$f" | awk '{print $1}')
+    if [[ "$before" == "$after" ]]; then ok "$name (rejected; file unchanged)"; else bad "$name: file was mutated on failure"; fi
+}
+# absent: no <Version> markup at all.
+assert_reject_unchanged "absent" '<Project></Project>'
+# duplicate: two well-formed <Version> elements.
+assert_reject_unchanged "duplicate" '<Version>0.9.0</Version>
+<Version>0.8.0</Version>'
+# valid + unterminated open tag.
+assert_reject_unchanged "valid+unterminated" '<Version>0.9.0</Version>
+<Version>'
+# valid + orphan close tag.
+assert_reject_unchanged "valid+orphan-close" '<Version>0.9.0</Version>
+</Version>'
+# malformed only: a single unterminated <Version>.
+assert_reject_unchanged "malformed-only" '<Version>0.9.0'
+# Sanity: a valid single element with surrounding tags is accepted (no false reject).
+fsproj_single="$TMP/single.fsproj"
+printf '%s\n' '<Project><PropertyGroup><Version>0.9.0</Version></PropertyGroup></Project>' > "$fsproj_single"
+assert_ok "valid single element accepted" rl_set_fsproj_version "$fsproj_single" 2.3.4
+assert_eq "2.3.4" "$(rl_extract_fsproj_version "$fsproj_single")" "valid single rewritten to 2.3.4"
+
 echo "── 4. CITATION.cff date add-or-replace ──"
 # 4a: date ABSENT → inserted adjacent to version, exactly once, correct value.
 cff_absent="$TMP/absent.cff"
