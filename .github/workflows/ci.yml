@@ -1,6 +1,7 @@
 name: CI
 
-# Linux-only CI for cost efficiency.
+# Linux-only CI on a GitHub-hosted runner so required PR checks are always schedulable.
+# (A self-hosted runner can be offline and leave required checks stuck "queued", blocking merges.)
 # Multi-platform testing runs on release (see release.yml).
 # macOS runners cost 10x, Windows 2x vs Linux on GitHub Actions.
 
@@ -12,7 +13,9 @@ on:
 
 jobs:
   build:
-    runs-on: [self-hosted, Linux, X64, buildbeast, podman, ci]
+    # GitHub-hosted Linux: keeps required PR checks schedulable regardless of self-hosted
+    # runner availability. This job uses no self-hosted-only features (plain dotnet build/test).
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout repository
