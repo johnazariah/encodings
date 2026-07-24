@@ -11,6 +11,9 @@ on:
     tags-ignore: ['v*']
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   build:
     # GitHub-hosted Linux: keeps required PR checks schedulable regardless of self-hosted
@@ -19,10 +22,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 10.0.x
 
@@ -33,14 +36,14 @@ jobs:
         run: dotnet test --configuration Release --collect:"XPlat Code Coverage" --logger trx
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./**/coverage.cobertura.xml
           fail_ci_if_error: false
 
       - name: Upload test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: test-results
@@ -51,7 +54,7 @@ jobs:
         run: dotnet pack src/Encodings/Encodings.fsproj --configuration Release --no-build -o nupkg
 
       - name: Upload NuGet package
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: nuget-package
           path: nupkg/*.nupkg
