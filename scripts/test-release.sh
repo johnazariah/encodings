@@ -36,6 +36,21 @@ assert_fail() {
     if "$@" >/dev/null 2>&1; then bad "$msg (command unexpectedly succeeded: $*)"; else ok "$msg"; fi
 }
 
+# Portable content hash (macOS `shasum`, GNU `sha256sum`/`sha1sum`, else `cksum`).
+sha_of() {
+    if   command -v shasum    >/dev/null 2>&1; then shasum    "$1" | awk '{print $1}'
+    elif command -v sha256sum >/dev/null 2>&1; then sha256sum "$1" | awk '{print $1}'
+    elif command -v sha1sum   >/dev/null 2>&1; then sha1sum   "$1" | awk '{print $1}'
+    else cksum "$1" | awk '{print $1"-"$2}'; fi
+}
+# Portable octal mode reader, INDEPENDENT of the library helper (GNU/busybox `-c`,
+# else BSD/macOS `-f`), so mode assertions do not just re-check the code under test.
+mode_of() {
+    if   stat -c '%a'  "$1" >/dev/null 2>&1; then stat -c '%a'  "$1"
+    elif stat -f '%Lp' "$1" >/dev/null 2>&1; then stat -f '%Lp' "$1"
+    else _rl_get_mode "$1"; fi
+}
+
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
@@ -81,12 +96,12 @@ assert_reject_unchanged() {
     local name="$1" body="$2"
     local f="$TMP/reject.fsproj"
     printf '%s\n' "$body" > "$f"
-    local before; before=$(shasum "$f" | awk '{print $1}')
+    local before; before=$(sha_of "$f")
     if rl_set_fsproj_version "$f" 9.9.9 >/dev/null 2>&1; then
         bad "$name: expected rejection but it succeeded"
         return
     fi
-    local after; after=$(shasum "$f" | awk '{print $1}')
+    local after; after=$(sha_of "$f")
     if [[ "$before" == "$after" ]]; then ok "$name (rejected; file unchanged)"; else bad "$name: file was mutated on failure"; fi
 }
 # absent: no <Version> markup at all.
@@ -109,7 +124,6 @@ assert_ok "valid single element accepted" rl_set_fsproj_version "$fsproj_single"
 assert_eq "2.3.4" "$(rl_extract_fsproj_version "$fsproj_single")" "valid single rewritten to 2.3.4"
 
 echo "── 3d. Atomic write: mode preservation, same-dir temp, cleanup ──"
-mode_of() { stat -f '%Lp' "$1" 2>/dev/null || stat -c '%a' "$1" 2>/dev/null; }
 count_temps() { # <dir> <base>
     find "$1" -maxdepth 1 -name ".$2.tmp.*" 2>/dev/null | wc -l | tr -d '[:space:]'
 }
@@ -142,11 +156,11 @@ assert_eq "0" "$(count_temps "$TMP" "samedir.fsproj")" "no temp left after succe
 
 # (e) Induced final-move failure: original bytes AND mode unchanged, no temp left.
 fp5="$TMP/movefail.fsproj"; cp "$FSPROJ_FIXT" "$fp5"; chmod 640 "$fp5"
-before_sha="$(shasum "$fp5" | awk '{print $1}')"; before_mode="$(mode_of "$fp5")"
+before_sha="$(sha_of "$fp5")"; before_mode="$(mode_of "$fp5")"
 mv() { return 1; }   # force the atomic move to fail
 if rl_set_fsproj_version "$fp5" 9.9.9 >/dev/null 2>&1; then bad "induced move failure: unexpectedly succeeded"; else ok "induced move failure returns non-zero"; fi
 unset -f mv
-assert_eq "$before_sha"  "$(shasum "$fp5" | awk '{print $1}')" "original bytes unchanged after move failure"
+assert_eq "$before_sha"  "$(sha_of "$fp5")" "original bytes unchanged after move failure"
 assert_eq "$before_mode" "$(mode_of "$fp5")"                   "original mode unchanged after move failure"
 assert_eq "0" "$(count_temps "$TMP" "movefail.fsproj")"        "no temp left after move failure"
 
@@ -173,6 +187,117 @@ clm="$TMP/mode.CHANGELOG.md"; printf '# Changelog\n\n## [0.9.0] - Unreleased\n- 
 assert_ok "changelog finalize (atomic)" rl_finalize_changelog "$clm" 0.9.0 2026-07-24
 assert_eq "644" "$(mode_of "$clm")" "changelog mode preserved"
 assert_eq "0" "$(count_temps "$TMP" "mode.CHANGELOG.md")" "changelog success leaves no temp"
+
+echo "── 3e. Mode helper yields exactly one octal token ──"
+mp="$TMP/probe.file"; printf x > "$mp"
+for m in 644 600 755 640; do
+    chmod "$m" "$mp"
+    got="$(_rl_get_mode "$mp")"
+    assert_eq "$m" "$got" "_rl_get_mode returns $m"
+    # Exactly one whitespace-delimited token (no filesystem junk / second line).
+    assert_eq "1" "$(printf '%s' "$got" | wc -w | tr -d '[:space:]')" "_rl_get_mode($m) is a single token"
+    assert_eq "1" "$(_rl_get_mode "$mp" | wc -l | tr -d '[:space:]')" "_rl_get_mode($m) is a single line"
+done
+# Even with a noisy stderr environment the token stays clean (stderr is suppressed).
+got="$(_rl_get_mode "$mp" 2>/dev/null)"
+assert_eq "640" "$got" "_rl_get_mode ignores stderr noise"
+
+echo "── 3f. set -e guarded cleanup on injected validator failure ──"
+# Run a mutator under `set -euo pipefail` with an injected command failure AFTER temp
+# creation; assert it returns non-zero (guard converts the failure into a clean return,
+# not a hard set -e exit), leaves the target bytes+mode unchanged, and removes the temp.
+# We inject by shadowing `awk` (first post-temp command in both mutators) with a failer.
+run_guarded() {  # <name> <mutator> <target> [args...]   (mutator run in a fresh set -e shell)
+    local name="$1"; shift
+    local target="$2"   # $1 is the mutator function; $2 is its target file
+    local before_sha before_mode after_sha after_mode dir base rc
+    before_sha=$(sha_of "$target")
+    before_mode=$(mode_of "$target")
+    dir=$(dirname "$target"); base=$(basename "$target")
+    # Subshell with strict mode + awk shadow that fails; call the mutator. `|| rc=$?`
+    # both captures the status and keeps the outer set -e from firing.
+    rc=0
+    ( set -euo pipefail; awk() { return 1; }; "$@" ) >/dev/null 2>&1 || rc=$?
+    after_sha=$(sha_of "$target")
+    after_mode=$(mode_of "$target")
+    if [[ "$rc" -ne 0 ]]; then ok "$name: returns non-zero under set -e"; else bad "$name: unexpectedly succeeded"; fi
+    assert_eq "$before_sha"  "$after_sha"  "$name: target bytes unchanged"
+    assert_eq "$before_mode" "$after_mode" "$name: target mode unchanged"
+    assert_eq "0" "$(find "$dir" -maxdepth 1 -name ".$base.tmp.*" 2>/dev/null | wc -l | tr -d '[:space:]')" "$name: no temp left"
+}
+gf="$TMP/guard.fsproj"; cp "$FSPROJ_FIXT" "$gf"; chmod 644 "$gf"
+run_guarded "fsproj injected-fail" rl_set_fsproj_version "$gf" 9.9.9
+gc="$TMP/guard.cff"; printf 'cff-version: 1.2.0\nversion: 0.9.0\nlicense: MIT\n' > "$gc"; chmod 644 "$gc"
+run_guarded "cff injected-fail" rl_set_cff_version_and_date "$gc" 0.9.0 2026-07-24
+# The injected-failure runs must not have mutated the originals (double-check values).
+assert_eq "0.9.0" "$(rl_extract_fsproj_version "$gf")" "fsproj value intact after injected failure"
+assert_eq "1" "$(grep -c '^version: 0.9.0$' "$gc")" "cff value intact after injected failure"
+
+echo "── 3g. Strict CHANGELOG heading validation ──"
+cl_ok() {  # helper: assert finalize SUCCEEDS and dates the heading
+    local name="$1" body="$2"
+    local f="$TMP/cl_ok.md"; printf '%s' "$body" > "$f"; chmod 644 "$f"
+    if rl_finalize_changelog "$f" 0.9.0 2026-07-24 >/dev/null 2>&1; then
+        assert_eq "1" "$(grep -cE '^## \[0.9.0\] - 2026-07-24$' "$f")" "$name: dated exactly once"
+    else
+        bad "$name: expected success but was rejected"
+    fi
+}
+cl_reject() {  # helper: assert finalize REJECTS and leaves bytes+mode unchanged, no temp
+    local name="$1" body="$2"
+    local f="$TMP/cl_rej.md"; printf '%s' "$body" > "$f"; chmod 640 "$f"
+    local bsha; bsha=$(sha_of "$f"); local bmode; bmode=$(mode_of "$f")
+    if rl_finalize_changelog "$f" 0.9.0 2026-07-24 >/dev/null 2>&1; then
+        bad "$name: expected rejection but succeeded"
+    else
+        ok "$name (rejected)"
+    fi
+    assert_eq "$bsha"  "$(sha_of "$f")" "$name: bytes unchanged"
+    assert_eq "$bmode" "$(mode_of "$f")"                   "$name: mode unchanged"
+    assert_eq "0" "$(count_temps "$TMP" "cl_rej.md")"      "$name: no temp"
+}
+# Valid single anchored heading → success.
+cl_ok "valid anchored" '# Changelog
+
+## [0.9.0] - Unreleased
+- x
+'
+# Prefixed / suffixed heading (not column-1 full-line) → reject.
+cl_reject "prefixed heading"  'x## [0.9.0] - Unreleased
+'
+cl_reject "suffixed heading"  '## [0.9.0] - Unreleased (rc)
+'
+# Malformed spacing → reject.
+cl_reject "malformed spacing" '##  [0.9.0] - Unreleased
+'
+# Duplicate anchored Unreleased headings → reject.
+cl_reject "duplicate unreleased" '## [0.9.0] - Unreleased
+## [0.9.0] - Unreleased
+'
+# Dated heading already present alongside Unreleased → reject.
+cl_reject "dated+unreleased" '## [0.9.0] - 2020-01-01
+## [0.9.0] - Unreleased
+'
+# No heading for this version → reject.
+cl_reject "no heading" '# Changelog
+
+## [0.8.0] - 2020-01-01
+'
+# Post-validation injection: shadow awk so the staged temp keeps "Unreleased" → the
+# strict post-validation must fail, clean up, and leave the original unchanged.
+clpi="$TMP/cl_postval.md"; printf '# Changelog\n\n## [0.9.0] - Unreleased\n' > "$clpi"; chmod 644 "$clpi"
+pbsha=$(sha_of "$clpi")
+(
+    set -euo pipefail
+    # awk that ignores its script and copies the input (last arg) verbatim → no replacement.
+    awk() { local a last=""; for a in "$@"; do last="$a"; done; command cat "$last"; }
+    rl_finalize_changelog "$clpi" 0.9.0 2026-07-24
+) >/dev/null 2>&1 && bad "changelog post-val injection: unexpectedly succeeded" || ok "changelog post-val injection rejected"
+assert_eq "$pbsha" "$(sha_of "$clpi")" "changelog post-val injection: bytes unchanged"
+assert_eq "0" "$(count_temps "$TMP" "cl_postval.md")"     "changelog post-val injection: no temp"
+# Idempotent: an already-dated single heading succeeds without change.
+cli="$TMP/cl_idem.md"; printf '# Changelog\n\n## [0.9.0] - 2026-07-24\n' > "$cli"
+assert_ok "changelog idempotent (already dated)" rl_finalize_changelog "$cli" 0.9.0 2026-07-24
 
 echo "── 4. CITATION.cff date add-or-replace ──"
 cff_absent="$TMP/absent.cff"
@@ -275,19 +400,27 @@ assert_eq "1" "$(grep -c '^## \[0.9.0\] - 2026-07-23$' "$sim/CHANGELOG.md")" "si
 # The .fsproj must be unchanged by a staged release (no bump).
 assert_ok "sim .fsproj unchanged (no bump)" diff -q "$REPO_ROOT/src/Encodings/Encodings.fsproj" "$sim/src/Encodings/Encodings.fsproj"
 
-echo "── 7. release.sh --dry-run current shows v0.9.0 (real script, this machine) ──"
-dry_out="$(printf 'Y\n' | bash "$REPO_ROOT/scripts/release.sh" --dry-run current 2>&1 || true)"
-if echo "$dry_out" | grep -q 'would release v0.9.0'; then
-    ok "dry-run current → would release v0.9.0"
+echo "── 7. release.sh --dry-run current shows v0.9.0 (real script, needs git) ──"
+# The real release.sh needs a resolvable git repo. In constrained environments (e.g. a
+# git *worktree* mounted into a container, whose .git points at unavailable host paths)
+# git cannot resolve HEAD; skip these end-to-end wrapper checks there rather than failing
+# — the pure helpers above already cover the logic cross-platform.
+if git -C "$REPO_ROOT" rev-parse --verify -q HEAD >/dev/null 2>&1; then
+    dry_out="$(printf 'Y\n' | bash "$REPO_ROOT/scripts/release.sh" --dry-run current 2>&1 || true)"
+    if echo "$dry_out" | grep -q 'would release v0.9.0'; then
+        ok "dry-run current → would release v0.9.0"
+    else
+        bad "dry-run current did not report v0.9.0"; echo "$dry_out" | tail -5 >&2
+    fi
+    # And a bump mode still computes the next version (major → 1.0.0), unchanged.
+    dry_major="$(printf 'Y\n' | bash "$REPO_ROOT/scripts/release.sh" --dry-run major 2>&1 || true)"
+    if echo "$dry_major" | grep -q 'would release v1.0.0'; then
+        ok "dry-run major → would release v1.0.0 (bump modes unchanged)"
+    else
+        bad "dry-run major did not report v1.0.0"; echo "$dry_major" | tail -5 >&2
+    fi
 else
-    bad "dry-run current did not report v0.9.0"; echo "$dry_out" | tail -5 >&2
-fi
-# And a bump mode still computes the next version (major → 1.0.0), unchanged.
-dry_major="$(printf 'Y\n' | bash "$REPO_ROOT/scripts/release.sh" --dry-run major 2>&1 || true)"
-if echo "$dry_major" | grep -q 'would release v1.0.0'; then
-    ok "dry-run major → would release v1.0.0 (bump modes unchanged)"
-else
-    bad "dry-run major did not report v1.0.0"; echo "$dry_major" | tail -5 >&2
+    echo "  (skip: git cannot resolve HEAD in this environment — worktree/container)"
 fi
 
 echo ""

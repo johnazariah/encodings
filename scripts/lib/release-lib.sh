@@ -85,10 +85,36 @@ _rl_count() {
     return 0
 }
 
-# Echo the permission bits of a file in octal (e.g. 644), portable across
-# BSD/macOS (`stat -f '%Lp'`) and GNU/Linux (`stat -c '%a'`).
+# Echo the permission bits of a file as EXACTLY ONE octal token (e.g. 644).
+#
+# Platform is detected once via `uname` so the wrong-platform `stat` is never run
+# (GNU `stat -f '%Lp' FILE` would print filesystem status for FILE to stdout — junk,
+# not a mode — before failing; running it and salvaging the fallback risks emitting
+# two tokens). The chosen `stat` output is then validated to be a single octal token;
+# anything else (empty, multi-line, non-octal) falls through to a portable Python
+# reader. Returns non-zero (no output) if no reader yields a valid octal token.
 _rl_get_mode() {
-    stat -f '%Lp' "$1" 2>/dev/null || stat -c '%a' "$1" 2>/dev/null
+    local f="$1" m
+    case "$(uname -s 2>/dev/null || echo unknown)" in
+        Darwin|*BSD*|DragonFly)
+            m=$(stat -f '%Lp' "$f" 2>/dev/null)
+            ;;
+        *)
+            m=$(stat -c '%a' "$f" 2>/dev/null)
+            ;;
+    esac
+    if [[ "$m" =~ ^[0-7]{1,4}$ ]]; then
+        printf '%s\n' "$m"
+        return 0
+    fi
+    if command -v python3 >/dev/null 2>&1; then
+        m=$(python3 -c 'import os,sys; print("%o" % (os.stat(sys.argv[1]).st_mode & 0o7777))' "$f" 2>/dev/null)
+        if [[ "$m" =~ ^[0-7]{1,4}$ ]]; then
+            printf '%s\n' "$m"
+            return 0
+        fi
+    fi
+    return 1
 }
 
 # Create a temp file in the SAME DIRECTORY as the target, so a subsequent `mv` is a
@@ -169,9 +195,14 @@ rl_set_fsproj_version() {
     fi
 
     # Post-validate the staged content BEFORE swapping it into place, so a bad write
-    # never replaces the good original.
+    # never replaces the good original. Guard the substitution so a pipeline failure
+    # under `set -e`/`pipefail` still removes the temp instead of hard-exiting.
     local staged
-    staged=$(sed -n 's|.*<Version>\([^<]*\)</Version>.*|\1|p' "$tmp" | head -n1)
+    if ! staged=$(sed -n 's|.*<Version>\([^<]*\)</Version>.*|\1|p' "$tmp" | head -n1); then
+        rm -f "$tmp"
+        echo "rl_set_fsproj_version: failed to read staged version (unchanged)" >&2
+        return 1
+    fi
     if [[ "$staged" != "$newver" ]]; then
         rm -f "$tmp"
         echo "rl_set_fsproj_version: post-check failed (staged '$staged', want '$newver'); file unchanged" >&2
@@ -244,10 +275,16 @@ rl_set_cff_version_and_date() {
     fi
 
     # Post-validate the STAGED temp (exact string match), BEFORE swapping it in.
+    # Guard each substitution so an awk failure under `set -e`/`pipefail` removes the
+    # temp instead of hard-exiting.
     local nv nd totd
-    nv=$(awk -v v="version: $version" '$0==v{c++} END{print c+0}' "$tmp")
-    nd=$(awk -v d="date-released: $date" '$0==d{c++} END{print c+0}' "$tmp")
-    totd=$(awk '/^date-released:/{c++} END{print c+0}' "$tmp")
+    if ! nv=$(awk -v v="version: $version" '$0==v{c++} END{print c+0}' "$tmp") \
+       || ! nd=$(awk -v d="date-released: $date" '$0==d{c++} END{print c+0}' "$tmp") \
+       || ! totd=$(awk '/^date-released:/{c++} END{print c+0}' "$tmp"); then
+        rm -f "$tmp"
+        echo "rl_set_cff_version_and_date: staged validation read failed; file unchanged" >&2
+        return 1
+    fi
     if [[ "$nv" -ne 1 || "$nd" -ne 1 || "$totd" -ne 1 ]]; then
         rm -f "$tmp"
         echo "rl_set_cff_version_and_date: post-validation failed (version=$nv date=$nd total-date=$totd); file unchanged" >&2
@@ -283,9 +320,18 @@ PY
     }
 }
 
-# Finalize a `## [VERSION] - Unreleased` changelog heading to a dated one.
-# Idempotent: if the heading is already dated, succeeds without change. Fails only
-# when there is no `## [VERSION]` heading at all.
+# Finalize a `## [VERSION] - Unreleased` changelog heading to a dated one, strictly.
+#
+# Strict + atomic:
+#   * PREVALIDATES: requires EXACTLY ONE column-1 anchored heading
+#     `^## \[VERSION\] - Unreleased$` (VERSION regex-escaped). Rejects a prefixed /
+#     suffixed / duplicate / otherwise malformed heading, or a version that already
+#     carries a dated heading alongside an Unreleased one.
+#   * IDEMPOTENT: if there is no Unreleased heading but exactly one dated
+#     `^## \[VERSION\] - YYYY-MM-DD$`, succeeds without change.
+#   * Rewrites into a same-dir temp (exact full-line match only), then POST-VALIDATES
+#     the STAGED temp — exactly one dated heading for VERSION and ZERO Unreleased for
+#     VERSION — BEFORE the atomic move. Preserves mode; removes the temp on any failure.
 rl_finalize_changelog() {
     local cl="$1" version="$2" date="$3"
     if [[ ! -f "$cl" ]]; then
@@ -293,30 +339,60 @@ rl_finalize_changelog() {
         return 1
     fi
 
-    local unreleased="## [$version] - Unreleased"
-    if grep -Fq "$unreleased" "$cl"; then
-        local tmp; tmp=$(_rl_mktemp_beside "$cl") || {
-            echo "rl_finalize_changelog: could not create temp beside $cl (unchanged)" >&2
-            return 1
-        }
-        if ! awk -v want="$unreleased" -v repl="## [$version] - $date" '
-            index($0, want) == 1 { print repl; next }
-            { print }
-        ' "$cl" > "$tmp"; then
-            rm -f "$tmp"; echo "rl_finalize_changelog: staged write failed (unchanged)" >&2; return 1
+    # Regex-escape the version for anchored matching (dots etc. are literal).
+    local esc
+    esc=$(printf '%s' "$version" | sed 's#[][\\.^$*+?(){}|-]#\\&#g')
+
+    local unrel dated
+    unrel=$(grep -cE "^## \[${esc}\] - Unreleased$" "$cl" || true)
+    dated=$(grep -cE "^## \[${esc}\] - [0-9]{4}-[0-9]{2}-[0-9]{2}$" "$cl" || true)
+
+    # Idempotent: already exactly one dated heading and no Unreleased → success.
+    if [[ "$unrel" -eq 0 ]]; then
+        if [[ "$dated" -eq 1 ]]; then
+            return 0
         fi
-        _rl_finalize_move "$cl" "$tmp" || {
-            echo "rl_finalize_changelog: atomic replace failed (file unchanged)" >&2
+        if [[ "$dated" -gt 1 ]]; then
+            echo "rl_finalize_changelog: multiple dated '## [$version]' headings (found $dated)" >&2
             return 1
-        }
-        return 0
+        fi
+        echo "rl_finalize_changelog: no anchored '^## [$version] - Unreleased$' heading to finalize" >&2
+        return 1
+    fi
+    if [[ "$unrel" -gt 1 ]]; then
+        echo "rl_finalize_changelog: duplicate '^## [$version] - Unreleased$' headings (found $unrel)" >&2
+        return 1
+    fi
+    if [[ "$dated" -ne 0 ]]; then
+        echo "rl_finalize_changelog: a dated '## [$version]' heading already exists alongside Unreleased" >&2
+        return 1
     fi
 
-    # Already dated? Accept (idempotent). Otherwise fail — current/staged mode
-    # requires the changelog to already carry a matching heading.
-    if grep -Eq "^## \[$(printf '%s' "$version" | sed 's/\./\\./g')\] - [0-9]{4}-[0-9]{2}-[0-9]{2}" "$cl"; then
-        return 0
+    # Stage the rewrite: replace ONLY the exact full-line heading.
+    local tmp; tmp=$(_rl_mktemp_beside "$cl") || {
+        echo "rl_finalize_changelog: could not create temp beside $cl (unchanged)" >&2
+        return 1
+    }
+    if ! awk -v ver="$version" -v dt="$date" '
+        $0 == ("## [" ver "] - Unreleased") { print "## [" ver "] - " dt; next }
+        { print }
+    ' "$cl" > "$tmp"; then
+        rm -f "$tmp"; echo "rl_finalize_changelog: staged write failed (unchanged)" >&2; return 1
     fi
-    echo "rl_finalize_changelog: no '## [$version]' heading found to finalize" >&2
-    return 1
+
+    # Post-validate the STAGED temp BEFORE the atomic move: exactly one dated heading
+    # for VERSION and zero remaining Unreleased for VERSION.
+    local pd pu
+    pd=$(grep -cE "^## \[${esc}\] - ${date}$" "$tmp" || true)
+    pu=$(grep -cE "^## \[${esc}\] - Unreleased$" "$tmp" || true)
+    if [[ "$pd" -ne 1 || "$pu" -ne 0 ]]; then
+        rm -f "$tmp"
+        echo "rl_finalize_changelog: post-validation failed (dated=$pd unreleased=$pu); file unchanged" >&2
+        return 1
+    fi
+
+    _rl_finalize_move "$cl" "$tmp" || {
+        echo "rl_finalize_changelog: atomic replace failed (file unchanged)" >&2
+        return 1
+    }
 }
