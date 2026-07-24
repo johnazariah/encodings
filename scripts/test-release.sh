@@ -424,6 +424,13 @@ cl_reject "bare [VER] -- Unreleased token" 'The [0.9.0] -- Unreleased draft.
 cl_reject "bare [VER]: TBD token" 'Status [0.9.0]: TBD
 ## [0.9.0] - Unreleased
 '
+# Heading marker followed by intervening text then [VER] (marker-then-later token).
+cl_reject "### Migration for [VER]" '## [0.9.0] - Unreleased
+### Migration for [0.9.0]
+'
+cl_reject "x## Release [VER]" '## [0.9.0] - Unreleased
+x## Release [0.9.0]
+'
 # Prose-reference policy: plain version mentions (NOT headings, NO release token) are
 # acceptable alongside the one canonical heading.
 cl_ok "prose mention allowed" '# Changelog

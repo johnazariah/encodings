@@ -374,9 +374,10 @@ PY
 #     heading must be present, AND no OTHER version-referencing release line may exist.
 #     GRAMMAR of a "version-referencing release line" (a candidate) — a line is a
 #     candidate if EITHER:
-#       (a) it carries a Markdown heading marker adjacent to / prefixed before the
-#           version token: `#+[[:space:]]*\[VERSION\]` anywhere in the line. This
-#           catches `## [VERSION]`, `x## [VERSION]`, `###[VERSION]`, `x## [VERSION]: …`.
+#       (a) it carries a Markdown heading marker followed (anywhere LATER on the line)
+#           by the version token: `#+.*\[VERSION\]`. This catches `## [VERSION]`,
+#           `x## [VERSION]`, `###[VERSION]`, AND headings with intervening text such as
+#           `### Migration for [VERSION]` or `x## Release [VERSION]`.
 #       (b) the version token is followed by a release-status separator+token:
 #           `\[VERSION\][[:space:]]*(-{1,2}|:)[[:space:]]*(Unreleased|TBD)` or
 #           `\[VERSION\][[:space:]]*-{1,2}[[:space:]]*[0-9]`. This catches `- Unreleased`,
@@ -414,7 +415,7 @@ rl_finalize_changelog() {
         echo "rl_finalize_changelog: grep error reading '$cl'" >&2; return 1; fi
     if ! canon_dated=$(_rl_grep_count "^## \[${esc}\] - [0-9]{4}-[0-9]{2}-[0-9]{2}$" "$cl"); then
         echo "rl_finalize_changelog: grep error reading '$cl'" >&2; return 1; fi
-    if ! l_head=$(_rl_grep_lines "#+[[:space:]]*\[${esc}\]" "$cl") \
+    if ! l_head=$(_rl_grep_lines "#+.*\[${esc}\]" "$cl") \
        || ! l_status=$(_rl_grep_lines "\[${esc}\][[:space:]]*(-{1,2}|:)[[:space:]]*(Unreleased|TBD)" "$cl") \
        || ! l_dated=$(_rl_grep_lines "\[${esc}\][[:space:]]*-{1,2}[[:space:]]*[0-9]" "$cl"); then
         echo "rl_finalize_changelog: grep error scanning '$cl'" >&2; return 1; fi
