@@ -202,36 +202,103 @@ done
 got="$(_rl_get_mode "$mp" 2>/dev/null)"
 assert_eq "640" "$got" "_rl_get_mode ignores stderr noise"
 
-echo "── 3f. set -e guarded cleanup on injected validator failure ──"
-# Run a mutator under `set -euo pipefail` with an injected command failure AFTER temp
-# creation; assert it returns non-zero (guard converts the failure into a clean return,
-# not a hard set -e exit), leaves the target bytes+mode unchanged, and removes the temp.
-# We inject by shadowing `awk` (first post-temp command in both mutators) with a failer.
-run_guarded() {  # <name> <mutator> <target> [args...]   (mutator run in a fresh set -e shell)
-    local name="$1"; shift
-    local target="$2"   # $1 is the mutator function; $2 is its target file
-    local before_sha before_mode after_sha after_mode dir base rc
-    before_sha=$(sha_of "$target")
-    before_mode=$(mode_of "$target")
-    dir=$(dirname "$target"); base=$(basename "$target")
-    # Subshell with strict mode + awk shadow that fails; call the mutator. `|| rc=$?`
-    # both captures the status and keeps the outer set -e from firing.
+echo "── 3f. Nth-call injection reaches real validators (set -e cleanup) ──"
+# Inject a failure at a SPECIFIC downstream stage (not invocation-wide) so the actual
+# validators run and their guards are exercised. A marker file proves the injection
+# point was reached. Each runs under `set -euo pipefail`; asserts rc≠0, target
+# bytes+mode unchanged, and no temp left. Counters are FILE-backed (bump) because the
+# validators run inside command substitutions (their own subshells), where a plain
+# shell variable would not accumulate.
+bump() { local n; n=$(( $(cat "$1" 2>/dev/null || echo 0) + 1 )); echo "$n" > "$1"; echo "$n"; }
+
+# (a) fsproj staged validator: `sed -n ... | head` runs once in extraction (pre-temp)
+#     and once in staged post-validation (post-temp). Fail `head` on call #2 → reaches
+#     the staged validator AFTER temp creation.
+gf="$TMP/inj_fsproj.fsproj"; cp "$FSPROJ_FIXT" "$gf"; chmod 644 "$gf"
+bsha=$(sha_of "$gf"); bmode=$(mode_of "$gf"); rm -f "$TMP/hit_head"; echo 0 > "$TMP/cnt_head"
+rc=0
+( set -euo pipefail
+  head() { if [ "$(bump "$TMP/cnt_head")" -eq 2 ]; then : > "$TMP/hit_head"; return 1; fi; command head "$@"; }
+  rl_set_fsproj_version "$gf" 9.9.9
+) >/dev/null 2>&1 || rc=$?
+[[ -f "$TMP/hit_head" ]] && ok "fsproj staged validator (head #2) reached" || bad "fsproj: staged validator not reached"
+[[ "$rc" -ne 0 ]] && ok "fsproj staged-validator injection: rc≠0" || bad "fsproj staged-validator injection: rc==0"
+assert_eq "$bsha"  "$(sha_of "$gf")"  "fsproj staged-validator injection: bytes unchanged"
+assert_eq "$bmode" "$(mode_of "$gf")" "fsproj staged-validator injection: mode unchanged"
+assert_eq "0" "$(count_temps "$TMP" "inj_fsproj.fsproj")" "fsproj staged-validator injection: no temp"
+
+# (b) CFF count validator: awk runs as producer (#1) then nv/nd/totd validators (#2..).
+#     Fail awk on #2 → reaches the nv validator AFTER temp creation (date present).
+gc="$TMP/inj_cff.cff"; printf 'cff-version: 1.2.0\nversion: 0.9.0\ndate-released: 2020-01-01\nlicense: MIT\n' > "$gc"; chmod 644 "$gc"
+bsha=$(sha_of "$gc"); bmode=$(mode_of "$gc"); rm -f "$TMP/hit_awk2"; echo 0 > "$TMP/cnt_awk"
+rc=0
+( set -euo pipefail
+  awk() { if [ "$(bump "$TMP/cnt_awk")" -eq 2 ]; then : > "$TMP/hit_awk2"; return 1; fi; command awk "$@"; }
+  rl_set_cff_version_and_date "$gc" 0.9.0 2026-07-24
+) >/dev/null 2>&1 || rc=$?
+[[ -f "$TMP/hit_awk2" ]] && ok "cff count validator (awk #2) reached" || bad "cff: count validator not reached"
+[[ "$rc" -ne 0 ]] && ok "cff count-validator injection: rc≠0" || bad "cff count-validator injection: rc==0"
+assert_eq "$bsha"  "$(sha_of "$gc")"  "cff count-validator injection: bytes unchanged"
+assert_eq "$bmode" "$(mode_of "$gc")" "cff count-validator injection: mode unchanged"
+assert_eq "0" "$(count_temps "$TMP" "inj_cff.cff")" "cff count-validator injection: no temp"
+
+# (c) CFF YAML stage: shadow python3 to fail → reaches the YAML validation after the
+#     count validators, still before the atomic move.
+gc2="$TMP/inj_cff2.cff"; printf 'cff-version: 1.2.0\nversion: 0.9.0\ndate-released: 2020-01-01\n' > "$gc2"; chmod 644 "$gc2"
+bsha=$(sha_of "$gc2"); bmode=$(mode_of "$gc2"); rm -f "$TMP/hit_py"
+if command -v python3 >/dev/null 2>&1; then
     rc=0
-    ( set -euo pipefail; awk() { return 1; }; "$@" ) >/dev/null 2>&1 || rc=$?
-    after_sha=$(sha_of "$target")
-    after_mode=$(mode_of "$target")
-    if [[ "$rc" -ne 0 ]]; then ok "$name: returns non-zero under set -e"; else bad "$name: unexpectedly succeeded"; fi
-    assert_eq "$before_sha"  "$after_sha"  "$name: target bytes unchanged"
-    assert_eq "$before_mode" "$after_mode" "$name: target mode unchanged"
-    assert_eq "0" "$(find "$dir" -maxdepth 1 -name ".$base.tmp.*" 2>/dev/null | wc -l | tr -d '[:space:]')" "$name: no temp left"
-}
-gf="$TMP/guard.fsproj"; cp "$FSPROJ_FIXT" "$gf"; chmod 644 "$gf"
-run_guarded "fsproj injected-fail" rl_set_fsproj_version "$gf" 9.9.9
-gc="$TMP/guard.cff"; printf 'cff-version: 1.2.0\nversion: 0.9.0\nlicense: MIT\n' > "$gc"; chmod 644 "$gc"
-run_guarded "cff injected-fail" rl_set_cff_version_and_date "$gc" 0.9.0 2026-07-24
-# The injected-failure runs must not have mutated the originals (double-check values).
-assert_eq "0.9.0" "$(rl_extract_fsproj_version "$gf")" "fsproj value intact after injected failure"
-assert_eq "1" "$(grep -c '^version: 0.9.0$' "$gc")" "cff value intact after injected failure"
+    ( set -euo pipefail
+      python3() { : > "$TMP/hit_py"; return 1; }
+      rl_set_cff_version_and_date "$gc2" 0.9.0 2026-07-24
+    ) >/dev/null 2>&1 || rc=$?
+    [[ -f "$TMP/hit_py" ]] && ok "cff YAML validator (python3) reached" || bad "cff: YAML validator not reached"
+    [[ "$rc" -ne 0 ]] && ok "cff YAML-validator injection: rc≠0" || bad "cff YAML-validator injection: rc==0"
+    assert_eq "$bsha"  "$(sha_of "$gc2")"  "cff YAML-validator injection: bytes unchanged"
+    assert_eq "$bmode" "$(mode_of "$gc2")" "cff YAML-validator injection: mode unchanged"
+    assert_eq "0" "$(count_temps "$TMP" "inj_cff2.cff")" "cff YAML-validator injection: no temp"
+else
+    echo "  (skip cff YAML injection: python3 not available)"
+fi
+
+echo "── 3f2. grep errors are distinguished from no-match (not masked by || true) ──"
+# (d) Prevalidation grep ERROR (rc 2) on the FIRST grep must abort with no temp/no change.
+clg1="$TMP/inj_grep1.md"; printf '# CL\n\n## [0.9.0] - Unreleased\n' > "$clg1"; chmod 644 "$clg1"
+bsha=$(sha_of "$clg1"); rm -f "$TMP/hit_grep1"; echo 0 > "$TMP/cnt_grepA"
+rc=0
+( set -euo pipefail
+  grep() { if [ "$(bump "$TMP/cnt_grepA")" -eq 1 ]; then : > "$TMP/hit_grep1"; return 2; fi; command grep "$@"; }
+  rl_finalize_changelog "$clg1" 0.9.0 2026-07-24
+) >/dev/null 2>&1 || rc=$?
+[[ -f "$TMP/hit_grep1" ]] && ok "changelog prevalidation grep #1 reached" || bad "changelog: grep #1 not reached"
+[[ "$rc" -ne 0 ]] && ok "changelog grep-error(#1): rc≠0 (not masked as 0 matches)" || bad "changelog grep-error(#1): masked"
+assert_eq "$bsha"  "$(sha_of "$clg1")"  "changelog grep-error(#1): bytes unchanged"
+assert_eq "0" "$(count_temps "$TMP" "inj_grep1.md")" "changelog grep-error(#1): no temp"
+# (e) Second grep ERROR (rc 2) must also abort cleanly (fresh file, file-backed counter).
+clg2="$TMP/inj_grep2.md"; printf '# CL\n\n## [0.9.0] - Unreleased\n' > "$clg2"; chmod 644 "$clg2"
+bsha=$(sha_of "$clg2"); rm -f "$TMP/hit_grep2"; echo 0 > "$TMP/cnt_grepB"
+rc=0
+( set -euo pipefail
+  grep() { if [ "$(bump "$TMP/cnt_grepB")" -eq 2 ]; then : > "$TMP/hit_grep2"; return 2; fi; command grep "$@"; }
+  rl_finalize_changelog "$clg2" 0.9.0 2026-07-24
+) >/dev/null 2>&1 || rc=$?
+[[ -f "$TMP/hit_grep2" ]] && ok "changelog prevalidation grep #2 reached" || bad "changelog: grep #2 not reached"
+[[ "$rc" -ne 0 ]] && ok "changelog grep-error(#2): rc≠0" || bad "changelog grep-error(#2): masked"
+assert_eq "$bsha" "$(sha_of "$clg2")" "changelog grep-error(#2): bytes unchanged"
+assert_eq "0" "$(count_temps "$TMP" "inj_grep2.md")" "changelog grep-error(#2): no temp"
+# (f) POST-VALIDATION grep error (on the temp) must clean up the temp and abort. Fail
+#     grep only when it targets the temp file (matches .tmp.), reaching post-validation.
+clg3="$TMP/inj_grep3.md"; printf '# CL\n\n## [0.9.0] - Unreleased\n' > "$clg3"; chmod 644 "$clg3"
+bsha=$(sha_of "$clg3"); rm -f "$TMP/hit_grep_tmp"
+rc=0
+( set -euo pipefail
+  grep() { for a in "$@"; do case "$a" in *.tmp.*) : > "$TMP/hit_grep_tmp"; return 2;; esac; done; command grep "$@"; }
+  rl_finalize_changelog "$clg3" 0.9.0 2026-07-24
+) >/dev/null 2>&1 || rc=$?
+[[ -f "$TMP/hit_grep_tmp" ]] && ok "changelog post-validation grep (on temp) reached" || bad "changelog: post-val grep not reached"
+[[ "$rc" -ne 0 ]] && ok "changelog post-val grep-error: rc≠0" || bad "changelog post-val grep-error: masked"
+assert_eq "$bsha" "$(sha_of "$clg3")" "changelog post-val grep-error: bytes unchanged"
+assert_eq "0" "$(count_temps "$TMP" "inj_grep3.md")" "changelog post-val grep-error: no temp"
 
 echo "── 3g. Strict CHANGELOG heading validation ──"
 cl_ok() {  # helper: assert finalize SUCCEEDS and dates the heading
@@ -283,6 +350,33 @@ cl_reject "no heading" '# Changelog
 
 ## [0.8.0] - 2020-01-01
 '
+# Robust variants the exact-anchor-only check would have MISSED → now rejected:
+# canonical Unreleased PLUS an extra same-version release token elsewhere.
+cl_reject "canonical + extra unreleased variant" '## [0.9.0] - Unreleased
+prefix ## [0.9.0] -  Unreleased
+'
+cl_reject "canonical + malformed dated" '## [0.9.0] - Unreleased
+## [0.9.0] - 2020-1-1
+'
+cl_reject "canonical + odd-spacing heading" '## [0.9.0] - Unreleased
+###   [0.9.0]
+'
+# Prose-reference policy: plain version mentions (NOT headings, NO release token) are
+# acceptable alongside the one canonical heading.
+cl_ok "prose mention allowed" '# Changelog
+
+Upgrade to 0.9.0 today; see the [0.9.0] section for details.
+
+## [0.9.0] - Unreleased
+- x
+'
+# …but a prose line carrying the reserved release token is rejected.
+cl_reject "prose release-token rejected" '# Changelog
+
+The [0.9.0] - Unreleased draft is coming.
+
+## [0.9.0] - Unreleased
+'
 # Post-validation injection: shadow awk so the staged temp keeps "Unreleased" → the
 # strict post-validation must fail, clean up, and leave the original unchanged.
 clpi="$TMP/cl_postval.md"; printf '# Changelog\n\n## [0.9.0] - Unreleased\n' > "$clpi"; chmod 644 "$clpi"
@@ -298,6 +392,10 @@ assert_eq "0" "$(count_temps "$TMP" "cl_postval.md")"     "changelog post-val in
 # Idempotent: an already-dated single heading succeeds without change.
 cli="$TMP/cl_idem.md"; printf '# Changelog\n\n## [0.9.0] - 2026-07-24\n' > "$cli"
 assert_ok "changelog idempotent (already dated)" rl_finalize_changelog "$cli" 0.9.0 2026-07-24
+# Idempotent rejects a second dated heading (duplicate) even with no Unreleased.
+cl_reject "duplicate dated (idempotent guard)" '## [0.9.0] - 2026-07-24
+## [0.9.0] - 2026-07-25
+'
 
 echo "── 4. CITATION.cff date add-or-replace ──"
 cff_absent="$TMP/absent.cff"
@@ -400,12 +498,38 @@ assert_eq "1" "$(grep -c '^## \[0.9.0\] - 2026-07-23$' "$sim/CHANGELOG.md")" "si
 # The .fsproj must be unchanged by a staged release (no bump).
 assert_ok "sim .fsproj unchanged (no bump)" diff -q "$REPO_ROOT/src/Encodings/Encodings.fsproj" "$sim/src/Encodings/Encodings.fsproj"
 
+echo "── 6b. git skip-guard predicate (cat-file -e 'HEAD^{commit}') ──"
+if command -v git >/dev/null 2>&1; then
+    # (1) Self-contained repo with a commit → predicate SUCCEEDS (section 7 would run).
+    gr="$TMP/selfrepo"; mkdir -p "$gr"
+    ( cd "$gr" && git init -q && git config user.email t@example.com && git config user.name t \
+      && echo x > f && git add f && git commit -qm init ) >/dev/null 2>&1
+    if git -C "$gr" cat-file -e 'HEAD^{commit}' 2>/dev/null; then
+        ok "self-contained repo: HEAD commit object present (guard runs)"
+    else bad "self-contained repo: predicate should have passed"; fi
+    # (2) Broken worktree: .git points at a nonexistent gitdir → predicate FAILS cleanly.
+    bw="$TMP/broken"; mkdir -p "$bw"; printf 'gitdir: %s/nonexistent\n' "$TMP" > "$bw/.git"
+    if git -C "$bw" cat-file -e 'HEAD^{commit}' 2>/dev/null; then
+        bad "broken worktree: predicate should have failed"
+    else ok "broken worktree: predicate fails → guard skips cleanly"; fi
+    # (3) Missing objects: valid ref but the object store is emptied → predicate FAILS
+    #     (this is exactly what `rev-parse` alone would MISS but `cat-file -e` catches).
+    mr="$TMP/missingobj"; cp -R "$gr" "$mr" 2>/dev/null; rm -rf "$mr"/.git/objects/* 2>/dev/null || true
+    revparse_ok=0; git -C "$mr" rev-parse --verify -q HEAD >/dev/null 2>&1 && revparse_ok=1
+    if git -C "$mr" cat-file -e 'HEAD^{commit}' 2>/dev/null; then
+        bad "missing objects: cat-file predicate should have failed"
+    else ok "missing objects: cat-file predicate fails → guard skips cleanly (rev-parse-ok=$revparse_ok)"; fi
+else
+    echo "  (skip git-guard predicate tests: git not available)"
+fi
+
 echo "── 7. release.sh --dry-run current shows v0.9.0 (real script, needs git) ──"
-# The real release.sh needs a resolvable git repo. In constrained environments (e.g. a
-# git *worktree* mounted into a container, whose .git points at unavailable host paths)
-# git cannot resolve HEAD; skip these end-to-end wrapper checks there rather than failing
-# — the pure helpers above already cover the logic cross-platform.
-if git -C "$REPO_ROOT" rev-parse --verify -q HEAD >/dev/null 2>&1; then
+# The real release.sh needs a resolvable git repo whose HEAD commit OBJECT is present.
+# `git cat-file -e 'HEAD^{commit}'` verifies the object is actually readable — stronger
+# than `rev-parse`, which can resolve the ref name even when the object store (e.g. a
+# worktree's alternates on unavailable host paths inside a container) is missing. Skip
+# cleanly when the object is unavailable; a self-contained checkout runs the asserts.
+if git -C "$REPO_ROOT" cat-file -e 'HEAD^{commit}' 2>/dev/null; then
     dry_out="$(printf 'Y\n' | bash "$REPO_ROOT/scripts/release.sh" --dry-run current 2>&1 || true)"
     if echo "$dry_out" | grep -q 'would release v0.9.0'; then
         ok "dry-run current → would release v0.9.0"
@@ -420,7 +544,7 @@ if git -C "$REPO_ROOT" rev-parse --verify -q HEAD >/dev/null 2>&1; then
         bad "dry-run major did not report v1.0.0"; echo "$dry_major" | tail -5 >&2
     fi
 else
-    echo "  (skip: git cannot resolve HEAD in this environment — worktree/container)"
+    echo "  (skip: git HEAD commit object unavailable here — worktree/container/broken alternates)"
 fi
 
 echo ""

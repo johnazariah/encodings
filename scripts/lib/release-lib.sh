@@ -85,6 +85,35 @@ _rl_count() {
     return 0
 }
 
+# Count lines matching an ERE ($1) in file ($2), distinguishing NO-MATCH from ERROR.
+# `grep -c` exits 0 (>=1 match), 1 (no match), or >=2 (real error, e.g. unreadable
+# file / bad pattern). This prints the count and returns 0 for match/no-match, but
+# returns 2 (no output) on a genuine grep error — so callers can clean up and fail
+# instead of masking the error as "0 matches" (which `|| true` would do).
+_rl_grep_count() {
+    local out rc
+    out=$(grep -cE "$1" "$2" 2>/dev/null); rc=$?
+    case "$rc" in
+        0|1) printf '%s\n' "$out"; return 0 ;;
+        *)   return 2 ;;
+    esac
+}
+
+# Print the matching LINE NUMBERS of an ERE ($1) in file ($2), one per line (nothing
+# when there is no match). Returns 0 for match/no-match, 2 on a genuine grep error.
+# Used to build error-aware unions without masking failures via `|| true` or tripping
+# `pipefail` on a no-match inside a pipeline.
+_rl_grep_lines() {
+    local out rc
+    out=$(grep -nE "$1" "$2" 2>/dev/null); rc=$?
+    case "$rc" in
+        0) printf '%s\n' "$out" | cut -d: -f1 ;;
+        1) : ;;
+        *) return 2 ;;
+    esac
+    return 0
+}
+
 # Echo the permission bits of a file as EXACTLY ONE octal token (e.g. 644).
 #
 # Platform is detected once via `uname` so the wrong-platform `stat` is never run
@@ -230,10 +259,15 @@ rl_set_cff_version_and_date() {
         return 1
     fi
 
+    # Prevalidation counts, error-aware (a genuine grep failure aborts rather than
+    # being masked as "0 matches").
     local vcount dcount indented
-    vcount=$(grep -c '^version:' "$cff" || true)
-    dcount=$(grep -c '^date-released:' "$cff" || true)
-    indented=$(grep -cE '^[[:space:]]+date-released:' "$cff" || true)
+    if ! vcount=$(_rl_grep_count '^version:' "$cff") \
+       || ! dcount=$(_rl_grep_count '^date-released:' "$cff") \
+       || ! indented=$(_rl_grep_count '^[[:space:]]+date-released:' "$cff"); then
+        echo "rl_set_cff_version_and_date: grep error reading '$cff'" >&2
+        return 1
+    fi
 
     if [[ "$vcount" -ne 1 ]]; then
         echo "rl_set_cff_version_and_date: expected exactly one top-level 'version:' key, found $vcount" >&2
@@ -323,15 +357,27 @@ PY
 # Finalize a `## [VERSION] - Unreleased` changelog heading to a dated one, strictly.
 #
 # Strict + atomic:
-#   * PREVALIDATES: requires EXACTLY ONE column-1 anchored heading
-#     `^## \[VERSION\] - Unreleased$` (VERSION regex-escaped). Rejects a prefixed /
-#     suffixed / duplicate / otherwise malformed heading, or a version that already
-#     carries a dated heading alongside an Unreleased one.
-#   * IDEMPOTENT: if there is no Unreleased heading but exactly one dated
-#     `^## \[VERSION\] - YYYY-MM-DD$`, succeeds without change.
+#   * PREVALIDATES robustly. Exactly one canonical `^## \[VERSION\] - Unreleased$`
+#     heading must be present, AND no OTHER version-referencing release line may exist.
+#     A "version-referencing release line" is any of:
+#       - a Markdown heading line mentioning `[VERSION]`   (`^[[:space:]]*#+.*\[VERSION\]`)
+#       - a release token `\[VERSION\][[:space:]]*-[[:space:]]*Unreleased` anywhere
+#         (catches prefixed/suffixed/odd-spacing Unreleased variants)
+#       - a release token `\[VERSION\][[:space:]]*-[[:space:]]*[0-9]` anywhere
+#         (catches canonical or malformed dated variants)
+#     Any occurrence beyond the single canonical line (prefixed/suffixed/spacing/
+#     malformed/duplicate/dated-alongside-Unreleased) is rejected. PROSE POLICY: a plain
+#     prose mention of the version (e.g. "upgrade to 0.9.0", "see [0.9.0]") is fine — it
+#     is only rejected if it is a heading or carries a `- Unreleased` / `- <digit>`
+#     release token, which are reserved for the changelog heading.
+#   * IDEMPOTENT: if there is no Unreleased heading but exactly one canonical dated
+#     `^## \[VERSION\] - YYYY-MM-DD$` (and no other version-referencing release line),
+#     succeeds without change.
 #   * Rewrites into a same-dir temp (exact full-line match only), then POST-VALIDATES
 #     the STAGED temp — exactly one dated heading for VERSION and ZERO Unreleased for
 #     VERSION — BEFORE the atomic move. Preserves mode; removes the temp on any failure.
+#   * grep reads distinguish no-match from error (see _rl_grep_count): a genuine grep
+#     failure aborts without masking it as "0 matches".
 rl_finalize_changelog() {
     local cl="$1" version="$2" date="$3"
     if [[ ! -f "$cl" ]]; then
@@ -343,28 +389,30 @@ rl_finalize_changelog() {
     local esc
     esc=$(printf '%s' "$version" | sed 's#[][\\.^$*+?(){}|-]#\\&#g')
 
-    local unrel dated
-    unrel=$(grep -cE "^## \[${esc}\] - Unreleased$" "$cl" || true)
-    dated=$(grep -cE "^## \[${esc}\] - [0-9]{4}-[0-9]{2}-[0-9]{2}$" "$cl" || true)
+    # Robust prevalidation counts (error-aware). `total` counts DISTINCT lines that
+    # reference this version as a heading or release token — collected without masking
+    # grep errors (`_rl_grep_lines`) and without tripping pipefail on a no-match.
+    local canon_unrel canon_dated l_head l_unrel l_dated total
+    if ! canon_unrel=$(_rl_grep_count "^## \[${esc}\] - Unreleased$" "$cl"); then
+        echo "rl_finalize_changelog: grep error reading '$cl'" >&2; return 1; fi
+    if ! canon_dated=$(_rl_grep_count "^## \[${esc}\] - [0-9]{4}-[0-9]{2}-[0-9]{2}$" "$cl"); then
+        echo "rl_finalize_changelog: grep error reading '$cl'" >&2; return 1; fi
+    if ! l_head=$(_rl_grep_lines "^[[:space:]]*#+.*\[${esc}\]" "$cl") \
+       || ! l_unrel=$(_rl_grep_lines "\[${esc}\][[:space:]]*-[[:space:]]*Unreleased" "$cl") \
+       || ! l_dated=$(_rl_grep_lines "\[${esc}\][[:space:]]*-[[:space:]]*[0-9]" "$cl"); then
+        echo "rl_finalize_changelog: grep error scanning '$cl'" >&2; return 1; fi
+    total=$(printf '%s\n%s\n%s\n' "$l_head" "$l_unrel" "$l_dated" \
+            | awk 'NF>0 && !seen[$0]++ {c++} END{print c+0}')
 
-    # Idempotent: already exactly one dated heading and no Unreleased → success.
-    if [[ "$unrel" -eq 0 ]]; then
-        if [[ "$dated" -eq 1 ]]; then
-            return 0
-        fi
-        if [[ "$dated" -gt 1 ]]; then
-            echo "rl_finalize_changelog: multiple dated '## [$version]' headings (found $dated)" >&2
-            return 1
-        fi
-        echo "rl_finalize_changelog: no anchored '^## [$version] - Unreleased$' heading to finalize" >&2
-        return 1
-    fi
-    if [[ "$unrel" -gt 1 ]]; then
-        echo "rl_finalize_changelog: duplicate '^## [$version] - Unreleased$' headings (found $unrel)" >&2
-        return 1
-    fi
-    if [[ "$dated" -ne 0 ]]; then
-        echo "rl_finalize_changelog: a dated '## [$version]' heading already exists alongside Unreleased" >&2
+    # Finalize case: exactly one canonical Unreleased line and NOTHING else references
+    # this version.
+    if [[ "$canon_unrel" -eq 1 && "$total" -eq 1 ]]; then
+        : # proceed to rewrite below
+    elif [[ "$canon_unrel" -eq 0 && "$canon_dated" -eq 1 && "$total" -eq 1 ]]; then
+        # Idempotent: already finalized to a single canonical dated heading.
+        return 0
+    else
+        echo "rl_finalize_changelog: refusing to edit — expected exactly one canonical '^## [$version] - Unreleased$' heading and no other '[$version]' release line (canonical-unreleased=$canon_unrel canonical-dated=$canon_dated version-referencing-lines=$total); file unchanged" >&2
         return 1
     fi
 
@@ -381,10 +429,12 @@ rl_finalize_changelog() {
     fi
 
     # Post-validate the STAGED temp BEFORE the atomic move: exactly one dated heading
-    # for VERSION and zero remaining Unreleased for VERSION.
+    # for VERSION and zero remaining Unreleased for VERSION. Reads are error-aware.
     local pd pu
-    pd=$(grep -cE "^## \[${esc}\] - ${date}$" "$tmp" || true)
-    pu=$(grep -cE "^## \[${esc}\] - Unreleased$" "$tmp" || true)
+    if ! pd=$(_rl_grep_count "^## \[${esc}\] - ${date}$" "$tmp"); then
+        rm -f "$tmp"; echo "rl_finalize_changelog: grep error validating staged temp; file unchanged" >&2; return 1; fi
+    if ! pu=$(_rl_grep_count "^## \[${esc}\] - Unreleased$" "$tmp"); then
+        rm -f "$tmp"; echo "rl_finalize_changelog: grep error validating staged temp; file unchanged" >&2; return 1; fi
     if [[ "$pd" -ne 1 || "$pu" -ne 0 ]]; then
         rm -f "$tmp"
         echo "rl_finalize_changelog: post-validation failed (dated=$pd unreleased=$pu); file unchanged" >&2
