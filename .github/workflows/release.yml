@@ -1,18 +1,23 @@
 name: Release
 
-# Runs the multi-platform validation + publish + GitHub Release for a v* tag.
+# Runs the multi-platform validation + publish + GitHub Release for a stable v* tag.
 #
-# TWO entry points, ONE resolved tag:
+# TWO entry points, ONE resolved tag — and BOTH must be TAG refs:
 #   * push: tags: v*     — a tag pushed BY A HUMAN OR A PAT triggers this directly.
 #   * workflow_dispatch  — the release-dispatch workflow tags with the repo GITHUB_TOKEN,
 #                          and a tag pushed with GITHUB_TOKEN does NOT fire `push:` (GitHub
 #                          suppresses workflow runs from GITHUB_TOKEN pushes to prevent
 #                          recursion). workflow_dispatch/repository_dispatch are the
 #                          documented exceptions that DO run with GITHUB_TOKEN, so
-#                          release-dispatch hands off explicitly with `--ref <tag>`.
-# The resolve-tag job derives a single RELEASE_TAG for both paths; every job checks out /
-# releases that exact tag. The test matrix runs on GitHub-hosted Linux (always
-# schedulable) and the online, healthy self-hosted macOS ARM64 runner.
+#                          release-dispatch hands off explicitly with `--ref <tag>`. Because
+#                          it dispatches with --ref <tag>, github.ref_type is `tag` and the
+#                          resolver REJECTS any branch dispatch (even a branch sharing the
+#                          tag's name), so the run is always pinned to the tag commit.
+# Release tags are STABLE-ONLY: vMAJOR.MINOR.PATCH with no leading zeros and no
+# pre-release/build metadata (exactly what the release tool emits). The resolve-tag job
+# derives a single RELEASE_TAG for both paths; every job checks out / releases that exact
+# tag. The test matrix runs on GitHub-hosted Linux (always schedulable) and the online,
+# healthy self-hosted macOS ARM64 runner.
 
 on:
   push:
@@ -21,7 +26,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Existing v* release tag to build & release (e.g. v0.9.0). Dispatch with --ref <tag> so every job runs at the tag commit.'
+        description: 'Existing stable release tag to build & release (vMAJOR.MINOR.PATCH, e.g. v0.9.0). MUST be dispatched with --ref <tag> so every job runs at the tag commit; a branch dispatch is rejected.'
         required: true
         type: string
 
@@ -35,9 +40,10 @@ permissions:
 
 jobs:
   # Single source of truth for the release tag across BOTH triggers. For a push it is the
-  # pushed tag; for a dispatch it is the required `tag` input (cross-checked against the
-  # dispatched ref). Validates v* and that the tag resolves to a real commit, so a
-  # wrong/typo tag fails fast before anything is published.
+  # pushed tag; for a dispatch it is the required `tag` input, which must match the
+  # dispatched tag ref (github.ref_type=tag, github.ref_name=input). Validates the stable
+  # vMAJOR.MINOR.PATCH grammar and that the tag resolves to a real commit, so a wrong/typo
+  # tag or a branch dispatch fails fast before anything is published.
   resolve-tag:
     runs-on: ubuntu-24.04
     outputs:
@@ -52,19 +58,23 @@ jobs:
         id: resolve
         env:
           EVENT_NAME: ${{ github.event_name }}
+          REF_TYPE: ${{ github.ref_type }}
           REF_NAME: ${{ github.ref_name }}
           INPUT_TAG: ${{ inputs.tag }}
         run: |
           set -euo pipefail
-          # Same helper the release-tool test replays, so push and dispatch resolve identically.
+          # Same helper the release-tool test replays, so push and dispatch resolve
+          # identically. Passing github.ref_type lets the resolver REQUIRE a tag ref for
+          # both triggers: a workflow_dispatch from a branch (or a same-named branch) is
+          # rejected, so the run is always pinned to the tag commit.
           source scripts/lib/release-lib.sh
-          TAG="$(rl_resolve_release_tag "$EVENT_NAME" "$REF_NAME" "$INPUT_TAG")"
+          TAG="$(rl_resolve_release_tag "$EVENT_NAME" "$REF_TYPE" "$REF_NAME" "$INPUT_TAG")"
           if ! git cat-file -e "refs/tags/${TAG}^{commit}" 2>/dev/null; then
             echo "::error::Release tag $TAG does not resolve to a commit in this repository."
             exit 1
           fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "::notice::Release tag resolved: $TAG (event: $EVENT_NAME)"
+          echo "::notice::Release tag resolved: $TAG (event: $EVENT_NAME, ref_type: $REF_TYPE)"
 
   # Test on all platforms before releasing, pinned to the resolved tag.
   # Linux runs on GitHub-hosted ubuntu-24.04: no Linux self-hosted runner is registered
