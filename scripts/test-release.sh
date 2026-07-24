@@ -625,6 +625,81 @@ else
     echo "  (skip: git HEAD commit object unavailable here — worktree/container/broken alternates)"
 fi
 
+echo "── 8. Release trigger/dispatch handoff (static + replay) ──"
+wf_rel="$REPO_ROOT/.github/workflows/release.yml"
+wf_disp="$REPO_ROOT/.github/workflows/release-dispatch.yml"
+
+# 8a. Replay rl_resolve_release_tag: a human tag PUSH and the GITHUB_TOKEN
+# workflow_dispatch handoff must resolve the SAME single RELEASE_TAG/ref.
+tag_push="$(rl_resolve_release_tag push v0.9.0 '')"
+tag_disp="$(rl_resolve_release_tag workflow_dispatch v0.9.0 v0.9.0)"
+assert_eq "v0.9.0"    "$tag_push" "push(tag) resolves v0.9.0"
+assert_eq "v0.9.0"    "$tag_disp" "workflow_dispatch(--ref tag) resolves v0.9.0"
+assert_eq "$tag_push" "$tag_disp" "push and dispatch resolve the SAME tag/ref"
+assert_eq "v0.9.0" "$(rl_resolve_release_tag workflow_dispatch main v0.9.0)" "dispatch from a branch ref uses the tag input"
+
+# 8b. Wrong-tag / duplicate guards reject before anything is published.
+assert_fail "empty dispatch tag rejected"       rl_resolve_release_tag workflow_dispatch '' ''
+assert_fail "non-v push tag rejected"           rl_resolve_release_tag push 0.9.0 ''
+assert_fail "dispatch ref != tag input rejected" rl_resolve_release_tag workflow_dispatch v0.8.0 v0.9.0
+assert_ok   "v0.9.0 is a release tag"           rl_is_release_tag v0.9.0
+assert_ok   "v1.2.3-rc.1 is a release tag"      rl_is_release_tag v1.2.3-rc.1
+assert_fail "v0.9 is not a release tag"         rl_is_release_tag v0.9
+assert_fail "0.9.0 (no v) is not a release tag" rl_is_release_tag 0.9.0
+assert_eq "0.9.0" "$(rl_version_from_tag v0.9.0)" "version_from_tag strips a single leading v"
+
+# 8c. Package-version <-> tag parity for the staged 0.9.0 (the real fsproj).
+real_ver="$(rl_extract_fsproj_version "$REPO_ROOT/src/Encodings/Encodings.fsproj")"
+assert_eq "$real_ver" "$(rl_version_from_tag "v$real_ver")" "tag v$real_ver maps back to the .fsproj version"
+
+# 8d. Exact GITHUB_TOKEN handoff command + actions:write live ONLY in release-dispatch.yml.
+assert_ok 'dispatch runs: gh workflow run release.yml --ref "$TAG" -f tag="$TAG"' \
+    grep -Eq 'gh workflow run release\.yml .*--ref "\$TAG".*-f tag="\$TAG"' "$wf_disp"
+assert_ok   "release-dispatch.yml grants actions: write"    grep -Eq '^  actions: write' "$wf_disp"
+assert_fail "release.yml does NOT grant actions: write"     grep -Eq '^[[:space:]]*actions:[[:space:]]*write' "$wf_rel"
+# 8e. Tag push is preserved (explicit handoff must not replace it).
+assert_ok "release-dispatch.yml still pushes the tag" grep -Eq 'git push origin "\$TAG"' "$wf_disp"
+
+# 8f. Structural trigger + least-privilege permission checks via PyYAML (skipped only if
+# unavailable). Also confirms both workflows parse as YAML.
+if command -v python3 >/dev/null 2>&1 && python3 -c 'import yaml' 2>/dev/null; then
+    assert_ok "release.yml: dual triggers + least-privilege perms + jobs" python3 - "$wf_rel" <<'PY'
+import sys, yaml
+d = yaml.safe_load(open(sys.argv[1]))
+on = d.get('on', d.get(True))              # PyYAML parses a bare `on:` key as boolean True
+assert 'push' in on and 'v*' in on['push']['tags'], "push tags v* missing"
+assert on['workflow_dispatch']['inputs']['tag']['required'] is True, "tag input not required"
+assert d['permissions'] == {'contents': 'read'}, ('top-level perms not read-only', d['permissions'])
+jobs = d['jobs']
+assert jobs['create-release']['permissions'] == {'contents': 'write'}, 'create-release must be contents: write'
+assert 'actions' not in d['permissions'], 'release.yml must not grant actions at top level'
+for name, job in jobs.items():
+    assert 'actions' not in (job.get('permissions') or {}), f'job {name} must not grant actions'
+for j in ('resolve-tag', 'test', 'papers', 'publish-library', 'create-release'):
+    assert j in jobs, f'missing job {j}'
+PY
+    assert_ok "release-dispatch.yml: contents+actions write" python3 - "$wf_disp" <<'PY'
+import sys, yaml
+d = yaml.safe_load(open(sys.argv[1]))
+p = d['permissions']
+assert p.get('contents') == 'write', ('contents not write', p)
+assert p.get('actions') == 'write', ('actions not write', p)
+PY
+else
+    echo "  (skip workflow YAML structure asserts — PyYAML not available)"
+fi
+
+# 8g. actionlint the two workflows when available (CI images may lack it). The only
+# tolerated finding is the pre-existing SC2129 style note in the untouched
+# version-analysis step; any runner-label/other diagnostic fails the test.
+if command -v actionlint >/dev/null 2>&1; then
+    al_out="$(actionlint "$wf_rel" "$wf_disp" 2>&1 || true)"
+    al_bad="$(printf '%s\n' "$al_out" | grep -E '\.ya?ml:[0-9]+:[0-9]+:' | grep -v 'SC2129' || true)"
+    if [[ -z "$al_bad" ]]; then ok "actionlint clean (excl. pre-existing SC2129 style)"; else bad "actionlint findings:"; printf '%s\n' "$al_bad" >&2; fi
+else
+    echo "  (skip actionlint — not installed)"
+fi
+
 echo ""
 echo "─────────────────────────────────────────────"
 echo "Release tooling tests: $PASS passed, $FAIL failed."

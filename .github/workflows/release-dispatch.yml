@@ -21,7 +21,9 @@ on:
           - major
 
 permissions:
-  contents: write
+  contents: write  # commit release changes + create/push the tag
+  actions: write   # dispatch release.yml (workflow_dispatch) via GITHUB_TOKEN — see the
+                   # "Trigger Release workflow" step for why the tag push alone is not enough
 
 jobs:
   prepare-release:
@@ -282,7 +284,23 @@ jobs:
           git tag -a "$TAG" -m "Release $TAG"
           git push origin HEAD
           git push origin "$TAG"
-          echo "::notice::Pushed tag $TAG — release workflow will now run"
+          echo "::notice::Pushed tag $TAG"
+
+      - name: Trigger Release workflow (explicit handoff)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          set -euo pipefail
+          # A tag PUSHED with the repo GITHUB_TOKEN (the step above) does NOT trigger
+          # release.yml's `push: tags: v*` — GitHub suppresses workflow runs from
+          # GITHUB_TOKEN pushes to prevent recursion. workflow_dispatch (and
+          # repository_dispatch) are the documented exceptions that DO run with
+          # GITHUB_TOKEN, so hand off to release.yml explicitly. `--ref "$TAG"` makes
+          # github.ref/sha the tag, so the reusable papers job and every default checkout
+          # run at the tag commit; `-f tag="$TAG"` gives release.yml its resolved tag.
+          gh workflow run release.yml --repo "$GITHUB_REPOSITORY" --ref "$TAG" -f tag="$TAG"
+          echo "::notice::Dispatched release.yml for $TAG"
 
       - name: Summary
         run: |
@@ -298,7 +316,10 @@ jobs:
           | **Date** | $(date +%Y-%m-%d) |
 
           ### Next steps
-          The [$TAG push triggers the Release workflow](../actions/workflows/release.yml), which will:
+          This workflow pushed the tag **and explicitly dispatched** the
+          [Release workflow](../actions/workflows/release.yml) for \`$TAG\` (a tag pushed
+          with GITHUB_TOKEN does not trigger \`push:\`, so the handoff is a
+          workflow_dispatch). The Release workflow will:
           1. Run multi-platform tests (Linux, Windows, macOS)
           2. Pack and publish to NuGet
           3. Create a GitHub Release

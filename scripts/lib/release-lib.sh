@@ -13,6 +13,9 @@
 #   rl_set_fsproj_version <fsproj> <new>            -> rewrite <Version> (atomic)
 #   rl_set_cff_version_and_date <cff> <ver> <date>  -> add-or-replace version + date (atomic)
 #   rl_finalize_changelog <changelog> <ver> <date>  -> Unreleased -> date (atomic, idempotent)
+#   rl_is_release_tag <tag>                         -> exit 0 iff tag is v<semver>
+#   rl_version_from_tag <tag>                       -> echoes tag with leading 'v' stripped
+#   rl_resolve_release_tag <event> <ref> <input>    -> echoes the one validated release tag
 #
 # Atomic-write contract (all mutators): inputs are fully validated BEFORE any write;
 # the new content is built in a temp file created in the SAME DIRECTORY as the target
@@ -74,6 +77,57 @@ rl_compute_next_version() {
         patch)          printf '%s\n' "$maj.$min.$((pat + 1))" ;;
         *) echo "rl_compute_next_version: unknown mode '$mode'" >&2; return 2 ;;
     esac
+}
+
+# ── Release-tag resolution (shared by release.yml and the test harness) ──────────
+
+# rl_is_release_tag <tag> — strict gate: v<major>.<minor>.<patch> with an optional
+# pre-release/build suffix (e.g. v0.9.0, v1.2.3-rc.1). Regex kept in a variable so it
+# is portable/quoting-safe under bash 3.2 (macOS) and bash 4+ (Linux).
+rl_is_release_tag() {
+    local tag="${1:-}"
+    local re='^v[0-9]+\.[0-9]+\.[0-9]+([-+.][0-9A-Za-z.-]+)?$'
+    [[ "$tag" =~ $re ]]
+}
+
+# rl_version_from_tag <tag> — strip a single leading 'v' (v0.9.0 -> 0.9.0). Used to
+# check that the packaged .fsproj version matches the release tag.
+rl_version_from_tag() {
+    printf '%s\n' "${1#v}"
+}
+
+# rl_resolve_release_tag <event_name> <ref_name> <input_tag>
+# Single source of truth for the release tag across BOTH release.yml triggers:
+#   * push (tag)        -> tag is github.ref_name.
+#   * workflow_dispatch -> tag is the required 'tag' input. When dispatched with
+#                          --ref <tag> (the supported handoff path) github.ref_name is
+#                          that tag too, so a v* ref MUST equal the input; this keeps the
+#                          reusable papers job and every default checkout on the tag commit.
+# Echoes the validated v* tag on success; prints to stderr and returns non-zero otherwise.
+rl_resolve_release_tag() {
+    local event="${1:-}" ref_name="${2:-}" input_tag="${3:-}" tag=""
+    case "$event" in
+        workflow_dispatch)
+            tag="$input_tag"
+            if [[ -z "$tag" ]]; then
+                echo "rl_resolve_release_tag: workflow_dispatch requires a non-empty 'tag' input" >&2
+                return 1
+            fi
+            if [[ "$ref_name" == v* && "$ref_name" != "$tag" ]]; then
+                echo "rl_resolve_release_tag: dispatched ref ($ref_name) != tag input ($tag)" >&2
+                return 1
+            fi
+            ;;
+        *)
+            # push (or any tag-ref event): the ref name IS the tag.
+            tag="$ref_name"
+            ;;
+    esac
+    if ! rl_is_release_tag "$tag"; then
+        echo "rl_resolve_release_tag: '$tag' is not a valid v<major>.<minor>.<patch> tag" >&2
+        return 1
+    fi
+    printf '%s\n' "$tag"
 }
 
 # ── Shared atomic-write primitives ──────────────────────────────────────────────
