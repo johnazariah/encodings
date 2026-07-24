@@ -8,12 +8,16 @@ FockMap extends `System.Numerics.Complex` with properties you'll use
 constantly:
 
 ```fsharp
+open System.Numerics
+open Encodings
 let c = Complex(1.0, 2.0)
 
-c.IsFinite        // true
 c.IsNonZero       // true
 c.TimesI          // Complex(-2.0, 1.0) — multiplied by i
 c.Reduce          // returns self if finite, zero if NaN/Inf
+
+// (.NET 10 provides Complex.IsFinite as a built-in static method:)
+Complex.IsFinite c   // true
 
 // Fermionic sign factor: (−1)ⁿ
 Complex.SwapSignMultiple 3 Complex.One    // −1 (odd swaps)

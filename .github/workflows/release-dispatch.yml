@@ -3,17 +3,19 @@ name: Prepare Release
 # Trigger from GitHub UI or CLI:
 #   gh workflow run release-dispatch.yml -f bump=auto
 #   gh workflow run release-dispatch.yml -f bump=minor
+#   gh workflow run release-dispatch.yml -f bump=current   # ship staged version, no bump
 
 on:
   workflow_dispatch:
     inputs:
       bump:
-        description: 'Version bump type'
+        description: 'Version bump type (use "current" to ship the staged version with no bump)'
         required: true
         default: 'auto'
         type: choice
         options:
           - auto
+          - current
           - patch
           - minor
           - major
@@ -45,6 +47,9 @@ jobs:
         run: |
           set -euo pipefail
 
+          # Shared, portable release helpers (parity with scripts/release.sh).
+          source scripts/lib/release-lib.sh
+
           # Get last tag
           LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
           FIRST_RELEASE=false
@@ -58,9 +63,9 @@ jobs:
             echo "::notice::Last release: $LAST_TAG"
           fi
 
-          # Current version from .fsproj
+          # Current version from .fsproj (portable — no PCRE `grep -oP`).
           FSPROJ="src/Encodings/Encodings.fsproj"
-          CURRENT_VERSION=$(grep -oP '(?<=<Version>)[^<]+' "$FSPROJ")
+          CURRENT_VERSION=$(rl_extract_fsproj_version "$FSPROJ")
           echo "Current .fsproj version: $CURRENT_VERSION"
 
           # Analyze commits
@@ -85,31 +90,44 @@ jobs:
 
           echo "Breaking: $BREAKING, Features: $FEATURES, Fixes: $FIXES"
 
-          # Parse version
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
-
-          # Determine bump
+          # Determine version. "current"/"staged" ships the CURRENT project version
+          # with NO bump (used for the deliberately staged 0.9.0 breaking release, so
+          # a BREAKING commit does not auto-bump it to 1.0.0).
           BUMP="${{ inputs.bump }}"
           if [[ "$FIRST_RELEASE" == "true" ]]; then
             NEW_VERSION="$CURRENT_VERSION"
             BUMP_LABEL="initial"
+          elif [[ "$BUMP" == "current" || "$BUMP" == "staged" ]]; then
+            NEW_VERSION="$CURRENT_VERSION"
+            BUMP_LABEL="current (staged)"
+            # Validate: current > last tag, and CFF/CHANGELOG already match.
+            if ! rl_version_gt "$CURRENT_VERSION" "$LAST_VERSION"; then
+              echo "::error::current release requires .fsproj version ($CURRENT_VERSION) > last tag ($LAST_VERSION)."
+              exit 1
+            fi
+            CFF_VERSION=$(awk -F': ' '/^version:/{print $2; exit}' CITATION.cff 2>/dev/null || echo "")
+            if [[ -n "$CFF_VERSION" && "$CFF_VERSION" != "$CURRENT_VERSION" ]]; then
+              echo "::error::CITATION.cff version ($CFF_VERSION) != .fsproj ($CURRENT_VERSION)."
+              exit 1
+            fi
+            if ! grep -Eq "^## \[$(printf '%s' "$CURRENT_VERSION" | sed 's/\./\\./g')\]" CHANGELOG.md; then
+              echo "::error::CHANGELOG.md has no '## [$CURRENT_VERSION]' heading to finalize."
+              exit 1
+            fi
+            echo "::notice::Staged release validated: $CURRENT_VERSION (> $LAST_VERSION)"
           elif [[ "$BUMP" == "auto" ]]; then
             if [[ $BREAKING -gt 0 ]]; then
-              NEW_VERSION="$((MAJOR + 1)).0.0"
+              NEW_VERSION=$(rl_compute_next_version "$CURRENT_VERSION" major)
               BUMP_LABEL="major"
             elif [[ $FEATURES -gt 0 ]]; then
-              NEW_VERSION="$MAJOR.$((MINOR + 1)).0"
+              NEW_VERSION=$(rl_compute_next_version "$CURRENT_VERSION" minor)
               BUMP_LABEL="minor"
             else
-              NEW_VERSION="$MAJOR.$MINOR.$((PATCH + 1))"
+              NEW_VERSION=$(rl_compute_next_version "$CURRENT_VERSION" patch)
               BUMP_LABEL="patch"
             fi
           else
-            case "$BUMP" in
-              major) NEW_VERSION="$((MAJOR + 1)).0.0" ;;
-              minor) NEW_VERSION="$MAJOR.$((MINOR + 1)).0" ;;
-              patch) NEW_VERSION="$MAJOR.$MINOR.$((PATCH + 1))" ;;
-            esac
+            NEW_VERSION=$(rl_compute_next_version "$CURRENT_VERSION" "$BUMP")
             BUMP_LABEL="$BUMP"
           fi
 
@@ -118,6 +136,7 @@ jobs:
           echo "tag=v$NEW_VERSION" >> "$GITHUB_OUTPUT"
           echo "current_version=$CURRENT_VERSION" >> "$GITHUB_OUTPUT"
           echo "first_release=$FIRST_RELEASE" >> "$GITHUB_OUTPUT"
+          echo "bump_label=$BUMP_LABEL" >> "$GITHUB_OUTPUT"
 
           # Save commit data for changelog generation
           echo "$COMMITS" > /tmp/commits.txt
@@ -125,17 +144,35 @@ jobs:
 
       - name: Update .fsproj version
         run: |
+          set -euo pipefail
+          source scripts/lib/release-lib.sh
           FSPROJ="src/Encodings/Encodings.fsproj"
           CURRENT="${{ steps.version.outputs.current_version }}"
           NEW="${{ steps.version.outputs.new_version }}"
-          sed -i "s|<Version>$CURRENT</Version>|<Version>$NEW</Version>|" "$FSPROJ"
-          echo "Updated $FSPROJ: $CURRENT → $NEW"
+          if [[ "$NEW" == "$CURRENT" ]]; then
+            echo "Version already at $NEW (staged release) — no .fsproj change."
+          else
+            # Portable temp+mv rewrite (parity with scripts/release.sh; no `sed -i`).
+            rl_set_fsproj_version "$FSPROJ" "$NEW"
+            echo "Updated $FSPROJ: $CURRENT → $NEW"
+          fi
 
-      - name: Generate CHANGELOG entry
+      - name: Generate or finalize CHANGELOG entry
         run: |
           set -euo pipefail
+          source scripts/lib/release-lib.sh
           NEW_VERSION="${{ steps.version.outputs.new_version }}"
+          BUMP_LABEL="${{ steps.version.outputs.bump_label }}"
           DATE=$(date +%Y-%m-%d)
+          CHANGELOG="CHANGELOG.md"
+
+          # Staged/current: finalize the existing "## [x] - Unreleased" heading
+          # (with its curated notes) instead of prepending a generated duplicate.
+          if [[ "$BUMP_LABEL" == current* ]]; then
+            rl_finalize_changelog "$CHANGELOG" "$NEW_VERSION" "$DATE"
+            echo "Finalized staged CHANGELOG heading for v$NEW_VERSION ($DATE)"
+            exit 0
+          fi
 
           # Get last tag for commit range
           LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
@@ -187,7 +224,6 @@ jobs:
           fi
 
           # Write changelog
-          CHANGELOG="CHANGELOG.md"
           if [[ -f "$CHANGELOG" ]]; then
             HEADER=$(head -n 5 "$CHANGELOG")
             BODY=$(tail -n +6 "$CHANGELOG")
@@ -209,14 +245,17 @@ jobs:
 
           echo "Generated CHANGELOG.md entry for v$NEW_VERSION"
 
-      - name: Update CITATION.cff
+      - name: Update CITATION.cff (version + date, add-or-replace)
         run: |
+          set -euo pipefail
           if [[ -f CITATION.cff ]]; then
+            source scripts/lib/release-lib.sh
             NEW_VERSION="${{ steps.version.outputs.new_version }}"
             DATE=$(date +%Y-%m-%d)
-            sed -i "s|^version: .*|version: $NEW_VERSION|" CITATION.cff
-            sed -i "s|^date-released: .*|date-released: $DATE|" CITATION.cff
-            echo "Updated CITATION.cff to v$NEW_VERSION"
+            # Robust add-or-replace: sets date-released whether present or absent,
+            # fails on duplicate/malformed keys, and validates the result parses.
+            rl_set_cff_version_and_date CITATION.cff "$NEW_VERSION" "$DATE"
+            echo "Updated CITATION.cff to v$NEW_VERSION ($DATE)"
           fi
 
       - name: Commit release changes

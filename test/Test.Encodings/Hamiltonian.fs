@@ -13,7 +13,11 @@ module Hamiltonian =
     [<InlineData(2u, "II - 0.5 IZ + 0.5 XX + 0.5 YY - 0.5 ZI")>]
     [<InlineData(4u, "2.0 IIII - 0.5 IIIZ + 0.5 IIXX + 0.5 IIYY - 0.5 IIZI + 0.5 IXXI + 0.5 IXZX + 0.5 IYYI + 0.5 IYZY - 0.5 IZII + 0.5 XXII + 0.5 XZXI + 0.5 XZZX + 0.5 YYII + 0.5 YZYI + 0.5 YZZY - 0.5 ZIII")>]
     let ``Hamiltonian : Compute Jordan-Wigner string for Hamiltonian``(n, expected) =
-        let hamiltonian = computeHamiltonian (fun _ -> Some Complex.One) n
+        // Absolute structural output is pinned under the LEGACY weighted contract
+        // (all-ones weighted prefactors applied verbatim to a†_i a†_j a_k a_l). The
+        // raw-physicist primary's absolute output is pinned by the canonical H₂
+        // fixture-lock tests instead.
+        let hamiltonian = computeHamiltonianFromWeighted (fun _ -> Some Complex.One) n
         let actual = hamiltonian.ToString()
         Assert.Equal (expected, actual)
 
@@ -188,3 +192,122 @@ module Hamiltonian =
         Assert.True(sparseSkel.OneBody.Length < fullSkel.OneBody.Length)
         // Sparse should only have entries for the provided keys
         Assert.True(sparseSkel.TwoBody.Length = 0)
+
+    // ── Index-range regression (0..n-1, not 0..n) ───────────────────
+
+    [<Fact>]
+    let ``Hamiltonian : factory is never queried with out-of-range index (sequential)`` () =
+        // Valid mode indices for n=2 are {0,1}. The corrected 0..n-1 loop bounds
+        // must never query the factory with the out-of-range index 2.
+        let queried = System.Collections.Generic.HashSet<string>()
+        let factory (key : string) = queried.Add key |> ignore; None
+        computeHamiltonianWith jordanWignerTerms factory 2u |> ignore
+        let touchesIndex2 = queried |> Seq.exists (fun k -> k.Split(',') |> Array.contains "2")
+        Assert.False(touchesIndex2, sprintf "queried out-of-range index: %A" (List.ofSeq queried))
+
+    [<Fact>]
+    let ``Hamiltonian : factory is never queried with out-of-range index (parallel)`` () =
+        let queried = System.Collections.Generic.HashSet<string>()
+        let factory (key : string) = queried.Add key |> ignore; None
+        computeHamiltonianWithParallel jordanWignerTerms factory 2u |> ignore
+        let touchesIndex2 = queried |> Seq.exists (fun k -> k.Split(',') |> Array.contains "2")
+        Assert.False(touchesIndex2, sprintf "queried out-of-range index: %A" (List.ofSeq queried))
+
+    // ── n=0 safety and sequential/parallel/cached parity ────────────
+
+    [<Fact>]
+    let ``Hamiltonian : n=0 yields empty results without underflow`` () =
+        // 0u .. n-1u would underflow to a ~4-billion-iteration uint32 range;
+        // modeRange keeps n=0 empty and fast for all construction paths.
+        let factory (_ : string) = Some Complex.One
+        Assert.Empty((computeHamiltonianWith jordanWignerTerms factory 0u).SummandTerms)
+        Assert.Empty((computeHamiltonianWithParallel jordanWignerTerms factory 0u).SummandTerms)
+        let sk = computeHamiltonianSkeleton jordanWignerTerms 0u
+        Assert.Empty(sk.OneBody)
+        Assert.Empty(sk.TwoBody)
+
+    [<Theory>]
+    [<InlineData(1u)>]
+    [<InlineData(2u)>]
+    [<InlineData(3u)>]
+    [<InlineData(4u)>]
+    let ``Hamiltonian : sequential, parallel, and cached-skeleton paths agree`` (n : uint32) =
+        let factory (key : string) =
+            // A sparse-ish factory so out-of-range work would show up as differences.
+            if key.Split(',').Length = 2 then Some (Complex(1.0, 0.0)) else None
+        let seqH    = computeHamiltonianWith jordanWignerTerms factory n
+        let parH    = computeHamiltonianWithParallel jordanWignerTerms factory n
+        let cachedH = applyCoefficients (computeHamiltonianSkeleton jordanWignerTerms n) factory
+        Assert.Equal(seqH.ToString(), parH.ToString())
+        Assert.Equal(seqH.ToString(), cachedH.ToString())
+
+    // ── Legacy weighted builders + raw⟷weighted adapters ────────────
+
+    [<Theory>]
+    [<InlineData(1u)>]
+    [<InlineData(2u)>]
+    [<InlineData(3u)>]
+    [<InlineData(4u)>]
+    let ``Hamiltonian : legacy weighted builders (seq/parallel/cached/skeleton) all agree`` (n : uint32) =
+        // A two-body weighted factory exercises the ½/order-sensitive path on every
+        // legacy surface; all five must produce the identical map.
+        let factory (key : string) =
+            if key = "0,1,1,0" || key = "0,0" then Some (Complex(1.3, 0.0)) else None
+        let s (h : PauliRegisterSequence) = h.ToString()
+        let seqH    = computeHamiltonianFromWeightedWith jordanWignerTerms factory n
+        let parH    = computeHamiltonianFromWeightedWithParallel jordanWignerTerms factory n
+        let cacheH  = computeHamiltonianFromWeightedCached jordanWignerTerms factory n
+        let fullSk  = applyCoefficientsFromWeighted (computeHamiltonianSkeleton jordanWignerTerms n) factory
+        let sparseSk = applyCoefficientsFromWeighted (computeHamiltonianSkeletonForFromWeighted jordanWignerTerms factory n) factory
+        Assert.Equal(s seqH, s parH)
+        Assert.Equal(s seqH, s cacheH)
+        Assert.Equal(s seqH, s fullSk)
+        Assert.Equal(s seqH, s sparseSk)
+
+    [<Theory>]
+    [<InlineData(2u)>]
+    [<InlineData(4u)>]
+    let ``Hamiltonian : weightedToRawFactory round-trips a weighted factory through the raw API`` (n : uint32) =
+        // Wrapping a weighted factory with weightedToRawFactory and feeding it to the
+        // raw builder must reproduce the legacy weighted builder exactly.
+        let weighted (key : string) =
+            if key = "0,1,1,0" then Some (Complex(0.7, 0.0))
+            elif key = "0,0" then Some (Complex(-0.9, 0.0))
+            else None
+        let viaWeighted = computeHamiltonianFromWeightedWith jordanWignerTerms weighted n
+        let viaRaw      = computeHamiltonianWith jordanWignerTerms (weightedToRawFactory weighted) n
+        Assert.Equal(viaWeighted.ToString(), viaRaw.ToString())
+
+    [<Fact>]
+    let ``Hamiltonian : antisymmetrizedToRawFactory reproduces the single-bar path`` () =
+        // Build a single-bar physicist factory, form the antisymmetrised double-bar
+        // ⟨pq||rs⟩ = ⟨pq|rs⟩ − ⟨pq|sr⟩, and feed it through antisymmetrizedToRawFactory:
+        // the encoded Hamiltonian must equal the raw single-bar path (fermionic
+        // anticommutation makes ¼·double-bar ≡ ½·single-bar).
+        let n = 4u
+        let single (key : string) =
+            match key.Split(',') with
+            | [| _; _ |] -> if key = "0,0" then Some (Complex(-0.4, 0.0)) else None
+            | [| p; q; r; s |] ->
+                // A small non-symmetric-in-(r,s) tensor so the swap matters.
+                let v =
+                    match p, q, r, s with
+                    | "0","1","0","1" -> 0.5
+                    | "0","1","1","0" -> 0.2
+                    | "1","0","1","0" -> 0.5
+                    | "1","0","0","1" -> 0.2
+                    | _ -> 0.0
+                if v <> 0.0 then Some (Complex(v, 0.0)) else None
+            | _ -> None
+        let doubleBar (key : string) =
+            match key.Split(',') with
+            | [| _; _ |] -> single key
+            | [| p; q; r; s |] ->
+                let a = single (sprintf "%s,%s,%s,%s" p q r s) |> Option.map (fun c -> c.Real) |> Option.defaultValue 0.0
+                let b = single (sprintf "%s,%s,%s,%s" p q s r) |> Option.map (fun c -> c.Real) |> Option.defaultValue 0.0
+                let v = a - b
+                if v <> 0.0 then Some (Complex(v, 0.0)) else None
+            | _ -> None
+        let viaSingle = computeHamiltonian single n
+        let viaDouble = computeHamiltonian (antisymmetrizedToRawFactory doubleBar) n
+        Assert.Equal(viaSingle.DistributeCoefficient.ToString(), viaDouble.DistributeCoefficient.ToString())

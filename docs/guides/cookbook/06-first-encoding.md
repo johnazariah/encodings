@@ -11,6 +11,8 @@ The simplest encoding is Jordan-Wigner (1928). It maps a ladder operator
 to Pauli strings by inserting a chain of Z operators on all preceding qubits:
 
 ```fsharp
+open Encodings
+open Encodings.JordanWigner
 // Encode a†₂ (creation on mode 2) for a 4-qubit system:
 let result = jordanWignerTerms Raise 2u 4u
 
@@ -26,6 +28,15 @@ The result is $a^\dagger_2 = \tfrac{1}{2}(ZZXI) - \tfrac{i}{2}(ZZYI)$.
 Notice the two Z operators before the X/Y — they track the **parity** of
 electrons in modes 0 and 1. This is how the encoding preserves fermionic
 anti-symmetry on a qubit register.
+
+> **Ordering convention.** In a `PauliRegister` string, character position *i*
+> is mode/qubit *i*, so **mode 0 is the leftmost character** (`"ZZXI"` = Z₀ Z₁ X₂ I₃).
+> Occupation integers weight mode *j* by 2ʲ (mode 0 = least-significant bit), so the
+> H₂ Hartree–Fock state |modes 0,1 occupied⟩ is the integer 3 = `0b0011`. To read a
+> string in that occupation basis, or to produce a Qiskit-style Pauli-label string,
+> **reverse it** (mode 0 becomes rightmost / bit 2⁰). OpenQASM gates use explicit
+> indexed operands, so map qubit *i* to `q[i]` rather than relying on a string-order
+> convention.
 
 ## The Z-chain problem
 

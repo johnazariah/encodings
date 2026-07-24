@@ -9,6 +9,9 @@ different statistics and must be handled carefully.
 FockMap distinguishes them with a sector tag:
 
 ```fsharp
+open System.Numerics
+open Encodings
+open Encodings.MixedSystems
 // Fermionic operators:
 let f0_up   = fermion Raise 0u    // f†₀
 let f0_down = fermion Lower 0u    // f₀
@@ -81,12 +84,12 @@ contributions in one pass:
 
 ```fsharp
 let sameIndex : S<IxOp<uint32, SectorLadderOperatorUnit>> =
-    P.Apply [|
+    P<IxOp<uint32, SectorLadderOperatorUnit>>.Apply [|
         fermion Lower 5u
         fermion Raise 5u
         boson Lower 200u
         boson Raise 200u
-    |] |> S.Apply
+    |] |> S<IxOp<uint32, SectorLadderOperatorUnit>>.Apply
 
 let canonical = constructMixedNormalOrdered sameIndex
 ```
@@ -106,15 +109,15 @@ For couplings like $g\, n_f \, n_b$ (e.g., electron–phonon):
 ```fsharp
 // g · a†₁ a₂ · b†₁₀₀ b₁₀₀
 let coupling : S<IxOp<uint32, SectorLadderOperatorUnit>> =
-    P.Apply [|
+    P<IxOp<uint32, SectorLadderOperatorUnit>>.Apply [|
         fermion Raise 1u
         fermion Lower 2u
         boson Raise 100u
         boson Lower 100u
     |]
-    |> S.Apply
+    |> S<IxOp<uint32, SectorLadderOperatorUnit>>.Apply
 
-let canonical = constructMixedNormalOrdered coupling
+let couplingCanonical = constructMixedNormalOrdered coupling
 ```
 
 This keeps CAR and CCR semantics explicit and avoids hidden sign mistakes.

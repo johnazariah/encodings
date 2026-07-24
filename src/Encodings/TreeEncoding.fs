@@ -5,8 +5,15 @@ namespace Encodings
 /// This module implements two approaches:
 ///
 /// (1) Index-set approach (Havlíček et al. arXiv:1701.07072):
-///     Works correctly ONLY for Fenwick trees (where all ancestors > j).
-///     Uses Update/Parity/Occupation sets with the generic MajoranaEncoding.
+///     The generic tree → index-set construction below is CAR-valid ONLY for
+///     rooted STAR trees (one central node adjacent to all others). An
+///     independent census over all rooted labelled trees finds exactly n of the
+///     n^(n−1) trees satisfy CAR for n=3..6 — precisely the rooted stars.
+///     Fenwick, chain, and balanced binary/ternary trees FAIL in general, and
+///     monotonicity of ancestor indices is neither necessary nor sufficient
+///     (a star rooted at node 0 passes with ancestor < child; a Fenwick tree
+///     fails with ancestor > child). This construction is a demonstration of the
+///     EncodingScheme abstraction, NOT the library's production tree encoder.
 ///
 /// (2) Path-based ternary-tree approach (Bonsai: arXiv:2212.09731,
 ///     Jiang et al.: arXiv:1910.10746):
@@ -14,12 +21,14 @@ namespace Encodings
 ///     from root-to-leg paths. Each node has 3 descending links labeled
 ///     X, Y, Z.  Each leg yields a Pauli string by collecting the labels
 ///     along its root-to-leg path. Paired legs give the two Majoranas
-///     for each fermionic mode.
+///     for each fermionic mode. This is what the exported tree encoders
+///     (ternaryTreeTerms, balancedBinaryTreeTerms, vlasovTreeTerms) use.
 ///
-/// Different tree shapes yield different encodings:
-///   - Chain (linear tree):   recovers Jordan-Wigner
-///   - Fenwick tree:          recovers Bravyi-Kitaev
-///   - Balanced ternary tree: achieves O(log₃ n) Pauli weight (optimal)
+/// Canonical encodings are provided directly and do NOT rely on the generic
+/// index-set construction above:
+///   - Jordan-Wigner:  JordanWigner.fs (and jordanWignerScheme)
+///   - Bravyi-Kitaev:  BravyiKitaev.fs via a persistent Fenwick tree
+///   - Balanced ternary tree: O(log₃ n) Pauli weight via the path-based method
 module TreeEncoding =
 
     open System.Numerics
@@ -71,7 +80,7 @@ module TreeEncoding =
     // ─────────────────────────────────────────────
     //  Index sets from tree structure
     //  (Havlíček et al. arXiv:1701.07072)
-    //  NOTE: only valid for Fenwick trees!
+    //  NOTE: CAR-valid only for rooted STAR trees (see module header)!
     // ─────────────────────────────────────────────
 
     /// Update set U(j): ancestors of j.
@@ -103,8 +112,13 @@ module TreeEncoding =
     let treeOccupationSet (tree : EncodingTree) (j : int) : Set<int> =
         treeDescendants tree j |> Set.ofList |> Set.add j
 
-    /// Create an EncodingScheme from a tree (Fenwick-style index sets).
-    /// WARNING: Only produces correct encodings for Fenwick trees!
+    /// Create an EncodingScheme from a tree (Havlíček-style index sets).
+    /// WARNING: this generic construction is CAR-valid ONLY for rooted STAR trees
+    /// (verified by census: exactly n of the n^(n−1) rooted labelled trees pass for
+    /// n=3..6, all rooted stars). Fenwick, chain, and balanced binary/ternary trees
+    /// produce operators that violate the anticommutation relations. For correct
+    /// tree encodings use the path-based encoders (ternaryTreeTerms, etc.); for
+    /// JW/BK/Parity use JordanWigner.fs / BravyiKitaev.fs / parityScheme.
     let treeEncodingScheme (tree : EncodingTree) : EncodingScheme =
         { Update     = fun j _n -> treeUpdateSet tree j
           Parity     = fun j    -> treeParitySet tree j
@@ -124,7 +138,9 @@ module TreeEncoding =
           Target : int option }  // Some childIndex, or None for a leg
 
     /// Compute the link labeling for each node in the tree.
-    /// Each node gets exactly 3 descending links (edges + legs).
+    /// Each node gets exactly 3 descending links (edges + legs), so the tree must
+    /// be <b>ternary</b> — at most 3 children per node. Nodes with more than 3
+    /// children are not supported and raise <c>ArgumentException</c>.
     /// We use "homogeneous localisation" (Bonsai Algorithm 4):
     ///   - If 2 or 3 children: assign X, Y to edges; Z to leg (or 3rd edge).
     ///   - If 1 child: assign X to edge; Y, Z to legs.
@@ -133,6 +149,11 @@ module TreeEncoding =
         tree.Nodes
         |> Map.map (fun _idx node ->
             let childIndices = node.Children |> List.map (fun c -> c.Index)
+            if List.length childIndices > 3 then
+                invalidArg "tree"
+                    (sprintf
+                        "Path-based ternary-tree encoding supports at most 3 children per node, but node %d has %d children (%A). Use a ternary tree (max degree 3); other tree shapes are not supported by encodeWithTernaryTree."
+                        node.Index (List.length childIndices) childIndices)
             let labels = [LX; LY; LZ]
             let nChildren = List.length childIndices
             // Assign first nChildren labels to edges, rest to legs.
@@ -347,7 +368,11 @@ module TreeEncoding =
     //  Convenience wrappers
     // ═════════════════════════════════════════════
 
-    /// Encode using a balanced ternary tree (path-based method).
+    /// Index-set EncodingScheme derived from a balanced ternary tree.
+    /// WARNING: this uses the generic index-set construction, which is CAR-valid
+    /// ONLY for rooted star trees — a balanced ternary tree is a star only for very
+    /// small n (e.g. n=4), so this scheme does NOT yield a valid encoding in general.
+    /// For the correct balanced-ternary encoding use the path-based ternaryTreeTerms.
     let ternaryTreeScheme (n : int) : EncodingScheme =
         treeEncodingScheme (balancedTernaryTree n)
 

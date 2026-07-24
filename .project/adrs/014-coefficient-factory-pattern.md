@@ -50,6 +50,17 @@ combination and skips `None` results.
   uses the factory to discover which keys exist, then builds skeleton entries
   only for those — reducing 17,424 entries to ~1,520 for H₂O.
 
+## Update (0.9.0)
+
+The factory *signature* (`string -> Complex option`) is unchanged, but the
+*value semantics* of the primary builders became a deliberate breaking change:
+a two-body key `"p,q,r,s"` now carries the **raw single-bar physicist integral**
+`⟨pq|rs⟩` (no ½, no index swap), and the library applies the two-body ½ and the
+r↔s annihilator order internally. The previously released **weighted** semantics
+(full prefactor of `a†_i a†_j a_k a_l`, verbatim) remain available behind the
+`computeHamiltonianFromWeighted…` functions and the `weightedToRawFactory`
+adapter. See the [0.9.0 migration guide](../../docs/guides/migration-0.9.md).
+
 ## Alternatives Considered
 
 - **Dense 2D/4D arrays** — simple indexing but wastes memory for sparse

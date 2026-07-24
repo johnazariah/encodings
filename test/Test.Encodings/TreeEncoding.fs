@@ -550,3 +550,99 @@ module TreeEncoding =
         let vlI = getIdentityCoeff (totalNumber vlasovTreeTerms)
         // Should equal n/2 = 2.0
         Assert.True(abs (vlI - 2.0) < 1e-10, sprintf "Vlasov identity: %f" vlI)
+
+    // ══════════════════════════════════════════════════
+    //  Index-set construction (treeEncodingScheme) CAR validity
+    //  ──────────────────────────────────────────────────
+    //  The generic tree → index-set construction is CAR-valid ONLY for
+    //  rooted STAR trees (one central node adjacent to all others).
+    //  Independently verified by census over all rooted labelled trees:
+    //  exactly n of the n^(n-1) trees satisfy CAR for n=3..6 — precisely
+    //  the rooted stars. Fenwick, chain, and balanced binary/ternary trees
+    //  fail in general. (Monotonicity of ancestor indices is neither
+    //  necessary nor sufficient: the star rooted at node 0 passes despite
+    //  ancestor < child, while the Fenwick tree fails despite ancestor > child.)
+    //  The library's actual JW/BK/tree encoders do NOT use this construction:
+    //  JW → JordanWigner.fs, BK → BravyiKitaev.fs (FenwickTree), tree encodings
+    //  → the path-based encodeWithTernaryTree.
+    // ══════════════════════════════════════════════════
+
+    // Build an EncodingTree from a parent array (parent.[i] = parent index, -1 = root).
+    let private treeFromParents (parent : int[]) : EncodingTree =
+        let n = parent.Length
+        let childrenOf = Array.init n (fun i -> [ for j in 0 .. n - 1 do if parent.[j] = i then yield j ])
+        let rec mk i : TreeNode =
+            { Index = i
+              Parent = (if parent.[i] < 0 then None else Some parent.[i])
+              Children = childrenOf.[i] |> List.map mk }
+        let root = Array.findIndex (fun p -> p < 0) parent
+        let rootNode = mk root
+        let rec nodes (node : TreeNode) =
+            seq { yield (node.Index, node); for c in node.Children do yield! nodes c }
+        { Root = rootNode; Nodes = nodes rootNode |> Map.ofSeq; Size = n }
+
+    // Rooted star: `center` is the root; every other node is its direct child.
+    let private starTree n center =
+        treeFromParents (Array.init n (fun i -> if i = center then -1 else center))
+
+    // CAR via full operator algebra: {a_i, a†_j} = δ_ij for all i, j.
+    let private indexSetCarHolds (tree : EncodingTree) =
+        let n = tree.Size
+        let scheme = treeEncodingScheme tree
+        let mutable ok = true
+        for i in 0 .. n - 1 do
+            for j in 0 .. n - 1 do
+                let ai  = encodeOperator scheme Lower (uint32 i) (uint32 n)
+                let adj = encodeOperator scheme Raise (uint32 j) (uint32 n)
+                let anti = (add (ai * adj) (adj * ai)).DistributeCoefficient
+                let nz = anti.SummandTerms |> Array.filter (fun t -> Complex.Abs t.Coefficient > 1e-10)
+                if i = j then
+                    let idOk =
+                        nz.Length = 1
+                        && nz.[0].Signature = String.replicate n "I"
+                        && abs (nz.[0].Coefficient.Real - 1.0) < 1e-10
+                    if not idOk then ok <- false
+                else
+                    if nz.Length > 0 then ok <- false
+        ok
+
+    [<Theory>]
+    [<InlineData(4, 0)>]
+    [<InlineData(4, 2)>]
+    [<InlineData(5, 0)>]
+    [<InlineData(6, 3)>]
+    let ``Index-set construction: rooted star tree satisfies CAR`` (n : int) (center : int) =
+        Assert.True(indexSetCarHolds (starTree n center),
+            sprintf "star tree (n=%d, center=%d) should satisfy CAR under treeEncodingScheme" n center)
+
+    [<Fact>]
+    let ``Index-set construction: non-star balanced-binary tree fails CAR`` () =
+        Assert.False(indexSetCarHolds (balancedBinaryTree 4),
+            "balancedBinaryTree 4 is non-star and must NOT satisfy CAR under the index-set construction")
+
+    [<Fact>]
+    let ``Index-set construction: Fenwick (BK) tree fails CAR`` () =
+        // Contrary to older docs, the BK/Fenwick tree shape does NOT satisfy CAR
+        // under the generic index-set construction. BK is implemented correctly
+        // and separately in BravyiKitaev.fs (via FenwickTree.fs).
+        let fenwick = treeFromParents [| 1; 3; 3; -1 |]   // BK/Fenwick parents for n=4
+        Assert.False(indexSetCarHolds fenwick,
+            "Fenwick/BK tree must NOT satisfy CAR under the generic index-set construction")
+
+    [<Fact>]
+    let ``Index-set construction: chain (linear) tree fails CAR for n>=3`` () =
+        Assert.False(indexSetCarHolds (linearTree 4),
+            "linear chain (n=4) is non-star and must NOT satisfy CAR under the index-set construction")
+
+    [<Fact>]
+    let ``Path-based encoding: node with more than 3 children raises a clear error`` () =
+        // computeLinks / encodeWithTernaryTree support at most 3 children per node.
+        // A degree-4 node previously dropped the 4th child silently, then failed
+        // later with an opaque KeyNotFoundException; it now raises a clear error.
+        let star4 =
+            let leaf i = { Index = i; Children = []; Parent = Some 0 }
+            let root = { Index = 0; Children = [ leaf 1; leaf 2; leaf 3; leaf 4 ]; Parent = None }
+            let nodes = [ 0, root; 1, leaf 1; 2, leaf 2; 3, leaf 3; 4, leaf 4 ] |> Map.ofList
+            { Root = root; Nodes = nodes; Size = 5 }
+        let ex = Assert.Throws<System.ArgumentException>(fun () -> computeLinks star4 |> ignore)
+        Assert.Contains("at most 3 children", ex.Message)

@@ -15,7 +15,7 @@
 
 📖 **The Book:** [*From Molecules to Quantum Circuits*](https://johnazariah.github.io/encodings-book) — 23-chapter guide with interactive labs, computed results (H₂ dissociation curve, H₂O bond angle scan), and companion code.
 
-🍳 **API Cookbook:** [15 progressive chapters](https://johnazariah.github.io/encodings/guides/cookbook/) covering every type and function.
+🍳 **API Cookbook:** [18 progressive chapters](https://johnazariah.github.io/encodings/guides/cookbook/) covering every type and function.
 
 ---
 
@@ -24,7 +24,7 @@
 If you're exploring quantum chemistry on qubits, you usually hit this question quickly: **how do I map fermions to Pauli operators?** And increasingly: **what about phonons and other bosonic modes?**
 
 FockMap gives you one small, consistent API for the complete quantum simulation pipeline:
-- **Encode** fermionic or bosonic operators as Pauli strings (5 fermionic + 3 bosonic encodings)
+- **Encode** fermionic or bosonic operators as Pauli strings (6 fermionic + 3 bosonic encodings)
 - **Taper** qubits via Z₂ symmetry detection and Clifford rotation (diagonal + general)
 - **Trotterize** a Pauli Hamiltonian into gate sequences (first and second order)
 - **Export** circuits as OpenQASM 3.0, Q#, or JSON for any quantum platform
@@ -108,21 +108,38 @@ Everything is pre-configured, so you can start coding immediately.
 ```fsharp
 open System.Numerics
 open Encodings
+open Encodings.Hamiltonian    // computeHamiltonianWith
+open Encodings.JordanWigner   // jordanWignerTerms
+open Encodings.Tapering       // taper, defaultTaperingOptions
+open Encodings.Trotterization // firstOrderTrotter, decomposeTrotterStep
+open Encodings.CircuitOutput  // toOpenQasm/toQSharp/toCircuitJson + default options
 
 // 1. Define molecular integrals (H₂ in STO-3G)
+//    One-body key "p,q" → h_pq; two-body key "p,q,r,s" → the RAW single-bar
+//    physicist integral ⟨pq|rs⟩ (0.9.0+ contract; the library applies the
+//    two-body ½ and the r↔s order). See docs/guides/migration-0.9.md if you
+//    are upgrading pre-adapted "weighted" factories from ≤ 0.8.0.
 let integrals = Map [
     ("0,0", Complex(-1.2563, 0.0)); ("1,1", Complex(-1.2563, 0.0))
     ("2,2", Complex(-0.4719, 0.0)); ("3,3", Complex(-0.4719, 0.0))
-    // ... (two-body integrals)
+    // ... (two-body integrals: raw physicist ⟨pq|rs⟩)
 ]
 let factory key = integrals |> Map.tryFind key
 
-// 2. Encode → 15-term Pauli Hamiltonian
+// 2. Encode → Pauli Hamiltonian
+//    The four diagonal integrals shown yield a 5-term Hamiltonian
+//    (one identity + four single-Z terms). Adding the two-body
+//    integrals produces the full H₂ Hamiltonian.
 let ham = computeHamiltonianWith jordanWignerTerms factory 4u
 
 // 3. Taper → remove symmetry-redundant qubits
 let tapered = taper defaultTaperingOptions ham
-// 4 → 2 qubits
+// Removes qubits fixed by Z₂ symmetries; how many depends on the encoding,
+// method, and sector. (This purely diagonal 5-term example tapers all four
+// qubits. The full H₂ Hamiltonian has three Z₂ symmetries, so the default
+// JW + FullClifford settings shown here taper 4 → 1; the widely-cited
+// "H₂ → 2 qubits" figure is Bravyi–Kitaev + DiagonalOnly, which removes the
+// two single-qubit-Z symmetries on qubits 1 and 3.)
 
 // 4. Trotterize → gate sequence
 let step = firstOrderTrotter 0.1 tapered.Hamiltonian
@@ -130,18 +147,34 @@ let gates = decomposeTrotterStep step
 
 // 5. Export → OpenQASM 3.0
 let qasm = toOpenQasm defaultOpenQasmOptions tapered.TaperedQubitCount gates
-// Ready to run on IBM Quantum, IonQ, Rigetti, Amazon Braket
+// Emits standard OpenQASM 3.0 text. Submit it to a platform (e.g. IBM Quantum,
+// IonQ, Rigetti, Amazon Braket) through that vendor's own SDK/transpiler —
+// FockMap generates the circuit description, it does not talk to hardware.
 
 // Also available: Q# and JSON export
 let qs   = toQSharp defaultQSharpOptions tapered.TaperedQubitCount gates
 let json = toCircuitJson tapered.TaperedQubitCount Map.empty gates
 ```
 
+### Qubit and index conventions
+
+- **Pauli strings are index-0-leftmost.** In a `PauliRegister` string, character
+  position *i* is mode/qubit *i*, so qubit 0 is the **leftmost** character:
+  `"XZI"` = X₀ ⊗ Z₁ ⊗ I₂, and Jordan–Wigner gives `a†₁` (n = 2) = `0.5 ZX − 0.5i ZY`.
+- **Occupation integers are mode-*j*-weight-2ʲ** (mode 0 = least-significant bit),
+  so the H₂ Hartree–Fock state with modes 0 and 1 occupied is the integer 3 = `0b0011`.
+- **To convert** a FockMap Pauli label to a Qiskit-style Pauli-label string, or to
+  read a string in the occupation basis (mode *j* → bit 2ʲ), **reverse the character
+  string**: FockMap `"ZXII"` (Z₀X₁I₂I₃) ≡ Qiskit-style label `"IIXZ"`. Qiskit-style
+  Pauli labels put q0 rightmost, which is why the reversal is needed. OpenQASM gates
+  use explicit indexed operands, so map qubit *i* to `q[i]` rather than relying on a
+  string-order convention.
+
 ## Where to Start
 
 - **The Book:** [*From Molecules to Quantum Circuits*](https://johnazariah.github.io/encodings-book) — 23 chapters, from molecular integrals to quantum circuits
 - **Interactive Labs:** [10 F# scripts](https://github.com/johnazariah/encodings-book/tree/main/labs) — run with `dotnet fsi`
-- **API Cookbook:** [15-chapter tutorial](https://johnazariah.github.io/encodings/guides/cookbook/) — every type and function
+- **API Cookbook:** [18-chapter tutorial](https://johnazariah.github.io/encodings/guides/cookbook/) — every type and function
 - **Architecture:** [How the library works](https://johnazariah.github.io/encodings/guides/architecture.html)
 - **API Reference:** [All types and functions](https://johnazariah.github.io/encodings/reference/index.html)
 

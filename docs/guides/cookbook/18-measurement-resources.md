@@ -9,7 +9,33 @@ _Measurement grouping, shot estimates, QPE resources, and efficient PES scans._
 For VQE, Pauli terms that qubit-wise commute can be measured simultaneously:
 
 ```fsharp
+open System.Numerics
 open Encodings
+open Encodings.Fcidump
+open Encodings.VariationalCircuits
+open Encodings.Hamiltonian
+open Encodings.JordanWigner
+open Encodings.TreeEncoding
+open Encodings.Tapering
+
+// Setup carried over from earlier chapters: a tapered H₂ Hamiltonian.
+let hamiltonian =
+    let fcidump = """
+ &FCI NORB=   2,NELEC= 2,MS2=0,
+  ORBSYM=1,1,
+  ISYM=1,
+ &END
+ 0.6747559268144484    1    1    1    1
+ 0.6637114013508132    1    1    2    2
+ 0.1812104620151968    2    1    2    1
+ 0.6637114013508132    2    2    1    1
+ 0.697651504490461     2    2    2    2
+ -1.253309786645977    1    1  0  0
+ -0.4750688487721783   2    2  0  0
+ 0.7151043390810812  0  0  0  0
+"""
+    let (factory, _core, _nso) = parseToSpinOrbitalFactory fcidump
+    computeHamiltonianWith jordanWignerTerms factory 4u
 
 let program = groupCommutingTerms hamiltonian
 printfn "Total terms: %d" program.TotalTerms
@@ -55,6 +81,11 @@ When scanning a potential energy surface (e.g., bond lengths or angles), the Pau
 // Precompute the structure once (expensive)
 let skeleton = computeHamiltonianSkeleton ternaryTreeTerms 14u
 
+// In a real scan, integralsAtAngle recomputes the integrals for each geometry.
+// Here is a stand-in that returns a coefficient factory for a given angle:
+let integralsAtAngle (_angle : float) : string -> Complex option =
+    fun key -> if key = "0,0" then Some (Complex(-1.0, 0.0)) else None
+
 // Apply coefficients at each geometry (cheap)
 for angle in [| 60.0 .. 5.0 .. 180.0 |] do
     let factory = integralsAtAngle angle
@@ -70,10 +101,14 @@ For a 25-point scan, this is 25× faster than calling `computeHamiltonianWith` a
 If you already have integrals for one geometry:
 
 ```fsharp
-let skeleton = computeHamiltonianSkeletonFor encoder factory numQubits
-// skeleton.OneBody : SkeletonEntry[]
-// skeleton.TwoBody : SkeletonEntry[]
-// skeleton.NumQubits : uint32
+let encoder = ternaryTreeTerms
+let oneGeometryFactory (key : string) =
+    if key = "0,0" then Some (Complex(-1.0, 0.0)) else None
+let numQubits = 4u
+let skeletonPreFiltered = computeHamiltonianSkeletonFor encoder oneGeometryFactory numQubits
+// skeletonPreFiltered.OneBody : SkeletonEntry[]
+// skeletonPreFiltered.TwoBody : SkeletonEntry[]
+// skeletonPreFiltered.NumQubits : uint32
 ```
 
 ## Key Types

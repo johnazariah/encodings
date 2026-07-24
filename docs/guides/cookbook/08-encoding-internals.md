@@ -20,10 +20,14 @@ Different choices of these three functions yield different encodings.
 ## The EncodingScheme record
 
 ```fsharp
-type EncodingScheme =
-    { Update     : int -> int -> Set<int>    // U(j, n)
-      Parity     : int -> Set<int>           // P(j)
-      Occupation : int -> Set<int> }         // Occ(j)
+open System.Numerics
+open Encodings
+open Encodings.MajoranaEncoding
+// EncodingScheme (defined in Encodings.MajoranaEncoding) has three index-set fields:
+//   type EncodingScheme =
+//       { Update     : int -> int -> Set<int>    // U(j, n)
+//         Parity     : int -> Set<int>           // P(j)
+//         Occupation : int -> Set<int> }         // Occ(j)
 ```
 
 FockMap provides three built-in schemes:

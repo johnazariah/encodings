@@ -1,8 +1,8 @@
 # Test Register
 
-> **557 tests** | 0 skipped | xUnit + FsCheck (property-based)
+> **900 tests** (897 at base `8e562175` + 3 Optimization convention regressions) | 0 skipped | xUnit + FsCheck (property-based)
 >
-> Last verified: 2026-03-07 against current `main`
+> Last verified: 2026-07-23 against `johnazariah-raw-hamiltonian-api` (0.9.0 raw-physicist contract)
 
 > **Purpose:** Plain-English catalogue of every automated test in FockMap test suite.
 > The LLM coding agent is responsible for keeping this register in sync
@@ -81,9 +81,9 @@ Multi-qubit Pauli strings and their arithmetic.
 | # | What is tested | Style |
 |---|----------------|-------|
 | 1 | Default register of size n is all-identity ("IIII") | Fact |
-| 2 | Register uses big-endian bit ordering | Fact |
+| 2 | Register position 0 is the leftmost character (mode/qubit 0 = leftmost) | Fact |
 | 3 | `FromString` creates a round-trippable register | Theory (8 strings) |
-| 4 | `FromString` creates a big-endian register (X at expected index) | Theory (4 cases) |
+| 4 | `FromString` maps string position i to mode i (position 0 leftmost) | Theory (4 cases) |
 | 5 | Two registers multiply correctly (phase + Pauli string) | Theory (9 product cases) |
 | 6 | Out-of-range indexing returns `None` | Fact |
 | 7 | `WithOperatorAt` ignores out-of-range indices silently | Fact |
@@ -441,13 +441,18 @@ Balanced binary, ternary, and Vlasov tree encodings, plus cross-encoding validat
 
 ---
 
-## 10. Hamiltonian Construction — `Hamiltonian.fs` (3 tests)
+## 10. Hamiltonian Construction — `Hamiltonian.fs` (25 test methods, 42 cases)
 
 | # | What is tested | Style |
 |---|----------------|-------|
-| 1 | `computeHamiltonian` produces correct JW Pauli string for n = 2 and n = 4 with unit coefficients | Theory (2 sizes) |
+| 1 | `computeHamiltonianFromWeighted` produces the correct JW Pauli string for n = 2 and n = 4 with unit **weighted** coefficients (absolute output pinned under the legacy weighted contract) | Theory (2 sizes) |
 | 2 | `computeHamiltonianWith` using JW matches `computeHamiltonian` for n = 2 | Fact |
 | 3 | Missing coefficients (factory returns None) produce empty Pauli sequence | Fact |
+| 4 | Coefficient factory is never queried with an out-of-range mode index (loop bounds are `0..n-1`, not `0..n`) — sequential path | Fact |
+| 5 | Same out-of-range guarantee for the parallel construction path (`computeHamiltonianWithParallel`) | Fact |
+| 6 | All five legacy weighted builders (`…FromWeightedWith` seq/parallel/cached + full/sparse `applyCoefficientsFromWeighted`) agree on a two-body weighted factory | Theory (4 sizes) |
+| 7 | `weightedToRawFactory` round-trips a weighted factory through the raw builder to match `computeHamiltonianFromWeightedWith` exactly | Theory (2 sizes) |
+| 8 | `antisymmetrizedToRawFactory` (¼ double-bar convention) reproduces the raw single-bar path (fermionic anticommutation) | Fact |
 
 ---
 
@@ -552,6 +557,171 @@ Gray Code. Reference: Sawaya et al., arXiv:1909.05820.
 
 ---
 
+## 13. Qubit Tapering — Clifford Conjugation — `TaperingClifford.fs` (25 tests)
+
+Rigorous coverage of the Clifford rotation used by general (`FullClifford`)
+tapering, and of the H₂/STO-3G tapering sectors. The exact-conjugation phase
+rule for CNOT (`applyClifford`) is verified against dense unitary matrices, so
+these tests fail under the pre-fix rule that wrongly flipped XY→−YZ and YZ→−XY.
+
+| # | What is tested | Style |
+|---|----------------|-------|
+| 1 | All 16 two-qubit Pauli conjugations under CNOT(0,1) produce the exact output letters and ±1 phase (e.g. XZ→−YY, YY→−XZ; all others +1) | Theory (16 cases) |
+| 2 | Regression: XY conjugates to **+**YZ (not −YZ) | Fact |
+| 3 | Regression: YZ conjugates to **+**XY (not −XY) | Fact |
+| 4 | `applyClifford gates H` equals the dense-matrix conjugation `U·H·U†` to machine precision (mixed H, S, CNOT sequence with XY/YZ terms) | Fact |
+| 5 | `applyClifford` preserves the full eigenvalue multiset | Fact |
+| 6 | H₂/STO-3G electronic ground state is −1.852388 Ha (dense spectrum of the JW Hamiltonian) | Fact |
+| 7 | `FullClifford` Clifford rotation preserves the full 16-eigenvalue spectrum of H₂ | Fact |
+| 8 | H₂ ground-state sector (−1,−1,+1) tapers to 1 qubit and preserves −1.852388 Ha | Fact |
+| 9 | H₂ default (+1) sector tapered eigenvalues are all genuine eigenvalues of the true spectrum (no spurious values) | Fact |
+| 10 | Union of all 8 H₂ tapering sectors reproduces the full spectrum exactly | Fact |
+
+**Trotter Hermitian enforcement — `Trotter.fs` (3 tests):** first- and
+second-order Trotterization reject a term with a non-negligible imaginary
+(non-Hermitian) coefficient (`ArgumentException`), while tolerating benign
+sub-1e-9 floating-point noise in an otherwise real coefficient.
+
+---
+
+## 14. Index/Label Ordering (state-resolved) — `Ordering.fs` (10 tests)
+
+Locks in the two ordering conventions and how they relate. `PauliRegister`
+strings put mode/qubit 0 as the **leftmost** character; occupation integers
+weight mode j by 2ʲ (mode 0 = least-significant bit), so the H₂ Hartree–Fock
+state (modes 0,1 occupied) is the integer 3 = 0b0011. Reading a FockMap string
+in the occupation basis (mode j → bit 2ʲ) requires reversing the string — the
+same reversal that converts to a Qiskit-style Pauli-label string. (OpenQASM has
+no Pauli-label string convention; it indexes qubits explicitly.) Spectrum-only
+checks cannot detect a bit reversal, so these tests are state-resolved.
+
+| # | What is tested | Style |
+|---|----------------|-------|
+| 1 | JW a†₂ (n=4) is exactly ½·ZZXI − (i/2)·ZZYI — Z-string on modes 0,1, mode 0 leftmost | Fact |
+| 2 | JW number operator nⱼ = ½(I − Zⱼ) has its Z at string position j (mode 0 leftmost) | Theory (4) |
+| 3 | nⱼ reads mode j as bit 2ʲ across the entire occupation basis (all k, n=2..4) | Theory (3) |
+| 4 | H₂ Hartree–Fock state = occupation integer 3 (modes 0,1 occupied); total number operator gives N=2 | Fact |
+| 5 | Bit reversal preserves the spectrum but flips the occupation reading (why spectrum tests are insufficient) | Fact |
+
+Related: `PauliRegister.fs` tests confirm position 0 is the leftmost character
+(`WithOperatorAt 0 X` → "XIII"; string position i maps to mode i).
+
+---
+
+## 15. Hamiltonian Coefficients (state/convention) — `HamiltonianCoefficients.fs` (28 tests)
+
+Signature-only tests pass even when the integral/factory convention is wrong (all
+encodings share the same coefficient error). These pin exact Pauli coefficients and
+cross-check against a first-principles dense fermionic matrix built by an independent
+raw second-quantized oracle, locking the **0.9.0 raw-physicist contract** and the
+**legacy weighted migration API**:
+
+- **Raw primary contract** (0.9.0+): `computeHamiltonian` / `computeHamiltonianWith`
+  and the `Fcidump` adapters consume a raw single-bar physicist tensor `⟨pq|rs⟩` for
+  key `"p,q,r,s"`. The library applies the two-body ½ and the r↔s annihilator order
+  internally (`½·⟨pq|rs⟩·a†_p a†_q a_s a_r`).
+- **Legacy weighted contract**: `computeHamiltonianFromWeightedWith` applies the value
+  verbatim to `a†_i a†_j a_k a_l` (FULL WEIGHTED prefactor, two-body ½ pre-folded).
+  `weightedToRawFactory` bridges weighted data to the raw builders.
+
+Assembly is **cancellation-aware**: it removes only exact zeros and roundoff residues
+from cancelling contributions, while preserving standalone tiny coefficients.
+
+| # | What is tested | Style |
+|---|----------------|-------|
+| 1 | One-body coefficient applied verbatim (convention-invariant): factory("0,0")=h → ½h·I − ½h·Z | Fact |
+| 2 | Two-body (legacy weighted): factory value applied verbatim to `a†_i a†_j a_k a_l` (key "0,1,0,1") | Fact |
+| 3 | Two-body (legacy weighted): the caller's `a_k a_l` annihilator order is kept (no swap) | Fact |
+| 4 | Two-body (raw primary): the internal ½ and r↔s swap are applied (key "0,1,0,1" → ⅛(II−IZ−ZI+ZZ); ≡ weighted key (0,1,1,0)=½) | Fact |
+| 5 | H₂/STO-3G JW Hamiltonian (FCIDUMP raw) has exact IIII (−0.8121706072) and four-body (±0.0453026155) coefficients; exactly 15 stored terms | Fact |
+| 6 | Raw factory has 4 one-body + 32 raw two-body nonzero entries (interleaved 0α,0β,1α,1β) | Fact |
+| 7 | Raw primary produces all 15 canonical coefficient entries (IIII, four-body, 1-norm 2.6992778241) | Fact |
+| 8 | Legacy weighted (pre-adapted), raw primary, and FCIDUMP (raw) all produce the same coefficient map | Fact |
+| 9 | JW dense matrix matches the direct raw fermionic oracle **entrywise** (occupation basis) | Fact |
+| 10 | Raw oracle acceptance: HF diag[3] = −1.8318636465, particle-number sectors block-diagonal, ground −1.8523881736, Tr/16 = IIII | Fact |
+| 11 | Encoded H₂ spectrum equals the direct fermionic matrix; ground −1.8523881736 | Fact |
+| 12 | FCIDUMP (raw) independently matches the coefficient and raw dense oracles | Fact |
+| 13 | Pre-adapted (½-folded) weighted data fed to the raw primary double-adapts — migration hazard | Fact |
+| 14 | Raw data fed straight to the legacy weighted API is a caller error | Fact |
+| 15 | All five raw builders (sequential, parallel, cached, full/sparse skeleton) agree on H₂ | Fact |
+| 16 | All five legacy weighted builders agree on H₂ **and** match the raw path | Fact |
+| 17 | Canonical H₂ metrics: 15 terms, total Pauli weight 32, 15 first-order rotations, 36 CNOTs | Fact |
+| 18 | H₂ stores no numerical-zero terms (the 8 float-noise zeros are dropped; 15 not 23) | Fact |
+| 19 | Exact cancellation of two contributions drops the term (II from n₀+n₁ cancels; ZI/IZ survive) | Fact |
+| 20 | Floating cancellation residue (~eps·scale) is dropped, but nearby real ZI/IZ survive | Fact |
+| 21 | A legitimate small residue (1e-9) from two contributions is NOT dropped | Fact |
+| 22 | Standalone tiny coefficients (1e-12, 1e-13, 1e-15) survive on every builder path | Fact |
+| 23 | Standalone tiny coefficients survive through the JW aliases (`computeHamiltonian`/`computeHamiltonianParallel`) | Fact |
+| 24 | Standalone tiny **two-body** coefficient (2e-13, legacy weighted) survives as four ±5e-14 JW terms | Fact |
+| 25 | Standalone tiny **two-body** coefficient (2e-13, raw primary) survives as four ±2.5e-14 JW terms | Fact |
+| 26 | Standalone tiny coefficient survives through the raw primary entry points (both `…With` and JW alias) | Fact |
+| 27 | H₂ spectrum agrees across **all six** encodings (JW, BK, Parity, binary/ternary/Vlasov trees); tree Y–Y terms make the dense matrix complex-Hermitian, so the spectrum is taken via the 2n real embedding — a `.Real` truncation would corrupt it | Fact |
+| 28 | H₂ assembly is wrong (spectrum differs) if the library's ½ or annihilator order is corrupted — each defect proven independently against the raw oracle | Fact |
+
+---
+
+## 15a. Hamiltonian Fixture Lock (audited artifact + oracle) — `HamiltonianFixtureLock.fs` (12 tests)
+
+An independent, authoritative acceptance lock. The integrals are the **byte-for-byte
+vendored** audited research artifact, pinned to its **immutable source object** (commit
++ git blob, not a mutable branch):
+
+- repo `johnazariah/encodings-research`
+- commit `1e000bbc9664b8e5cfef48608d07364279c0a54f`
+- path `papers/results/h2_sto3g/physicist_spin_integrals.json`
+- git blob SHA-1 `e0477e70c0dfd35b865000bb23b7b31882b062d3`
+- file SHA-256 `6539afb30a1c03ec89202a2960a06c6580a91afaebf13a6cadbcfd32c2d71812`
+
+copied verbatim into `fixtures/physicist_spin_integrals.json`, with a sidecar
+`fixtures/physicist_spin_integrals.provenance.json` recording all four identifiers.
+The test recomputes both the git blob SHA-1 and the file SHA-256 over the vendored
+bytes and asserts they equal the authoritative values — proving object-level identity,
+not a rounded reconstruction. Integral inputs are **not** regenerated in-test; only the
+direct 16×16 second-quantized oracle and the per-particle-number sector eigenvalues
+(which consume those frozen inputs) are computed here, asserted against literal frozen
+expected arrays.
+
+| # | What is tested | Style |
+|---|----------------|-------|
+| 1 | Vendored file SHA-256 == authoritative source hash `6539afb3…` | Fact |
+| 2 | Vendored file git blob SHA-1 == immutable source object id `e0477e70…` | Fact |
+| 3 | Sidecar provenance records all four immutable identifiers (repo/commit/path/blob/sha256), agreeing with the test constants **and** the recomputed hashes | Fact |
+| 4 | The fixture declares exactly 4 one-body + 32 raw two-body entries | Fact |
+| 5 | Representative fixture integral values match the canonical artifact **bit-for-bit** (e.g. h₀₀ = −1.2533097866459773, ⟨00\|00⟩ = 0.6747559268144484), not tolerance-only | Fact |
+| 6 | Raw primary reproduces the complete 15-entry coefficient map (no extra/missing terms; four-body ±0.045302615504) | Fact |
+| 7 | JW-encoded fixture Hamiltonian matches the direct 16×16 oracle **entrywise** (occupation basis, zero imaginary) | Fact |
+| 8 | The literal expected sector arrays are authored in ascending order (so the direct comparison needs no sorting of the expected side) | Fact |
+| 9 | Each particle-number sector matches its **literal frozen eigenvalue array compared DIRECTLY** (unsorted) to the ascending computed eigenvalues — dims 1/4/6/4/1, multiplicities and order asserted (N4 = 0.2080748418) | Fact |
+| 10 | The **whole 16×16 oracle**, diagonalised independently over all basis states (`eigenvaluesOf oracle [0..dim-1]`), equals the sorted union of the literal N0..N4 arrays entrywise; ground −1.8523881736, HF diagonal[3] −1.8318636465, and the degeneracy multiplicities (−1.2458776961 ×3, −1.1607201546 ×2) | Fact |
+| 11 | Metrics lock: 15 terms, weight 32, 15 rotations, 36 CNOTs, 1-norm 2.6992778241 | Fact |
+| 12 | Legacy weighted path on independently pre-adapted fixture data equals the raw primary path | Fact |
+
+Literal frozen sector eigenvalue arrays (ascending):
+- N=0 (dim 1): `[0.0]`
+- N=1 (dim 4): `[-1.2533097866459773, -1.2533097866459773, -0.4750688487721783, -0.4750688487721783]`
+- N=2 (dim 6): `[-1.8523881735695826, -1.2458776960825393 ×3, -0.8834567720521458, -0.2319616659618189]`
+- N=3 (dim 4): `[-1.1607201545632546, -1.1607201545632546, -0.3595836390134429, -0.3595836390134429]`
+- N=4 (dim 1): `[0.2080748418414580]`
+
+---
+
+## 15b. Optimization Routing Convention (state/convention) — `Optimization.fs` (3 convention regressions)
+
+The `Optimization` entry points build through the raw-physicist
+`computeHamiltonianWith` (0.9.0), so their `coefficientFactory` argument follows the
+**raw single-bar** contract. These regressions pin that routing on the *exposed*
+Optimization surface (not only the Hamiltonian builders), so a future re-wire to the
+weighted core — or a lost adapter — is caught here. (The file has 22 test methods in
+total; the 19 cost/candidate/strategy tests are covered by the framework suite.)
+
+| # | What is tested | Style |
+|---|----------------|-------|
+| 1 | Raw two-body factory maps exactly through `evaluate`: `raw("0,1,0,1")=1` → ⅛(II − IZ − ZI + ZZ), proving the internal ½ + r↔s swap are applied on the Optimization path | Fact |
+| 2 | `weightedToRawFactory` migrates a legacy weighted factory through `evaluate` to reproduce `computeHamiltonianFromWeightedWith` **exactly** (the supported migration path for Optimization, which has no weighted overload) | Fact |
+| 3 | Negative control: pre-adapted weighted data fed **directly** to `evaluate` (raw routing) double-adapts → a materially different map than the correct weighted build (no silent accidental equivalence) | Fact |
+
+---
+
 ## Coverage Summary by Area
 
 | Area | Tests | Technique | Confidence |
@@ -569,15 +739,18 @@ Gray Code. Reference: Sawaya et al., arXiv:1909.05820.
 | Bravyi-Kitaev encoding | 14 | Theory + cross-validation vs JW | **High** |
 | Parity encoding | 14 | Theory + index-set verification | **High** |
 | Tree-based encodings | 26 | Fact + Theory + anti-commutation + cross-encoding | **High** — includes CAR verification and weight bounds |
-| Hamiltonian construction | 3 | Theory + cross-validation | **Medium** — covers core path; could add BK/Parity Hamiltonians |
+| Hamiltonian construction | 25 methods / 42 cases | Theory + cross-validation + raw/weighted builder parity + adapter round-trips | **High** — raw primary + legacy weighted builders (seq/parallel/cached/skeleton) agree; `weightedToRawFactory` round-trip and `antisymmetrizedToRawFactory` verified |
 | Mixed systems (fermion + boson) | 5 | Fact-based | **Medium** — covers canonical paths; larger mixed expressions untested |
 | Bosonic-to-qubit encodings | 70 | Theory + Fact + cross-encoding | **High** — matrix construction, Pauli decomposition, weight bounds, multi-mode embedding, number-operator roundtrip |
+| Qubit tapering — Clifford conjugation | 25 | Exact letters/phases + dense-matrix spectra | **High** — all 16 CNOT conjugations, U·H·U† to machine precision, H₂ sector spectra |
+| Index/label ordering (state-resolved) | 10 | Occupation-basis diagonal reads + exact a†₂ string | **High** — number operators verified on the intended occupation basis; catches bit reversal that spectra miss |
+| Hamiltonian coefficients & factory contract | 40 | Exact coefficients + independent 16×16 raw oracle (per-sector **and** whole-matrix) + immutable-source-pinned audited artifact (commit+blob+sha256) + literal sector eigenvalue arrays + six-encoding spectra + tiny-survival | **High** — pins H₂/STO-3G coefficients, 0.9.0 **raw physicist** primary contract + named legacy weighted migration API + `weighted`/`antisymmetrized` adapters, ½+order defect proofs, migration-hazard mismatch proofs, cancellation-aware tiny survival, git-blob/SHA-256-locked vendored research fixture, direct-compared N=0..4 sector spectra + full-matrix union, trace/HF-diagonal/particle-sector anchors |
+| Optimization routing convention | 3 | Exact raw map + migration parity + negative control | **High** — pins the raw contract on the exposed Optimization surface: raw two-body exact map, `weightedToRawFactory` migration parity, direct-weighted misuse negative control |
 
 ### What is *not* tested
 
 - **Performance / scaling**: No benchmarks or regression tests for execution time.
 - **Large-n anti-commutation for BK and Parity**: Anti-commutation relations are verified for tree encodings but not for Bravyi-Kitaev or Parity at n > 2.
-- **Hamiltonian with real integrals**: The Hamiltonian builder is tested with unit coefficients only, not with physically meaningful H₂ integrals.
 - **Bosonic anti-commutation verification**: Bosonic encodings are tested for correct Pauli decomposition and weight bounds, but [b, b†] = I is not verified at the Pauli level for all encodings.
 - **Large-cutoff bosonic convergence**: Truncation encodings are tested up to d = 8; convergence behaviour at large d is not benchmarked.
 - **Error messages / diagnostics**: Invalid-input tests verify `None`/empty returns but do not check specific error text.

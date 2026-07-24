@@ -33,10 +33,14 @@
     <Compile Include="Parity.fs" />
     <Compile Include="TreeEncoding.fs" />
     <Compile Include="Tapering.fs" />
+    <Compile Include="TaperingClifford.fs" />
+    <Compile Include="Ordering.fs" />
     <Compile Include="Trotter.fs" />
     <Compile Include="CircuitOutput.fs" />
     <Compile Include="VariationalCircuits.fs" />
     <Compile Include="Hamiltonian.fs" />
+    <Compile Include="HamiltonianCoefficients.fs" />
+    <Compile Include="HamiltonianFixtureLock.fs" />
     <Compile Include="CostAnalysis.fs" />
     <Compile Include="Optimization.fs" />
     <Compile Include="Fcidump.fs" />
@@ -55,6 +59,15 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Encodings\Encodings.fsproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="fixtures\physicist_spin_integrals.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="fixtures\physicist_spin_integrals.provenance.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

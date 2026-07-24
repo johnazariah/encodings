@@ -20,7 +20,7 @@ open System.Numerics
 let identity = I
 let bitFlip  = X
 let combined = Y
-let phase    = Z
+let phaseFlip = Z
 ```
 
 Multiplying two Paulis always gives another Pauli **times a phase**.

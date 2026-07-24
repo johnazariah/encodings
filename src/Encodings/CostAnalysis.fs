@@ -58,7 +58,7 @@ module CostAnalysis =
     /// Compute comprehensive cost metrics for a Hamiltonian.
     /// </summary>
     /// <param name="hamiltonian">The Hamiltonian as a sum of Pauli strings.</param>
-    /// <returns>A <see cref="HamiltonianCosts"/> record with all metrics.</returns>
+    /// <returns>A <see cref="T:Encodings.CostAnalysis.HamiltonianCosts"/> record with all metrics.</returns>
     let hamiltonianCosts (hamiltonian : PauliRegisterSequence) : HamiltonianCosts =
         let terms = hamiltonian.DistributeCoefficient.SummandTerms
 
@@ -119,7 +119,7 @@ module CostAnalysis =
     /// Compute qubitization resource estimates for a Hamiltonian.
     /// </summary>
     /// <param name="hamiltonian">The Hamiltonian as a sum of Pauli strings.</param>
-    /// <returns>A <see cref="QubitizationCosts"/> record.</returns>
+    /// <returns>A <see cref="T:Encodings.CostAnalysis.QubitizationCosts"/> record.</returns>
     let qubitizationCosts (hamiltonian : PauliRegisterSequence) : QubitizationCosts =
         let terms = hamiltonian.DistributeCoefficient.SummandTerms
 

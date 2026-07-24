@@ -57,7 +57,7 @@ module Trotterization =
     /// <remarks>
     /// Universal gate set used in CNOT staircase decomposition.
     /// Requires qualified access to avoid ambiguity with
-    /// <see cref="CliffordGate"/> cases from the Tapering module.
+    /// <see cref="T:Encodings.Tapering.CliffordGate"/> cases from the Tapering module.
     /// </remarks>
     [<RequireQualifiedAccess>]
     type Gate =
@@ -103,9 +103,22 @@ module Trotterization =
         |> Array.filter (fun (_, p) -> p <> I)
 
     /// Build a PauliRotation from a Hamiltonian term and time step.
+    /// <remarks>
+    /// Trotterization assumes a Hermitian Hamiltonian, whose Pauli coefficients are
+    /// real. The rotation angle uses only the real part, so a term with a non-negligible
+    /// imaginary coefficient indicates a non-Hermitian Hamiltonian and is rejected rather
+    /// than silently truncated. The tolerance (1e-9) absorbs benign floating-point noise.
+    /// </remarks>
     let private termToRotation (dt : float) (term : PauliRegister) =
+        let coeff = term.Coefficient
+        if abs coeff.Imaginary > 1e-9 then
+            let opString = (term.ResetPhase Complex.One).ToString()
+            invalidArg "hamiltonian"
+                (sprintf
+                    "Trotterization requires a Hermitian Hamiltonian with real Pauli coefficients, but term %s has a non-negligible imaginary coefficient (%g%+gi). Ensure the Hamiltonian is Hermitian before decomposing."
+                    opString coeff.Real coeff.Imaginary)
         { Operator = term.ResetPhase Complex.One
-          Angle    = term.Coefficient.Real * dt }
+          Angle    = coeff.Real * dt }
 
     // ── Trotter Decomposition ───────────────────────────────────────
 
@@ -114,7 +127,16 @@ module Trotterization =
     /// </summary>
     /// <remarks>
     /// exp(−iHΔt) ≈ Πₖ exp(−icₖPₖΔt) where H = Σₖ cₖPₖ.
+    /// <para>
+    /// <b>Precondition: the Hamiltonian must be Hermitian</b>, i.e. every Pauli
+    /// coefficient must be real. The rotation angle uses only the real part, so a
+    /// term with a non-negligible imaginary coefficient (|Im| &gt; 1e-9) is rejected
+    /// rather than silently truncated. Benign floating-point noise is tolerated.
+    /// </para>
     /// </remarks>
+    /// <exception cref="T:System.ArgumentException">
+    /// Thrown when a term has a materially imaginary (non-Hermitian) coefficient.
+    /// </exception>
     let firstOrderTrotter (dt : float) (hamiltonian : PauliRegisterSequence) =
         let rotations =
             hamiltonian.DistributeCoefficient.SummandTerms
@@ -127,7 +149,15 @@ module Trotterization =
     /// <remarks>
     /// Forward pass at half-angle followed by reverse pass at half-angle.
     /// The resulting step is palindromic.
+    /// <para>
+    /// <b>Precondition: the Hamiltonian must be Hermitian</b> (real Pauli
+    /// coefficients); a term with |Im| &gt; 1e-9 is rejected (see
+    /// <c>firstOrderTrotter</c>).
+    /// </para>
     /// </remarks>
+    /// <exception cref="T:System.ArgumentException">
+    /// Thrown when a term has a materially imaginary (non-Hermitian) coefficient.
+    /// </exception>
     let secondOrderTrotter (dt : float) (hamiltonian : PauliRegisterSequence) =
         let terms = hamiltonian.DistributeCoefficient.SummandTerms
         let forward = terms |> Array.map (termToRotation (dt / 2.0))
@@ -136,7 +166,20 @@ module Trotterization =
           Order     = Second
           TimeStep  = dt }
 
-    /// <summary>Trotter decomposition dispatching on order.</summary>
+    /// <summary>
+    /// Trotter decomposition dispatching on order — returns the
+    /// <c>firstOrderTrotter</c> or <c>secondOrderTrotter</c> builder.
+    /// </summary>
+    /// <remarks>
+    /// <b>Precondition: the Hamiltonian must be Hermitian</b> (every Pauli coefficient
+    /// real). The returned builder rejects any term with a materially imaginary
+    /// coefficient (|Im| &gt; 1e-9) rather than silently truncating it; benign
+    /// floating-point noise is tolerated.
+    /// </remarks>
+    /// <exception cref="T:System.ArgumentException">
+    /// Thrown (by the returned builder) when a term has a materially imaginary
+    /// (non-Hermitian) coefficient.
+    /// </exception>
     let trotterize (order : TrotterOrder) =
         match order with
         | First  -> firstOrderTrotter
