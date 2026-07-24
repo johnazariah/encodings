@@ -23,9 +23,9 @@ module HamiltonianFixtureLock =
 
     // ── Authoritative source identity (audited research artifact) ───────
     // Immutable pin: research COMMIT + git BLOB (not a mutable branch).
-    // johnazariah/encodings-research @ 1e000bbc..., papers/results/h2_sto3g/
+    // johnazariah/encodings-research @ 66ebdfe2..., papers/results/h2_sto3g/
     let [<Literal>] SourceRepo   = "johnazariah/encodings-research"
-    let [<Literal>] SourceCommit = "1e000bbc9664b8e5cfef48608d07364279c0a54f"
+    let [<Literal>] SourceCommit = "66ebdfe255c0cc6ba25a6d1b76b58401aee3ab06"
     let [<Literal>] SourcePath   = "papers/results/h2_sto3g/physicist_spin_integrals.json"
     let [<Literal>] SourceBlob   = "e0477e70c0dfd35b865000bb23b7b31882b062d3"          // git blob SHA-1
     let [<Literal>] SourceSha256 = "6539afb30a1c03ec89202a2960a06c6580a91afaebf13a6cadbcfd32c2d71812"  // file SHA-256
@@ -107,7 +107,7 @@ module HamiltonianFixtureLock =
     [<Fact>]
     let ``vendored fixture git blob SHA-1 matches the immutable source object id`` () =
         // The git blob id is the immutable content-addressed object in the source
-        // repo at commit 1e000bbc…; recomputing it over the vendored bytes proves
+        // repo at commit 66ebdfe2…; recomputing it over the vendored bytes proves
         // object-level identity independent of the SHA-256.
         Assert.Equal(SourceBlob, gitBlobSha1 (fixtureBytes ()))
 

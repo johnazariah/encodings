@@ -63,7 +63,7 @@ All notable changes to FockMap will be documented in this file.
   `±0.0453`) are unchanged and remain enforced by the semantic doc harness.
 - Added an authoritative acceptance lock: the byte-for-byte vendored audited research
   artifact (`johnazariah/encodings-research` H₂/STO-3G physicist spin integrals),
-  pinned to its immutable source object — commit `1e000bbc…`, git blob `e0477e70…`,
+  pinned to its immutable source object — commit `66ebdfe2…`, git blob `e0477e70…`,
   file SHA-256 `6539afb3…` — with a sidecar provenance record, literal
   per-particle-number sector eigenvalue arrays, and a hardened
   `scripts/check-doc-samples.sh` that executes every README/cookbook snippet with
