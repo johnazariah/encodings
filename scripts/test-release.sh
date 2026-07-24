@@ -108,8 +108,73 @@ printf '%s\n' '<Project><PropertyGroup><Version>0.9.0</Version></PropertyGroup><
 assert_ok "valid single element accepted" rl_set_fsproj_version "$fsproj_single" 2.3.4
 assert_eq "2.3.4" "$(rl_extract_fsproj_version "$fsproj_single")" "valid single rewritten to 2.3.4"
 
+echo "── 3d. Atomic write: mode preservation, same-dir temp, cleanup ──"
+mode_of() { stat -f '%Lp' "$1" 2>/dev/null || stat -c '%a' "$1" 2>/dev/null; }
+count_temps() { # <dir> <base>
+    find "$1" -maxdepth 1 -name ".$2.tmp.*" 2>/dev/null | wc -l | tr -d '[:space:]'
+}
+
+# (a) Successful rewrite preserves the file's permission bits (default 0644).
+fp="$TMP/mode644.fsproj"; cp "$FSPROJ_FIXT" "$fp"; chmod 644 "$fp"
+assert_ok "rewrite (mode 644)" rl_set_fsproj_version "$fp" 1.1.1
+assert_eq "644" "$(mode_of "$fp")" "mode 0644 preserved across replacement"
+
+# (b) A non-default / more restrictive mode is preserved too.
+fp2="$TMP/mode600.fsproj"; cp "$FSPROJ_FIXT" "$fp2"; chmod 600 "$fp2"
+assert_ok "rewrite (mode 600)" rl_set_fsproj_version "$fp2" 1.2.0
+assert_eq "600" "$(mode_of "$fp2")" "mode 0600 preserved across replacement"
+
+# (c) An executable / nondefault mode is preserved.
+fp3="$TMP/mode755.fsproj"; cp "$FSPROJ_FIXT" "$fp3"; chmod 755 "$fp3"
+assert_ok "rewrite (mode 755)" rl_set_fsproj_version "$fp3" 1.3.0
+assert_eq "755" "$(mode_of "$fp3")" "mode 0755 preserved across replacement"
+
+# (d) The temp file is created in the SAME DIRECTORY as the target (same device →
+#     atomic rename). Capture the source path handed to mv.
+fp4="$TMP/samedir.fsproj"; cp "$FSPROJ_FIXT" "$fp4"
+: > "$TMP/mv_srcs"
+mv() { printf '%s\n' "$1" >> "$TMP/mv_srcs"; command mv "$@"; }
+assert_ok "rewrite (capture mv)" rl_set_fsproj_version "$fp4" 1.4.0
+unset -f mv
+mv_src="$(tail -n1 "$TMP/mv_srcs")"
+assert_eq "$(cd "$(dirname "$fp4")" && pwd)" "$(cd "$(dirname "$mv_src")" && pwd)" "temp created in the target's directory"
+assert_eq "0" "$(count_temps "$TMP" "samedir.fsproj")" "no temp left after success"
+
+# (e) Induced final-move failure: original bytes AND mode unchanged, no temp left.
+fp5="$TMP/movefail.fsproj"; cp "$FSPROJ_FIXT" "$fp5"; chmod 640 "$fp5"
+before_sha="$(shasum "$fp5" | awk '{print $1}')"; before_mode="$(mode_of "$fp5")"
+mv() { return 1; }   # force the atomic move to fail
+if rl_set_fsproj_version "$fp5" 9.9.9 >/dev/null 2>&1; then bad "induced move failure: unexpectedly succeeded"; else ok "induced move failure returns non-zero"; fi
+unset -f mv
+assert_eq "$before_sha"  "$(shasum "$fp5" | awk '{print $1}')" "original bytes unchanged after move failure"
+assert_eq "$before_mode" "$(mode_of "$fp5")"                   "original mode unchanged after move failure"
+assert_eq "0" "$(count_temps "$TMP" "movefail.fsproj")"        "no temp left after move failure"
+
+# (f) Rejected malformed/duplicate inputs leave no temp behind either.
+fpm="$TMP/malf.fsproj"; printf '%s\n' '<Version>0.9.0' > "$fpm"
+rl_set_fsproj_version "$fpm" 9.9.9 >/dev/null 2>&1 || true
+assert_eq "0" "$(count_temps "$TMP" "malf.fsproj")" "malformed rejection leaves no temp"
+fpd="$TMP/dupe.fsproj"; printf '%s\n%s\n' '<Version>0.9.0</Version>' '<Version>0.8.0</Version>' > "$fpd"
+rl_set_fsproj_version "$fpd" 9.9.9 >/dev/null 2>&1 || true
+assert_eq "0" "$(count_temps "$TMP" "dupe.fsproj")" "duplicate rejection leaves no temp"
+
+# (g) CFF and CHANGELOG mutators are atomic too: successful runs leave no temp, and
+#     preserve mode.
+cffm="$TMP/mode.cff"; cat > "$cffm" <<'YAML'
+cff-version: 1.2.0
+version: 0.9.0
+license: MIT
+YAML
+chmod 644 "$cffm"
+assert_ok "cff set (atomic)" rl_set_cff_version_and_date "$cffm" 0.9.0 2026-07-24
+assert_eq "644" "$(mode_of "$cffm")" "cff mode preserved"
+assert_eq "0" "$(count_temps "$TMP" "mode.cff")" "cff success leaves no temp"
+clm="$TMP/mode.CHANGELOG.md"; printf '# Changelog\n\n## [0.9.0] - Unreleased\n- x\n' > "$clm"; chmod 644 "$clm"
+assert_ok "changelog finalize (atomic)" rl_finalize_changelog "$clm" 0.9.0 2026-07-24
+assert_eq "644" "$(mode_of "$clm")" "changelog mode preserved"
+assert_eq "0" "$(count_temps "$TMP" "mode.CHANGELOG.md")" "changelog success leaves no temp"
+
 echo "── 4. CITATION.cff date add-or-replace ──"
-# 4a: date ABSENT → inserted adjacent to version, exactly once, correct value.
 cff_absent="$TMP/absent.cff"
 cat > "$cff_absent" <<'YAML'
 cff-version: 1.2.0

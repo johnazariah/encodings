@@ -10,9 +10,18 @@
 #   rl_extract_fsproj_version <fsproj>              -> echoes <Version> text
 #   rl_version_gt <a> <b>                           -> exit 0 iff a > b (semver core)
 #   rl_compute_next_version <current> <mode>        -> echoes next version
-#   rl_set_fsproj_version <fsproj> <new>            -> rewrite <Version> (portable)
-#   rl_set_cff_version_and_date <cff> <ver> <date>  -> add-or-replace version + date
-#   rl_finalize_changelog <changelog> <ver> <date>  -> Unreleased -> date (idempotent)
+#   rl_set_fsproj_version <fsproj> <new>            -> rewrite <Version> (atomic)
+#   rl_set_cff_version_and_date <cff> <ver> <date>  -> add-or-replace version + date (atomic)
+#   rl_finalize_changelog <changelog> <ver> <date>  -> Unreleased -> date (atomic, idempotent)
+#
+# Atomic-write contract (all mutators): inputs are fully validated BEFORE any write;
+# the new content is built in a temp file created in the SAME DIRECTORY as the target
+# (so the final rename is a same-filesystem atomic mv); the target's permission bits
+# are preserved; the temp file is removed on EVERY failure path (write, validation,
+# chmod, or move); and the target is left byte-for-byte unchanged whenever the call
+# fails. Ownership: the temp is created by the invoking user, so ownership is preserved
+# for the normal same-user case; changing to a different original owner would require
+# root and is out of scope (no chown is attempted).
 #
 # All functions return non-zero and print to stderr on error.
 # ─────────────────────────────────────────────────────────────────────────────
@@ -67,6 +76,41 @@ rl_compute_next_version() {
     esac
 }
 
+# ── Shared atomic-write primitives ──────────────────────────────────────────────
+
+# Count occurrences of an ERE ($1) in file ($2). Robust under `set -e`/`pipefail`:
+# always returns 0 and prints the count (0 when there are no matches).
+_rl_count() {
+    grep -oE "$1" "$2" 2>/dev/null | wc -l | tr -d '[:space:]'
+    return 0
+}
+
+# Echo the permission bits of a file in octal (e.g. 644), portable across
+# BSD/macOS (`stat -f '%Lp'`) and GNU/Linux (`stat -c '%a'`).
+_rl_get_mode() {
+    stat -f '%Lp' "$1" 2>/dev/null || stat -c '%a' "$1" 2>/dev/null
+}
+
+# Create a temp file in the SAME DIRECTORY as the target, so a subsequent `mv` is a
+# same-filesystem atomic rename. Echoes the temp path.
+_rl_mktemp_beside() {
+    local target="$1" dir base
+    dir=$(dirname "$target")
+    base=$(basename "$target")
+    mktemp "${dir}/.${base}.tmp.XXXXXX"
+}
+
+# Finalize: copy the target's mode onto the temp, then atomically move temp -> target.
+# On ANY failure the temp is removed and the target is left untouched (non-zero return).
+_rl_finalize_move() {
+    local target="$1" tmp="$2" mode
+    mode=$(_rl_get_mode "$target") || { rm -f "$tmp"; return 1; }
+    if [[ -n "$mode" ]]; then
+        chmod "$mode" "$tmp" || { rm -f "$tmp"; return 1; }
+    fi
+    mv "$tmp" "$target" || { rm -f "$tmp"; return 1; }
+}
+
 # Set the <Version> element of an fsproj to a new value.
 #
 # Strict + atomic:
@@ -87,11 +131,12 @@ rl_set_fsproj_version() {
         return 1
     fi
 
-    # Count open tags, close tags, and well-formed single-line pairs across the file.
+    # Count open tags, close tags, and well-formed single-line pairs across the file
+    # (robust under set -e/pipefail — see _rl_count).
     local opens closes pairs
-    opens=$(grep -o '<Version>'  "$fsproj" | wc -l | tr -d '[:space:]')
-    closes=$(grep -o '</Version>' "$fsproj" | wc -l | tr -d '[:space:]')
-    pairs=$(grep -oE '<Version>[^<]*</Version>' "$fsproj" | wc -l | tr -d '[:space:]')
+    opens=$(_rl_count '<Version>'  "$fsproj")
+    closes=$(_rl_count '</Version>' "$fsproj")
+    pairs=$(_rl_count '<Version>[^<]*</Version>' "$fsproj")
 
     if [[ "$opens" -eq 0 && "$closes" -eq 0 ]]; then
         echo "rl_set_fsproj_version: no <Version> element in $fsproj (unchanged)" >&2
@@ -108,12 +153,20 @@ rl_set_fsproj_version() {
     oldtag="<Version>${oldver}</Version>"
     newtag="<Version>${newver}</Version>"
 
+    # Stage the new content in a temp file BESIDE the target (same filesystem).
+    local tmp; tmp=$(_rl_mktemp_beside "$fsproj") || {
+        echo "rl_set_fsproj_version: could not create temp beside $fsproj (unchanged)" >&2
+        return 1
+    }
     # Literal single-occurrence replacement (index/substr — no regex metacharacters).
-    local tmp; tmp=$(mktemp)
-    awk -v old="$oldtag" -v new="$newtag" '
+    if ! awk -v old="$oldtag" -v new="$newtag" '
         !done { i = index($0, old); if (i > 0) { $0 = substr($0, 1, i-1) new substr($0, i+length(old)); done = 1 } }
         { print }
-    ' "$fsproj" > "$tmp"
+    ' "$fsproj" > "$tmp"; then
+        rm -f "$tmp"
+        echo "rl_set_fsproj_version: failed to write staged content (unchanged)" >&2
+        return 1
+    fi
 
     # Post-validate the staged content BEFORE swapping it into place, so a bad write
     # never replaces the good original.
@@ -125,7 +178,11 @@ rl_set_fsproj_version() {
         return 1
     fi
 
-    mv "$tmp" "$fsproj"
+    # Preserve mode, then atomic same-filesystem move (temp removed on any failure).
+    _rl_finalize_move "$fsproj" "$tmp" || {
+        echo "rl_set_fsproj_version: atomic replace failed (file unchanged)" >&2
+        return 1
+    }
 }
 
 # Set CITATION.cff `version:` and `date-released:`.
@@ -160,39 +217,46 @@ rl_set_cff_version_and_date() {
         return 1
     fi
 
-    local tmp; tmp=$(mktemp)
+    # Stage into a temp file BESIDE the target (same filesystem).
+    local tmp; tmp=$(_rl_mktemp_beside "$cff") || {
+        echo "rl_set_cff_version_and_date: could not create temp beside $cff (unchanged)" >&2
+        return 1
+    }
     # Replace version (and date-released if present) in a single pass.
-    awk -v ver="$version" -v dt="$date" '
+    if ! awk -v ver="$version" -v dt="$date" '
         /^version:/       { print "version: " ver; next }
         /^date-released:/ { print "date-released: " dt; next }
         { print }
-    ' "$cff" > "$tmp"
-
-    # When date-released was absent, insert it adjacent to version:.
-    if [[ "$dcount" -eq 0 ]]; then
-        local tmp2; tmp2=$(mktemp)
-        awk -v dt="$date" '
-            /^version:/ { print; print "date-released: " dt; next }
-            { print }
-        ' "$tmp" > "$tmp2"
-        mv "$tmp2" "$tmp"
+    ' "$cff" > "$tmp"; then
+        rm -f "$tmp"; echo "rl_set_cff_version_and_date: staged write failed (unchanged)" >&2; return 1
     fi
 
-    mv "$tmp" "$cff"
+    # When date-released was absent, insert it adjacent to version: (second staged pass).
+    if [[ "$dcount" -eq 0 ]]; then
+        local tmp2; tmp2=$(_rl_mktemp_beside "$cff") || { rm -f "$tmp"; echo "rl_set_cff_version_and_date: temp2 failed (unchanged)" >&2; return 1; }
+        if ! awk -v dt="$date" '
+            /^version:/ { print; print "date-released: " dt; next }
+            { print }
+        ' "$tmp" > "$tmp2"; then
+            rm -f "$tmp" "$tmp2"; echo "rl_set_cff_version_and_date: staged insert failed (unchanged)" >&2; return 1
+        fi
+        rm -f "$tmp"; tmp="$tmp2"
+    fi
 
-    # Post-validate exact counts and values (exact string match, not regex).
+    # Post-validate the STAGED temp (exact string match), BEFORE swapping it in.
     local nv nd totd
-    nv=$(awk -v v="version: $version" '$0==v{c++} END{print c+0}' "$cff")
-    nd=$(awk -v d="date-released: $date" '$0==d{c++} END{print c+0}' "$cff")
-    totd=$(awk '/^date-released:/{c++} END{print c+0}' "$cff")
+    nv=$(awk -v v="version: $version" '$0==v{c++} END{print c+0}' "$tmp")
+    nd=$(awk -v d="date-released: $date" '$0==d{c++} END{print c+0}' "$tmp")
+    totd=$(awk '/^date-released:/{c++} END{print c+0}' "$tmp")
     if [[ "$nv" -ne 1 || "$nd" -ne 1 || "$totd" -ne 1 ]]; then
-        echo "rl_set_cff_version_and_date: post-validation failed (version=$nv date=$nd total-date=$totd)" >&2
+        rm -f "$tmp"
+        echo "rl_set_cff_version_and_date: post-validation failed (version=$nv date=$nd total-date=$totd); file unchanged" >&2
         return 1
     fi
 
-    # Best-effort YAML parse validation (only if python3 + PyYAML are present).
+    # Best-effort YAML parse validation of the STAGED temp (only if python3 + PyYAML).
     if command -v python3 >/dev/null 2>&1; then
-        if ! python3 - "$cff" <<'PY'
+        if ! python3 - "$tmp" <<'PY'
 import sys
 try:
     import yaml
@@ -206,10 +270,17 @@ except Exception as exc:
     sys.exit(3)
 PY
         then
-            echo "rl_set_cff_version_and_date: resulting CITATION.cff does not parse as YAML" >&2
+            rm -f "$tmp"
+            echo "rl_set_cff_version_and_date: staged CITATION.cff does not parse as YAML; file unchanged" >&2
             return 1
         fi
     fi
+
+    # Preserve mode, then atomic same-filesystem move (temp removed on any failure).
+    _rl_finalize_move "$cff" "$tmp" || {
+        echo "rl_set_cff_version_and_date: atomic replace failed (file unchanged)" >&2
+        return 1
+    }
 }
 
 # Finalize a `## [VERSION] - Unreleased` changelog heading to a dated one.
@@ -224,12 +295,20 @@ rl_finalize_changelog() {
 
     local unreleased="## [$version] - Unreleased"
     if grep -Fq "$unreleased" "$cl"; then
-        local tmp; tmp=$(mktemp)
-        awk -v want="$unreleased" -v repl="## [$version] - $date" '
+        local tmp; tmp=$(_rl_mktemp_beside "$cl") || {
+            echo "rl_finalize_changelog: could not create temp beside $cl (unchanged)" >&2
+            return 1
+        }
+        if ! awk -v want="$unreleased" -v repl="## [$version] - $date" '
             index($0, want) == 1 { print repl; next }
             { print }
-        ' "$cl" > "$tmp"
-        mv "$tmp" "$cl"
+        ' "$cl" > "$tmp"; then
+            rm -f "$tmp"; echo "rl_finalize_changelog: staged write failed (unchanged)" >&2; return 1
+        fi
+        _rl_finalize_move "$cl" "$tmp" || {
+            echo "rl_finalize_changelog: atomic replace failed (file unchanged)" >&2
+            return 1
+        }
         return 0
     fi
 
