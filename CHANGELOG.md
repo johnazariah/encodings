@@ -2,7 +2,7 @@
 
 All notable changes to FockMap will be documented in this file.
 
-## [0.9.0] - Unreleased
+## [0.9.0] - 2026-07-24
 
 ### 💥 BREAKING
 
