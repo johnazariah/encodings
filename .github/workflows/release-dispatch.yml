@@ -25,14 +25,20 @@ permissions:
 
 jobs:
   prepare-release:
-    runs-on: [self-hosted, Linux, X64, buildbeast, podman, release]
+    # GitHub-hosted Linux so this dispatch is always schedulable on demand. No Linux
+    # self-hosted runner is registered (only Windows + macOS self-hosted runners exist),
+    # so the former [self-hosted, Linux, X64, buildbeast, podman, release] label set left
+    # the release preparation permanently queued. Every step below uses only portable
+    # POSIX tooling, git, and the shared scripts/lib/release-lib.sh helpers (which are
+    # explicitly bash-3.2/Linux portable) — no podman/self-hosted-only commands.
+    runs-on: ubuntu-24.04
     outputs:
       version: ${{ steps.version.outputs.new_version }}
       tag: ${{ steps.version.outputs.tag }}
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0  # Full history for commit analysis
           token: ${{ secrets.GITHUB_TOKEN }}

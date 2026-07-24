@@ -1,15 +1,29 @@
 name: Release
 
-# Multi-platform validation before release.
-# Tests on Windows, macOS, Linux to ensure cross-platform correctness.
+# Multi-platform validation before release, triggered by a v* tag push.
+# The test matrix runs on GitHub-hosted Linux (always schedulable) and the online,
+# healthy self-hosted macOS ARM64 runner, preserving cross-platform coverage.
 
 on:
   push:
     tags:
       - 'v*'
 
+# Least-privilege default: a read-only token. The only job that mutates the repo
+# (create-release) elevates to contents: write at the job level. NuGet publishing uses
+# the NUGET_API_KEY secret and artifact upload/download use the run-scoped token, so no
+# id-token/packages scopes are required here.
+permissions:
+  contents: read
+
 jobs:
-  # Test on all platforms before releasing
+  # Test on all platforms before releasing.
+  # Linux runs on GitHub-hosted ubuntu-24.04: no Linux self-hosted runner is registered
+  # (only Windows + macOS self-hosted runners exist), so the former
+  # [self-hosted, Linux, X64, buildbeast, podman, release] label set left this leg
+  # permanently queued and blocked the tag-triggered release. macOS keeps the online,
+  # healthy self-hosted ARM64 runner. Both legs run plain `dotnet build/test` — no
+  # podman/self-hosted-only features — so hosted Linux is a drop-in.
   test:
     runs-on: ${{ matrix.runner }}
     strategy:
@@ -17,16 +31,16 @@ jobs:
       matrix:
         include:
           - os: linux
-            runner: [self-hosted, Linux, X64, buildbeast, podman, release]
+            runner: ubuntu-24.04
           - os: macos
             runner: [self-hosted, macOS, ARM64]
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 10.0.x
 
@@ -40,16 +54,19 @@ jobs:
   papers:
     uses: ./.github/workflows/draft-paper.yml
 
-  # Publish NuGet package (parallel with papers, only needs tests)
+  # Publish NuGet package (parallel with papers, only needs tests).
+  # GitHub-hosted Linux so the publish is always schedulable; uses only dotnet plus the
+  # NUGET_API_KEY secret (no podman/self-hosted-only commands). Inherits the workflow's
+  # read-only token — artifact upload uses the run-scoped token, not contents: write.
   publish-library:
     needs: test
-    runs-on: [self-hosted, Linux, X64, buildbeast, podman, release]
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 10.0.x
 
@@ -63,25 +80,30 @@ jobs:
         run: dotnet nuget push nupkg/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
 
       - name: Upload NuGet package
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: nuget-package-release
           path: nupkg/*.nupkg
           retention-days: 30
 
-  # Create GitHub Release with all artifacts
+  # Create GitHub Release with all artifacts.
+  # GitHub-hosted Linux so release creation is always schedulable. This is the only job
+  # that writes to the repo, so it elevates to contents: write (above the workflow's
+  # read-only default) for softprops/action-gh-release; it just downloads artifacts.
   create-release:
     needs: [publish-library, papers]
-    runs-on: [self-hosted, Linux, X64, buildbeast, podman, release]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
     steps:
       - name: Download NuGet package
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: nuget-package-release
           path: artifacts/
 
       - name: Download JOSS paper
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: joss-paper
           path: artifacts/
@@ -91,7 +113,7 @@ jobs:
           mv artifacts/paper.pdf artifacts/fockmap-joss.pdf
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             artifacts/*.nupkg
