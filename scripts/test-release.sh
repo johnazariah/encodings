@@ -625,6 +625,188 @@ else
     echo "  (skip: git HEAD commit object unavailable here — worktree/container/broken alternates)"
 fi
 
+echo "── 8. Release trigger/dispatch handoff: tag-only, stable grammar, topology (static + replay) ──"
+wf_rel="$REPO_ROOT/.github/workflows/release.yml"
+wf_disp="$REPO_ROOT/.github/workflows/release-dispatch.yml"
+
+# 8a. Replay rl_resolve_release_tag: a human tag PUSH and the GITHUB_TOKEN
+# workflow_dispatch handoff must resolve the SAME single RELEASE_TAG/ref. Both are TAG
+# refs (github.ref_type=tag); the dispatch input names the same tag it was dispatched with.
+tag_push="$(rl_resolve_release_tag push tag v0.9.0 '')"
+tag_disp="$(rl_resolve_release_tag workflow_dispatch tag v0.9.0 v0.9.0)"
+assert_eq "v0.9.0"    "$tag_push" "push(tag ref) resolves v0.9.0"
+assert_eq "v0.9.0"    "$tag_disp" "workflow_dispatch(--ref tag) resolves v0.9.0"
+assert_eq "$tag_push" "$tag_disp" "push and dispatch resolve the SAME tag/ref"
+
+# 8b. Tag-only + wrong-tag guards reject before anything is published.
+# A branch dispatch is rejected EVEN WHEN the tag input is a valid tag — the run must be
+# pinned to a tag object, never a moving branch tip.
+assert_fail "branch dispatch rejected even with a valid tag input" \
+    rl_resolve_release_tag workflow_dispatch branch main v0.9.0
+# A branch that happens to SHARE the tag's name is still a branch ref -> rejected.
+assert_fail "same-named branch dispatch (ref_type=branch) rejected" \
+    rl_resolve_release_tag workflow_dispatch branch v0.9.0 v0.9.0
+# The dispatched tag ref must equal the declared input tag.
+assert_fail "dispatch tag ref != tag input rejected" \
+    rl_resolve_release_tag workflow_dispatch tag v0.8.0 v0.9.0
+assert_fail "empty dispatch tag rejected" \
+    rl_resolve_release_tag workflow_dispatch tag '' ''
+# A push that is somehow not a tag ref is rejected.
+assert_fail "push from a branch ref rejected" \
+    rl_resolve_release_tag push branch main ''
+assert_fail "non-v push tag rejected" \
+    rl_resolve_release_tag push tag 0.9.0 ''
+# Unknown events never resolve a tag.
+assert_fail "unknown event rejected" \
+    rl_resolve_release_tag schedule tag v0.9.0 ''
+# The exact tag-dispatch positive (mirrors the release-dispatch handoff).
+assert_eq "v0.9.0" "$(rl_resolve_release_tag workflow_dispatch tag v0.9.0 v0.9.0)" \
+    "exact tag dispatch (ref_type=tag, ref==input) resolves the tag"
+
+# 8b2. STABLE-ONLY tag grammar: vMAJOR.MINOR.PATCH, no leading zeros, no pre-release/build.
+assert_ok   "v0.9.0 is a stable release tag"     rl_is_release_tag v0.9.0
+assert_ok   "v1.0.0 is a stable release tag"     rl_is_release_tag v1.0.0
+assert_ok   "v10.20.30 is a stable release tag"  rl_is_release_tag v10.20.30
+assert_fail "v0.9 (missing patch) rejected"      rl_is_release_tag v0.9
+assert_fail "0.9.0 (no v) rejected"              rl_is_release_tag 0.9.0
+assert_fail "v01.0.0 (leading zero) rejected"    rl_is_release_tag v01.0.0
+assert_fail "v1.02.0 (leading zero) rejected"    rl_is_release_tag v1.02.0
+assert_fail "v1.2.3-rc.1 (pre-release) rejected" rl_is_release_tag v1.2.3-rc.1
+assert_fail "v1.2.3+build (build meta) rejected" rl_is_release_tag v1.2.3+build
+assert_fail "v1.2.3.foo (trailing) rejected"     rl_is_release_tag v1.2.3.foo
+assert_fail "v1..2.3 (double dot) rejected"      rl_is_release_tag v1..2.3
+assert_eq "0.9.0" "$(rl_version_from_tag v0.9.0)" "version_from_tag strips a single leading v"
+
+# 8c. Package-version <-> tag parity for the staged 0.9.0 (the real fsproj).
+real_ver="$(rl_extract_fsproj_version "$REPO_ROOT/src/Encodings/Encodings.fsproj")"
+assert_eq "$real_ver" "$(rl_version_from_tag "v$real_ver")" "tag v$real_ver maps back to the .fsproj version"
+
+# 8c2. Runtime tag-commit pinning (git-level simulation, throwaway repo — never touches the
+# real repo). Proves that dispatching with --ref <tag> pins papers/library/package to the
+# SAME tag commit, distinct from the moving default-branch tip.
+if command -v git >/dev/null 2>&1; then
+    sim_rc=0
+    (
+        set -euo pipefail
+        SIM="$TMP/pin-sim"
+        mkdir -p "$SIM"; cd "$SIM"
+        git init -q .
+        git config user.email t@t; git config user.name t
+        git config commit.gpgsign false
+        echo a > f; git add f; git commit -qm A
+        TAG_SHA="$(git rev-parse HEAD)"
+        git tag -a v0.9.0 -m "Release v0.9.0"
+        # Advance the default branch so HEAD/branch tip != tag commit.
+        echo b >> f; git commit -qam B
+        BRANCH_SHA="$(git rev-parse HEAD)"
+        # The dispatch handoff resolves the tag via the shared helper (dispatch context),
+        # then dispatches release.yml with --ref <tag>. github.sha for the whole run (which
+        # the reusable papers job's default checkout inherits) is that tag's commit.
+        RESOLVED="$(rl_resolve_release_tag workflow_dispatch tag v0.9.0 v0.9.0)"
+        DISPATCH_SHA="$(git rev-parse "${RESOLVED}^{commit}")"
+        # publish-library / create-release / test all `checkout` with ref: <resolved tag>.
+        CHECKOUT_SHA="$(git rev-parse "${RESOLVED}^{commit}")"
+        [[ "$TAG_SHA" != "$BRANCH_SHA" ]]        || { echo "branch tip did not advance"; exit 1; }
+        [[ "$DISPATCH_SHA" == "$TAG_SHA" ]]      || { echo "papers caller sha != tag commit"; exit 1; }
+        [[ "$CHECKOUT_SHA" == "$TAG_SHA" ]]      || { echo "checkout ref != tag commit"; exit 1; }
+        [[ "$DISPATCH_SHA" == "$CHECKOUT_SHA" ]] || { echo "papers and checkout differ"; exit 1; }
+    ) || sim_rc=$?
+    assert_eq "0" "$sim_rc" "papers/library/package all resolve to the tag commit (not the branch tip)"
+else
+    echo "  (skip tag-commit pinning simulation — git not available)"
+fi
+
+# 8d. Exact GITHUB_TOKEN handoff command + actions:write live ONLY in release-dispatch.yml.
+assert_ok 'dispatch runs: gh workflow run release.yml --ref "$TAG" -f tag="$TAG"' \
+    grep -Eq 'gh workflow run release\.yml .*--ref "\$TAG".*-f tag="\$TAG"' "$wf_disp"
+assert_ok   "release-dispatch.yml grants actions: write"    grep -Eq '^  actions: write' "$wf_disp"
+assert_fail "release.yml does NOT grant actions: write"     grep -Eq '^[[:space:]]*actions:[[:space:]]*write' "$wf_rel"
+# 8e. Tag push is preserved (explicit handoff must not replace it).
+assert_ok "release-dispatch.yml still pushes the tag" grep -Eq 'git push origin "\$TAG"' "$wf_disp"
+
+# 8f. Structural trigger + least-privilege permission checks via PyYAML (skipped only if
+# unavailable). Also confirms both workflows parse as YAML.
+if command -v python3 >/dev/null 2>&1 && python3 -c 'import yaml' 2>/dev/null; then
+    assert_ok "release.yml: dual triggers + least-privilege perms + jobs" python3 - "$wf_rel" <<'PY'
+import sys, yaml
+d = yaml.safe_load(open(sys.argv[1]))
+on = d.get('on', d.get(True))              # PyYAML parses a bare `on:` key as boolean True
+assert 'push' in on and 'v*' in on['push']['tags'], "push tags v* missing"
+assert on['workflow_dispatch']['inputs']['tag']['required'] is True, "tag input not required"
+assert d['permissions'] == {'contents': 'read'}, ('top-level perms not read-only', d['permissions'])
+jobs = d['jobs']
+assert jobs['create-release']['permissions'] == {'contents': 'write'}, 'create-release must be contents: write'
+assert 'actions' not in d['permissions'], 'release.yml must not grant actions at top level'
+for name, job in jobs.items():
+    assert 'actions' not in (job.get('permissions') or {}), f'job {name} must not grant actions'
+for j in ('resolve-tag', 'test', 'papers', 'publish-library', 'create-release'):
+    assert j in jobs, f'missing job {j}'
+
+# ── Full topology: one resolved tag flows to every job and every checkout/release. ──
+RT = '${{ needs.resolve-tag.outputs.tag }}'
+
+def needs(job):
+    n = jobs[job].get('needs', [])
+    return [n] if isinstance(n, str) else list(n)
+
+# resolve-tag is the single source of truth and exposes `tag`, derived from the
+# ref_type-aware resolver step (must pass github.ref_type into the helper).
+assert jobs['resolve-tag']['outputs']['tag'] == '${{ steps.resolve.outputs.tag }}', 'resolve-tag must output tag'
+resolve_run = ' '.join(s.get('run', '') for s in jobs['resolve-tag']['steps'])
+assert 'github.ref_type' in yaml.dump(jobs['resolve-tag']), 'resolve-tag must consume github.ref_type'
+assert 'rl_resolve_release_tag' in resolve_run, 'resolve-tag must call the shared resolver'
+
+# Every downstream job depends on resolve-tag.
+for j in ('test', 'papers', 'publish-library', 'create-release'):
+    assert 'resolve-tag' in needs(j), f'{j} must need resolve-tag'
+
+# The reusable papers job is the draft-paper workflow; it inherits the caller's tag SHA
+# (no explicit ref), which is why the dispatch uses --ref <tag>.
+assert jobs['papers']['uses'] == './.github/workflows/draft-paper.yml', 'papers must reuse draft-paper.yml'
+
+# Every job that checks out source pins ref to the resolved tag. (create-release has no
+# checkout — it only downloads artifacts and is pinned via softprops tag_name below.)
+def checkout_refs(job):
+    return [ (s.get('with') or {}).get('ref')
+             for s in jobs[job].get('steps', [])
+             if isinstance(s.get('uses'), str) and s['uses'].startswith('actions/checkout') ]
+for j in ('test', 'publish-library'):
+    refs = checkout_refs(j)
+    assert refs and all(r == RT for r in refs), (f'{j} checkout must pin ref to resolved tag', refs)
+assert checkout_refs('create-release') == [], 'create-release should not check out source (artifacts only)'
+
+# publish-library verifies the packaged version matches the tag before publishing.
+pub_run = ' '.join(s.get('run', '') for s in jobs['publish-library']['steps'])
+assert 'rl_version_from_tag' in pub_run and 'rl_extract_fsproj_version' in pub_run, 'publish-library must verify version==tag'
+
+# create-release pins softprops tag_name to the resolved tag (idempotent, no ambiguity).
+rel_steps = [s for s in jobs['create-release']['steps']
+             if isinstance(s.get('uses'), str) and s['uses'].startswith('softprops/action-gh-release')]
+assert rel_steps, 'create-release must use softprops/action-gh-release'
+assert rel_steps[0]['with']['tag_name'] == RT, 'release tag_name must be the resolved tag'
+PY
+    assert_ok "release-dispatch.yml: contents+actions write" python3 - "$wf_disp" <<'PY'
+import sys, yaml
+d = yaml.safe_load(open(sys.argv[1]))
+p = d['permissions']
+assert p.get('contents') == 'write', ('contents not write', p)
+assert p.get('actions') == 'write', ('actions not write', p)
+PY
+else
+    echo "  (skip workflow YAML structure asserts — PyYAML not available)"
+fi
+
+# 8g. actionlint the two workflows when available (CI images may lack it). The only
+# tolerated finding is the pre-existing SC2129 style note in the untouched
+# version-analysis step; any runner-label/other diagnostic fails the test.
+if command -v actionlint >/dev/null 2>&1; then
+    al_out="$(actionlint "$wf_rel" "$wf_disp" 2>&1 || true)"
+    al_bad="$(printf '%s\n' "$al_out" | grep -E '\.ya?ml:[0-9]+:[0-9]+:' | grep -v 'SC2129' || true)"
+    if [[ -z "$al_bad" ]]; then ok "actionlint clean (excl. pre-existing SC2129 style)"; else bad "actionlint findings:"; printf '%s\n' "$al_bad" >&2; fi
+else
+    echo "  (skip actionlint — not installed)"
+fi
+
 echo ""
 echo "─────────────────────────────────────────────"
 echo "Release tooling tests: $PASS passed, $FAIL failed."

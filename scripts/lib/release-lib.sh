@@ -13,6 +13,10 @@
 #   rl_set_fsproj_version <fsproj> <new>            -> rewrite <Version> (atomic)
 #   rl_set_cff_version_and_date <cff> <ver> <date>  -> add-or-replace version + date (atomic)
 #   rl_finalize_changelog <changelog> <ver> <date>  -> Unreleased -> date (atomic, idempotent)
+#   rl_is_release_tag <tag>                         -> exit 0 iff tag is a stable v-tag
+#   rl_version_from_tag <tag>                       -> echoes tag with leading 'v' stripped
+#   rl_resolve_release_tag <event> <ref_type> <ref_name> <input>
+#                                                   -> echoes the one validated release tag
 #
 # Atomic-write contract (all mutators): inputs are fully validated BEFORE any write;
 # the new content is built in a temp file created in the SAME DIRECTORY as the target
@@ -74,6 +78,85 @@ rl_compute_next_version() {
         patch)          printf '%s\n' "$maj.$min.$((pat + 1))" ;;
         *) echo "rl_compute_next_version: unknown mode '$mode'" >&2; return 2 ;;
     esac
+}
+
+# ── Release-tag resolution (shared by release.yml and the test harness) ──────────
+
+# rl_is_release_tag <tag> — strict STABLE-ONLY gate. A release tag is exactly
+# v<MAJOR>.<MINOR>.<PATCH> where each component is a non-negative integer with NO leading
+# zeros (a lone 0 is allowed) and there is NO pre-release or build metadata. Examples:
+# accepts v0.9.0, v1.0.0, v10.20.30; rejects v01.0.0 (leading zero), v1.2 (missing patch),
+# v1.2.3-rc.1 (pre-release), v1.2.3+build (build metadata), v1.2.3.foo / v1..2.3 (malformed).
+# This matches exactly what the release tool emits (rl_compute_next_version only ever
+# produces MAJOR.MINOR.PATCH), so the chain never has to reason about semver ordering of
+# pre-release tags. Regex kept in a variable so it is portable/quoting-safe under bash 3.2
+# (macOS) and bash 4+ (Linux).
+rl_is_release_tag() {
+    local tag="${1:-}"
+    local re='^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$'
+    [[ "$tag" =~ $re ]]
+}
+
+# rl_version_from_tag <tag> — strip a single leading 'v' (v0.9.0 -> 0.9.0). Because release
+# tags are stable-only, the result is a bare MAJOR.MINOR.PATCH that rl_version_gt and the
+# .fsproj <Version> can be compared against directly (no suffix to strip).
+rl_version_from_tag() {
+    printf '%s\n' "${1#v}"
+}
+
+# rl_resolve_release_tag <event_name> <ref_type> <ref_name> <input_tag>
+# Single source of truth for the release tag across BOTH release.yml triggers. It requires
+# the triggering ref to be a TAG in every case, so nothing but a real tag commit is ever
+# built or released:
+#   * push               -> ref_type MUST be 'tag' (the push: filter is tags: v* anyway)
+#                           and the tag is github.ref_name.
+#   * workflow_dispatch   -> the required 'tag' input names the tag, AND the run MUST have
+#                           been dispatched with --ref <tag> so github.ref_type is 'tag'
+#                           and github.ref_name equals the input. A branch dispatch
+#                           (ref_type=branch), including a branch that happens to share the
+#                           tag's name, is REJECTED even when the input tag itself is valid.
+#                           This guarantees the reusable papers job (which inherits the
+#                           caller's github.sha) and every checkout land on the tag commit.
+# Echoes the validated stable v* tag on success; prints to stderr and returns non-zero
+# otherwise.
+rl_resolve_release_tag() {
+    local event="${1:-}" ref_type="${2:-}" ref_name="${3:-}" input_tag="${4:-}" tag=""
+    case "$event" in
+        workflow_dispatch)
+            tag="$input_tag"
+            if [[ -z "$tag" ]]; then
+                echo "rl_resolve_release_tag: workflow_dispatch requires a non-empty 'tag' input" >&2
+                return 1
+            fi
+            # Tag-only handoff: reject branch dispatches (incl. a same-named branch) so the
+            # run is always pinned to a tag object, not a moving branch tip.
+            if [[ "$ref_type" != "tag" ]]; then
+                echo "rl_resolve_release_tag: workflow_dispatch must target a tag ref (got ref_type='$ref_type', ref_name='$ref_name'); dispatch with --ref <tag>" >&2
+                return 1
+            fi
+            if [[ "$ref_name" != "$tag" ]]; then
+                echo "rl_resolve_release_tag: dispatched tag ref ($ref_name) != tag input ($tag)" >&2
+                return 1
+            fi
+            ;;
+        push)
+            # A tag push: the ref name IS the tag, and it must be a tag ref.
+            if [[ "$ref_type" != "tag" ]]; then
+                echo "rl_resolve_release_tag: push release must be a tag ref (got ref_type='$ref_type', ref_name='$ref_name')" >&2
+                return 1
+            fi
+            tag="$ref_name"
+            ;;
+        *)
+            echo "rl_resolve_release_tag: unsupported event '$event' (expected push or workflow_dispatch)" >&2
+            return 1
+            ;;
+    esac
+    if ! rl_is_release_tag "$tag"; then
+        echo "rl_resolve_release_tag: '$tag' is not a valid stable vMAJOR.MINOR.PATCH tag" >&2
+        return 1
+    fi
+    printf '%s\n' "$tag"
 }
 
 # ── Shared atomic-write primitives ──────────────────────────────────────────────
