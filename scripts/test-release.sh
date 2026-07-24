@@ -75,6 +75,35 @@ assert_fail "0.9.0 !> 0.9.0 (equal)" rl_version_gt 0.9.0 0.9.0
 assert_ok   "0.10.0 > 0.9.0"         rl_version_gt 0.10.0 0.9.0
 assert_ok   "1.0.0 > 0.9.0"          rl_version_gt 1.0.0 0.9.0
 
+echo "── 2b. grep helpers standalone-safe under set -euo pipefail (match/no-match/error) ──"
+# Call the helpers DIRECTLY inside strict mode: a no-match must NOT exit the shell, and a
+# genuine grep error must surface as rc 2 (not be masked as "0 matches").
+hf="$TMP/helper.txt"; printf 'alpha\nbeta 0.9.0\ngamma\n' > "$hf"
+rc=0
+out=$(
+    set -euo pipefail
+    source "$REPO_ROOT/scripts/lib/release-lib.sh"
+    c1=$(_rl_grep_count 'beta' "$hf")           # match → 1
+    c0=$(_rl_grep_count 'ZZZ'  "$hf")           # no-match → 0 (must not exit)
+    l1=$(_rl_grep_lines 'beta' "$hf")           # match → line 2
+    l0=$(_rl_grep_lines 'ZZZ'  "$hf" || echo ERR)  # no-match → empty, rc 0
+    printf 'c1=%s c0=%s l1=%s l0=[%s]\n' "$c1" "$c0" "$l1" "$l0"
+) || rc=$?
+assert_eq "0" "$rc" "helpers do not exit the shell under set -e (match+no-match)"
+assert_eq "c1=1 c0=0 l1=2 l0=[]" "$out" "helper match/no-match values correct"
+# Error path: shim grep to fail (rc 2); _rl_grep_count / _rl_grep_lines must return 2.
+rce=0
+oute=$(
+    set -euo pipefail
+    source "$REPO_ROOT/scripts/lib/release-lib.sh"
+    grep() { return 2; }
+    gc_rc=0; _rl_grep_count 'x' "$hf" >/dev/null 2>&1 || gc_rc=$?
+    gl_rc=0; _rl_grep_lines 'x' "$hf" >/dev/null 2>&1 || gl_rc=$?
+    printf 'gc=%s gl=%s\n' "$gc_rc" "$gl_rc"
+) || rce=$?
+assert_eq "0" "$rce" "error-path harness itself survives set -e"
+assert_eq "gc=2 gl=2" "$oute" "grep error surfaces as rc 2 (not masked as 0 matches)"
+
 echo "── 3. Bump modes unchanged; current/staged does not bump ──"
 assert_eq "0.9.0"  "$(rl_compute_next_version 0.9.0 current)" "current → 0.9.0 (no bump)"
 assert_eq "0.9.0"  "$(rl_compute_next_version 0.9.0 staged)"  "staged → 0.9.0 (no bump)"
@@ -299,6 +328,20 @@ rc=0
 [[ "$rc" -ne 0 ]] && ok "changelog post-val grep-error: rc≠0" || bad "changelog post-val grep-error: masked"
 assert_eq "$bsha" "$(sha_of "$clg3")" "changelog post-val grep-error: bytes unchanged"
 assert_eq "0" "$(count_temps "$TMP" "inj_grep3.md")" "changelog post-val grep-error: no temp"
+# (g) Processor (cut) failure inside _rl_grep_lines must normalize to an error and abort
+#     cleanly (this is prevalidation → no temp is created; bytes+mode unchanged).
+clg4="$TMP/inj_cut.md"; printf '# CL\n\n## [0.9.0] - Unreleased\n' > "$clg4"; chmod 640 "$clg4"
+bsha=$(sha_of "$clg4"); bmode=$(mode_of "$clg4"); rm -f "$TMP/hit_cut"
+rc=0
+( set -euo pipefail
+  cut() { : > "$TMP/hit_cut"; return 1; }
+  rl_finalize_changelog "$clg4" 0.9.0 2026-07-24
+) >/dev/null 2>&1 || rc=$?
+[[ -f "$TMP/hit_cut" ]] && ok "changelog line-extraction (cut) reached" || bad "changelog: cut processor not reached"
+[[ "$rc" -ne 0 ]] && ok "changelog cut-processor failure: rc≠0" || bad "changelog cut-processor failure: masked"
+assert_eq "$bsha"  "$(sha_of "$clg4")"  "changelog cut-processor failure: bytes unchanged"
+assert_eq "$bmode" "$(mode_of "$clg4")" "changelog cut-processor failure: mode unchanged"
+assert_eq "0" "$(count_temps "$TMP" "inj_cut.md")" "changelog cut-processor failure: no temp"
 
 echo "── 3g. Strict CHANGELOG heading validation ──"
 cl_ok() {  # helper: assert finalize SUCCEEDS and dates the heading
@@ -361,11 +404,39 @@ cl_reject "canonical + malformed dated" '## [0.9.0] - Unreleased
 cl_reject "canonical + odd-spacing heading" '## [0.9.0] - Unreleased
 ###   [0.9.0]
 '
+# Broadened grammar (blocker): malformed heading markers / separators / status tokens
+# must be rejected even when NOT the canonical form.
+cl_reject "prefixed heading marker x## [VER]" 'x## [0.9.0]
+## [0.9.0] - Unreleased
+'
+cl_reject "x## [VER] -- Unreleased (double dash)" 'x## [0.9.0] -- Unreleased
+## [0.9.0] - Unreleased
+'
+cl_reject "x## [VER]: Unreleased (colon sep)" 'x## [0.9.0]: Unreleased
+## [0.9.0] - Unreleased
+'
+cl_reject "x## [VER] - TBD (status token)" 'x## [0.9.0] - TBD
+## [0.9.0] - Unreleased
+'
+cl_reject "bare [VER] -- Unreleased token" 'The [0.9.0] -- Unreleased draft.
+## [0.9.0] - Unreleased
+'
+cl_reject "bare [VER]: TBD token" 'Status [0.9.0]: TBD
+## [0.9.0] - Unreleased
+'
 # Prose-reference policy: plain version mentions (NOT headings, NO release token) are
 # acceptable alongside the one canonical heading.
 cl_ok "prose mention allowed" '# Changelog
 
 Upgrade to 0.9.0 today; see the [0.9.0] section for details.
+
+## [0.9.0] - Unreleased
+- x
+'
+# Markdown link reference is allowed (bracket token, no heading marker, no status token).
+cl_ok "markdown link reference allowed" '# Changelog
+
+Release [0.9.0]: https://github.com/x/encodings/releases/tag/v0.9.0
 
 ## [0.9.0] - Unreleased
 - x

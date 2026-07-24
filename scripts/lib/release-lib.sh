@@ -78,21 +78,28 @@ rl_compute_next_version() {
 
 # ── Shared atomic-write primitives ──────────────────────────────────────────────
 
-# Count occurrences of an ERE ($1) in file ($2). Robust under `set -e`/`pipefail`:
-# always returns 0 and prints the count (0 when there are no matches).
+# Count occurrences of an ERE ($1) in file ($2). Standalone-safe under `set -e`/
+# `pipefail`: the pipeline is captured via a guarded assignment so a no-match never
+# trips `set -e`. Always returns 0 and prints the count (0 when there are no matches
+# or on a read error — this is a fail-closed counter used only by guards that reject
+# on a zero/low count, never to mutate).
 _rl_count() {
-    grep -oE "$1" "$2" 2>/dev/null | wc -l | tr -d '[:space:]'
+    local n
+    if n=$(grep -oE "$1" "$2" 2>/dev/null | wc -l | tr -d '[:space:]'); then :; fi
+    printf '%s\n' "${n:-0}"
     return 0
 }
 
 # Count lines matching an ERE ($1) in file ($2), distinguishing NO-MATCH from ERROR.
 # `grep -c` exits 0 (>=1 match), 1 (no match), or >=2 (real error, e.g. unreadable
-# file / bad pattern). This prints the count and returns 0 for match/no-match, but
-# returns 2 (no output) on a genuine grep error — so callers can clean up and fail
-# instead of masking the error as "0 matches" (which `|| true` would do).
+# file / bad pattern). Prints the count and returns 0 for match/no-match, but returns
+# 2 (no output) on a genuine grep error — so callers can clean up and fail instead of
+# masking the error as "0 matches". Standalone-safe under `set -e`: the grep runs in
+# an `if` condition so its status is captured without exiting the shell (and without
+# relying on `!`, which would discard the distinction between no-match and error).
 _rl_grep_count() {
     local out rc
-    out=$(grep -cE "$1" "$2" 2>/dev/null); rc=$?
+    if out=$(grep -cE "$1" "$2" 2>/dev/null); then rc=0; else rc=$?; fi
     case "$rc" in
         0|1) printf '%s\n' "$out"; return 0 ;;
         *)   return 2 ;;
@@ -100,17 +107,23 @@ _rl_grep_count() {
 }
 
 # Print the matching LINE NUMBERS of an ERE ($1) in file ($2), one per line (nothing
-# when there is no match). Returns 0 for match/no-match, 2 on a genuine grep error.
-# Used to build error-aware unions without masking failures via `|| true` or tripping
-# `pipefail` on a no-match inside a pipeline.
+# when there is no match). Returns 0 for match/no-match, 2 on a genuine grep error OR
+# a processing (cut) failure. Standalone-safe under `set -e`: both the grep and the
+# line-number extraction pipeline are captured via guarded assignments, so neither a
+# no-match nor a processor failure can trip `set -e` or be silently swallowed.
 _rl_grep_lines() {
-    local out rc
-    out=$(grep -nE "$1" "$2" 2>/dev/null); rc=$?
+    local out rc lines
+    if out=$(grep -nE "$1" "$2" 2>/dev/null); then rc=0; else rc=$?; fi
     case "$rc" in
-        0) printf '%s\n' "$out" | cut -d: -f1 ;;
-        1) : ;;
-        *) return 2 ;;
+        0) ;;
+        1) return 0 ;;   # no match: print nothing, success
+        *) return 2 ;;   # grep error
     esac
+    # Guard the processing pipeline: a `cut` failure normalizes to rc 2 (not silent).
+    if ! lines=$(printf '%s\n' "$out" | cut -d: -f1); then
+        return 2
+    fi
+    printf '%s\n' "$lines"
     return 0
 }
 
@@ -359,25 +372,29 @@ PY
 # Strict + atomic:
 #   * PREVALIDATES robustly. Exactly one canonical `^## \[VERSION\] - Unreleased$`
 #     heading must be present, AND no OTHER version-referencing release line may exist.
-#     A "version-referencing release line" is any of:
-#       - a Markdown heading line mentioning `[VERSION]`   (`^[[:space:]]*#+.*\[VERSION\]`)
-#       - a release token `\[VERSION\][[:space:]]*-[[:space:]]*Unreleased` anywhere
-#         (catches prefixed/suffixed/odd-spacing Unreleased variants)
-#       - a release token `\[VERSION\][[:space:]]*-[[:space:]]*[0-9]` anywhere
-#         (catches canonical or malformed dated variants)
-#     Any occurrence beyond the single canonical line (prefixed/suffixed/spacing/
-#     malformed/duplicate/dated-alongside-Unreleased) is rejected. PROSE POLICY: a plain
-#     prose mention of the version (e.g. "upgrade to 0.9.0", "see [0.9.0]") is fine — it
-#     is only rejected if it is a heading or carries a `- Unreleased` / `- <digit>`
-#     release token, which are reserved for the changelog heading.
+#     GRAMMAR of a "version-referencing release line" (a candidate) — a line is a
+#     candidate if EITHER:
+#       (a) it carries a Markdown heading marker adjacent to / prefixed before the
+#           version token: `#+[[:space:]]*\[VERSION\]` anywhere in the line. This
+#           catches `## [VERSION]`, `x## [VERSION]`, `###[VERSION]`, `x## [VERSION]: …`.
+#       (b) the version token is followed by a release-status separator+token:
+#           `\[VERSION\][[:space:]]*(-{1,2}|:)[[:space:]]*(Unreleased|TBD)` or
+#           `\[VERSION\][[:space:]]*-{1,2}[[:space:]]*[0-9]`. This catches `- Unreleased`,
+#           `-- Unreleased`, `: Unreleased`, `- TBD`, `- <date>`, `-- <date>`, etc.
+#     Exactly one candidate is allowed and it MUST be the canonical heading (finalize),
+#     or exactly one canonical dated heading (idempotent). Any extra/malformed candidate
+#     (prefixed marker, `--`/`:` separators, TBD, malformed date, duplicate,
+#     dated-alongside-Unreleased) is rejected.
+#     PROSE POLICY: an ordinary version mention is NOT a candidate and is allowed —
+#     e.g. `upgrade to 0.9.0`, `see [0.9.0]`, and Markdown link references
+#     `[0.9.0]: https://…`. Only a heading-marked or release-token line is reserved.
 #   * IDEMPOTENT: if there is no Unreleased heading but exactly one canonical dated
-#     `^## \[VERSION\] - YYYY-MM-DD$` (and no other version-referencing release line),
-#     succeeds without change.
+#     `^## \[VERSION\] - YYYY-MM-DD$` (and no other candidate), succeeds without change.
 #   * Rewrites into a same-dir temp (exact full-line match only), then POST-VALIDATES
 #     the STAGED temp — exactly one dated heading for VERSION and ZERO Unreleased for
 #     VERSION — BEFORE the atomic move. Preserves mode; removes the temp on any failure.
-#   * grep reads distinguish no-match from error (see _rl_grep_count): a genuine grep
-#     failure aborts without masking it as "0 matches".
+#   * grep reads distinguish no-match from error (see _rl_grep_count/_rl_grep_lines): a
+#     genuine grep/processing failure aborts without masking it as "0 matches".
 rl_finalize_changelog() {
     local cl="$1" version="$2" date="$3"
     if [[ ! -f "$cl" ]]; then
@@ -389,19 +406,19 @@ rl_finalize_changelog() {
     local esc
     esc=$(printf '%s' "$version" | sed 's#[][\\.^$*+?(){}|-]#\\&#g')
 
-    # Robust prevalidation counts (error-aware). `total` counts DISTINCT lines that
-    # reference this version as a heading or release token — collected without masking
+    # Robust prevalidation counts (error-aware). `total` counts DISTINCT candidate lines
+    # (heading-marked or release-token; see grammar above) — collected without masking
     # grep errors (`_rl_grep_lines`) and without tripping pipefail on a no-match.
-    local canon_unrel canon_dated l_head l_unrel l_dated total
+    local canon_unrel canon_dated l_head l_status l_dated total
     if ! canon_unrel=$(_rl_grep_count "^## \[${esc}\] - Unreleased$" "$cl"); then
         echo "rl_finalize_changelog: grep error reading '$cl'" >&2; return 1; fi
     if ! canon_dated=$(_rl_grep_count "^## \[${esc}\] - [0-9]{4}-[0-9]{2}-[0-9]{2}$" "$cl"); then
         echo "rl_finalize_changelog: grep error reading '$cl'" >&2; return 1; fi
-    if ! l_head=$(_rl_grep_lines "^[[:space:]]*#+.*\[${esc}\]" "$cl") \
-       || ! l_unrel=$(_rl_grep_lines "\[${esc}\][[:space:]]*-[[:space:]]*Unreleased" "$cl") \
-       || ! l_dated=$(_rl_grep_lines "\[${esc}\][[:space:]]*-[[:space:]]*[0-9]" "$cl"); then
+    if ! l_head=$(_rl_grep_lines "#+[[:space:]]*\[${esc}\]" "$cl") \
+       || ! l_status=$(_rl_grep_lines "\[${esc}\][[:space:]]*(-{1,2}|:)[[:space:]]*(Unreleased|TBD)" "$cl") \
+       || ! l_dated=$(_rl_grep_lines "\[${esc}\][[:space:]]*-{1,2}[[:space:]]*[0-9]" "$cl"); then
         echo "rl_finalize_changelog: grep error scanning '$cl'" >&2; return 1; fi
-    total=$(printf '%s\n%s\n%s\n' "$l_head" "$l_unrel" "$l_dated" \
+    total=$(printf '%s\n%s\n%s\n' "$l_head" "$l_status" "$l_dated" \
             | awk 'NF>0 && !seen[$0]++ {c++} END{print c+0}')
 
     # Finalize case: exactly one canonical Unreleased line and NOTHING else references
